@@ -15,11 +15,11 @@ Este documento registra as decisões estratégicas e o "tom de voz" do projeto p
 *   **Termos Fortes:** Liquidez, Dossiê Auditado, Compliance, Antifraude, Legado, Autoridade Universal.
 
 ## 3. Pilares do Produto
-*   **Dossiê em 3 Níveis (Modelo de Monetização):**
-    1.  **Nível 1 (Bronze - $400):** Visibilidade e Marketing. Garantia de dados e imagens reais.
-    2.  **Nível 2 (Silver - $500):** Histórico Técnico e Manutenção. O "DNA" mecânico do barco.
-    3.  **Nível 3 (Gold - $600):** Compliance Legal e Due Diligence. Pronto para transferência imediata.
-*   **Escala Global:** 3 línguas fundamentais (PT-BR, EN-US, ES-419) e cobrança universal em Dólar ($150/mês de recorrência + taxas de dossiê).
+*   **Categorias de Dossiê (Complexidade por Tamanho):**
+    1.  **Compact (Até 39 pés):** **$200**. Focado em lanchas esportivas e day cruisers.
+    2.  **Executive (40 a 79 pés):** **$400**. O padrão para iates de cruzeiro e lazer familiar.
+    3.  **Superyacht (80 pés ou mais):** **$600**. Auditoria completa para ativos de ultra-luxo e alta complexidade.
+*   **Escala Global:** 3 línguas fundamentais (PT-BR, EN-US, ES-419) e cobrança universal em Dólar ($150/mês de recorrência para gestão da frota + taxa única de emissão de dossiê).
 
 ## 4. Parcerias Estratégicas (Ecosystem)
 *   **Seguradoras:** O Yachts Atlas atua como o "Selador de Confiança" para seguradoras. Um Ativo certificado reduz o prêmio do seguro e elimina fraudes em sinistros.
@@ -30,7 +30,12 @@ Este documento registra as decisões estratégicas e o "tom de voz" do projeto p
 *   **Tipografia:** "Outfit" (Moderna, geométrica, sofisticada).
 *   **Estética:** Minimalismo, Glassmorphism, e elementos que transmitem "Tecnologia de Bilhões".
 
-## 5. Missão da IA (Antigravity)
+## 6. Próximos Passos (WOW Factor)
+*   **Certificado de Integridade PDF:** Geração automática de um certificado oficial para ativos que atingirem 100% de compliance.
+*   **Selo de Autoridade:** O certificado incluirá um QR Code para verificação instantânea de autenticidade, servindo como o "selo de fechamento" para seguradoras e novos compradores.
+*   **DNA Digital:** Integração de hashes SHA-256 no PDF para garantir que o documento não foi alterado após a emissão.
+
+## 7. Missão da IA (Antigravity)
 Sempre que o sistema for expandido, a IA deve garantir que a "vibe" High-Ticket seja mantida. Cada nova funcionalidade deve ser avaliada sob o prisma: *"Isso valoriza o ATIVO do cliente?"*.
 
 ---

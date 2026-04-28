@@ -7,7 +7,7 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 
 ## 2. Canais de Monetização (Revenue Streams)
 *   **SaaS Recorrente:** $150/mês por marina (Gestão e Monitoramento).
-*   **Transactional Upsell (Dossiê):** $400 - $600 por desbloqueio de dossiê certificado (Padrão Ouro).
+*   **Transactional Upsell (Dossiê):** $200 - $600 por desbloqueio de dossiê certificado (baseado no tamanho/complexidade).
 *   **Licenciamento/White Label:** Parcerias com seguradoras e estaleiros para uso da tecnologia de integridade.
 
 ## 3. KPIs Fundamentais (Métricas para Venda/Investimento)

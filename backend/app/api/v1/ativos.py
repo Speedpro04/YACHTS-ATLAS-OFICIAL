@@ -39,7 +39,7 @@ async def create_ativo(
         "marca": ativo.marca,
         "modelo": ativo.modelo,
         "ano_fabricacao": ativo.ano_fabricacao,
-        "classificacao": "bronze",
+        "classificacao": "compact",
         "progresso": 0,
         "status": "ativo"
     }

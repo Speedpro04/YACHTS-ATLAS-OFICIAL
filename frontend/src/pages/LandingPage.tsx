@@ -1,4 +1,4 @@
-import { Shield, CheckCircle, ArrowRight, History, Eye, ShieldCheck, Database, Lock } from 'lucide-react'
+import { Shield, CheckCircle, ArrowRight, History, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Header from '../components/Header'
@@ -71,19 +71,22 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { level: 1, title: t('lp.level_1_title'), desc: t('lp.level_1_desc'), icon: Eye, tier: t('common.bronze') },
-              { level: 2, title: t('lp.level_2_title'), desc: t('lp.level_2_desc'), icon: History, tier: t('common.silver') },
-              { level: 3, title: t('lp.level_3_title'), desc: t('lp.level_3_desc'), icon: Shield, tier: t('common.gold') }
+              { id: 'compact', title: t('lp.cat_compact_title'), desc: t('lp.cat_compact_desc'), price: t('lp.cat_compact_price'), icon: Eye, tier: t('common.compact'), level: 1 },
+              { id: 'executive', title: t('lp.cat_executive_title'), desc: t('lp.cat_executive_desc'), price: t('lp.cat_executive_price'), icon: History, tier: t('common.executive'), level: 2 },
+              { id: 'superyacht', title: t('lp.cat_superyacht_title'), desc: t('lp.cat_superyacht_desc'), price: t('lp.cat_superyacht_price'), icon: Shield, tier: t('common.superyacht'), level: 3 }
             ].map((item) => (
               <div 
-                key={item.level}
+                key={item.id}
                 className="group relative bg-[#021431] border border-white/5 p-10 rounded-sm hover:bg-white/[0.05] hover:border-[#c5a059]/30 transition-all duration-500"
               >
                 <div className="mb-8 flex items-center justify-between">
                    <div className="w-14 h-14 bg-[#c5a059]/10 rounded-full flex items-center justify-center text-[#c5a059]">
                      <item.icon size={24} />
                    </div>
-                   <span className="text-[10px] font-black tracking-[0.3em] text-white/20 uppercase">{item.tier}</span>
+                   <div className="text-right">
+                      <span className="block text-[10px] font-black tracking-[0.3em] text-white/20 uppercase mb-1">{item.tier}</span>
+                      <span className="block text-xl font-serif font-bold text-[#c5a059]">{item.price}</span>
+                   </div>
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-white mb-4 tracking-tight group-hover:text-[#c5a059] transition-colors">
                   {item.title}
@@ -101,6 +104,46 @@ export default function LandingPage() {
                      {t('common.explore')}
                    </button>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHY CHOOSE US SECTION */}
+      <section className="py-32 bg-white/[0.01] border-y border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-[#c5a059]/5 blur-[100px] rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+        
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-20 gap-8">
+            <div className="max-w-2xl">
+               <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 tracking-tight leading-tight">
+                 {t('lp.why_atlas_title')}
+               </h2>
+               <p className="text-white/40 text-lg font-light uppercase tracking-widest">
+                 {t('lp.why_atlas_subtitle')}
+               </p>
+            </div>
+            <div className="h-px flex-1 bg-white/5 mx-12 hidden md:block"></div>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { id: 1, title: t('lp.benefit_1_title'), desc: t('lp.benefit_1_desc'), icon: TrendingUp },
+              { id: 2, title: t('lp.benefit_2_title'), desc: t('lp.benefit_2_desc'), icon: Zap },
+              { id: 3, title: t('lp.benefit_3_title'), desc: t('lp.benefit_3_desc'), icon: ShieldCheck },
+              { id: 4, title: t('lp.benefit_4_title'), desc: t('lp.benefit_4_desc'), icon: Anchor }
+            ].map((benefit) => (
+              <div key={benefit.id} className="group p-8 bg-[#021431] border border-white/5 rounded-sm hover:border-[#c5a059]/30 transition-all duration-700 shadow-2xl">
+                 <div className="w-12 h-12 bg-[#c5a059]/5 border border-[#c5a059]/10 flex items-center justify-center text-[#c5a059] mb-8 group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all">
+                    <benefit.icon size={20} />
+                 </div>
+                 <h4 className="text-white font-bold uppercase tracking-[0.2em] text-[10px] mb-4 group-hover:text-[#c5a059] transition-all">
+                    {benefit.title}
+                 </h4>
+                 <p className="text-white/30 text-sm leading-relaxed font-light">
+                    {benefit.desc}
+                 </p>
               </div>
             ))}
           </div>

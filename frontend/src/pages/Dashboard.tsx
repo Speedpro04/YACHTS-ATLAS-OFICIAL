@@ -138,11 +138,11 @@ export default function Dashboard() {
                    <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-transparent to-transparent z-10"></div>
                    <div className="absolute top-5 left-5 z-20">
                       <span className={`px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.3em] border shadow-2xl ${
-                        ativo.classificacao === 'gold' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 
-                        ativo.classificacao === 'silver' ? 'bg-white/90 border-white text-[#010c20]' : 
+                        ativo.classificacao === 'superyacht' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 
+                        ativo.classificacao === 'executive' ? 'bg-white/90 border-white text-[#010c20]' : 
                         'bg-white/10 border-white/20 text-white'
                       }`}>
-                        {ativo.classificacao}
+                        {t(`common.${ativo.classificacao}`)}
                       </span>
                    </div>
                    

@@ -195,11 +195,11 @@ export default function Ativos() {
                   </td>
                   <td className="py-8 px-8">
                     <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.3em] border shadow-xl ${
-                      ativo.classificacao === 'gold' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' :
-                      ativo.classificacao === 'silver' ? 'bg-white/90 border-white text-[#010c20]' :
+                      ativo.classificacao === 'superyacht' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' :
+                      ativo.classificacao === 'executive' ? 'bg-white/90 border-white text-[#010c20]' :
                       'bg-white/10 border-white/20 text-white/40'
                     }`}>
-                      {ativo.classificacao}
+                      {t(`common.${ativo.classificacao}`)}
                     </span>
                   </td>
                   <td className="py-8 px-8 hidden sm:table-cell">

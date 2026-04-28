@@ -6,12 +6,16 @@ import Login from './pages/Login'
 import Layout from './components/Layout'
 
 import LandingPage from './pages/LandingPage'
+import Frota from './pages/Frota'
+import Seguranca from './pages/Seguranca'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/frota" element={<Frota />} />
+        <Route path="/seguranca" element={<Seguranca />} />
         <Route path="/login" element={<Login />} />
         <Route path="/app" element={<Layout />}>
           <Route index element={<Dashboard />} />

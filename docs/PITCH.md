@@ -8,12 +8,12 @@ O **Yachts Atlas** é uma plataforma de custódia digital de ativos náuticos de
 
 ## O PRODUTO: Mais que um Software, um Selo de Valor
 *   **Monitoramento 24/7:** Marinas e proprietários conectados por um painel executivo.
-*   **Dossiê em 3 Níveis:** Um sistema de certificação progressiva (Visibilidade, Técnico e Compliance) que prepara o ativo para liquidez imediata.
+*   **Dossiê por Categoria de Tamanho:** Um sistema de certificação adaptado à complexidade da embarcação (Compact, Executive e Superyacht), garantindo liquidez imediata.
 *   **Integridade Garantida:** Cada documento possui uma impressão digital única (Hash), tornando fraudes impossíveis de serem ocultadas.
 
 ## MODELO DE NEGÓCIO: Escalabilidade e Alta Margem
 *   **Recorrência B2B:** $150/mês por marina (Infraestrutura de gestão).
-*   **Receita Transacional:** $400 a $600 por emissão de Dossiê Certificado (Unlock Fee).
+*   **Receita Transacional:** $200 a $600 por emissão de Dossiê Certificado (Unlock Fee baseado em tamanho).
 *   **Ecosistema:** Pronto para integração com Seguradoras (Redução de prêmio via dados auditados).
 
 ## MERCADO E OPORTUNIDADE
