@@ -6,12 +6,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import router as api_v1
 from app.core.config import settings
+from app.middleware.tracking import RequestTrackingMiddleware
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Registro digital imutável para ativos náuticos",
 )
+
+# Add request tracking middleware
+app.add_middleware(RequestTrackingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,5 +38,7 @@ async def root():
     return {
         "name": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
+        "tracking": "enabled",
+        "audit": "enabled"
     }

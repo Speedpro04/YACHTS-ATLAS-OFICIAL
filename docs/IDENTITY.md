@@ -16,8 +16,8 @@ Este documento registra as decisões estratégicas e o "tom de voz" do projeto p
 
 ## 3. Pilares do Produto
 *   **Categorias de Dossiê (Complexidade por Tamanho):**
-    1.  **Compact (Até 39 pés):** **$200**. Focado em lanchas esportivas e day cruisers.
-    2.  **Executive (40 a 79 pés):** **$400**. O padrão para iates de cruzeiro e lazer familiar.
+    1.  **Compact (Até 45 pés):** **$200**. Focado em lanchas esportivas e day cruisers.
+    2.  **Executive (46 a 79 pés):** **$400**. O padrão para iates de cruzeiro e lazer familiar.
     3.  **Superyacht (80 pés ou mais):** **$600**. Auditoria completa para ativos de ultra-luxo e alta complexidade.
 *   **Escala Global:** 3 línguas fundamentais (PT-BR, EN-US, ES-419) e cobrança universal em Dólar ($150/mês de recorrência para gestão da frota + taxa única de emissão de dossiê).
 
