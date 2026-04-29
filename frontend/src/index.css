@@ -24,6 +24,19 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
   }
+  
+  /* Responsive base styles */
+  @media (max-width: 768px) {
+    html {
+      font-size: 14px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    html {
+      font-size: 13px;
+    }
+  }
 }
 
 @keyframes slow-zoom {
@@ -31,8 +44,17 @@
   to { transform: scale(1.1); }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
 .animate-slow-zoom {
   animation: slow-zoom 20s ease-in-out infinite alternate;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
 @layer components {
@@ -54,5 +76,26 @@
 
   .glass-card {
     @apply bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-sm shadow-2xl;
+  }
+  
+  /* Responsive utilities */
+  @media (max-width: 768px) {
+    .btn-primary, .btn-secondary {
+      @apply px-6 py-3 text-[10px];
+    }
+    
+    .card {
+      @apply p-6;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .btn-primary, .btn-secondary {
+      @apply px-4 py-2.5 text-[9px];
+    }
+    
+    .card {
+      @apply p-4;
+    }
   }
 }
