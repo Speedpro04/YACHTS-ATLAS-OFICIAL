@@ -154,7 +154,7 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 *   Cadastro de ativos
 *   Upload de documentos
 *   Hash SHA-256
-*   Classificação Bronze/Silver/Gold
+*   Classificação Compact/Executive/Superyacht
 *   Dashboard básico
 *   Login/Autenticação
 *   Rastreamento completo

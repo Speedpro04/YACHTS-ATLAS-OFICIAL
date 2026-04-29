@@ -4,6 +4,7 @@ API for broker partnerships and deals
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from app.services.broker_service import BrokerService, BrokerStatus, DealStatus, DealType
+from app.schemas.partners import BrokerCreate, BrokerUpdate, DealCreate
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
 from app.core.security import verify_token
@@ -22,19 +23,7 @@ def get_current_user_id(token: str = Depends(verify_token)) -> str:
 
 @router.post("/brokers")
 async def create_broker(
-    user_id: str,
-    company_name: str,
-    license_number: str,
-    email: str,
-    phone: str,
-    whatsapp: Optional[str] = None,
-    address: Optional[str] = None,
-    city: Optional[str] = None,
-    state: Optional[str] = None,
-    country: str = "BR",
-    website: Optional[str] = None,
-    logo_url: Optional[str] = None,
-    commission_rate: float = 0.15,
+    broker_in: BrokerCreate,
     request: Request = None
 ):
     """Create new broker"""
@@ -44,21 +33,7 @@ async def create_broker(
     location = get_client_location(request)
     
     try:
-        broker = broker_service.create_broker(
-            user_id=user_id,
-            company_name=company_name,
-            license_number=license_number,
-            email=email,
-            phone=phone,
-            whatsapp=whatsapp,
-            address=address,
-            city=city,
-            state=state,
-            country=country,
-            website=website,
-            logo_url=logo_url,
-            commission_rate=commission_rate
-        )
+        broker = broker_service.create_broker(**broker_in.dict())
         
         # Log broker creation
         audit_service.create_audit_log(
@@ -151,7 +126,7 @@ async def get_broker_by_user_id(
 @router.put("/brokers/{broker_id}")
 async def update_broker(
     broker_id: str,
-    updates: dict,
+    updates: BrokerUpdate,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
@@ -162,7 +137,7 @@ async def update_broker(
     location = get_client_location(request)
     
     try:
-        broker = broker_service.update_broker(broker_id, updates)
+        broker = broker_service.update_broker(broker_id, updates.dict(exclude_unset=True))
         if not broker:
             raise HTTPException(status_code=404, detail="Broker not found")
         
@@ -227,16 +202,7 @@ async def deactivate_broker(
 
 @router.post("/deals")
 async def create_deal(
-    broker_id: str,
-    deal_type: DealType,
-    deal_value: Optional[float] = None,
-    ativo_id: Optional[str] = None,
-    seller_id: Optional[str] = None,
-    buyer_id: Optional[str] = None,
-    dossier_required: bool = True,
-    dossier_level: Optional[str] = None,
-    start_date: Optional[str] = None,
-    notes: Optional[str] = None,
+    deal_in: DealCreate,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
@@ -247,18 +213,7 @@ async def create_deal(
     location = get_client_location(request)
     
     try:
-        deal = broker_service.create_deal(
-            broker_id=broker_id,
-            deal_type=deal_type,
-            deal_value=deal_value,
-            ativo_id=ativo_id,
-            seller_id=seller_id,
-            buyer_id=buyer_id,
-            dossier_required=dossier_required,
-            dossier_level=dossier_level,
-            start_date=start_date,
-            notes=notes
-        )
+        deal = broker_service.create_deal(**deal_in.dict())
         
         # Log deal creation
         audit_service.create_audit_log(

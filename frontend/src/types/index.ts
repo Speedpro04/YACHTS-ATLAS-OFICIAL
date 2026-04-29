@@ -29,7 +29,7 @@ export interface Ativo {
   nome_reg?: string
   rgp?: string
   vin?: string
-  classificacao: 'bronze' | 'silver' | 'gold'
+  classificacao: 'bronze' | 'silver' | 'gold' | 'compact' | 'executive' | 'superyacht'
   progresso: number
   status: string
   created_at: string

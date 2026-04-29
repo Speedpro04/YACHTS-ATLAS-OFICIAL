@@ -4,6 +4,7 @@ API for insurance company partnerships
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from app.services.insurance_service import InsuranceService, InsuranceStatus
+from app.schemas.partners import InsuranceCompanyCreate, InsuranceCompanyUpdate
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
 from app.core.security import verify_token
@@ -22,17 +23,7 @@ def get_current_user_id(token: str = Depends(verify_token)) -> str:
 
 @router.post("/companies")
 async def create_insurance_company(
-    name: str,
-    cnpj: str,
-    email: str,
-    phone: str,
-    address: str,
-    city: str,
-    state: str,
-    country: str = "BR",
-    website: Optional[str] = None,
-    logo_url: Optional[str] = None,
-    commission_rate: float = 0.10,
+    company_in: InsuranceCompanyCreate,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
@@ -43,19 +34,7 @@ async def create_insurance_company(
     location = get_client_location(request)
     
     try:
-        company = insurance_service.create_insurance_company(
-            name=name,
-            cnpj=cnpj,
-            email=email,
-            phone=phone,
-            address=address,
-            city=city,
-            state=state,
-            country=country,
-            website=website,
-            logo_url=logo_url,
-            commission_rate=commission_rate
-        )
+        company = insurance_service.create_insurance_company(**company_in.dict())
         
         # Log company creation
         audit_service.create_audit_log(
@@ -131,7 +110,7 @@ async def get_insurance_company(
 @router.put("/companies/{company_id}")
 async def update_insurance_company(
     company_id: str,
-    updates: dict,
+    updates: InsuranceCompanyUpdate,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
@@ -142,7 +121,7 @@ async def update_insurance_company(
     location = get_client_location(request)
     
     try:
-        company = insurance_service.update_insurance_company(company_id, updates)
+        company = insurance_service.update_insurance_company(company_id, updates.dict(exclude_unset=True))
         if not company:
             raise HTTPException(status_code=404, detail="Insurance company not found")
         

@@ -423,18 +423,30 @@ Authorization: Bearer {token}
 
 ## 5. Assinatura (Stripe)
 
-### POST /subscriptions/checkout
-Criar sessão de checkout Stripe.
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
+### POST /payments/checkout/subscription
+Criar sessão de checkout Stripe para assinatura.
 
 **Request Body:**
 ```json
 {
-  "plano": "pro"
+  "plan_type": "marina",
+  "success_url": "https://...",
+  "cancel_url": "https://..."
+}
+```
+
+---
+
+### POST /payments/checkout/dossier
+Criar sessão de checkout Stripe para certificação de dossiê (pagamento único).
+
+**Request Body:**
+```json
+{
+  "dossier_level": "superyacht",
+  "ativo_id": "YA-...",
+  "success_url": "https://...",
+  "cancel_url": "https://..."
 }
 ```
 
@@ -545,6 +557,62 @@ Authorization: Bearer {token}
   "titulo": "Troca de óleo e filtros",
   "data_evento": "2024-01-15",
   "created_at": "2024-01-15T14:30:00Z"
+}
+```
+
+---
+
+## 7. Brokers
+
+### POST /brokers/brokers
+Criar novo broker (requer privilégios ou solicitação).
+
+**Request Body:**
+```json
+{
+  "user_id": "uuid",
+  "company_name": "Oceanic Brokers",
+  "license_number": "BR-123456",
+  "email": "broker@oceanic.com",
+  "phone": "+5511999999999",
+  "commission_rate": 0.15
+}
+```
+
+---
+
+### POST /brokers/deals
+Criar nova transação (venda/aluguel).
+
+**Request Body:**
+```json
+{
+  "broker_id": "uuid",
+  "deal_type": "sale",
+  "ativo_id": "YA-...",
+  "deal_value": 5000000.0,
+  "dossier_required": true,
+  "dossier_level": "superyacht"
+}
+```
+
+---
+
+## 8. Seguradoras
+
+### POST /insurance/companies
+Cadastrar seguradora parceira.
+
+---
+
+### POST /insurance/verify-dossier
+Verificar se o dossiê atende aos requisitos da seguradora.
+
+**Request Body:**
+```json
+{
+  "ativo_id": "YA-...",
+  "company_id": "uuid"
 }
 ```
 

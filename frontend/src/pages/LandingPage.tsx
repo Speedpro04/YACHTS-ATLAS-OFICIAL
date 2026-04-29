@@ -150,6 +150,50 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* PARTNERS SECTION */}
+      <section className="py-32 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl font-serif font-bold text-white mb-4 tracking-tight">{t('lp.partners_title')}</h2>
+            <p className="text-white/40 uppercase tracking-[0.3em] text-[10px] font-black">{t('lp.partners_subtitle')}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12">
+            <div className="group bg-gradient-to-br from-[#021431] to-[#010c20] border border-white/5 p-12 rounded-sm hover:border-[#c5a059]/40 transition-all duration-700 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[#c5a059]/5 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+               <div className="relative z-10">
+                  <div className="w-16 h-16 bg-[#c5a059]/10 border border-[#c5a059]/20 flex items-center justify-center text-[#c5a059] mb-8 group-hover:scale-110 transition-transform">
+                     <Zap size={28} />
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold text-white mb-6 tracking-tight">{t('lp.partners_broker_title')}</h3>
+                  <p className="text-white/40 leading-relaxed mb-8 font-light">
+                    {t('lp.partners_broker_desc')}
+                  </p>
+                  <button className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase flex items-center gap-2 group/btn">
+                    {t('common.broker_network')} <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                  </button>
+               </div>
+            </div>
+
+            <div className="group bg-gradient-to-br from-[#021431] to-[#010c20] border border-white/5 p-12 rounded-sm hover:border-[#c5a059]/40 transition-all duration-700 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[#c5a059]/5 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+               <div className="relative z-10">
+                  <div className="w-16 h-16 bg-[#c5a059]/10 border border-[#c5a059]/20 flex items-center justify-center text-[#c5a059] mb-8 group-hover:scale-110 transition-transform">
+                     <ShieldCheck size={28} />
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold text-white mb-6 tracking-tight">{t('lp.partners_insurance_title')}</h3>
+                  <p className="text-white/40 leading-relaxed mb-8 font-light">
+                    {t('lp.partners_insurance_desc')}
+                  </p>
+                  <button className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase flex items-center gap-2 group/btn">
+                    {t('common.insurance_network')} <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                  </button>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AUTHORITY SECTION */}
       <section className="py-40 bg-[#010c20] relative overflow-hidden border-y border-white/5">
         <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">

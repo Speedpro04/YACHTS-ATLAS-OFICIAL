@@ -4,7 +4,7 @@ Management for broker partners
 """
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from app.core.supabase import get_supabase_client
@@ -84,8 +84,8 @@ class BrokerService:
                 "total_deals": 0,
                 "total_value": 0,
                 "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
             
             response = self.supabase.table("brokers").insert(broker_data).execute()
@@ -155,7 +155,7 @@ class BrokerService:
     ) -> Optional[Dict[str, Any]]:
         """Update broker"""
         try:
-            updates["updated_at"] = datetime.utcnow().isoformat()
+            updates["updated_at"] = datetime.now(timezone.utc).isoformat()
             
             response = self.supabase.table("brokers").update(updates).eq("id", broker_id).execute()
             
@@ -220,8 +220,8 @@ class BrokerService:
                 "start_date": start_date,
                 "notes": notes,
                 "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
             
             response = self.supabase.table("broker_deals").insert(deal_data).execute()
@@ -278,7 +278,7 @@ class BrokerService:
     ) -> Optional[Dict[str, Any]]:
         """Update deal"""
         try:
-            updates["updated_at"] = datetime.utcnow().isoformat()
+            updates["updated_at"] = datetime.now(timezone.utc).isoformat()
             
             response = self.supabase.table("broker_deals").update(updates).eq("id", deal_id).execute()
             
@@ -338,7 +338,7 @@ class BrokerService:
         try:
             return self.update_deal(deal_id, {
                 "dossier_purchased": True,
-                "dossier_purchased_at": datetime.utcnow().isoformat()
+                "dossier_purchased_at": datetime.now(timezone.utc).isoformat()
             })
             
         except Exception as e:

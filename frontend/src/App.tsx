@@ -8,6 +8,7 @@ import Layout from './components/Layout'
 import LandingPage from './pages/LandingPage'
 import Frota from './pages/Frota'
 import Seguranca from './pages/Seguranca'
+import Parceiros from './pages/Parceiros'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="ativos" element={<Ativos />} />
           <Route path="documentos" element={<Documentos />} />
+          <Route path="parceiros" element={<Parceiros />} />
         </Route>
       </Routes>
     </BrowserRouter>

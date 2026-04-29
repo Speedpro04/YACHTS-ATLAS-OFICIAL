@@ -21,7 +21,13 @@
     "access_vault": "Acessar Cofre",
     "explore": "Explorar",
     "scroll": "Rolar",
-    "select_language": "Selecionar Idioma"
+    "select_language": "Selecionar Idioma",
+    "partners": "Parceiros",
+    "brokers": "Brokers",
+    "insurance": "Seguradoras",
+    "find_partners": "Encontrar Parceiros",
+    "broker_network": "Rede de Brokers",
+    "insurance_network": "Rede de Seguradoras"
   },
   "lp": {
     "hero_badge": "GESTÃO GLOBAL DE ATIVOS NÁUTICOS",
@@ -67,7 +73,13 @@
     "footer_copy": "Todos os ativos marítimos protegidos.",
     "terms": "Termos",
     "privacy": "Privacidade",
-    "contact": "Contato"
+    "contact": "Contato",
+    "partners_title": "Ecossistema de Confiança",
+    "partners_subtitle": "Conectamos seu ativo às melhores mentes do mercado náutico.",
+    "partners_broker_title": "Rede de Brokers de Elite",
+    "partners_broker_desc": "Corretores verificados com acesso antecipado a ativos certificados, acelerando vendas e garantindo transparência.",
+    "partners_insurance_title": "Seguro Inteligente",
+    "partners_insurance_desc": "Redução de prêmio de até 15% para ativos com dossiê completo e histórico de manutenção imutável."
   },
   "auth": {
     "personal_security": "Segurança Pessoal",

@@ -25,10 +25,8 @@
 | Plano | Preço | Período | Para Quem |
 |---|---|---|---|
 | **Free** | $0 | Forever | Aquisição, teste |
-| **Pro** | $100/mês | Mensal | Dono de iate/lancha |
-| **Pro Annual** | $900/ano | Anual | Economia 25% |
-| **Marina** | sob consulta | Mensal | Marina (múltiplos clientes) |
-| **Enterprise** | sob consulta | Anual | Seguradoras, frotas |
+| **Marina Standard** | $300/mês | Mensal | Marinas pequenas/médias |
+| **Enterprise** | $500/mês | Mensal | Grandes redes, seguradoras |
 
 ### 2.2 Detalhamento de Planos
 
@@ -45,19 +43,25 @@
 | **Classificação** | ✗ |
 | Suporte | Comumidade |
 
-#### Plano Pro ($100/mês)
+#### Marina Standard ($300/mês)
 
 | Inclui | Limite |
 |---|---|
-| Ativos | 5 |
-| Documentos | unlimited |
-| Histórico | unlimited |
-| **Hash de integridade** | ✓ |
-| **Dossier (todos)** | ✓ |
-| **Classificação** | ✓ |
-| Notificações WhatsApp | ✓ |
-| Support | Email |
-| Exportação dados | ✓ |
+| Ativos gerenciados | unlimited |
+| Dashboard agregador | ✓ |
+| API access | ✓ |
+| Fleet management | ✓ |
+| Real-time monitoring | ✓ |
+| White-label ready | ✓ |
+| Suporte | Prioritário |
+
+#### Dossier Certification (One-time)
+
+| Nível | Preço | Descrição |
+|---|---|---|
+| **Compact** | $200 | Até 39 pés |
+| **Executive** | $400 | 40 a 79 pés |
+| **Superyacht** | $600 | 80+ pés |
 
 #### Plano Pro Annual ($900/ano)
 

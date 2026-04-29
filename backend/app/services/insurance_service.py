@@ -4,7 +4,7 @@ Management for insurance company partners
 """
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from app.core.supabase import get_supabase_client
@@ -62,8 +62,8 @@ class InsuranceService:
                 "status": InsuranceStatus.PENDING.value,
                 "commission_rate": commission_rate,
                 "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
             
             response = self.supabase.table("insurance_companies").insert(company_data).execute()
@@ -119,7 +119,7 @@ class InsuranceService:
     ) -> Optional[Dict[str, Any]]:
         """Update insurance company"""
         try:
-            updates["updated_at"] = datetime.utcnow().isoformat()
+            updates["updated_at"] = datetime.now(timezone.utc).isoformat()
             
             response = self.supabase.table("insurance_companies").update(updates).eq("id", company_id).execute()
             
@@ -213,7 +213,7 @@ class InsuranceService:
                 "total_documents": len(documents),
                 "verified_documents": sum(1 for doc in documents if doc["status"] == "verificado"),
                 "meets_requirements": has_required and all_verified,
-                "verified_at": datetime.utcnow().isoformat()
+                "verified_at": datetime.now(timezone.utc).isoformat()
             }
             
             # Update integration if exists

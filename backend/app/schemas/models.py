@@ -16,6 +16,9 @@ class Classificacao(str, Enum):
     BRONZE = "bronze"
     SILVER = "silver"
     GOLD = "gold"
+    COMPACT = "compact"
+    EXECUTIVE = "executive"
+    SUPERYACHT = "superyacht"
 
 
 class MaterialCasco(str, Enum):
