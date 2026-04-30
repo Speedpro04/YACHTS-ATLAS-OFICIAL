@@ -28,6 +28,8 @@ export default function Dashboard() {
     total: ativos.length,
     gold: ativos.filter(a => a.classificacao === 'gold').length,
     compliance: Math.round(ativos.reduce((acc, curr) => acc + curr.progresso, 0) / (ativos.length || 1)),
+    dossiers: 12, // Mocked for demo
+    revenue: 4800, // Mocked for demo ($400 average * 12)
   }
   
   if (loading) {
@@ -56,8 +58,8 @@ export default function Dashboard() {
                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#c5a059]">{t('auth.personal_security')}</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-serif font-bold text-white mb-6 tracking-tight leading-tight">
-              {t('auth.standard_title')} <br />
-              <span className="italic text-[#c5a059]">Yacht Master.</span>
+              {t('common.marina_hub')} <br />
+              <span className="italic text-[#c5a059]">Fleet Excellence.</span>
             </h1>
             <p className="text-white/40 text-lg max-w-md leading-relaxed font-light">
               {t('lp.mission_tagline')}
@@ -79,8 +81,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-4">
           {[
             { label: t('common.total_assets'), value: stats.total, icon: Ship, color: '#c5a059' },
-            { label: t('common.progress'), value: `${stats.compliance}%`, icon: TrendingUp, color: '#c5a059' },
-            { label: t('common.gold'), value: stats.gold, icon: Shield, color: '#c5a059' }
+            { label: t('common.generated_dossiers'), value: stats.dossiers, icon: Download, color: '#c5a059' },
+            { label: t('common.total_revenue'), value: `$${stats.revenue}`, icon: TrendingUp, color: '#c5a059' }
           ].map((stat, i) => (
             <div key={i} className="bg-white/[0.02] border border-white/5 p-8 rounded-sm flex items-center gap-8 group hover:border-[#c5a059]/30 transition-all shadow-lg">
               <div className="w-16 h-16 bg-[#c5a059]/5 border border-[#c5a059]/10 rounded-sm flex items-center justify-center text-[#c5a059] group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all duration-500">

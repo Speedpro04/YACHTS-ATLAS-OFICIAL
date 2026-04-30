@@ -56,6 +56,7 @@ Exemplos:
 | modelo | string | Modelo específico |
 | ano_fabricacao | integer | Ano de fabricação |
 | comprimento | float | Comprimento em metros |
+| comprimento_pes | float | Comprimento em pés (Principal para categorização) |
 | largura | float | Boca em metros |
 | calado | float | Calado em metros |
 | material_casco | enum | Fibra, alumnio, madeira, aco |

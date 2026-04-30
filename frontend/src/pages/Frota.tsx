@@ -97,8 +97,8 @@ export default function Frota() {
 
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { title: 'Sport & Day Cruisers', range: 'Até 39 pés', desc: 'Agilidade e luxo para navegação costeira e lazer rápido.' },
-                { title: 'Executive Yachts', range: '40 a 79 pés', desc: 'O equilíbrio perfeito entre conforto transoceânico e sofisticação.' },
+                { title: 'Sport & Day Cruisers', range: 'Até 45 pés', desc: 'Agilidade e luxo para navegação costeira e lazer rápido.' },
+                { title: 'Executive Yachts', range: '46 a 79 pés', desc: 'O equilíbrio perfeito entre conforto transoceânico e sofisticação.' },
                 { title: 'Superyachts', range: '80 pés+', desc: 'O ápice da engenharia naval com gestão total de compliance.' }
               ].map((cat, i) => (
                 <div key={i} className="bg-white/[0.02] border border-white/5 p-12 rounded-sm hover:bg-white/[0.04] hover:border-[#c5a059]/30 transition-all group">

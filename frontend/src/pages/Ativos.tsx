@@ -13,6 +13,7 @@ export default function Ativos() {
     tipo: 'iate',
     marca: '',
     modelo: '',
+    comprimento_pes: 0,
     ano_fabricacao: new Date().getFullYear(),
   })
   
@@ -36,7 +37,7 @@ export default function Ativos() {
     try {
       await api.ativos.create(formData)
       setShowForm(false)
-      setFormData({ tipo: 'iate', marca: '', modelo: '', ano_fabricacao: new Date().getFullYear() })
+      setFormData({ tipo: 'iate', marca: '', modelo: '', comprimento_pes: 0, ano_fabricacao: new Date().getFullYear() })
       loadAtivos()
     } catch (err) {
       console.error('Erro ao criar:', err)
@@ -102,6 +103,7 @@ export default function Ativos() {
                 { label: 'Vessel Type', key: 'tipo', type: 'select', options: ['iate', 'lancha', 'veleiro', 'jetski'] },
                 { label: 'Manufacturer / Brand', key: 'marca', type: 'text', placeholder: 'Azimut, Sunseeker...' },
                 { label: 'Model', key: 'modelo', type: 'text', placeholder: 'Flybridge 78...' },
+                { label: t('common.length_feet'), key: 'comprimento_pes', type: 'number', min: 0, max: 500, placeholder: 'Ex: 45' },
                 { label: 'Build Year', key: 'ano_fabricacao', type: 'number', min: 1900, max: new Date().getFullYear() }
               ].map((field) => (
                 <div key={field.key} className="space-y-3 group">

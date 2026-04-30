@@ -10,17 +10,19 @@ Sistema de registro digital imutável para proprietários de ativos náuticos �
 
 | Plano | Preço | Público |
 |---|---|---|
-| Free | $0 | Aquisição |
-| Pro | $100/mês | Donos de iates/lanchas |
-| Marina | Sob consulta | Marinas (B2B) |
+| Marina Basic | $200/mês | Marinas Pequenas |
+| Marina Pro | $500/mês | Marinas Médias |
+| Marina Elite | Sob consulta | Redes de Marinas |
+| **Dossiês (Pay-per-use)** | **$200 / $400 / $600** | **B2B2C (Via Marina)** |
 
 ### 1.3 Diferencial Principal
 
 **O único sistema com:**
 - Hash SHA-256 em cada documento
 - Classificação Bronze/Silver/Gold
-- Dossier para venda
-- Foco no mercado brasileiro
+- Dossier para venda ($200/$400/$600)
+- Modelo B2B2C (Foco em Marinas)
+- Foco no mercado brasileiro e internacional (EN/ES)
 
 ---
 
@@ -45,7 +47,7 @@ Sistema de registro digital imutável para proprietários de ativos náuticos �
 
 **O que está bom:**
 - Classificação Bronze/Silver/Gold definida
-- 3 níveis de dossier (Básico/Completo/Premium)
+- 3 modalidades de dossiê (Venda/Seguradora/Armador) definidos na Spec 17
 - USP clara
 
 **O que melhora:**
@@ -106,10 +108,10 @@ Sistema de registro digital imutável para proprietários de ativos náuticos �
 
 **O que melhorou:**
 - **Adicionado suporte para 5 camadas do ecossistema:**
-  - Marinas (B2B)
-  - Proprietários (B2C)
-  - Seguradoras (Parceiras)
-  - Brokers (Multiplicadores)
+  - Marinas (B2B2C - Cliente Principal)
+  - Proprietários (Usuários finais via Marina)
+  - Seguradoras (Parceiras de verificação)
+  - Brokers (Consumidores de Dossiês)
 - **Novos serviços implementados:**
   - InsuranceService (gestão de seguradoras)
   - BrokerService (gestão de brokers)
@@ -319,7 +321,7 @@ Sistema de registro digital imutável para proprietários de ativos náuticos �
 - Producto bem definido
 - Diferencial claro (hash + classificação)
 - Modelo de negócio estruturado
-- Documentação completa (11 docs)
+- Documentação completa (22 arquivos de documentação)
 - Concorrentes analysados
 - Roadmap definido
 
@@ -332,11 +334,11 @@ Sistema de registro digital imutável para proprietários de ativos náuticos �
 
 ### Recomendação final:
 
-**Não começar a codificar ainda.** Primeiro:
-1. Validar com 10 proprietários (confirma problema)
-2. Confirmar dados de marina (fonte sólida)
-3. Testar se $100 é acceptable
-4. Criar landing page para captures
+**Focar na Implementação B2B2C.**
+1. Validar fluxos de Marina (Cadastro de Frota em lote)
+2. Implementar geração de Dossiê com precificação dinâmica ($200/$400/$600)
+3. Criar painel de gestão para Marinas
+4. Abandonar modelo de embarcações avulsas (B2C direto)
 
 Após valider, então partir para código.
 

@@ -1,62 +1,64 @@
+export type UserRole = 'admin' | 'marina_manager' | 'broker' | 'insurance_agent' | 'owner';
+
 export interface Usuario {
-  id: string
-  email: string
-  nome: string
-  telefone?: string
-  whatsapp?: string
-  role: string
-  created_at: string
+  id: string;
+  email: string;
+  nome: string;
+  telefone?: string;
+  whatsapp?: string;
+  user_role: UserRole;
+  marina_id?: string;
+  verified: boolean;
+  created_at: string;
+}
+
+export interface Marina {
+  id: string;
+  name: string;
+  cnpj: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  website?: string;
+  logo_url?: string;
+  subscription_status: 'active' | 'past_due' | 'canceled' | 'trialing';
+  subscription_plan: 'marina_basic' | 'marina_pro' | 'marina_enterprise';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Ativo {
-  id: string
-  usuario_id: string
-  tipo: 'iate' | 'lancha' | 'veleiro' | 'jetski' | 'barco_pesca'
-  marca: string
-  modelo: string
-  ano_fabricacao: number
-  comprimento?: number
-  largura?: number
-  calado?: number
-  material_casco?: string
-  capacidade_passageiros?: number
-  modelo_motor?: string
-  potencia_motor?: number
-  num_motores?: number
-  tipo_combustivel?: string
-  num_cabines?: number
-  capacidade_tanque?: number
-  nome_reg?: string
-  rgp?: string
-  vin?: string
-  classificacao: 'bronze' | 'silver' | 'gold' | 'compact' | 'executive' | 'superyacht'
-  progresso: number
-  status: string
-  created_at: string
+  id: string;
+  marina_id: string;
+  owner_id?: string;
+  tipo: 'iate' | 'lancha' | 'veleiro' | 'jetski' | 'barco_pesca';
+  marca: string;
+  modelo: string;
+  ano_fabricacao: number;
+  comprimento_metres?: number;
+  comprimento_pes: number;
+  classificacao: 'bronze' | 'silver' | 'gold';
+  porte_categoria: 'compact' | 'executive' | 'superyacht';
+  progresso: number;
+  status: 'ativo' | 'inativo' | 'vendido' | 'manutencao';
+  created_at: string;
 }
 
-export interface Documento {
-  id: string
-  ativo_id: string
-  usuario_id: string
-  nome_arquivo: string
-  tipo: string
-  categoria: string
-  hash_sha256: string
-  tamanho_bytes: number
-  mime_type: string
-  storage_path: string
-  uploaded_by: string
-  uploaded_at: string
-  status: string
-  validado_em: string
-  hash_anterior?: string
-}
-
-export interface Verificacao {
-  document_id: string
-  hash_original: string
-  is_valid: boolean
-  storage: string
-  verified_at: string
+export interface Dossie {
+  id: string;
+  serial_number: string;
+  ativo_id: string;
+  marina_id: string;
+  requested_by: string;
+  dossie_type: 'venda' | 'seguradora' | 'armador';
+  porte_level: 'compact' | 'executive' | 'superyacht';
+  language: string;
+  price_charged: number;
+  sha256_hash: string;
+  s3_url: string;
+  status: 'valid' | 'expired' | 'revoked';
+  expires_at: string;
+  created_at: string;
 }
