@@ -25,7 +25,7 @@
 | Plano | Preço | Período | Para Quem |
 |---|---|---|---|
 | **Free** | $0 | Forever | Aquisição, teste |
-| **Marina Standard** | $300/mês | Mensal | Marinas pequenas/médias |
+| **Marina Standard** | $250/mês | Mensal | Marinas pequenas/médias |
 | **Enterprise** | $500/mês | Mensal | Grandes redes, seguradoras |
 
 ### 2.2 Detalhamento de Planos
@@ -43,7 +43,7 @@
 | **Classificação** | ✗ |
 | Suporte | Comumidade |
 
-#### Marina Standard ($300/mês)
+#### Marina Standard ($250/mês)
 
 | Inclui | Limite |
 |---|---|

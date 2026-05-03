@@ -10,12 +10,18 @@ export default function Frota() {
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
       <Header />
 
-      <main className="mt-[180px]">
+      <main className="mt-[166px]">
         {/* Hero Section */}
-        <section className="relative py-32 overflow-hidden border-b border-white/5">
-          <div className="absolute inset-0 opacity-20">
-             <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#c5a059]/10 blur-[150px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
-             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#c5a059]/5 blur-[120px] rounded-full -translate-x-1/2 translate-y-1/2"></div>
+        <section className="relative py-[328px] overflow-hidden border-b border-white/5">
+          <div className="absolute inset-0">
+            <img 
+              src="/hero-yacht.jpg?v=2" 
+              alt="Azimut Yacht" 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+            {/* Dark Blue Overlay covering the entire boat/image */}
+            <div className="absolute inset-0 bg-[#010c20]/[0.92]"></div>
           </div>
 
           <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -28,7 +34,7 @@ export default function Frota() {
                 A Excelência em <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Movimento.</span>
               </h1>
-              <p className="text-lg md:text-xl text-white/50 leading-relaxed font-light max-w-2xl">
+              <p className="text-lg md:text-xl text-white leading-relaxed font-light max-w-2xl">
                 Navegue pela frota mais exclusiva do mundo. Ativos de alto valor protegidos por um protocolo de integridade que garante transparência total e valorização contínua.
               </p>
             </div>
@@ -42,21 +48,22 @@ export default function Frota() {
               <div className="lg:col-span-7">
                  <div className="relative rounded-sm overflow-hidden group shadow-2xl">
                     <img 
-                      src="/hero-yacht.jpg" 
+                      src="/hero-yacht-v2.png?v=2" 
                       alt="Superyacht" 
                       className="w-full h-[500px] object-cover transition-transform duration-1000 group-hover:scale-105 brightness-75"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-transparent to-transparent"></div>
                     <div className="absolute bottom-10 left-10">
                        <span className="bg-[#c5a059] text-[#010c20] px-4 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest mb-4 inline-block">Flagship Ativo</span>
-                       <h3 className="text-3xl font-serif font-bold text-white tracking-tight">Azimut Grande 35M</h3>
+                       <h3 className="text-3xl font-serif font-bold text-white tracking-tight">SMALA Superyacht</h3>
                     </div>
                  </div>
               </div>
               <div className="lg:col-span-5 space-y-8">
-                 <h2 className="text-4xl font-serif font-bold text-white tracking-tight">O Padrão Superyacht.</h2>
+                 <h2 className="text-4xl font-serif font-bold text-white tracking-tight">O Ápice do Luxo Customizado.</h2>
                  <p className="text-white/40 leading-relaxed text-lg font-light">
-                   Para embarcações acima de 80 pés, o Yachts Atlas oferece um nível de detalhamento sem precedentes. Cada sistema crítico, do motor à eletrônica, possui um log de integridade imutável.
+                   O SMALA representa o pináculo da frota global. Uma embarcação onde cada sistema, desde a propulsão híbrida até a automação interna, é monitorado em tempo real pelo nosso protocolo de custódia.
                  </p>
                  <div className="grid grid-cols-2 gap-8 pt-8">
                     <div>

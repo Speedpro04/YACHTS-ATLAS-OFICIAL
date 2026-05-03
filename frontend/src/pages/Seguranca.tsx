@@ -1,4 +1,3 @@
-o
 import { useTranslation } from 'react-i18next'
 import { ShieldCheck, Lock, Database, FileCheck, Cpu, Key, Fingerprint, Search, Shield } from 'lucide-react'
 import Header from '../components/Header'

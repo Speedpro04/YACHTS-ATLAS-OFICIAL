@@ -10,7 +10,7 @@ export default function Header() {
 
   return (
     <header 
-      className="fixed top-0 left-0 right-0 z-50 py-4 h-[180px] flex items-center shadow-2xl overflow-hidden"
+      className="fixed top-0 left-0 right-0 z-50 py-4 h-[166px] flex items-center shadow-2xl overflow-hidden"
       style={{
         background: 'radial-gradient(circle at center, #021a3d 0%, #010c20 70%)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.05)'

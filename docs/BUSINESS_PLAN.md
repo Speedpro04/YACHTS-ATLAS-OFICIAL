@@ -16,7 +16,7 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 - Dashboard e relatórios
 
 ### Camada 2: Marinas (Clientes B2B)
-- **Mensalidade:** $300/mês (Marina Standard) ou $500/mês (Enterprise)
+- **Mensalidade:** $250/mês (Marina Standard) ou $500/mês (Enterprise)
 - Gestão completa da frota
 - Monitoramento em tempo real
 - Dashboard multi-ativos
@@ -49,7 +49,7 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 ## 3. Canais de Monetização (Revenue Streams)
 
 ### Receita Recorrente (MRR)
-*   **Marina Standard:** $300/mês por marina
+*   **Marina Standard:** $250/mês por marina
 *   **Enterprise:** $500/mês para grandes redes
 *   **Meta:** 50 marinas em 12 meses = $15K-$25K MRR
 
@@ -114,7 +114,7 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 ### Fase 1: Validação (Meses 1-3)
 *   Focar em 5-10 marinas piloto
 *   Validar modelo B2B2C
-*   Testar preços $300/mês
+*   Testar preços $250/mês
 *   Fechar 2-3 parcerias com seguradoras
 *   Recrutar 5-10 brokers
 

@@ -43,8 +43,12 @@ CREATE TABLE IF NOT EXISTS public.marinas (
     email TEXT UNIQUE,
     phone TEXT,
     address TEXT,
+    number TEXT,
+    complement TEXT,
+    neighborhood TEXT,
     city TEXT,
     state TEXT,
+    zip_code TEXT,
     website TEXT,
     logo_url TEXT,
     subscription_status TEXT DEFAULT 'trialing' CHECK (subscription_status IN ('active', 'past_due', 'canceled', 'trialing')),
@@ -177,3 +181,32 @@ ALTER TABLE public.marinas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ativos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dossies ENABLE ROW LEVEL SECURITY;
+
+-- ==========================================
+-- 8. RLS POLICIES (SEGURANÇA)
+-- ==========================================
+
+-- PROFILES: O usuário logado só pode ver e editar o próprio perfil
+CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- MARINAS: Qualquer um logado pode ver as marinas (para listar no site/app), mas só o manager edita
+CREATE POLICY "Anyone can view marinas" ON public.marinas FOR SELECT USING (true);
+CREATE POLICY "Marina managers can update their marina" ON public.marinas FOR UPDATE USING (
+    id IN (SELECT marina_id FROM public.profiles WHERE profiles.id = auth.uid() AND user_role = 'marina_manager')
+);
+
+-- ATIVOS (BARCOS): A Marina gerencia os barcos dela; o Dono visualiza o barco dele.
+CREATE POLICY "Marina managers manage their assets" ON public.ativos FOR ALL USING (
+    marina_id IN (SELECT marina_id FROM public.profiles WHERE profiles.id = auth.uid() AND user_role = 'marina_manager')
+);
+CREATE POLICY "Owners can view their assets" ON public.ativos FOR SELECT USING (owner_id = auth.uid());
+
+-- DOSSIES: A Marina gerencia os dossiês que ela emite; o Dono visualiza os dossiês do próprio barco.
+CREATE POLICY "Marina managers manage dossies" ON public.dossies FOR ALL USING (
+    marina_id IN (SELECT marina_id FROM public.profiles WHERE profiles.id = auth.uid() AND user_role = 'marina_manager')
+);
+CREATE POLICY "Owners can view their dossies" ON public.dossies FOR SELECT USING (
+    ativo_id IN (SELECT id FROM public.ativos WHERE owner_id = auth.uid())
+);
+

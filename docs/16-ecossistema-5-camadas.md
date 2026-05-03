@@ -16,7 +16,7 @@ O Yachts Atlas opera como um ecossistema de 5 camadas interconectadas, criando u
 │  └─ Dashboard e relatórios                                      │
 │                                                                 │
 │  Camada 2: Marinas (Clientes B2B)                              │
-│  ├─ $300/mês (Standard) ou $500/mês (Enterprise)               │
+│  ├─ $250/mês (Standard) ou $500/mês (Enterprise)               │
 │  ├─ Gestão completa da frota                                   │
 │  ├─ Monitoramento em tempo real                                │
 │  └─ Revenda + comissão nos dossiês                            │
@@ -68,7 +68,7 @@ O Yachts Atlas opera como um ecossistema de 5 camadas interconectadas, criando u
 ## Camada 2: Marinas (Clientes B2B)
 
 ### Modelo de Negócio
-- **Mensalidade:** $300/mês (Standard) ou $500/mês (Enterprise)
+- **Mensalidade:** $250/mês (Standard) ou $500/mês (Enterprise)
 - **Receita Adicional:** Comissão nos dossiês vendidos
 - **Custo:** Baixo em relação ao valor dos ativos gerenciados
 
@@ -81,7 +81,7 @@ O Yachts Atlas opera como um ecossistema de 5 camadas interconectadas, criando u
 - Receita adicional com dossiês
 
 ### Fluxo de Integração
-1. Marina contrata serviço ($300/mês)
+1. Marina contrata serviço ($250/mês)
 2. Marina cadastra ativos dos clientes
 3. Proprietários acessam via marina
 4. Marina ganha comissão nos dossiês
@@ -241,7 +241,7 @@ O Yachts Atlas opera como um ecossistema de 5 camadas interconectadas, criando u
 ### Fase 1: Marinas (Meses 1-3)
 - Focar em 5-10 marinas piloto
 - Validar modelo B2B2C
-- Testar preços $300/mês
+- Testar preços $250/mês
 - Meta: 5 marinas ativas
 
 ### Fase 2: Seguradoras (Meses 4-6)

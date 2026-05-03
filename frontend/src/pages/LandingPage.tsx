@@ -11,14 +11,15 @@ export default function LandingPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative h-[calc(100vh-180px)] mt-[180px] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[calc(100vh-166px+100px)] mt-[166px] flex items-center justify-center overflow-hidden py-[50px]">
         <div className="absolute inset-0">
           <img 
-            src="/hero-yacht.jpg" 
+            src="/hero-yacht-v2.png?v=2" 
             alt="Luxury Yacht" 
-            className="w-full h-full object-cover animate-slow-zoom brightness-[0.4]"
+            className="w-full h-full object-cover animate-slow-zoom"
+            loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#010c20]/90 via-transparent to-[#010c20]"></div>
+          <div className="absolute inset-0 bg-[#010c20]/[0.9]"></div>
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
@@ -206,9 +207,10 @@ export default function LandingPage() {
             <div className="lg:col-span-6 relative">
                <div className="relative rounded-sm overflow-hidden shadow-2xl group">
                  <img 
-                   src="/interior-yacht.png" 
-                   alt="Luxury Interior" 
+                   src="/turquoise-yacht.png?v=2" 
+                   alt="Luxury Turquoise Yacht" 
                    className="w-full h-[600px] object-cover transition-transform duration-1000 group-hover:scale-105"
+                   loading="lazy"
                  />
                  <div className="absolute bottom-8 left-8 right-8 bg-[#021431]/95 backdrop-blur-xl border border-[#c5a059]/30 p-8 rounded-sm shadow-2xl">
                     <div className="flex items-center gap-6 mb-6">

@@ -225,7 +225,7 @@ export default function Login() {
 
         <div className="mt-16 pt-8 border-t border-white/5 flex items-center justify-between text-[10px] text-white/20 uppercase tracking-widest font-bold">
            <span>{t('auth.no_account')}</span>
-           <Link to="/signup" className="text-[#c5a059] hover:text-white transition-all flex items-center gap-2">
+           <Link to="/registro-marina" className="text-[#c5a059] hover:text-white transition-all flex items-center gap-2">
              {t('auth.request_membership')}
              <ArrowRight size={14} />
            </Link>

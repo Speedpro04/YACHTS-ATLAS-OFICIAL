@@ -9,6 +9,7 @@ import LandingPage from './pages/LandingPage'
 import Frota from './pages/Frota'
 import Seguranca from './pages/Seguranca'
 import Parceiros from './pages/Parceiros'
+import RegistroMarina from './pages/RegistroMarina'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/frota" element={<Frota />} />
         <Route path="/seguranca" element={<Seguranca />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/app" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="ativos" element={<Ativos />} />
