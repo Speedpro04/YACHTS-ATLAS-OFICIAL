@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -39,13 +38,6 @@ export default function Header() {
           <Link to="/seguranca" className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
             {t('common.menu_security')}
           </Link>
-          
-          <div className="h-4 w-px bg-white/10 mx-2"></div>
-          
-          <div className="bg-white/5 border border-white/10 rounded-sm p-1 flex items-center shadow-2xl">
-             <LanguageSwitcher />
-          </div>
-
           <Link 
             to="/login" 
             className="bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[#c5a059]/10"
@@ -67,10 +59,6 @@ export default function Header() {
            <Link to="/" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_home')}</Link>
            <Link to="/frota" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_fleet')}</Link>
            <Link to="/seguranca" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_security')}</Link>
-           <div className="pt-4 border-t border-white/5">
-              <p className="text-[8px] text-white/40 uppercase tracking-widest mb-3">{t('common.select_language')}</p>
-              <LanguageSwitcher />
-           </div>
            <Link 
             to="/login" 
             className="bg-[#c5a059] text-[#010c20] text-center py-4 rounded-sm text-xs font-black uppercase tracking-[0.2em] mt-4"

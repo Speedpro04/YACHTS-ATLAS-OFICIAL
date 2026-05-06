@@ -13,8 +13,8 @@
 ### 1.2 Moeda de Cobrança
 
 - **Primária:** USD ($)
-- **secundária:** BRL (R$) — conversão automática via Stripe
-- **为什么：** Estabilidade cambial, apelo internacional
+- **Secundária:** BRL (R$) — conversão automática via Stripe
+- **Motivo:** Estabilidade cambial e posicionamento internacional
 
 ---
 
@@ -24,8 +24,8 @@
 
 | Plano | Preço | Período | Para Quem |
 |---|---|---|---|
-| **Free** | $0 | Forever | Aquisição, teste |
-| **Marina Standard** | $250/mês | Mensal | Marinas pequenas/médias |
+| **Free** | $0 | Permanente | Aquisição e teste |
+| **Marina Standard** | $250/mês | Mensal | Marinas (Trojan Horse) |
 | **Enterprise** | $500/mês | Mensal | Grandes redes, seguradoras |
 
 ### 2.2 Detalhamento de Planos
@@ -41,17 +41,17 @@
 | **Hash de integridade** | ✗ |
 | **Dossier** | ✗ |
 | **Classificação** | ✗ |
-| Suporte | Comumidade |
+| Suporte | Comunidade |
 
 #### Marina Standard ($250/mês)
 
 | Inclui | Limite |
 |---|---|
-| Ativos gerenciados | unlimited |
+| Ativos gerenciados | Ilimitado |
 | Dashboard agregador | ✓ |
-| API access | ✓ |
-| Fleet management | ✓ |
-| Real-time monitoring | ✓ |
+| API | ✓ |
+| Gestão de frota | ✓ |
+| Monitoramento em tempo real | ✓ |
 | White-label ready | ✓ |
 | Suporte | Prioritário |
 
@@ -62,27 +62,6 @@
 | **Compact** | $200 | Até 39 pés |
 | **Executive** | $400 | 40 a 79 pés |
 | **Superyacht** | $600 | 80+ pés |
-
-#### Plano Pro Annual ($900/ano)
-
-| Inclui | Benefício |
-|---|---|
-| Tudo do Pro | ✓ |
-| **Desconto** | 25% ($300 ahorrado) |
-| Prioridade suporte | ✓ |
-| Beta features | ✓ |
-
-#### Plano Marina (B2B)
-
-| Inclui | Para Marina |
-|---|---|
-| Ativos gerenciados | unlimited |
-| Dashboard agregador | ✓ |
-|white-label | sob consulta |
-| API access | ✓ |
-| Cobrança centralizada | ✓ |
-| Relatórios | ✓ |
-| Support dedicado | ✓ |
 
 #### Plano Enterprise
 
@@ -99,7 +78,7 @@
 
 ## 3. Estratégia de Preços
 
-### 3.1 Por que $100?
+### 3.1 Por que $250/mês?
 
 | Comparativo | Valor | % do Custo |
 |---|---|---|
@@ -109,7 +88,7 @@
 
 ### 3.2 Mensagem de Posicionamento
 
-> "Por menos de 0.1% do valor do seu iate,-documents que aumentam o valor de venda em 10-30%."
+> "Por uma fração do valor do ativo, sua marina organiza a operação e ainda monetiza dossiês com split 50/50."
 
 ### 3.3 Justificativa de ROI
 
@@ -138,15 +117,15 @@ Plano Free              Plano Pro              Plano Marina
 | Gatilho | Quando |
 |---|---|
 | Limite de documentos | Depois de 3 docs |
-| Quer gerar dossier | Só Pro |
-| Quer hash de integridade | Precisa Pro |
-| Quer classificar ativo | Precisa Pro |
-| Venda do ativo próxima | Upgrade compuls |
+| Quer gerar dossiê | Plano pago |
+| Quer hash de integridade | Plano pago |
+| Quer classificar ativo | Plano pago |
+| Venda do ativo próxima | Upgrade natural |
 
 ### 4.3 Trial
 
-- **Sem trial** — Free forever já é entry
--Usuário pode usar free → sentir valor → upgrade natural
+- **Sem trial** — o Free permanente já cumpre essa função
+- Usuário entra no Free, percebe valor e evolui para plano pago
 
 ---
 
@@ -158,17 +137,15 @@ Plano Free              Plano Pro              Plano Marina
 Marina (cliente B2B)
        │
        ▼
-   Paga $100/mês
-   por usuário
+   Paga $250/mês
        │
        ▼
-Cliente da marina
-   usa Free com
-   benefícios Marina
+   Revende Dossiês
+   ($200 - $600)
        │
        ▼
-Yachts Atlas receita
-  $100 × n clientes
+Yachts Atlas compartilha
+50% de ROI (split 50/50)
 ```
 
 ### 5.2 Marina Como Cliente
@@ -184,8 +161,8 @@ Yachts Atlas receita
 
 | Cenário | Clientes | Receita/mês |
 |---|---|---|
-| Marina small | 10 | $1.000 |
-| Marina médios | 50 | $5.000 |
+| Marina pequena | 10 | $1.000 |
+| Marina média | 50 | $5.000 |
 | Marina grande | 100 | $10.000 |
 | Rede (ex: BR Marinas) | 500 | $50.000 |
 
@@ -197,16 +174,16 @@ Yachts Atlas receita
 
 | Região | Moeda | Preço | Justificativa |
 |---|---|---|---|
-| **BR** | USD ($) | $100 | Estabilidade, internacional |
-| **LATAM** | USD ($) | $100 | Mesma estratégia |
-| **USA** | USD ($) | $100 | Mercado principal |
-| **EU** | EUR (€) | €90 | Paridade USD |
+| **BR** | USD ($) | $250 | Estabilidade, internacional |
+| **LATAM** | USD ($) | $250 | Mesma estratégia |
+| **USA** | USD ($) | $250 | Mercado principal |
+| **EU** | EUR (€) | €225 | Referência cambial do plano |
 
 ### 6.2 Opção Parcelado (BR)
 
 | Parcelas | Valor | Total | Juros |
 |---|---|---|---|
-| 12x | $108/mês | $1.296 | ~0% (promoção launch) |
+| 12x | $250/mês | $3.000 | Sob política comercial |
 
 ---
 
@@ -222,14 +199,14 @@ Yachts Atlas receita
 | Multi-moeda | ✓ |
 | Conversão automática BRL | ✓ |
 
-### 7.2 payment Methods
+### 7.2 Métodos de Pagamento
 
 | Método | Disponível |
 |---|---|
 | Cartão de crédito | ✓ |
-|Cartão debit | ✓ |
-| Boleto (BR) | ✓ (future) |
-| PIX (BR) | ✓ (future) |
+| Cartão de débito | ✓ |
+| Boleto (BR) | ✓ (futuro) |
+| PIX (BR) | ✓ (futuro) |
 | Apple Pay | ✓ |
 | Google Pay | ✓ |
 
@@ -240,23 +217,23 @@ Yachts Atlas receita
 
 ---
 
-## 8. discounts e Campanhas
+## 8. Descontos e Campanhas
 
-### 8.1 Discounts
+### 8.1 Descontos
 
-| Discount | Condição |
+| Desconto | Condição |
 |---|---|
-| 25% annual | Pago anual ($900 vs $1.200) |
+| 25% anual | Pago anual sob política comercial |
 | 15% B2B | Marina com 10+ clientes |
-| 20% early adopter | Primeiros 100 usuários |
+| 20% early adopter | Primeiras 100 marinas |
 
-### 8.2 Campanhas possible
+### 8.2 Campanhas Possíveis
 
 | Campanha | Oferta |
 |---|---|
-| Launch | 50% off primeiro ano |
+| Launch | 50% off no primeiro ciclo |
 | Referência | 1 mês free por indicado |
-| Marina partnership | 30% off primeiro ano |
+| Marina partnership | 30% off no primeiro ciclo |
 
 ---
 
@@ -266,17 +243,17 @@ Yachts Atlas receita
 
 | Métrica | Target |
 |---|---|
-| Monthly churn | <5% |
-| Annual churn | <15% |
+| Churn mensal | <5% |
+| Churn anual | <15% |
 
 ### 9.2 Retenção
 
 | Estratégia | Como |
 |---|---|
-| Valor contínuo | Notificações, alertas, docs vencer |
-| Dossier |Gerar dossier = need retorno |
+| Valor contínuo | Notificações, alertas e documentos a vencer |
+| Dossiê | Geração recorrente de valor para marina e proprietário |
 | Classificação | Upgrade = necessidade |
-| Rede | Marinas indicam = stickiness |
+| Rede | Marinas indicam novas marinas (efeito de rede) |
 
 ---
 

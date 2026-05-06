@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
+import {
   Building2, 
   MapPin, 
   Phone, 
@@ -16,15 +15,13 @@ import {
   Loader2,
   Lock
 } from 'lucide-react'
-import { supabase } from '../services/api'
 import Header from '../components/Header'
 
 export default function RegistroMarina() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [success] = useState(false)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -75,17 +72,37 @@ export default function RegistroMarina() {
     setLoading(true)
     
     try {
-      const { error } = await supabase
-        .from('marinas')
-        .insert([formData])
+      // 1. First, we create a temporary record or just use the metadata
+      // For this flow, we'll use the backend to create the checkout session
+      // with the marina data in metadata.
       
-      if (error) throw error
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/payments/checkout/onboarding`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          marina_id: formData.cnpj.replace(/\D/g, ''), // Use CNPJ as ID for now
+          plan_type: 'marina',
+          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: window.location.href,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Erro ao criar sessão de pagamento')
+      }
+
+      const { url } = await response.json()
       
-      setSuccess(true)
-      setTimeout(() => navigate('/login'), 3000)
-    } catch (err) {
-      console.error('Erro no cadastro:', err)
-      alert('Erro ao realizar cadastro. Por favor, verifique os dados.')
+      // Redirect to Stripe
+      window.location.href = url
+      
+    } catch (err: any) {
+      console.error('Erro no checkout:', err)
+      alert(`Erro ao processar pagamento: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -393,26 +410,44 @@ export default function RegistroMarina() {
                        <p className="text-gold-500 text-4xl font-serif font-bold">$250<span className="text-sm text-white/40 font-['Inter'] font-light"> / mês</span></p>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 p-8 rounded-sm">
-                       <div className="flex items-center gap-4 mb-6">
-                          <Lock className="text-gold-500" size={20} />
-                          <h3 className="text-sm font-black uppercase tracking-widest text-white">{t('marina_onboarding.payment_stripe')}</h3>
+                    <div className="bg-white/5 border border-white/10 p-10 rounded-sm space-y-8">
+                       <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 bg-gold-500/10 rounded-full flex items-center justify-center text-gold-500">
+                                <ShieldCheck size={24} />
+                             </div>
+                             <div>
+                                <h3 className="text-sm font-black uppercase tracking-widest text-white">Marina Standard</h3>
+                                <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] mt-1">Plano Anual Recorrente</p>
+                             </div>
+                          </div>
+                          <div className="text-right">
+                             <span className="text-2xl font-serif font-bold text-gold-500">$250</span>
+                             <span className="text-[10px] text-white/20 uppercase ml-2">/ mês</span>
+                          </div>
                        </div>
                        
                        <div className="space-y-4">
-                          <div className="h-12 bg-[#010c20] border border-white/10 rounded-sm w-full flex items-center px-4">
-                             <span className="text-white/20 text-sm">{t('marina_onboarding.payment_card_number')}</span>
+                          <div className="flex items-center gap-3 text-white/60 text-xs">
+                             <CheckCircle2 size={14} className="text-gold-500" />
+                             <span>Gestão ilimitada de ativos náuticos</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="h-12 bg-[#010c20] border border-white/10 rounded-sm flex items-center px-4">
-                               <span className="text-white/20 text-sm">{t('marina_onboarding.payment_card_expiry')}</span>
-                            </div>
-                            <div className="h-12 bg-[#010c20] border border-white/10 rounded-sm flex items-center px-4">
-                               <span className="text-white/20 text-sm">{t('marina_onboarding.payment_card_cvc')}</span>
-                            </div>
+                          <div className="flex items-center gap-3 text-white/60 text-xs">
+                             <CheckCircle2 size={14} className="text-gold-500" />
+                             <span>Emissão de Dossiês Atlas</span>
                           </div>
-                          <div className="h-12 bg-[#010c20] border border-white/10 rounded-sm w-full flex items-center px-4">
-                             <span className="text-white/20 text-sm">{t('marina_onboarding.payment_card_name')}</span>
+                          <div className="flex items-center gap-3 text-white/60 text-xs">
+                             <CheckCircle2 size={14} className="text-gold-500" />
+                             <span>Acesso ao ecossistema de brokers e seguros</span>
+                          </div>
+                       </div>
+
+                       <div className="pt-6 border-t border-white/5">
+                          <div className="flex items-center gap-4 p-4 bg-gold-500/5 border border-gold-500/10 rounded-sm">
+                             <Lock className="text-gold-500" size={18} />
+                             <p className="text-[10px] text-white/60 leading-relaxed">
+                                Você será redirecionado para o ambiente seguro do <strong>Stripe</strong> para processar sua assinatura internacional em USD.
+                             </p>
                           </div>
                        </div>
                     </div>

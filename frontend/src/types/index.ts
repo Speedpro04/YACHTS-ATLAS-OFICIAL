@@ -62,3 +62,15 @@ export interface Dossie {
   expires_at: string;
   created_at: string;
 }
+
+export interface Documento {
+  id: string;
+  ativo_id: string;
+  nome_arquivo: string;
+  tipo: string;
+  categoria?: string;
+  tamanho_bytes: number;
+  hash_sha256: string;
+  status: string;
+  uploaded_at: string;
+}

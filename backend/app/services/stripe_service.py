@@ -30,6 +30,7 @@ class DossierLevel(str, Enum):
 
 class StripeService:
     """Premium Stripe service for payment processing"""
+    DOSSIER_ROI_SPLIT_RATIO = 0.5
     
     # Pricing configuration (in USD) - B2B2C Model
     # Marinas pay monthly, resell to asset owners
@@ -40,7 +41,7 @@ class StripeService:
             "features": ["1 asset", "Basic tracking", "Community support"]
         },
         PlanType.MARINA: {
-            "monthly": 300,
+            "monthly": 250,
             "name": "Marina Standard",
             "features": ["Unlimited assets", "Fleet management", "Priority support", "API access", "Real-time monitoring", "Audit reports", "White-label ready"]
         },
@@ -127,6 +128,63 @@ class StripeService:
             logger.error(f"Error creating checkout session: {str(e)}")
             raise Exception(f"Failed to create checkout session: {str(e)}")
     
+    def create_onboarding_checkout(
+        self,
+        email: str,
+        marina_id: str,
+        success_url: str,
+        cancel_url: str,
+        plan_type: PlanType = PlanType.MARINA
+    ) -> Dict[str, Any]:
+        """
+        Create Stripe checkout session for marina onboarding
+        """
+        try:
+            plan_config = self.PRICING[plan_type]
+            
+            # Create or get price
+            price_id = self._get_or_create_price(
+                amount=plan_config["monthly"] * 100,  # Convert to cents
+                currency="usd",
+                recurring=True,
+                product_name=plan_config["name"]
+            )
+            
+            # Create checkout session
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                mode='subscription',
+                success_url=success_url,
+                cancel_url=cancel_url,
+                customer_email=email,
+                metadata={
+                    'marina_id': marina_id,
+                    'plan_type': plan_type.value,
+                    'is_onboarding': 'true'
+                },
+                subscription_data={
+                    'metadata': {
+                        'marina_id': marina_id,
+                        'plan_type': plan_type.value
+                    }
+                }
+            )
+            
+            logger.info(f"Created onboarding checkout session {session.id} for marina {marina_id}")
+            
+            return {
+                "session_id": session.id,
+                "url": session.url,
+                "amount": plan_config["monthly"]
+            }
+            
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error: {str(e)}")
+            raise Exception(f"Failed to create checkout session: {str(e)}")
     def create_dossier_checkout_session(
         self,
         user_id: str,
@@ -134,10 +192,12 @@ class StripeService:
         ativo_id: str,
         success_url: str,
         cancel_url: str,
+        marina_stripe_account_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Create Stripe checkout session for dossier certification (one-time payment)
+        With 50/50 split between platform and marina
         """
         try:
             amount = self.DOSSIER_PRICING[dossier_level]
@@ -150,25 +210,41 @@ class StripeService:
                 product_name=f"Dossier {dossier_level.value.capitalize()} Certification"
             )
             
-            # Create checkout session
-            session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
+            # Base session parameters
+            session_params = {
+                'payment_method_types': ['card'],
+                'line_items': [{
                     'price': price_id,
                     'quantity': 1,
                 }],
-                mode='payment',
-                success_url=success_url,
-                cancel_url=cancel_url,
-                customer_email=metadata.get('email') if metadata else None,
-                metadata={
+                'mode': 'payment',
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'customer_email': metadata.get('email') if metadata else None,
+                'metadata': {
                     'user_id': user_id,
                     'dossier_level': dossier_level.value,
                     'ativo_id': ativo_id,
                     'payment_type': 'dossier',
+                    'split_enabled': 'true' if marina_stripe_account_id else 'false',
                     **(metadata or {})
                 }
-            )
+            }
+
+            # Implement 50/50 Revenue Split if Marina Account is provided
+            if marina_stripe_account_id:
+                # Stripe Connect: Marina receives 50% directly
+                split_amount = int((amount * 100) * self.DOSSIER_ROI_SPLIT_RATIO)
+                session_params['payment_intent_data'] = {
+                    'transfer_data': {
+                        'destination': marina_stripe_account_id,
+                        'amount': split_amount
+                    }
+                }
+                logger.info(f"Split payment configured: 50% (${amount/2}) to marina {marina_stripe_account_id}")
+
+            # Create checkout session
+            session = stripe.checkout.Session.create(**session_params)
             
             logger.info(f"Created dossier checkout session {session.id} for user {user_id}, level {dossier_level.value}")
             
@@ -177,7 +253,8 @@ class StripeService:
                 "url": session.url,
                 "dossier_level": dossier_level.value,
                 "ativo_id": ativo_id,
-                "amount": amount
+                "amount": amount,
+                "split_active": bool(marina_stripe_account_id)
             }
             
         except stripe.error.StripeError as e:
@@ -451,6 +528,7 @@ class StripeService:
                 level.value: price
                 for level, price in self.DOSSIER_PRICING.items()
             },
+            "dossier_roi_split_ratio": self.DOSSIER_ROI_SPLIT_RATIO,
             "currency": "USD"
         }
 

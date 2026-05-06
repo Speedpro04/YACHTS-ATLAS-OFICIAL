@@ -9,9 +9,61 @@ from app.middleware.tracking import get_client_ip, get_user_agent, get_client_lo
 from app.core.security import verify_token
 from typing import Optional
 
+from pydantic import BaseModel
+from typing import Optional
+
 router = APIRouter()
 stripe_service = StripeService()
 audit_service = AuditService()
+
+class OnboardingCheckout(BaseModel):
+    email: str
+    marina_id: str
+    plan_type: PlanType = PlanType.MARINA
+    success_url: str
+    cancel_url: str
+
+@router.post("/checkout/onboarding")
+async def create_onboarding_checkout(
+    data: OnboardingCheckout,
+    request: Request = None
+):
+    """Create checkout session for marina onboarding"""
+    # Get client information
+    ip_address = get_client_ip(request)
+    user_agent = get_user_agent(request)
+    location = get_client_location(request)
+    
+    try:
+        session = stripe_service.create_onboarding_checkout(
+            email=data.email,
+            marina_id=data.marina_id,
+            plan_type=data.plan_type,
+            success_url=data.success_url,
+            cancel_url=data.cancel_url
+        )
+        
+        # Log checkout creation
+        audit_service.create_audit_log(
+            action=AuditAction.ASSET_CREATE,
+            user_id="anonymous",
+            ip_address=ip_address,
+            user_agent=user_agent,
+            success=True,
+            location=location,
+            details={
+                "action": "create_onboarding_checkout",
+                "marina_id": data.marina_id,
+                "plan_type": data.plan_type.value,
+                "session_id": session["session_id"]
+            },
+            severity=AuditSeverity.INFO
+        )
+        
+        return session
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def get_current_user_id(token: str = Depends(verify_token)) -> str:
@@ -104,22 +156,38 @@ async def create_dossier_checkout(
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
-    """Create checkout session for dossier certification (one-time payment)"""
+    """Create checkout session for dossier certification with 50/50 split"""
     # Get client information
     ip_address = get_client_ip(request)
     user_agent = get_user_agent(request)
     location = get_client_location(request)
     
     try:
+        from app.core.supabase import get_supabase_client
+        supabase = get_supabase_client()
+        
+        # 1. Look up the asset and its associated marina
+        ativo = supabase.table("ativos").select("marina_id").eq("id", ativo_id).execute()
+        marina_id = ativo.data[0].get("marina_id") if ativo.data else None
+        
+        # 2. Look up the marina's Stripe Account ID for the split
+        marina_stripe_account = None
+        if marina_id:
+            marina = supabase.table("marinas").select("stripe_account_id").eq("id", marina_id).execute()
+            if marina.data:
+                marina_stripe_account = marina.data[0].get("stripe_account_id")
+        
         session = stripe_service.create_dossier_checkout_session(
             user_id=user_id,
             dossier_level=dossier_level,
             ativo_id=ativo_id,
             success_url=success_url,
             cancel_url=cancel_url,
+            marina_stripe_account_id=marina_stripe_account,
             metadata={
                 "ip_address": ip_address,
-                "user_agent": user_agent[:100] if user_agent else None
+                "user_agent": user_agent[:100] if user_agent else None,
+                "marina_id": marina_id
             }
         )
         
@@ -136,7 +204,8 @@ async def create_dossier_checkout(
                 "dossier_level": dossier_level.value,
                 "ativo_id": ativo_id,
                 "session_id": session["session_id"],
-                "amount": session["amount"]
+                "amount": session["amount"],
+                "split_active": bool(marina_stripe_account)
             },
             severity=AuditSeverity.INFO
         )

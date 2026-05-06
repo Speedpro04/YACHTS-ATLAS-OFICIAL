@@ -86,6 +86,22 @@ class ProfileResponse(ProfileBase):
     updated_at: datetime
 
 
+# --- Auth Models ---
+
+class UsuarioCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    nome: str
+    telefone: Optional[str] = None
+    whatsapp: Optional[str] = None
+
+
+class UsuarioResponse(BaseModel):
+    id: str
+    email: EmailStr
+    nome: Optional[str] = None
+
+
 # --- Ativo Models ---
 
 class AtivoBase(BaseModel):

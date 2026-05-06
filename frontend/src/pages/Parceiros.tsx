@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { api } from '../services/api'
-import { Users, Shield, Briefcase, ExternalLink, Search, Filter, Star } from 'lucide-react'
+import { Shield, Briefcase, ExternalLink, Search, Star } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 interface Partner {

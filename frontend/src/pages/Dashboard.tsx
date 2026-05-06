@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { Ativo } from '../types'
-import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Shield, Anchor, Download } from 'lucide-react'
+import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Anchor, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export default function Dashboard() {
@@ -140,11 +140,11 @@ export default function Dashboard() {
                    <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-transparent to-transparent z-10"></div>
                    <div className="absolute top-5 left-5 z-20">
                       <span className={`px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.3em] border shadow-2xl ${
-                        ativo.classificacao === 'superyacht' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 
-                        ativo.classificacao === 'executive' ? 'bg-white/90 border-white text-[#010c20]' : 
+                        ativo.porte_categoria === 'superyacht' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 
+                        ativo.porte_categoria === 'executive' ? 'bg-white/90 border-white text-[#010c20]' : 
                         'bg-white/10 border-white/20 text-white'
                       }`}>
-                        {t(`common.${ativo.classificacao}`)}
+                        {t(`common.${ativo.porte_categoria}`)}
                       </span>
                    </div>
                    

@@ -58,8 +58,12 @@ class AuditService:
     """Premium audit service with complete tracking"""
     
     def __init__(self):
-        self.supabase = get_supabase_client()
-        logger.info("AuditService initialized")
+        try:
+            self.supabase = get_supabase_client()
+            logger.info("AuditService initialized")
+        except Exception as e:
+            self.supabase = None
+            logger.warning(f"AuditService initialized without Supabase client: {str(e)}")
     
     def create_audit_log(
         self,

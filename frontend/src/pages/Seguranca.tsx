@@ -1,11 +1,8 @@
-import { useTranslation } from 'react-i18next'
 import { ShieldCheck, Lock, Database, FileCheck, Cpu, Key, Fingerprint, Search, Shield } from 'lucide-react'
 import Header from '../components/Header'
 import { Link } from 'react-router-dom'
 
 export default function Seguranca() {
-  const { t } = useTranslation()
-
   return (
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
       <Header />

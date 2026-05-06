@@ -7,6 +7,18 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 
 export const API_URL = '/api/v1'
 
+export class ApiError extends Error {
+  status: number
+  details: unknown
+
+  constructor(message: string, status: number, details: unknown = null) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.details = details
+  }
+}
+
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('yachts_token')
   
@@ -20,9 +32,38 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   })
   
   if (!response.ok) {
-    throw new Error('Request failed')
+    let details: unknown = null
+    let message = `Request failed (${response.status})`
+
+    try {
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const payload = await response.json()
+        details = payload
+        if (payload && typeof payload === 'object' && 'detail' in payload) {
+          const detailValue = (payload as { detail?: unknown }).detail
+          if (typeof detailValue === 'string' && detailValue.trim()) {
+            message = detailValue
+          }
+        }
+      } else {
+        const text = await response.text()
+        if (text.trim()) {
+          details = text
+          message = text
+        }
+      }
+    } catch {
+      details = null
+    }
+
+    throw new ApiError(message, response.status, details)
   }
   
+  if (response.status === 204) {
+    return null
+  }
+
   return response.json()
 }
 

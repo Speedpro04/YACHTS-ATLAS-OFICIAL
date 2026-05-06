@@ -48,9 +48,8 @@ Cobrança dinâmica baseada no tamanho do barco (pés):
 - **Executive (40 a 79 pés):** $400
 - **Superyacht (80+ pés):** $600
 
-**3. Assinaturas Individuais (B2C):**
-- **Free:** Registro de 1 ativo, até 3 documentos (sem integridade criptográfica).
-- **Pro:** ~$100/mês para histórico completo, documentos ilimitados e hashes de integridade.
+**3. ROI dos Dossiês (B2B2C):**
+- **Regra comercial padrão:** split de receita/ROI dos dossiês em **50/50** entre Yachts Atlas e Marina parceira.
 
 ---
 
@@ -60,6 +59,8 @@ Cobrança dinâmica baseada no tamanho do barco (pés):
 - **RF01:** O sistema deve permitir o cadastro de contas corporativas (Marinas).
 - **RF02:** A Marina deve ter um dashboard exibindo métricas da frota gerenciada (total de ativos, pés totais, alertas de documentos vencendo).
 - **RF03:** A Marina deve poder convidar (onboarding) proprietários para o ecossistema.
+- **RF11:** O sistema deve oferecer um **Checklist de Segurança Digital** para marinheiros.
+- **RF12:** O sistema deve gerar **Alertas de Manutenção Preditiva** (motores, extintores, balsas) integrados à agenda da marina.
 
 ### Épico 2: Gestão de Ativos
 - **RF04:** O sistema deve permitir o cadastro de ativos especificando tipo (iate, lancha, etc), marca, modelo, ano de fabricação e comprimento em pés.

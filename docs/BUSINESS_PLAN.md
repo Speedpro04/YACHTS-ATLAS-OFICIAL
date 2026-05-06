@@ -16,12 +16,13 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 - Dashboard e relatórios
 
 ### Camada 2: Marinas (Clientes B2B)
-- **Mensalidade:** $250/mês (Marina Standard) ou $500/mês (Enterprise)
-- Gestão completa da frota
-- Monitoramento em tempo real
-- Dashboard multi-ativos
-- Suporte prioritário
-- **Receita:** Revenda do acesso + comissão nos dossiês
+- **Mensalidade:** $250/mês (Marina Standard) — O "Custo de Manutenção" da plataforma.
+- **Conceito Cavalo de Troia:** A marina é o canal de distribuição que elimina o CAC individual.
+- **No-Brainer Offer:** Com 1 ou 2 dossiês vendidos, o sistema sai de graça para a marina.
+- Gestão completa da frota (Checklist Digital, Alertas de Manutenção).
+- Dashboard multi-ativos.
+- Suporte prioritário.
+- **Receita:** Split fixo de ROI dos dossiês em 50/50 com marinas parceiras.
 
 ### Camada 3: Proprietários (Clientes Finais)
 - Acesso via marina (gratuito ou custo incluído)
@@ -104,10 +105,12 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 *   **Churn Zero:** Ninguém cancela o que é exigência de mercado
 
 ### Comerciais
-*   **Modelo B2B2C:** Venda para marinas é mais fácil que para proprietários
-*   **Network Effect:** Marinas recomendam entre si
-*   **CAC Zero:** Brokers prospectam armadores por nós
-*   **Ticket Alto:** Ativos de milhões justificam o preço
+*   **Modelo B2B2C:** Venda para marinas é mais fácil que para proprietários.
+*   **Oferta Irresistível:** A marina lucra com o software em vez de apenas pagar por ele.
+*   **Network Effect:** Marinas recomendam entre si.
+*   **CAC Zero:** Brokers e Marinas prospectam armadores por nós.
+*   **Ticket Alto:** Ativos de milhões justificam o preço.
+*   **Score de IA:** O Dossiê não é um PDF, é uma certificação de valor baseada em dados.
 
 ## 6. Estratégia de Go-to-Market
 
