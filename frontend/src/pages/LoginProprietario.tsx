@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Anchor, User, Lock, ArrowRight, Shield, Sparkles } from 'lucide-react'
+import { Anchor, User, Lock, ArrowLeft, ArrowRight, Shield, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 
-export default function LoginArmador() {
+export default function LoginProprietario() {
   const navigate = useNavigate()
   const [embarcacao, setEmbarcacao] = useState('')
   const [cpf, setCpf] = useState('')
@@ -42,8 +42,8 @@ export default function LoginArmador() {
     // Simulação de login para o protótipo
     setTimeout(() => {
       setLoading(false)
-      // Como é o painel do armador, navegamos para a rota restrita
-      navigate('/portal-armador')
+      // Como é o painel do proprietário, navegamos para a rota restrita
+      navigate('/portal-proprietario')
     }, 1500)
   }
 
@@ -70,9 +70,9 @@ export default function LoginArmador() {
           </Link>
 
           <div className="max-w-md">
-             <h2 className="text-[35px] font-serif font-bold text-white mb-4 tracking-tight leading-tight">
-               Portal do <span className="italic text-[#c5a059]">Armador.</span>
-             </h2>
+            <h2 className="text-[35px] font-serif font-bold text-white mb-4 tracking-tight leading-tight">
+              Portal do <span className="italic text-[#c5a059]">Proprietário.</span>
+            </h2>
              <div className="w-12 h-0.5 bg-[#c5a059]/40 mx-auto mb-6"></div>
              <p className="text-white/40 text-[15px] leading-relaxed font-light tracking-wide uppercase">
                Seu cofre digital privado. Acompanhe a integridade e o dossiê do seu ativo com total sigilo.
@@ -97,16 +97,24 @@ export default function LoginArmador() {
 
       {/* Right Side: Login Form (3 Items) */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-24 xl:px-40 relative bg-[#012a4a] flex-1">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-8 left-8 flex items-center gap-2 text-white/40 hover:text-[#c5a059] transition-all duration-300 group"
+        >
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Voltar</span>
+        </button>
         
         {/* Mobile Header */}
         <div className="lg:hidden mb-12 flex flex-col items-center justify-center pt-10">
            <img src="/logo-transparent.png" alt="Logo" className="w-[180px] object-contain relative z-10 mb-6" />
-           <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Portal do Armador</p>
+           <p className="text-white/40 text-[12px] font-black uppercase tracking-[0.3em]">Portal do Proprietário</p>
         </div>
 
         <div className={`mb-12 ${mounted ? 'animate-in fade-in slide-in-from-right-8 duration-700' : ''}`}>
            <div className="flex items-center justify-between mb-4">
-             <h3 className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em] hidden lg:block">Proprietário</h3>
+             <h3 className="text-white/40 text-[12px] font-black uppercase tracking-[0.4em] hidden lg:block">Proprietário</h3>
              <div className="bg-white/5 border border-white/10 rounded-sm p-1 ml-auto">
                 <LanguageSwitcher />
              </div>
@@ -142,7 +150,7 @@ export default function LoginArmador() {
 
           {/* ITEM 2: CPF */}
           <div className={`space-y-2 group transition-all duration-300 ${isFocused === 'cpf' ? 'scale-[1.02]' : ''}`}>
-            <label className="text-[10px] font-black uppercase tracking-widest text-white/40 group-focus-within:text-[#c5a059] transition-colors">
+            <label className="text-[12px] font-black uppercase tracking-widest text-white/40 group-focus-within:text-[#c5a059] transition-colors">
               CPF do Proprietário
             </label>
             <div className="relative">

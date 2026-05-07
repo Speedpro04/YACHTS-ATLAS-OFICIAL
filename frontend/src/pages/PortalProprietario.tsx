@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import AssetHealthDashboard from '../components/AssetHealthDashboard'
 import SecureCameraUpload from '../components/SecureCameraUpload'
 
-export default function PortalArmador() {
+export default function PortalProprietario() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [showCamera, setShowCamera] = useState(false)
@@ -58,7 +58,7 @@ export default function PortalArmador() {
             </div>
           </div>
           <button 
-            onClick={() => navigate('/acesso-armador')}
+            onClick={() => navigate('/acesso-proprietario')}
             className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-white transition-colors"
           >
             Sair do Cofre

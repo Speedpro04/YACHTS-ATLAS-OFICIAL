@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Lock, Mail, ArrowRight, Shield, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { Lock, Mail, ArrowLeft, ArrowRight, Shield, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import LanguageSwitcher from '../components/LanguageSwitcher'
@@ -107,6 +107,14 @@ export default function Login() {
 
       {/* Right Side: Login Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-24 xl:px-40 relative bg-[#010c20]">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-8 left-8 flex items-center gap-2 text-white/40 hover:text-[#c5a059] transition-all duration-300 group"
+        >
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Voltar</span>
+        </button>
         {/* Mobile Header */}
         <div 
           className="lg:hidden mb-12 flex flex-col items-center justify-center p-12 rounded-2xl"

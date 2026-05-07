@@ -53,7 +53,7 @@ export interface Dossie {
   ativo_id: string;
   marina_id: string;
   requested_by: string;
-  dossie_type: 'venda' | 'seguradora' | 'armador';
+  dossie_type: 'venda' | 'seguradora' | 'proprietario';
   porte_level: 'compact' | 'executive' | 'superyacht';
   language: string;
   price_charged: number;

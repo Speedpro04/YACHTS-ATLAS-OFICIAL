@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     STRIPE_PRICE_ID: str = os.getenv("STRIPE_PRICE_ID", "")
     
+    # Referral Program — real limit is 30 (frontend displays 14 for scarcity)
+    REFERRAL_MAX_SLOTS: int = 30
+    REFERRAL_DOSSIER_SHARE_PERCENT: int = 100  # 100% for referred marinas
+    REFERRAL_REWARD_MONTHS: int = 12
+    REFERRAL_MIN_RETENTION_MONTHS: int = 3  # referred marina must stay 3 months
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

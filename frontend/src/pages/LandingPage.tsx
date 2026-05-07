@@ -1,4 +1,4 @@
-import { Shield, ArrowRight, History, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor } from 'lucide-react'
+import { Shield, ArrowRight, History, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Gift, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Header from '../components/Header'
@@ -195,6 +195,83 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* REFERRAL PROGRAM SECTION */}
+      <section className="py-32 relative overflow-hidden border-t border-white/5">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#c5a059]/[0.03] to-transparent pointer-events-none"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#c5a059]/5 blur-[150px] rounded-full pointer-events-none"></div>
+        
+        <div className="max-w-5xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#c5a059]/30 bg-[#c5a059]/5 backdrop-blur-sm mb-8">
+              <Gift size={14} className="text-[#c5a059]" />
+              <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">{t('lp.referral_badge')}</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 tracking-tight">
+              {t('lp.referral_title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">{t('lp.referral_title_highlight')}</span>
+            </h2>
+            <p className="text-white/50 text-lg max-w-2xl mx-auto leading-relaxed font-light">
+              {t('lp.referral_subtitle')}
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-[#021431] to-[#010c20] border border-[#c5a059]/20 rounded-sm p-12 md:p-16 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#c5a059]/5 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+            
+            <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="w-10 h-10 rounded-full bg-[#c5a059]/20 border-2 border-[#010c20] flex items-center justify-center">
+                        <Anchor size={14} className="text-[#c5a059]" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="h-8 w-px bg-white/10"></div>
+                  <span className="text-[10px] font-black tracking-[0.2em] text-[#c5a059] uppercase">{t('lp.referral_how')}</span>
+                </div>
+
+                <div className="space-y-6">
+                  {[
+                    { step: '01', text: t('lp.referral_step_1') },
+                    { step: '02', text: t('lp.referral_step_2') },
+                    { step: '03', text: t('lp.referral_step_3') }
+                  ].map(item => (
+                    <div key={item.step} className="flex gap-4 items-start">
+                      <span className="text-[#c5a059] font-serif font-bold text-2xl leading-none">{item.step}</span>
+                      <p className="text-white/60 text-sm leading-relaxed">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-center md:text-right">
+                <div className="inline-block bg-[#c5a059]/10 border border-[#c5a059]/30 rounded-sm p-8 md:p-10">
+                  <p className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase mb-3">{t('lp.referral_reward_label')}</p>
+                  <p className="text-5xl md:text-6xl font-serif font-bold text-white mb-2">100%</p>
+                  <p className="text-white/40 text-sm font-light mb-6">{t('lp.referral_reward_desc')}</p>
+                  <div className="w-full h-px bg-[#c5a059]/20 mb-6"></div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Users size={14} className="text-[#c5a059]" />
+                    <span className="text-[10px] font-black tracking-[0.2em] text-white/80 uppercase">{t('lp.referral_slots')}</span>
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <Link 
+                    to="/registro-marina" 
+                    className="inline-flex items-center gap-3 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[#c5a059]/10 hover:-translate-y-0.5"
+                  >
+                    {t('lp.referral_cta')}
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AUTHORITY SECTION */}
       <section className="py-40 bg-[#010c20] relative overflow-hidden border-y border-white/5">
         <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
@@ -205,14 +282,14 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid lg:grid-cols-12 gap-16 items-center">
             <div className="lg:col-span-6 relative">
-               <div className="relative rounded-sm overflow-hidden shadow-2xl group">
+               <div className="relative rounded-sm group">
                  <img 
                    src="/turquoise-yacht.png?v=2" 
                    alt="Luxury Turquoise Yacht" 
                    className="w-full h-[600px] object-cover transition-transform duration-1000 group-hover:scale-105"
                    loading="lazy"
                  />
-                 <div className="absolute bottom-8 left-8 right-8 bg-[#021431]/95 backdrop-blur-xl border border-[#c5a059]/30 p-8 rounded-sm shadow-2xl">
+                 <div className="absolute bottom-[-118px] left-8 right-8 z-20 bg-[#021431]/95 backdrop-blur-xl border border-[#c5a059]/30 p-8 rounded-sm shadow-2xl">
                     <div className="flex items-center gap-6 mb-6">
                        <img src="/logo-transparent.png" alt="Atlas Logo" className="w-16 h-auto" />
                        <div className="h-10 w-px bg-white/10"></div>

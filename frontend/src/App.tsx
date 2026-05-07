@@ -10,8 +10,9 @@ import Frota from './pages/Frota'
 import Seguranca from './pages/Seguranca'
 import RegistroMarina from './pages/RegistroMarina'
 import PagamentoDossie from './pages/PagamentoDossie'
-import LoginArmador from './pages/LoginArmador'
-import PortalArmador from './pages/PortalArmador'
+import LoginProprietario from './pages/LoginProprietario'
+import Parceiros from './pages/Parceiros'
+import PortalProprietario from './pages/PortalProprietario'
 
 function App() {
   return (
@@ -21,8 +22,8 @@ function App() {
         <Route path="/frota" element={<Frota />} />
         <Route path="/seguranca" element={<Seguranca />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/acesso-armador" element={<LoginArmador />} />
-        <Route path="/portal-armador" element={<PortalArmador />} />
+        <Route path="/acesso-proprietario" element={<LoginProprietario />} />
+        <Route path="/portal-proprietario" element={<PortalProprietario />} />
         <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/app" element={<Layout />}>
           <Route index element={<Dashboard />} />
