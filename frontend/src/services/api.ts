@@ -95,4 +95,19 @@ export const api = {
     verify: (docId: string) => apiRequest(`/integridade/${docId}/verify`),
     relatorio: (ativoId: string) => apiRequest(`/integridade/ativo/${ativoId}/relatorio`),
   },
+  pagamentos: {
+    planos: () => apiRequest('/payments/plans'),
+    checkoutDossie: (data: {
+      dossier_level: 'compact' | 'executive' | 'superyacht',
+      ativo_id: string,
+      success_url: string,
+      cancel_url: string,
+    }) => apiRequest(`/payments/checkout/dossier?dossier_level=${data.dossier_level}&ativo_id=${data.ativo_id}&success_url=${encodeURIComponent(data.success_url)}&cancel_url=${encodeURIComponent(data.cancel_url)}`, { method: 'POST' }),
+    checkoutOnboarding: (data: {
+      email: string,
+      marina_id: string,
+      success_url: string,
+      cancel_url: string,
+    }) => apiRequest('/payments/checkout/onboarding', { method: 'POST', body: JSON.stringify(data) }),
+  },
 }

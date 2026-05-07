@@ -43,6 +43,7 @@ export interface Ativo {
   porte_categoria: 'compact' | 'executive' | 'superyacht';
   progresso: number;
   status: 'ativo' | 'inativo' | 'vendido' | 'manutencao';
+  health_status?: Record<string, 'ok' | 'warning' | 'critical' | 'info' | 'na'>;
   created_at: string;
 }
 
