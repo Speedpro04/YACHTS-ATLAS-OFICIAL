@@ -258,7 +258,7 @@ export default function Ativos() {
               <div className="lg:w-1/3 space-y-6">
                 <div className="relative group rounded-sm overflow-hidden border border-white/10 aspect-video">
                   <img 
-                    src="/ai-generated-boat-picture.jpg"
+                    src="/boat-picture-light.jpg"
                     alt="Embarcação" 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                   />

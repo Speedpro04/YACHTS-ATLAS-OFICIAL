@@ -14,7 +14,7 @@ export default function LandingPage() {
       <section className="relative min-h-[calc(100vh-166px+100px)] mt-[166px] flex items-center justify-center overflow-hidden py-[50px]">
         <div className="absolute inset-0">
           <img 
-            src="/hero-yacht-v2.png?v=2" 
+            src="/hero-yacht-v2-light.jpg" 
             alt="Luxury Yacht" 
             className="w-full h-full object-cover animate-slow-zoom"
             loading="lazy"
@@ -195,82 +195,52 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* REFERRAL PROGRAM SECTION */}
-      <section className="py-32 relative overflow-hidden border-t border-white/5">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#c5a059]/[0.03] to-transparent pointer-events-none"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#c5a059]/5 blur-[150px] rounded-full pointer-events-none"></div>
-        
-        <div className="max-w-5xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#c5a059]/30 bg-[#c5a059]/5 backdrop-blur-sm mb-8">
-              <Gift size={14} className="text-[#c5a059]" />
-              <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">{t('lp.referral_badge')}</span>
+      {/* CURIOSITY TEASER SECTION - THE GENESIS PROTOCOL */}
+      <section className="py-40 bg-[#010c20] relative overflow-hidden border-t border-white/5 flex items-center justify-center">
+         <div className="absolute inset-0 bg-[url('/fleet-hero-light.jpg')] bg-cover bg-center opacity-5 mix-blend-luminosity"></div>
+         <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-[#010c20]/80 to-[#010c20]"></div>
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c5a059]/5 blur-[150px] rounded-full pointer-events-none"></div>
+         
+         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+            <div className="w-16 h-16 mx-auto bg-[#c5a059]/5 border border-[#c5a059]/20 flex items-center justify-center mb-10 relative group cursor-pointer hover:border-[#c5a059]/50 transition-all duration-700">
+               <div className="absolute inset-0 bg-[#c5a059] opacity-0 group-hover:opacity-10 transition-opacity duration-700"></div>
+               <Lock size={20} className="text-[#c5a059] group-hover:scale-110 transition-transform duration-700" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 tracking-tight">
-              {t('lp.referral_title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">{t('lp.referral_title_highlight')}</span>
-            </h2>
-            <p className="text-white/50 text-lg max-w-2xl mx-auto leading-relaxed font-light">
-              {t('lp.referral_subtitle')}
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#021431] to-[#010c20] border border-[#c5a059]/20 rounded-sm p-12 md:p-16 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#c5a059]/5 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
             
-            <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="w-10 h-10 rounded-full bg-[#c5a059]/20 border-2 border-[#010c20] flex items-center justify-center">
-                        <Anchor size={14} className="text-[#c5a059]" />
-                      </div>
-                    ))}
+            <h2 className="text-5xl md:text-7xl font-serif font-bold text-white mb-8 tracking-tight leading-tight">
+               O Protocolo <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Genesis.</span>
+            </h2>
+            
+            <p className="text-white/40 text-lg md:text-xl mb-16 font-light leading-relaxed max-w-2xl mx-auto">
+               Não aceitamos qualquer marina. Estamos selecionando rigorosamente 40 parceiros fundadores para operar com um modelo de negócio que nunca mais será repetido.
+            </p>
+            
+            <div className="inline-block p-[1px] bg-gradient-to-b from-white/10 via-[#c5a059]/30 to-transparent rounded-sm relative group">
+               <div className="absolute -inset-2 bg-gradient-to-r from-[#c5a059]/0 via-[#c5a059]/10 to-[#c5a059]/0 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+               <div className="bg-[#021431]/90 px-12 py-10 rounded-sm backdrop-blur-xl relative z-10 border border-[#010c20]">
+                  <div className="flex items-center justify-center gap-3 mb-6">
+                     <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></span>
+                     <p className="text-[10px] text-[#c5a059] font-black uppercase tracking-[0.4em]">Confidencial</p>
                   </div>
-                  <div className="h-8 w-px bg-white/10"></div>
-                  <span className="text-[10px] font-black tracking-[0.2em] text-[#c5a059] uppercase">{t('lp.referral_how')}</span>
-                </div>
-
-                <div className="space-y-6">
-                  {[
-                    { step: '01', text: t('lp.referral_step_1') },
-                    { step: '02', text: t('lp.referral_step_2') },
-                    { step: '03', text: t('lp.referral_step_3') }
-                  ].map(item => (
-                    <div key={item.step} className="flex gap-4 items-start">
-                      <span className="text-[#c5a059] font-serif font-bold text-2xl leading-none">{item.step}</span>
-                      <p className="text-white/60 text-sm leading-relaxed">{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="text-center md:text-right">
-                <div className="inline-block bg-[#c5a059]/10 border border-[#c5a059]/30 rounded-sm p-8 md:p-10">
-                  <p className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase mb-3">{t('lp.referral_reward_label')}</p>
-                  <p className="text-5xl md:text-6xl font-serif font-bold text-white mb-2">100%</p>
-                  <p className="text-white/40 text-sm font-light mb-6">{t('lp.referral_reward_desc')}</p>
-                  <div className="w-full h-px bg-[#c5a059]/20 mb-6"></div>
-                  <div className="flex items-center justify-center gap-2">
-                    <Users size={14} className="text-[#c5a059]" />
-                    <span className="text-[10px] font-black tracking-[0.2em] text-white/80 uppercase">{t('lp.referral_slots')}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8">
+                  
+                  <p className="text-white/80 text-sm mb-10 font-light max-w-sm mx-auto">
+                     O que acontece quando você se torna um parceiro fundador do Yachts Atlas?
+                  </p>
+                  
                   <Link 
-                    to="/registro-marina" 
-                    className="inline-flex items-center gap-3 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[#c5a059]/10 hover:-translate-y-0.5"
+                    to="/marina-parceira" 
+                    className="inline-flex items-center gap-4 bg-transparent border border-[#c5a059]/50 hover:bg-[#c5a059] hover:border-[#c5a059] hover:text-[#010c20] text-[#c5a059] px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 overflow-hidden relative"
                   >
-                    {t('lp.referral_cta')}
-                    <ArrowRight size={14} />
+                     <span className="relative z-10 flex items-center gap-3">
+                       Desbloquear Arquivo
+                       <Eye size={14} />
+                     </span>
                   </Link>
-                </div>
-              </div>
+               </div>
             </div>
-          </div>
-        </div>
+         </div>
       </section>
+
 
       {/* AUTHORITY SECTION */}
       <section className="py-40 bg-[#010c20] relative overflow-hidden border-y border-white/5">
@@ -284,7 +254,7 @@ export default function LandingPage() {
             <div className="lg:col-span-6 relative">
                <div className="relative rounded-sm group">
                  <img 
-                   src="/turquoise-yacht.png?v=2" 
+                   src="/turquoise-yacht-light.jpg" 
                    alt="Luxury Turquoise Yacht" 
                    className="w-full h-[600px] object-cover transition-transform duration-1000 group-hover:scale-105"
                    loading="lazy"

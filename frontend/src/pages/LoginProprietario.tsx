@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Anchor, User, Lock, ArrowLeft, ArrowRight, Shield, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import LanguageSwitcher from '../components/LanguageSwitcher'
 
 export default function LoginProprietario() {
   const navigate = useNavigate()
@@ -115,9 +114,6 @@ export default function LoginProprietario() {
         <div className={`mb-12 ${mounted ? 'animate-in fade-in slide-in-from-right-8 duration-700' : ''}`}>
            <div className="flex items-center justify-between mb-4">
              <h3 className="text-white/40 text-[12px] font-black uppercase tracking-[0.4em] hidden lg:block">Proprietário</h3>
-             <div className="bg-white/5 border border-white/10 rounded-sm p-1 ml-auto">
-                <LanguageSwitcher />
-             </div>
            </div>
            <h4 className="text-3xl font-serif font-bold text-white tracking-tight">Acesso ao Cofre</h4>
         </div>

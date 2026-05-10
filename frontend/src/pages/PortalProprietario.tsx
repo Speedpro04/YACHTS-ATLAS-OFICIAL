@@ -81,7 +81,7 @@ export default function PortalProprietario() {
         {/* Vessel Banner */}
         <div className="relative rounded-sm overflow-hidden border border-white/10 aspect-[21/9] md:aspect-[21/6] mb-12 group">
           <img 
-            src="/ai-generated-boat-picture.jpg"
+            src="/boat-picture-light.jpg"
             alt="Embarcação" 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
           />

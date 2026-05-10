@@ -9,9 +9,10 @@ import LandingPage from './pages/LandingPage'
 import Frota from './pages/Frota'
 import Seguranca from './pages/Seguranca'
 import RegistroMarina from './pages/RegistroMarina'
+import MarinaParceira from './pages/MarinaParceira'
 import PagamentoDossie from './pages/PagamentoDossie'
-import LoginProprietario from './pages/LoginProprietario'
 import Parceiros from './pages/Parceiros'
+import LoginProprietario from './pages/LoginProprietario'
 import PortalProprietario from './pages/PortalProprietario'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/acesso-proprietario" element={<LoginProprietario />} />
         <Route path="/portal-proprietario" element={<PortalProprietario />} />
         <Route path="/registro-marina" element={<RegistroMarina />} />
+        <Route path="/marina-parceira" element={<MarinaParceira />} />
         <Route path="/app" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="ativos" element={<Ativos />} />

@@ -12,7 +12,7 @@ export default function Frota() {
         <section className="relative py-[328px] overflow-hidden border-b border-white/5">
           <div className="absolute inset-0">
             <img 
-              src="/hero-yacht.jpg?v=2" 
+              src="/fleet-hero-light.jpg" 
               alt="Azimut Yacht" 
               className="w-full h-full object-cover"
               loading="lazy"
@@ -45,7 +45,7 @@ export default function Frota() {
               <div className="lg:col-span-7">
                  <div className="relative rounded-sm overflow-hidden group shadow-2xl">
                     <img 
-                      src="/hero-yacht-v2.png?v=2" 
+                      src="/smala-light.jpg" 
                       alt="Superyacht" 
                       className="w-full h-[500px] object-cover transition-transform duration-1000 group-hover:scale-105 brightness-75"
                       loading="lazy"

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Lock, Mail, ArrowLeft, ArrowRight, Shield, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import LanguageSwitcher from '../components/LanguageSwitcher'
 import { useTranslation } from 'react-i18next'
 
 export default function Login() {
@@ -130,9 +129,6 @@ export default function Login() {
         <div className={`mb-12 ${mounted ? 'animate-in fade-in slide-in-from-right-8 duration-700' : ''}`}>
            <div className="flex items-center justify-between mb-4">
              <h3 className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em] hidden lg:block">{t('auth.personal_security')}</h3>
-             <div className="bg-white/5 border border-white/10 rounded-sm p-1 ml-auto">
-                <LanguageSwitcher />
-             </div>
            </div>
            <h4 className="text-4xl font-serif font-bold text-white tracking-tight">{t('auth.secure_login')}</h4>
         </div>
