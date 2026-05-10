@@ -67,9 +67,9 @@ export default function Seguranca() {
            <div className="max-w-7xl mx-auto px-6 relative z-10">
               <div className="grid lg:grid-cols-2 gap-24 items-center">
                  <div>
-                    <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-8 tracking-tight">O DNA do seu Ativo, Blindado.</h2>
+                    <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-8 tracking-tight">A Única Fonte de Verdade <br/><span className="text-[#c5a059] italic text-2xl md:text-3xl">Single Source of Truth</span></h2>
                     <p className="text-white/40 text-lg leading-relaxed mb-12 font-light">
-                      Nossa arquitetura foi desenhada para atender aos padrões mais rigorosos de auditoria internacional. Não somos apenas um software de gestão; somos uma camada de confiança para o mercado marítimo global.
+                      Mais do que um repositório, o seu Dossiê Atlas funciona como um registro imutável. Durante processos de auditoria, renovação de seguros ou transações de compra e venda, nossa tecnologia oferece a todas as partes envolvidas a garantia de um histórico técnico certificado e livre de interferências.
                     </p>
                     
                     <div className="space-y-8">

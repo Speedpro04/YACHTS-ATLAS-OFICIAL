@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { Ativo } from '../types'
-import { Ship, Plus, Trash2, Anchor, Filter, Search, ChevronRight, X, ArrowLeft, Download, ExternalLink, Award, Camera } from 'lucide-react'
+import { Ship, Plus, Trash2, Anchor, Filter, Search, ChevronRight, X, ArrowLeft, Download, ExternalLink, Award, Camera, FileCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import AssetHealthDashboard from '../components/AssetHealthDashboard'
 import SecureCameraUpload from '../components/SecureCameraUpload'
+import TechnicalFormOverlay from '../components/TechnicalFormOverlay'
 
 export default function Ativos() {
   const { t } = useTranslation()
@@ -23,14 +24,129 @@ export default function Ativos() {
     ano_fabricacao: new Date().getFullYear(),
   })
   
+  const [editingCategory, setEditingCategory] = useState<string | null>(null)
+  
+  // Fake Dossier Data for Prototyping
+  const mockDossiers: Record<string, any> = {
+    '1a2b3c': {
+      imo_number: 'IMO 9876543',
+      flag: 'Malta',
+      hull_material: 'Fibra de Carbono / GRP',
+      engines: [
+        { manufacturer: 'MTU', model: '16V 2000 M96L', hp: 2600, hours: 120 },
+        { manufacturer: 'MTU', model: '16V 2000 M96L', hp: 2600, hours: 121 }
+      ],
+      last_ultrasound: '20 Mai 2026',
+      ultrasound_result: 'Aprovado - Integridade 99.8%',
+      inspector: 'Atlas Global Surveyors',
+      photo: '/moored-yacht-mediterranean-sea-port-buildings-street-greenery-barcelona-spain.jpg',
+      maintenance_history: [
+        { date: '15 Mar 2026', service: 'Revisão 100h Motores', status: 'concluido' },
+        { date: '02 Jan 2026', service: 'Troca de Estabilizadores Seakeeper', status: 'concluido' }
+      ]
+    },
+    '4d5e6f': {
+      imo_number: 'REG 5544332',
+      flag: 'Brasil',
+      hull_material: 'Fibra de Vidro Reforçada',
+      engines: [
+        { manufacturer: 'MAN', model: 'V12-1400', hp: 1400, hours: 450 },
+        { manufacturer: 'MAN', model: 'V12-1400', hp: 1400, hours: 455 }
+      ],
+      last_ultrasound: '05 Jan 2026',
+      ultrasound_result: 'Aprovado - Requer Pintura Antivegetativa',
+      inspector: 'DNV Certified Inspector',
+      photo: '/ai-generated-boat-picture.jpg',
+      maintenance_history: [
+        { date: '10 Fev 2026', service: 'Pintura Antivegetativa (Fundo)', status: 'concluido' },
+        { date: '12 Out 2025', service: 'Revisão de Geradores Onan', status: 'concluido' }
+      ]
+    },
+    '7g8h9i': {
+      imo_number: 'BR-4433221',
+      flag: 'Brasil',
+      hull_material: 'GRP',
+      engines: [
+        { manufacturer: 'Volvo Penta', model: 'D6-440', hp: 440, hours: 85 }
+      ],
+      last_ultrasound: '12 Abr 2026',
+      ultrasound_result: 'Aprovado - Condição Nova',
+      inspector: 'Atlas NDT Local',
+      photo: '/ai-generated-boat-picture (1).jpg',
+      maintenance_history: [
+        { date: '20 Abr 2026', service: 'Instalação de Sistema de Som Fusion', status: 'concluido' },
+        { date: '15 Jan 2026', service: 'Entrega Técnica e Revisão Zero', status: 'concluido' }
+      ]
+    }
+  }
+
+  // Helper to get current dossier
+  const currentDossier = selectedAtivo ? (mockDossiers[selectedAtivo.id] || mockDossiers['1a2b3c']) : null;
+  
   useEffect(() => {
     loadAtivos()
   }, [])
   
   const loadAtivos = async () => {
     try {
-      const data = await api.ativos.list()
-      setAtivos(data)
+      // const data = await api.ativos.list()
+      
+      // MOCK DATA: 3 Embarcações (Fake) para Protótipo
+      const mockData: Ativo[] = [
+        {
+          id: '1a2b3c',
+          marina_id: 'm1111111-1111-1111-1111-111111111111',
+          owner_id: 'u1111111-1111-1111-1111-111111111111',
+          proprietario_nome: 'Roberto Marinho Jr.',
+          marca: 'Azimut',
+          modelo: 'Grande Trideck',
+          ano_fabricacao: 2023,
+          comprimento_pes: 100,
+          tipo: 'iate',
+          porte_categoria: 'superyacht',
+          classificacao: 'gold',
+          progresso: 100,
+          status: 'ativo',
+          created_at: '2023-01-15T00:00:00Z'
+        },
+        {
+          id: '4d5e6f',
+          marina_id: 'm1111111-1111-1111-1111-111111111111',
+          owner_id: 'u2222222-2222-2222-2222-222222222222',
+          proprietario_nome: 'Dra. Isabella Diniz',
+          marca: 'Ferretti',
+          modelo: 'Yachts 780',
+          ano_fabricacao: 2021,
+          comprimento_pes: 79,
+          tipo: 'iate',
+          porte_categoria: 'executive',
+          classificacao: 'silver',
+          progresso: 85,
+          status: 'ativo',
+          created_at: '2021-06-10T00:00:00Z'
+        },
+        {
+          id: '7g8h9i',
+          marina_id: 'm1111111-1111-1111-1111-111111111111',
+          owner_id: 'u3333333-3333-3333-3333-333333333333',
+          proprietario_nome: 'Dr. Fernando Almeida',
+          marca: 'Focker',
+          modelo: '450 Gran Coupe',
+          ano_fabricacao: 2020,
+          comprimento_pes: 45,
+          tipo: 'lancha',
+          porte_categoria: 'compact',
+          classificacao: 'bronze',
+          progresso: 45,
+          status: 'ativo',
+          created_at: '2020-03-20T00:00:00Z'
+        }
+      ]
+      
+      // Simulando delay de rede
+      await new Promise(resolve => setTimeout(resolve, 800))
+      setAtivos(mockData)
+      
     } catch (err) {
       console.error('Erro:', err)
     } finally {
@@ -183,7 +299,7 @@ export default function Ativos() {
                 {ativos.map((ativo) => (
                   <tr key={ativo.id} className="group hover:bg-[#c5a059]/[0.02] transition-all duration-500">
                     <td className="py-8 px-8">
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-6 cursor-pointer" onClick={() => setSelectedAtivo(ativo)}>
                         <div className="w-16 h-16 bg-[#010c20] border border-white/10 rounded-sm flex items-center justify-center text-[#c5a059] group-hover:border-[#c5a059]/50 group-hover:bg-[#021a3d] transition-all duration-700">
                           <Ship size={32} strokeWidth={1} />
                         </div>
@@ -258,7 +374,7 @@ export default function Ativos() {
               <div className="lg:w-1/3 space-y-6">
                 <div className="relative group rounded-sm overflow-hidden border border-white/10 aspect-video">
                   <img 
-                    src="/boat-picture-light.jpg"
+                    src={currentDossier?.photo || "/boat-picture-light.jpg"}
                     alt="Embarcação" 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                   />
@@ -280,20 +396,20 @@ export default function Ativos() {
                    
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-1">
-                         <span className="block text-[8px] uppercase tracking-widest text-white/20 font-black">Fabricante</span>
-                         <span className="block text-sm text-white/70 font-medium">{selectedAtivo.marca}</span>
+                         <span className="block text-[10px] uppercase tracking-widest text-white/40 font-medium">Fabricante</span>
+                         <span className="block text-[20px] text-[#F0EDE6] font-semibold">{selectedAtivo.marca}</span>
                       </div>
                       <div className="space-y-1">
-                         <span className="block text-[8px] uppercase tracking-widest text-white/20 font-black">Ano</span>
-                         <span className="block text-sm text-white/70 font-medium">{selectedAtivo.ano_fabricacao}</span>
+                         <span className="block text-[10px] uppercase tracking-widest text-white/40 font-medium">Ano</span>
+                         <span className="block text-[20px] text-[#F0EDE6] font-semibold">{selectedAtivo.ano_fabricacao}</span>
                       </div>
                       <div className="space-y-1">
-                         <span className="block text-[8px] uppercase tracking-widest text-white/20 font-black">Comprimento</span>
-                         <span className="block text-sm text-white/70 font-medium">{selectedAtivo.comprimento_pes} pés</span>
+                         <span className="block text-[10px] uppercase tracking-widest text-white/40 font-medium">Comprimento</span>
+                         <span className="block text-[20px] text-[#F0EDE6] font-semibold">{selectedAtivo.comprimento_pes} pés</span>
                       </div>
                       <div className="space-y-1">
-                         <span className="block text-[8px] uppercase tracking-widest text-white/20 font-black">Progresso</span>
-                         <span className="block text-sm text-white/70 font-medium">{selectedAtivo.progresso}%</span>
+                         <span className="block text-[10px] uppercase tracking-widest text-white/40 font-medium">Progresso</span>
+                         <span className="block text-[20px] text-[#F0EDE6] font-semibold">{selectedAtivo.progresso}%</span>
                       </div>
                    </div>
                    
@@ -342,7 +458,7 @@ export default function Ativos() {
                  </div>
                  
                  <AssetHealthDashboard 
-                    healthData={{
+                    healthData={selectedAtivo.health_status || {
                       documentacao: 'ok',
                       manutencao: 'warning',
                       motor: 'ok',
@@ -352,8 +468,83 @@ export default function Ativos() {
                       interior: 'ok',
                       dossie: 'na'
                     }}
-                    onCategoryClick={(cat) => console.log('Categoria clicada:', cat)}
+                    onCategoryClick={(cat) => setEditingCategory(cat)}
                  />
+                 
+                 {/* Relatório Básico do Dossiê */}
+                 <div className="bg-[#021a3d]/50 border border-white/10 p-8 rounded-sm shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#c5a059]/5 blur-[50px] rounded-full pointer-events-none"></div>
+                    
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                       <h4 className="text-sm font-serif font-bold tracking-tight text-white flex items-center gap-3">
+                         <FileCheck size={18} className="text-[#c5a059]" />
+                         Relatório Básico (Extrato do Dossiê)
+                       </h4>
+                       <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#c5a059] border border-[#c5a059]/30 px-3 py-1 rounded-sm bg-[#c5a059]/10">Imutável</span>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8 relative z-10">
+                       {/* Identidade */}
+                       <div className="space-y-4">
+                         <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 border-b border-white/5 pb-2">Identidade Técnica</h5>
+                         <div className="space-y-3">
+                           <div className="flex justify-between">
+                             <span className="text-xs text-white/50">Registro IMO</span>
+                             <span className="text-xs text-[#F0EDE6] font-medium">{currentDossier?.imo_number}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-xs text-white/50">Bandeira</span>
+                             <span className="text-xs text-[#F0EDE6] font-medium">{currentDossier?.flag}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-xs text-white/50">Material do Casco</span>
+                             <span className="text-xs text-[#F0EDE6] font-medium">{currentDossier?.hull_material}</span>
+                           </div>
+                         </div>
+                       </div>
+
+                       {/* Inspeção END */}
+                       <div className="space-y-4">
+                         <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#c5a059] border-b border-[#c5a059]/20 pb-2 flex items-center gap-2">
+                           <Search size={12} />
+                           Laudo Ultrassom (END)
+                         </h5>
+                         <div className="space-y-3">
+                           <div className="flex justify-between">
+                             <span className="text-xs text-white/50">Última Análise</span>
+                             <span className="text-xs text-[#F0EDE6] font-medium">{currentDossier?.last_ultrasound}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-xs text-white/50">Diagnóstico</span>
+                             <span className="text-xs text-emerald-400 font-medium">{currentDossier?.ultrasound_result}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-xs text-white/50">Inspetor</span>
+                             <span className="text-xs text-[#F0EDE6] font-medium">{currentDossier?.inspector}</span>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       {/* Motorização */}
+                       <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-white/5">
+                         <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 pb-2">Motorização Principal</h5>
+                         <div className="grid grid-cols-2 gap-4">
+                           {currentDossier?.engines.map((engine: any, idx: number) => (
+                             <div key={idx} className="bg-white/5 p-4 rounded-sm border border-white/5 flex justify-between items-center">
+                               <div>
+                                 <span className="block text-[10px] text-white/40 uppercase tracking-widest mb-1">Motor {idx + 1}</span>
+                                 <span className="block text-sm text-[#F0EDE6] font-semibold">{engine.manufacturer} {engine.model}</span>
+                               </div>
+                               <div className="text-right">
+                                 <span className="block text-xs text-[#c5a059] font-bold">{engine.hp} HP</span>
+                                 <span className="block text-[10px] text-white/40 mt-1">{engine.hours} horas</span>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                    </div>
+                 </div>
                  
                  {/* Log de Auditoria */}
                  <div className="bg-white/[0.02] border border-white/5 p-8 rounded-sm">
@@ -393,6 +584,21 @@ export default function Ativos() {
           onUploadSuccess={(hash) => {
             alert(`Sucesso! Foto criptografada e enviada.\nHash SHA-256:\n${hash}`)
             setShowCamera(false)
+          }}
+        />
+      )}
+
+      {editingCategory && selectedAtivo && (
+        <TechnicalFormOverlay 
+          category={editingCategory}
+          ativoId={selectedAtivo.id}
+          ativoName={`${selectedAtivo.marca} ${selectedAtivo.modelo}`}
+          onClose={() => setEditingCategory(null)}
+          onSave={(data) => {
+            console.log('Dados salvos:', data)
+            // Aqui futuramente chamaremos a API do Supabase
+            alert(`Registro de ${editingCategory} salvo com sucesso!`)
+            setEditingCategory(null)
           }}
         />
       )}

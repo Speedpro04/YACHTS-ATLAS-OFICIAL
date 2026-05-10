@@ -25,8 +25,12 @@ export default function Login() {
     setError('')
     
     try {
-      const data = await api.auth.login(email, password)
-      localStorage.setItem('yachts_token', data.access_token)
+      // PASSE LIVRE (Free Pass) para Desenvolvimento
+      // const data = await api.auth.login(email, password)
+      // localStorage.setItem('yachts_token', data.access_token)
+      
+      await new Promise(resolve => setTimeout(resolve, 800)) // fake delay
+      localStorage.setItem('yachts_token', 'dev_free_pass')
       navigate('/app')
     } catch (err) {
       setError(t('auth.error_credentials'))

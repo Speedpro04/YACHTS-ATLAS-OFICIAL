@@ -33,6 +33,7 @@ export interface Ativo {
   id: string;
   marina_id: string;
   owner_id?: string;
+  proprietario_nome?: string;
   tipo: 'iate' | 'lancha' | 'veleiro' | 'jetski' | 'barco_pesca';
   marca: string;
   modelo: string;
