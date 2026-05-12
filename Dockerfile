@@ -9,9 +9,12 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY frontend/ ./
+
+# Garantir permissões de execução nos binários do node_modules
+RUN chmod -R +x node_modules/.bin
 
 # Variáveis do Frontend injetadas pelo EasyPanel
 ARG VITE_SUPABASE_URL
