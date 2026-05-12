@@ -26,7 +26,7 @@ ENV VITE_API_URL=/api/v1
 RUN npm run build
 
 # --- Stage 2: Final Image (Python + Nginx + Supervisord) ---
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 # Instalar nginx e supervisor
 RUN apt-get update && apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
