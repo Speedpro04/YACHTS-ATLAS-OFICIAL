@@ -34,14 +34,14 @@ FROM python:3.11-slim-bookworm
 # Instalar nginx e supervisor
 RUN apt-get update && apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+WORKDIR /app/backend
 
 # Instalar dependências do Backend
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código do Backend
-COPY backend/ ./backend/
+COPY backend/ ./
 
 # Copiar build do Frontend para o Nginx
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
@@ -86,6 +86,7 @@ stderr_logfile_maxbytes=0\n\
 [program:uvicorn]\n\
 command=uvicorn app.main:app --host 127.0.0.1 --port 8000\n\
 directory=/app/backend\n\
+environment=PYTHONPATH="/app/backend"\n\
 autostart=true\n\
 autorestart=true\n\
 stdout_logfile=/dev/stdout\n\
