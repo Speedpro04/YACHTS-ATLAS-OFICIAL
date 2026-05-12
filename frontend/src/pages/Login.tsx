@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Lock, Mail, ArrowLeft, ArrowRight, Shield, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api } from '../services/api'
 import { useTranslation } from 'react-i18next'
 
 export default function Login() {

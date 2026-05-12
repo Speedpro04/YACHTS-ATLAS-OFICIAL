@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react'
 import { 
   X, 
   Save, 
-  Trash2, 
   Plus, 
   FileText, 
   Wrench, 
@@ -14,10 +13,7 @@ import {
   FileCheck,
   Calendar,
   User,
-  Clock,
-  DollarSign,
   Camera,
-  Hash,
   AlertCircle,
   Loader2
 } from 'lucide-react'
@@ -85,7 +81,7 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
         .getPublicUrl(filePath)
 
       setUploadedFiles(prev => [...prev, { name: file.name, url: data.publicUrl }])
-      setFormData(prev => ({ ...prev, arquivos: [...(prev.arquivos || []), data.publicUrl] }))
+      setFormData((prev: any) => ({ ...prev, arquivos: [...(prev.arquivos || []), data.publicUrl] }))
 
     } catch (err: any) {
       console.error('Upload error:', err)

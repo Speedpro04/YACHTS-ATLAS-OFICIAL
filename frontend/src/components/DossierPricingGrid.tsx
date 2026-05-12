@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from './DossierPricingGrid.module.css';
-import { Check, X, Shield, FileText, Anchor, Search, Zap } from 'lucide-react';
+import { X, Shield, Zap } from 'lucide-react';
 
 interface TierProps {
   id: string;

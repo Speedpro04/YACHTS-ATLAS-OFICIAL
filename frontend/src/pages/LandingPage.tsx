@@ -1,4 +1,4 @@
-import { Shield, ArrowRight, History, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Gift, Users } from 'lucide-react'
+import { Shield, ArrowRight, History, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Header from '../components/Header'

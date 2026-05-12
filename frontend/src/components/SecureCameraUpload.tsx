@@ -10,7 +10,7 @@ interface SecureCameraUploadProps {
 }
 
 export default function SecureCameraUpload({ ativoId, onUploadSuccess, onClose }: SecureCameraUploadProps) {
-  const { t } = useTranslation()
+  const { } = useTranslation()
   const [isUploading, setIsUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -46,7 +46,7 @@ export default function SecureCameraUpload({ ativoId, onUploadSuccess, onClose }
     
     try {
       // O FastAPI cuidará de gerar o Hash SHA-256 e salvar com WORM via S3
-      const response = await api.documentos.upload(formData)
+      await api.documentos.upload(ativoId, 'Vistoria', 'integridade', formData)
       // O backend retorna os dados do upload, incluindo o Hash (resposta mockada aqui por enquanto)
       const mockHash = 'a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a'
       onUploadSuccess(mockHash)

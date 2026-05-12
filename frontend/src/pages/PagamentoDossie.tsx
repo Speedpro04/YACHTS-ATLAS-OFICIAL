@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { 
   Shield, Download, CheckCircle2, AlertCircle, Lock, 
-  FileCheck, Anchor, ArrowLeft, ExternalLink, Zap, Award
+  FileCheck, ArrowLeft, ExternalLink, Zap, Award
 } from 'lucide-react'
 import { api } from '../services/api'
 import { useTranslation } from 'react-i18next'
@@ -16,7 +16,7 @@ const PRECOS = {
 }
 
 export default function PagamentoDossie() {
-  const { t } = useTranslation()
+  const { } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   

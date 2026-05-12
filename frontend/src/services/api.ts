@@ -83,7 +83,7 @@ export const api = {
   },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),
-    upload: (formData: FormData) => fetch(`${API_URL}/documentos/upload`, {
+    upload: (ativoId: string, tipo: string, categoria: string, formData: FormData) => fetch(`${API_URL}/documentos/upload/${ativoId}?tipo=${tipo}&categoria=${categoria}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('yachts_token')}` },
       body: formData,

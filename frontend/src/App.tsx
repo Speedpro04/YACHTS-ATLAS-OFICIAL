@@ -14,6 +14,8 @@ import PagamentoDossie from './pages/PagamentoDossie'
 import Parceiros from './pages/Parceiros'
 import LoginProprietario from './pages/LoginProprietario'
 import PortalProprietario from './pages/PortalProprietario'
+import SuccessDossie from './pages/SuccessDossie'
+import SuccessOnboarding from './pages/SuccessOnboarding'
 
 function App() {
   return (
@@ -27,12 +29,14 @@ function App() {
         <Route path="/portal-proprietario" element={<PortalProprietario />} />
         <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/marina-parceira" element={<MarinaParceira />} />
+        <Route path="/success" element={<SuccessOnboarding />} />
         <Route path="/app" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="ativos" element={<Ativos />} />
           <Route path="documentos" element={<Documentos />} />
           <Route path="parceiros" element={<Parceiros />} />
           <Route path="pagamento-dossie" element={<PagamentoDossie />} />
+          <Route path="dossie-sucesso" element={<SuccessDossie />} />
         </Route>
       </Routes>
     </BrowserRouter>

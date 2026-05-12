@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Ship, Download, Camera, Shield, FileCheck, ArrowRight, Anchor, CheckCircle2 } from 'lucide-react'
+import { Download, Camera, Shield, FileCheck, ArrowRight, Anchor, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AssetHealthDashboard from '../components/AssetHealthDashboard'
 import SecureCameraUpload from '../components/SecureCameraUpload'

@@ -56,7 +56,7 @@ export default function Documentos() {
     formData.append('categoria', 'registro')
     
     try {
-      await api.documentos.upload(formData)
+      await api.documentos.upload(selectedAtivo, 'documento', 'registro', formData)
       loadDocumentos(selectedAtivo)
     } catch (err) {
       console.error('Erro ao fazer upload:', err)
