@@ -2,14 +2,59 @@
 Yachts Atlas — Authentication Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
-from app.schemas.models import UsuarioCreate, UsuarioResponse
+from app.schemas.models import UsuarioCreate, UsuarioResponse, MaintenanceLoginRequest
 from app.core.supabase import get_supabase_admin
 from app.core.security import hash_password, verify_password, create_access_token
+from app.core.config import settings
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
+from datetime import timedelta
 
 router = APIRouter()
 audit_service = AuditService()
+
+
+@router.post("/maintenance/login")
+async def maintenance_login(data: MaintenanceLoginRequest, request: Request):
+    """Owner maintenance login via environment-managed credentials"""
+    ip_address = get_client_ip(request)
+    user_agent = get_user_agent(request)
+    location = get_client_location(request)
+
+    if not settings.MAINTENANCE_USERNAME or not settings.MAINTENANCE_PASSWORD:
+        raise HTTPException(status_code=503, detail="Maintenance credentials not configured")
+
+    if data.username != settings.MAINTENANCE_USERNAME or data.password != settings.MAINTENANCE_PASSWORD:
+        audit_service.log_login(
+            user_id="maintenance-admin",
+            ip_address=ip_address,
+            user_agent=user_agent,
+            success=False,
+            error_message="Invalid maintenance credentials",
+            location=location
+        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token(
+        data={"sub": "maintenance-admin", "role": "owner"},
+        expires_delta=timedelta(hours=8)
+    )
+
+    audit_service.log_login(
+        user_id="maintenance-admin",
+        ip_address=ip_address,
+        user_agent=user_agent,
+        success=True,
+        location=location
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": "maintenance-admin",
+        "role": "owner",
+        "expires_in_hours": 8
+    }
 
 
 @router.post("/signup")

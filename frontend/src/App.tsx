@@ -16,10 +16,13 @@ import LoginProprietario from './pages/LoginProprietario'
 import PortalProprietario from './pages/PortalProprietario'
 import SuccessDossie from './pages/SuccessDossie'
 import SuccessOnboarding from './pages/SuccessOnboarding'
+import SeoMeta from './components/SeoMeta'
+import TermosFundadores from './pages/TermosFundadores'
 
 function App() {
   return (
     <BrowserRouter>
+      <SeoMeta />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/frota" element={<Frota />} />
@@ -29,6 +32,7 @@ function App() {
         <Route path="/portal-proprietario" element={<PortalProprietario />} />
         <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/marina-parceira" element={<MarinaParceira />} />
+        <Route path="/termos-fundadores" element={<TermosFundadores />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route path="/app" element={<Layout />}>
           <Route index element={<Dashboard />} />

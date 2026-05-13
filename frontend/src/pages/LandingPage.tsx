@@ -309,6 +309,16 @@ export default function LandingPage() {
                 ))}
               </div>
 
+              <div className="mt-10 p-6 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm">
+                <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
+                  Founder Contract Benefit
+                </p>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  Parceiros fundadores aprovados recebem condicao comercial dedicada:
+                  receita de dossies em modelo de retencao integral por 18 meses, conforme contrato.
+                </p>
+              </div>
+
               <div className="mt-16">
                  <button className="bg-white/5 hover:bg-[#c5a059] hover:text-[#010c20] border border-white/10 text-white px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all">
                    {t('lp.explore_protocol')}
@@ -332,7 +342,7 @@ export default function LandingPage() {
             {t('lp.footer_tagline')}
           </p>
           <div className="flex justify-center gap-8 mb-12">
-            <a href="#" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.terms')}</a>
+            <Link to="/termos-fundadores" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.terms')}</Link>
             <a href="#" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.privacy')}</a>
             <a href="#" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.contact')}</a>
           </div>

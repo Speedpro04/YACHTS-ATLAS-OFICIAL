@@ -1,16 +1,40 @@
 """
 Yachts Atlas — Core Configuration
 """
+import json
 import os
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings
+
+
+def _parse_allowed_origins(raw: str | None) -> list[str]:
+    if not raw:
+        return [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://yachts.axoshub.com",
+            "https://yachtsatlas.com",
+            "https://www.yachtsatlas.com",
+        ]
+
+    raw = raw.strip()
+    if raw.startswith("["):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(origin).strip() for origin in parsed if str(origin).strip()]
+        except json.JSONDecodeError:
+            pass
+
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Yachts Atlas"
     VERSION: str = "0.1.0"
-    DEBUG: bool = True
-    ALLOWED_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+    DEBUG: bool = False
+    ALLOWED_ORIGINS: list[str] = _parse_allowed_origins(os.getenv("ALLOWED_ORIGINS"))
     
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
@@ -25,6 +49,10 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     STRIPE_PRICE_ID: str = os.getenv("STRIPE_PRICE_ID", "")
+    MAINTENANCE_USERNAME: str = os.getenv("MAINTENANCE_USERNAME", "")
+    MAINTENANCE_PASSWORD: str = os.getenv("MAINTENANCE_PASSWORD", "")
+    MAINTENANCE_BYPASS_ENABLED: bool = os.getenv("MAINTENANCE_BYPASS_ENABLED", "false").lower() == "true"
+    MAINTENANCE_MASTER_TOKEN: str = os.getenv("MAINTENANCE_MASTER_TOKEN", "")
     
     # Referral Program — real limit is 30 (frontend displays 14 for scarcity)
     REFERRAL_MAX_SLOTS: int = 30

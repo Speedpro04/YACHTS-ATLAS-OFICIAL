@@ -450,6 +450,18 @@ export default function RegistroMarina() {
                              </p>
                           </div>
                        </div>
+
+                       <div className="pt-2">
+                          <div className="p-4 bg-[#021431] border border-[#c5a059]/30 rounded-sm">
+                             <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
+                                Clausula Comercial de Dossies
+                             </p>
+                             <p className="text-white/70 text-[12px] leading-relaxed">
+                                Para parceiros aprovados no contrato fundador: receita de dossies com retencao integral por 18 meses,
+                                com marco inicial na ativacao da conta e demais condicoes definidas em instrumento contratual.
+                             </p>
+                          </div>
+                       </div>
                     </div>
                   </div>
                 )}

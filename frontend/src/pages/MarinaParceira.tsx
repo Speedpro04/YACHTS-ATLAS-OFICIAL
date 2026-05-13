@@ -60,6 +60,16 @@ export default function MarinaParceira() {
             exclusivos que não estarão disponíveis para novos parceiros após o encerramento desta fase.
           </p>
 
+          <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl mx-auto">
+            <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
+              Clausula Comercial de Dossies
+            </p>
+            <p className="text-white/70 text-sm leading-relaxed">
+              Para parceiros fundadores aprovados: receita de dossies com retencao integral por 18 meses,
+              contados da ativacao da conta, conforme instrumento contratual.
+            </p>
+          </div>
+
           <div className={styles.spotsRow}>
             <div className={styles.spotsBar}>
               <div className={styles.spotsFill} style={{ width: `${fillPercent}%` }} />
@@ -182,7 +192,7 @@ export default function MarinaParceira() {
                 <div className={styles.ctaRow}>
                   <p className={styles.disclaimer}>
                     Ao solicitar, sua marina entra na fila de análise. Retorno em até 48h via e-mail
-                    com as condições do programa.
+                    com as condições do programa e os termos comerciais aplicáveis.
                   </p>
                   <button className={styles.btn} onClick={handleSubmit}>
                     Solicitar Parceria →

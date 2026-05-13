@@ -102,6 +102,11 @@ class UsuarioResponse(BaseModel):
     nome: Optional[str] = None
 
 
+class MaintenanceLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 # --- Ativo Models ---
 
 class AtivoBase(BaseModel):
