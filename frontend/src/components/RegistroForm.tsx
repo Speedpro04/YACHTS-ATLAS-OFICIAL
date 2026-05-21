@@ -1,7 +1,7 @@
 import { Camera, Upload, Save, X } from 'lucide-react'
 
 interface RegistroFormProps {
-  onClose: () void
+  onClose: () => void
   onSave: (data: any) => void
 }
 
