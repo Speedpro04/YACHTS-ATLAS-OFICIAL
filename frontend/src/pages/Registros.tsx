@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ship, Anchor, Calendar, Clock, CheckCircle, AlertTriangle, Plus, Wrench, Shield, Zap, FileText, Camera, Activity, Oil, Box, Ship as ShipIcon } from 'lucide-react'
+import { Ship, Anchor, Calendar, Clock, CheckCircle, AlertTriangle, Plus, Wrench, Shield, Zap, FileText, Camera, Activity, Box, Ship as ShipIcon, Gauge } from 'lucide-react'
 import RegistroForm from '../components/RegistroForm'
 
 interface Registro {
@@ -12,7 +12,7 @@ interface Registro {
 }
 
 const CATEGORIAS = {
-  motor_propulsao: { label: 'Motor e Propulsão', icon: Oil, color: '#3b82f6' },
+  motor_propulsao: { label: 'Motor e Propulsão', icon: Gauge, color: '#3b82f6' },
   manutencao_mecanica: { label: 'Manutenção Mecânica', icon: Wrench, color: '#f59e0b' },
   eletrica_eletronica: { label: 'Elétrica e Eletrônica', icon: Zap, color: '#8b5cf6' },
   seguranca_salvatagem: { label: 'Segurança e Salvatagem', icon: Shield, color: '#ef4444' },
