@@ -1,11 +1,30 @@
 import { useState } from 'react'
-import {
-  Ship, Anchor, Calendar,
-  Clock, CheckCircle, AlertTriangle, Plus
-} from 'lucide-react'
+import { Ship, Anchor, Calendar, Clock, CheckCircle, AlertTriangle, Plus } from 'lucide-react'
+import RegistroForm from '../components/RegistroForm'
+
+interface Registro {
+  id: string
+  categoria: string
+  titulo: string
+  descricao: string
+  data: string
+  status: 'pending' | 'completed' | 'attention'
+}
 
 export default function Registros() {
-  const [, setShowForm] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [registros, setRegistros] = useState<Registro[]>([])
+
+  const handleSave = (data: Omit<Registro, 'id' | 'data' | 'status'>) => {
+    const newRegistro: Registro = {
+      ...data,
+      id: Date.now().toString(),
+      data: new Date().toISOString(),
+      status: 'pending'
+    }
+    setRegistros(prev => [...prev, newRegistro])
+    setShowForm(false)
+  }
 
   return (
     <div className="min-h-screen bg-[#010c20] p-4 md:p-8">
@@ -13,7 +32,7 @@ export default function Registros() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Anchor size={20} className="text-white/30 hover:text-[#c5a059] cursor-pointer transition-colors" />
+            <Anchor size={20} className="text-white/30" />
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-white">Histórico de Serviços</h1>
           </div>
           <p className="text-white/40 text-[10px] uppercase tracking-[0.4em] font-black ml-12">
@@ -36,7 +55,7 @@ export default function Registros() {
             <Clock size={20} className="text-[#c5a059]" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Total</span>
           </div>
-          <div className="text-3xl font-bold text-white">0</div>
+          <div className="text-3xl font-bold text-white">{registros.length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Registros</div>
         </div>
         <div className="bg-white/[0.02] border border-white/5 p-6 rounded-sm">
@@ -44,7 +63,7 @@ export default function Registros() {
             <CheckCircle size={20} className="text-emerald-400" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Concluídos</span>
           </div>
-          <div className="text-3xl font-bold text-white">0</div>
+          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'completed').length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Este Mês</div>
         </div>
         <div className="bg-white/[0.02] border border-white/5 p-6 rounded-sm">
@@ -52,7 +71,7 @@ export default function Registros() {
             <AlertTriangle size={20} className="text-amber-400" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Atenção</span>
           </div>
-          <div className="text-3xl font-bold text-white">0</div>
+          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'attention').length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Pendências</div>
         </div>
         <div className="bg-white/[0.02] border border-white/5 p-6 rounded-sm">
@@ -60,19 +79,40 @@ export default function Registros() {
             <Calendar size={20} className="text-[#c5a059]" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Próximos</span>
           </div>
-          <div className="text-3xl font-bold text-white">0</div>
+          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'pending').length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Agendados</div>
         </div>
       </div>
 
-      {/* Empty State */}
-      <div className="text-center py-32 bg-white/[0.01] border border-white/5 rounded-sm mt-6">
-        <Ship size={64} strokeWidth={0.5} className="mx-auto text-white/5 mb-6" />
-        <p className="text-white/20 text-lg font-serif mb-2">Nenhum registro encontrado</p>
-        <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-black">
-          Comece adicionando o primeiro registro de serviço
-        </p>
-      </div>
+      {/* Registros List */}
+      {registros.length > 0 ? (
+        <div className="mt-8 space-y-4">
+          {registros.map(registro => (
+            <div key={registro.id} className="bg-white/[0.02] border border-white/5 p-6 rounded-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-serif font-bold text-white">{registro.titulo}</h3>
+                  <p className="text-white/40 text-sm mt-1">{registro.descricao}</p>
+                </div>
+                <span className="text-[10px] uppercase tracking-widest text-white/30">
+                  {new Date(registro.data).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="text-center py-32 bg-white/[0.01] border border-white/5 rounded-sm mt-6">
+          <Ship size={64} strokeWidth={0.5} className="mx-auto text-white/5 mb-6" />
+          <p className="text-white/20 text-lg font-serif mb-2">Nenhum registro encontrado</p>
+          <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-black">
+            Comece adicionando o primeiro registro de serviço
+          </p>
+        </div>
+      )}
+
+      {showForm && <RegistroForm onClose={() => setShowForm(false)} onSave={handleSave} />}
     </div>
   )
 }

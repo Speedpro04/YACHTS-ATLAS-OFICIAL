@@ -1,15 +1,29 @@
+import { useState } from 'react'
 import { Camera, Upload, Save, X } from 'lucide-react'
 
 interface RegistroFormProps {
   onClose: () => void
-  onSave: (data: any) => void
+  onSave: (data: { categoria: string; titulo: string; descricao: string; fotos?: string[]; recibos?: string[] }) => void
 }
 
 export default function RegistroForm({ onClose, onSave }: RegistroFormProps) {
+  const [formData, setFormData] = useState({
+    categoria: 'motor_propulsao',
+    titulo: '',
+    descricao: ''
+  })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({})
+    onSave({
+      categoria: formData.categoria,
+      titulo: formData.titulo,
+      descricao: formData.descricao
+    })
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   return (
@@ -32,17 +46,20 @@ export default function RegistroForm({ onClose, onSave }: RegistroFormProps) {
               Categoria do Serviço
             </label>
             <select
+              name="categoria"
+              value={formData.categoria}
+              onChange={handleChange}
               className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-5 py-4 text-white focus:border-[#c5a059] outline-none transition-all"
             >
-              <option value="motor_propulsao" className="bg-[#010c20]">Motor e Propulsão</option>
-              <option value="manutencao_mecanica" className="bg-[#010c20]">Manutenção Mecânica</option>
-              <option value="eletrica_eletronica" className="bg-[#010c20]">Elétrica e Eletrônica</option>
-              <option value="seguranca_salvatagem" className="bg-[#010c20]">Segurança e Salvatagem</option>
-              <option value="integridade_estrutural" className="bg-[#010c20]">Integridade Estrutural</option>
-              <option value="pintura_acabamento" className="bg-[#010c20]">Pintura e Acabamento</option>
-              <option value="interior_acomodacoes" className="bg-[#010c20]">Interior e Acomodações</option>
-              <option value="documentacao_legal" className="bg-[#010c20]">Documentação Legal</option>
-              <option value="navegabilidade" className="bg-[#010c20]">Navegabilidade</option>
+              <option value="motor_propulsao">Motor e Propulsão</option>
+              <option value="manutencao_mecanica">Manutenção Mecânica</option>
+              <option value="eletrica_eletronica">Elétrica e Eletrônica</option>
+              <option value="seguranca_salvatagem">Segurança e Salvatagem</option>
+              <option value="integridade_estrutural">Integridade Estrutural</option>
+              <option value="pintura_acabamento">Pintura e Acabamento</option>
+              <option value="interior_acomodacoes">Interior e Acomodações</option>
+              <option value="documentacao_legal">Documentação Legal</option>
+              <option value="navegabilidade">Navegabilidade</option>
             </select>
           </div>
 
@@ -53,6 +70,9 @@ export default function RegistroForm({ onClose, onSave }: RegistroFormProps) {
             </label>
             <input
               type="text"
+              name="titulo"
+              value={formData.titulo}
+              onChange={handleChange}
               placeholder="Ex: Troca de óleo - Motor Volvo Penta D6-370"
               className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-5 py-4 text-white focus:border-[#c5a059] outline-none transition-all placeholder:text-white/10"
               required
@@ -65,6 +85,9 @@ export default function RegistroForm({ onClose, onSave }: RegistroFormProps) {
               Descrição Detalhada
             </label>
             <textarea
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleChange}
               placeholder="Descreva o serviço realizado, peças trocadas, observações do técnico..."
               rows={6}
               className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-5 py-4 text-white focus:border-[#c5a059] outline-none transition-all placeholder:text-white/10 resize-none"
