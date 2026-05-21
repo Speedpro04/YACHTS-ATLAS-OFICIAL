@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import {
-  Ship, Anchor, Calendar, FileText, Camera,
-  ArrowLeft, Wrench, Shield, Zap,
-  FileCheck,
-  Clock, CheckCircle, AlertTriangle, Search, Plus
+  Ship, Anchor, Calendar,
+  Clock, CheckCircle, AlertTriangle, Plus
 } from 'lucide-react'
 
 export default function Registros() {
-  const [showForm, setShowForm] = useState(false)
+  const [, setShowForm] = useState(false)
 
   return (
     <div className="min-h-screen bg-[#010c20] p-4 md:p-8">
@@ -15,7 +13,7 @@ export default function Registros() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <ArrowLeft size={20} className="text-white/30 hover:text-[#c5a059] cursor-pointer transition-colors" />
+            <Anchor size={20} className="text-white/30 hover:text-[#c5a059] cursor-pointer transition-colors" />
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-white">Histórico de Serviços</h1>
           </div>
           <p className="text-white/40 text-[10px] uppercase tracking-[0.4em] font-black ml-12">
