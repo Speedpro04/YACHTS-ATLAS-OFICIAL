@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, Users } from 'lucide-react'
+import { Home, Ship, FileText, LogOut, Bell, Users, Anchor } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 
@@ -10,6 +10,7 @@ export default function Layout() {
   const navItems = [
     { path: '/app', label: t('common.dashboard'), icon: Home },
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
+    { path: '/app/registros', label: 'Registros', icon: Anchor },
     { path: '/app/documentos', label: t('dossier.level_3'), icon: FileText },
     { path: '/app/parceiros', label: t('common.partners'), icon: Users },
   ]
