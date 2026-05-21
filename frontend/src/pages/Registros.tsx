@@ -2,22 +2,9 @@ import { useState } from 'react'
 import {
   Ship, Anchor, Calendar, FileText, Camera,
   ArrowLeft, Wrench, Shield, Zap,
-  FileCheck, Award,
+  FileCheck,
   Clock, CheckCircle, AlertTriangle, Search, Plus
 } from 'lucide-react'
-
-const CATEGORIAS = {
-  documentacao_legal: { label: 'Documentação Legal', icon: FileText, color: '#c5a059' },
-  motor_propulsao: { label: 'Motor e Propulsão', icon: Wrench, color: '#3b82f6' },
-  manutencao_mecanica: { label: 'Manutenção Mecânica', icon: Wrench, color: '#f59e0b' },
-  eletrica_eletronica: { label: 'Elétrica e Eletrônica', icon: Zap, color: '#8b5cf6' },
-  seguranca_salvatagem: { label: 'Segurança e Salvatagem', icon: Shield, color: '#ef4444' },
-  integridade_estrutural: { label: 'Integridade Estrutural', icon: Search, color: '#10b981' },
-  pintura_acabamento: { label: 'Pintura e Acabamento', icon: Camera, color: '#ec4899' },
-  rastreabilidade_servicos: { label: 'Rastreabilidade', icon: FileCheck, color: '#6366f1' },
-  interior_acomodacoes: { label: 'Interior e Acomodações', icon: Ship, color: '#14b8a6' },
-  navegabilidade: { label: 'Navegabilidade', icon: Anchor, color: '#f97316' }
-}
 
 export default function Registros() {
   const [showForm, setShowForm] = useState(false)
