@@ -18,7 +18,7 @@ import {
   Loader2
 } from 'lucide-react'
 
-import { supabase } from '../services/api'
+import { supabase, api } from '../services/api'
 
 interface TechnicalFormOverlayProps {
   category: string
@@ -66,26 +66,22 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
 
     setIsUploading(true)
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${ativoId}-${Date.now()}.${fileExt}`
-      const filePath = `${category}/${fileName}`
+      const formDataToSend = new FormData()
+      formDataToSend.append('file', file)
 
-      const { error: uploadError } = await supabase.storage
-        .from('dossier_assets')
-        .upload(filePath, file)
+      // Use backend secure endpoint to handle hash calculations & storage in 'media' bucket
+      const res = await api.documentos.upload(ativoId, file.name, category, formDataToSend)
 
-      if (uploadError) throw uploadError
-
-      const { data } = supabase.storage
-        .from('dossier_assets')
-        .getPublicUrl(filePath)
-
-      setUploadedFiles(prev => [...prev, { name: file.name, url: data.publicUrl }])
-      setFormData((prev: any) => ({ ...prev, arquivos: [...(prev.arquivos || []), data.publicUrl] }))
+      if (res && res.public_url) {
+        setUploadedFiles(prev => [...prev, { name: file.name, url: res.public_url }])
+        setFormData((prev: any) => ({ ...prev, arquivos: [...(prev.arquivos || []), res.public_url] }))
+      } else {
+        throw new Error('Falha ao obter URL pública do documento.')
+      }
 
     } catch (err: any) {
       console.error('Upload error:', err)
-      alert('Erro no upload: ' + err.message)
+      alert('Erro no upload: ' + (err.message || err))
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''

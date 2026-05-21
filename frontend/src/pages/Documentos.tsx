@@ -64,6 +64,20 @@ export default function Documentos() {
       setUploading(false)
     }
   }
+
+  const handleDownload = async (docId: string) => {
+    try {
+      const res = await api.documentos.download(docId)
+      if (res && res.url) {
+        window.open(res.url, '_blank')
+      } else {
+        alert('Falha ao obter URL de download do documento.')
+      }
+    } catch (err) {
+      console.error('Erro ao baixar documento:', err)
+      alert('Erro ao tentar baixar o documento.')
+    }
+  }
   
   if (loading) {
     return (
@@ -197,9 +211,12 @@ export default function Documentos() {
                           }`}>
                             {doc.status === 'verified' ? 'Verified' : 'Processing'}
                           </span>
-                          <button className="text-white/20 hover:text-[#c5a059] transition-all p-2 bg-white/5 rounded-full">
+                           <button 
+                            onClick={() => handleDownload(doc.id)}
+                            className="text-white/20 hover:text-[#c5a059] transition-all p-2 bg-white/5 rounded-full"
+                           >
                             <Download size={18} />
-                          </button>
+                           </button>
                         </div>
                       </div>
                     ))}

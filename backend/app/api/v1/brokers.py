@@ -38,7 +38,7 @@ async def create_broker(
         # Log broker creation
         audit_service.create_audit_log(
             action=AuditAction.ASSET_CREATE,
-            user_id=user_id,
+            user_id=broker_in.user_id,
             ip_address=ip_address,
             user_agent=user_agent,
             success=True,
@@ -46,7 +46,7 @@ async def create_broker(
             details={
                 "action": "create_broker",
                 "broker_id": broker["id"],
-                "company_name": company_name
+                "company_name": broker_in.company_name
             },
             severity=AuditSeverity.INFO
         )
@@ -57,7 +57,7 @@ async def create_broker(
         # Log error
         audit_service.create_audit_log(
             action=AuditAction.ASSET_CREATE,
-            user_id=user_id,
+            user_id=broker_in.user_id,
             ip_address=ip_address,
             user_agent=user_agent,
             success=False,
@@ -65,7 +65,7 @@ async def create_broker(
             location=location,
             details={
                 "action": "create_broker",
-                "company_name": company_name
+                "company_name": broker_in.company_name
             },
             severity=AuditSeverity.ERROR
         )
@@ -226,9 +226,9 @@ async def create_deal(
             details={
                 "action": "create_deal",
                 "deal_id": deal["id"],
-                "broker_id": broker_id,
-                "deal_type": deal_type.value,
-                "deal_value": deal_value
+                "broker_id": deal_in.broker_id,
+                "deal_type": deal_in.deal_type.value,
+                "deal_value": deal_in.deal_value
             },
             severity=AuditSeverity.INFO
         )
@@ -247,8 +247,8 @@ async def create_deal(
             location=location,
             details={
                 "action": "create_deal",
-                "broker_id": broker_id,
-                "deal_type": deal_type.value
+                "broker_id": deal_in.broker_id,
+                "deal_type": deal_in.deal_type.value
             },
             severity=AuditSeverity.ERROR
         )

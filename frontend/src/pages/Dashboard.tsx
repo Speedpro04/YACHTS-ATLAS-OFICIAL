@@ -3,9 +3,11 @@ import { api } from '../services/api'
 import { Ativo } from '../types'
 import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Anchor, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [ativos, setAtivos] = useState<Ativo[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -67,7 +69,10 @@ export default function Dashboard() {
           </div>
 
           <div className="relative z-10 flex flex-wrap gap-6 mt-12">
-            <button className="bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3 shadow-xl shadow-[#c5a059]/10">
+            <button 
+              onClick={() => navigate('/app/ativos', { state: { openForm: true } })}
+              className="bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3 shadow-xl shadow-[#c5a059]/10"
+            >
               <Plus size={16} />
               {t('common.add_asset')}
             </button>
@@ -123,7 +128,10 @@ export default function Dashboard() {
               <p className="text-white/30 max-w-sm mx-auto mb-10 text-sm font-light leading-relaxed">
                 {t('common.start_adding')}
               </p>
-              <button className="bg-transparent border border-[#c5a059] text-[#c5a059] hover:bg-[#c5a059] hover:text-[#010c20] px-12 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl">
+              <button 
+                onClick={() => navigate('/app/ativos', { state: { openForm: true } })}
+                className="bg-transparent border border-[#c5a059] text-[#c5a059] hover:bg-[#c5a059] hover:text-[#010c20] px-12 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl"
+              >
                 {t('common.add_asset')}
               </button>
             </div>

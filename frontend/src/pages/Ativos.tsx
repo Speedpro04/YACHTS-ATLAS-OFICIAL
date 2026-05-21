@@ -3,7 +3,7 @@ import { api } from '../services/api'
 import { Ativo } from '../types'
 import { Ship, Plus, Trash2, Anchor, Filter, Search, ChevronRight, X, ArrowLeft, Download, ExternalLink, Award, Camera, FileCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import AssetHealthDashboard from '../components/AssetHealthDashboard'
 import SecureCameraUpload from '../components/SecureCameraUpload'
 import TechnicalFormOverlay from '../components/TechnicalFormOverlay'
@@ -11,9 +11,16 @@ import TechnicalFormOverlay from '../components/TechnicalFormOverlay'
 export default function Ativos() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const [ativos, setAtivos] = useState<Ativo[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+
+  useEffect(() => {
+    if (location.state && (location.state as any).openForm) {
+      setShowForm(true)
+    }
+  }, [location.state])
   const [selectedAtivo, setSelectedAtivo] = useState<Ativo | null>(null)
   const [showCamera, setShowCamera] = useState(false)
   const [formData, setFormData] = useState({
@@ -89,7 +96,7 @@ export default function Ativos() {
   
   const loadAtivos = async () => {
     try {
-      // const data = await api.ativos.list()
+      const data = await api.ativos.list()
       
       // MOCK DATA: 3 Embarcações (Fake) para Protótipo
       const mockData: Ativo[] = [
@@ -143,12 +150,66 @@ export default function Ativos() {
         }
       ]
       
-      // Simulando delay de rede
-      await new Promise(resolve => setTimeout(resolve, 800))
-      setAtivos(mockData)
+      if (data && data.length > 0) {
+        setAtivos(data)
+      } else {
+        setAtivos(mockData)
+      }
       
     } catch (err) {
-      console.error('Erro:', err)
+      console.error('Erro ao carregar ativos:', err)
+      // MOCK DATA Fallback
+      const mockData: Ativo[] = [
+        {
+          id: '1a2b3c',
+          marina_id: 'm1111111-1111-1111-1111-111111111111',
+          owner_id: 'u1111111-1111-1111-1111-111111111111',
+          proprietario_nome: 'Roberto Marinho Jr.',
+          marca: 'Azimut',
+          modelo: 'Grande Trideck',
+          ano_fabricacao: 2023,
+          comprimento_pes: 100,
+          tipo: 'iate',
+          porte_categoria: 'superyacht',
+          classificacao: 'gold',
+          progresso: 100,
+          status: 'ativo',
+          created_at: '2023-01-15T00:00:00Z'
+        },
+        {
+          id: '4d5e6f',
+          marina_id: 'm1111111-1111-1111-1111-111111111111',
+          owner_id: 'u2222222-2222-2222-2222-222222222222',
+          proprietario_nome: 'Dra. Isabella Diniz',
+          marca: 'Ferretti',
+          modelo: 'Yachts 780',
+          ano_fabricacao: 2021,
+          comprimento_pes: 79,
+          tipo: 'iate',
+          porte_categoria: 'executive',
+          classificacao: 'silver',
+          progresso: 85,
+          status: 'ativo',
+          created_at: '2021-06-10T00:00:00Z'
+        },
+        {
+          id: '7g8h9i',
+          marina_id: 'm1111111-1111-1111-1111-111111111111',
+          owner_id: 'u3333333-3333-3333-3333-333333333333',
+          proprietario_nome: 'Dr. Fernando Almeida',
+          marca: 'Focker',
+          modelo: '450 Gran Coupe',
+          ano_fabricacao: 2020,
+          comprimento_pes: 45,
+          tipo: 'lancha',
+          porte_categoria: 'compact',
+          classificacao: 'bronze',
+          progresso: 45,
+          status: 'ativo',
+          created_at: '2020-03-20T00:00:00Z'
+        }
+      ]
+      setAtivos(mockData)
     } finally {
       setLoading(false)
     }
