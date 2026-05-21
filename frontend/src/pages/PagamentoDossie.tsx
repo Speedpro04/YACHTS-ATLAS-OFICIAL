@@ -10,9 +10,9 @@ import { useTranslation } from 'react-i18next'
 type NivelDossie = 'compact' | 'executive' | 'superyacht'
 
 const PRECOS = {
-  compact:    { valor: 200, label: 'Compacto', descricao: 'Até 45 pés', color: 'text-blue-400', border: 'border-blue-400/20', bg: 'bg-blue-400/5' },
-  executive:  { valor: 400, label: 'Executivo', descricao: '46 a 79 pés', color: 'text-[#c5a059]', border: 'border-[#c5a059]/20', bg: 'bg-[#c5a059]/5' },
-  superyacht: { valor: 600, label: 'Superyacht', descricao: '80 pés ou mais', color: 'text-purple-400', border: 'border-purple-400/20', bg: 'bg-purple-400/5' },
+  compact:    { valor: 250, label: 'Compacto', descricao: 'Até 45 pés', color: 'text-blue-250', border: 'border-blue-250/20', bg: 'bg-blue-250/5' },
+  executive:  { valor: 250, label: 'Executivo', descricao: '46 a 79 pés', color: 'text-[#c5a059]', border: 'border-[#c5a059]/20', bg: 'bg-[#c5a059]/5' },
+  superyacht: { valor: 250, label: 'Superyacht', descricao: '80 pés ou mais', color: 'text-purple-250', border: 'border-purple-250/20', bg: 'bg-purple-250/5' },
 }
 
 export default function PagamentoDossie() {
@@ -188,7 +188,7 @@ export default function PagamentoDossie() {
                 <div className="p-6 space-y-4">
                   {erro && (
                     <div className="flex items-center gap-3 p-4 rounded-sm bg-rose-500/10 border border-rose-500/20">
-                      <AlertCircle size={16} className="text-rose-400 flex-shrink-0" />
+                      <AlertCircle size={16} className="text-rose-250 flex-shrink-0" />
                       <p className="text-xs text-rose-300">{erro}</p>
                     </div>
                   )}

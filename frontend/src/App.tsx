@@ -16,6 +16,7 @@ import LoginProprietario from './pages/LoginProprietario'
 import PortalProprietario from './pages/PortalProprietario'
 import SuccessDossie from './pages/SuccessDossie'
 import SuccessOnboarding from './pages/SuccessOnboarding'
+import Registros from './pages/Registros'
 import SeoMeta from './components/SeoMeta'
 import TermosFundadores from './pages/TermosFundadores'
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="parceiros" element={<Parceiros />} />
           <Route path="pagamento-dossie" element={<PagamentoDossie />} />
           <Route path="dossie-sucesso" element={<SuccessDossie />} />
+          <Route path="registros/:ativoId" element={<Registros />} />
         </Route>
       </Routes>
     </BrowserRouter>
