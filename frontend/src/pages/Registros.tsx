@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { 
-  Ship, Anchor, Calendar, FileText, Camera, Download, 
-  ChevronRight, ArrowLeft, Wrench, Shield, Zap, 
-  FileCheck, Engine, Sailboat, Award, TrendingUp,
+import {
+  Ship, Anchor, Calendar, FileText, Camera,
+  ArrowLeft, Wrench, Shield, Zap,
+  FileCheck, Award,
   Clock, CheckCircle, AlertTriangle, Search, Plus
 } from 'lucide-react'
 
 const CATEGORIAS = {
   documentacao_legal: { label: 'Documentação Legal', icon: FileText, color: '#c5a059' },
-  motor_propulsao: { label: 'Motor e Propulsão', icon: Engine, color: '#3b82f6' },
+  motor_propulsao: { label: 'Motor e Propulsão', icon: Wrench, color: '#3b82f6' },
   manutencao_mecanica: { label: 'Manutenção Mecânica', icon: Wrench, color: '#f59e0b' },
   eletrica_eletronica: { label: 'Elétrica e Eletrônica', icon: Zap, color: '#8b5cf6' },
   seguranca_salvatagem: { label: 'Segurança e Salvatagem', icon: Shield, color: '#ef4444' },
@@ -35,7 +35,7 @@ export default function Registros() {
             Cofre Digital de Registros Imutáveis
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setShowForm(true)}
           className="bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3 shadow-xl shadow-[#c5a059]/10 self-start"
         >
