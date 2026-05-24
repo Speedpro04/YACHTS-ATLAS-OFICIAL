@@ -1,19 +1,33 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, Users, Anchor } from 'lucide-react'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { Home, Ship, FileText, LogOut, Bell, Users, Anchor, Zap, Shield, Cpu, Paintbrush, Armchair, FileCheck, Wrench, Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Layout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   
   const navItems = [
     { path: '/app', label: t('common.dashboard'), icon: Home },
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
-    { path: '/app/registros', label: 'Registros', icon: Anchor },
     { path: '/app/documentos', label: t('dossier.level_3'), icon: FileText },
     { path: '/app/parceiros', label: t('common.partners'), icon: Users },
   ]
+
+  const categoryItems = [
+    { id: 'motor', label: 'Motor', icon: Zap },
+    { id: 'eletrica', label: 'Elétrica', icon: Cpu },
+    { id: 'seguranca', label: 'Segurança', icon: Shield },
+    { id: 'manutencao', label: 'Manutenção', icon: Wrench },
+    { id: 'pintura', label: 'Pintura', icon: Paintbrush },
+    { id: 'interior', label: 'Interior', icon: Armchair },
+    { id: 'dossie', label: 'Dossiê', icon: FileCheck },
+  ]
+
+  const handleCategoryClick = (categoryId: string) => {
+    navigate('/app/ativos', { state: { openCategory: categoryId } })
+  }
   
   const handleLogout = () => {
     localStorage.removeItem('yachts_token')
@@ -40,14 +54,14 @@ export default function Layout() {
             <Link
               key={item.path}
               to={item.path}
-              className={`p-4 rounded-xl transition-all group relative ${
+              className={`p-4 rounded-xl transition-all group relative flex items-center justify-center ${
                 location.pathname === item.path
                   ? 'text-[#c5a059]'
                   : 'text-white/40 hover:text-white hover:bg-white/5'
               }`}
             >
               <item.icon size={26} strokeWidth={1.5} />
-              <span className="absolute left-full ml-4 px-2 py-1 bg-[#c5a059] text-[#010c20] text-[10px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-2xl">
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#c5a059] text-[#010c20] text-[10px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-2xl">
                 {item.label}
               </span>
               {location.pathname === item.path && (

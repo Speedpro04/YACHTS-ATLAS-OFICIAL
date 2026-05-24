@@ -1,21 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { 
-  X, 
-  Save, 
-  Plus, 
-  FileText, 
-  Wrench, 
-  Zap, 
-  Cpu, 
-  Shield, 
-  Paintbrush, 
-  Armchair, 
-  FileCheck,
-  Calendar,
-  User,
-  Camera,
-  AlertCircle,
-  Loader2
+  X, Save, Plus, FileText, Wrench, Zap, Cpu, Shield, Paintbrush, Armchair, FileCheck,
+  Calendar, User, Camera, AlertCircle, Loader2
 } from 'lucide-react'
 
 import { supabase, api } from '../services/api'
@@ -40,14 +26,53 @@ const categoryIcons: Record<string, any> = {
 }
 
 const categoryTitles: Record<string, string> = {
-  documentacao: 'Documentação & Legal',
+  documentacao: 'Documentação Legal',
   manutencao: 'Registro de Manutenção',
-  motor: 'Motor & Propulsão',
-  eletrica: 'Sistemas Elétricos & Eletrônicos',
-  seguranca: 'Segurança & Salvatagem',
-  pintura: 'Pintura & Estética',
-  interior: 'Interior & Acabamento',
+  motor: 'Motor e Propulsão',
+  eletrica: 'Elétrica e Eletrônica',
+  seguranca: 'Segurança e Salvatagem',
+  pintura: 'Pintura e Acabamento',
+  interior: 'Interior e Acomodações',
   dossie: 'Dossiê de Integridade',
+}
+
+const checklists: Record<string, string[]> = {
+  documentacao: [
+    'Título de propriedade (TRAV)', 'Registro de embarcação (REB)', 'Licença de tráfego (LT)',
+    'Vistorias da Marinha (histórico)', 'Apólice de seguro vigente', 'Histórico de transferências',
+    'Certidão de ônus / gravames', 'Nota fiscal de compra original', 'Manual do fabricante',
+    'Certificado de homologação', 'Habilitação do armador', 'DPEM — salvatagem',
+    'Despacho de navegação', 'Certidão negativa de débitos', 'Licença ambiental'
+  ],
+  motor: [
+    'Troca de óleo do motor (data/hora)', 'Troca de filtro de óleo', 'Troca de filtro de combustível',
+    'Troca de filtro de ar', 'Revisão do impelidor', 'Troca de correia / corrente',
+    'Limpeza / troca dos injetores', 'Condição do eixo e hélice', 'Troca de zinco do eixo',
+    'Revisão do gearbox / redução', 'Laudo de compressão', 'Horímetro na revisão'
+  ],
+  eletrica: [
+    'Radar (revisão/calibração)', 'VHF fixo e portátil (Anatel)', 'GPS / plotter (mapas)',
+    'EPIRB / radiobaliza (bateria)', 'AIS transponder (ativo/passivo)', 'Piloto automático (calibração)',
+    'Banco de baterias (idade/carga)', 'Painel solar/gerador/inversor', 'Sistema de bilge automática',
+    'Fiação (última inspeção)', 'Instrumentação de navegação', 'Sistema de entretenimento'
+  ],
+  seguranca: [
+    'Coletes salva-vidas (validade)', 'Boia de salvamento em arco', 'Extintor de incêndio (carga)',
+    'Sinalizadores pirotécnicos', 'Bomba manual de esgotamento', 'Âncora + cadeia (condição)',
+    'Cordame e cabos de atracação', 'Kit de primeiros socorros', 'Detector de CO (monóxido)',
+    'Sinalização noturna (lanternas)', 'Plano de emergência', 'Buzina / sino de nevoeiro'
+  ],
+  pintura: [
+    'Aplicação de antiincrustante', 'Tipo e marca da tinta utilizada', 'Número de demãos aplicadas',
+    'Pintura acima da linha d\'água', 'Polimento / enceramento (gelcoat)', 'Tratamento de teca (deck)',
+    'Reparos de gelcoat (trincas)'
+  ],
+  interior: [
+    'Estofados e forração', 'Sistema de ar condicionado', 'Fogão, forno e gás',
+    'Sistema de esgoto / macerador', 'Bomba de água doce (pressurização)', 'Aquecedor de água (boiler)',
+    'Móveis e marcenaria interna', 'Cabines (condição geral)', 'Banheiros / camarotes',
+    'Iluminação interna (LED)'
+  ]
 }
 
 export default function TechnicalFormOverlay({ category, ativoId, ativoName, onClose, onSave }: TechnicalFormOverlayProps) {
@@ -66,15 +91,22 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
 
     setIsUploading(true)
     try {
-      const formDataToSend = new FormData()
-      formDataToSend.append('file', file)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${ativoId}/${category}/${Date.now()}.${fileExt}`
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('media')
+        .upload(fileName, file, { upsert: false })
 
-      // Use backend secure endpoint to handle hash calculations & storage in 'media' bucket
-      const res = await api.documentos.upload(ativoId, file.name, category, formDataToSend)
+      if (uploadError) throw uploadError
 
-      if (res && res.public_url) {
-        setUploadedFiles(prev => [...prev, { name: file.name, url: res.public_url }])
-        setFormData((prev: any) => ({ ...prev, arquivos: [...(prev.arquivos || []), res.public_url] }))
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(fileName)
+
+      if (publicUrl) {
+        setUploadedFiles(prev => [...prev, { name: file.name, url: publicUrl }])
+        setFormData((prev: any) => ({ ...prev, arquivos: [...(prev.arquivos || []), publicUrl] }))
       } else {
         throw new Error('Falha ao obter URL pública do documento.')
       }
@@ -109,7 +141,6 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
           observation_alert: formData.observacao
         })
         if (error) throw error
-
       } else if (category === 'manutencao') {
         const { error } = await supabase.from('maintenance_logs').insert({
           ativo_id: ativoId,
@@ -119,15 +150,13 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
           observation_alert: formData.observacao
         })
         if (error) throw error
-
       } else {
-        // seguranca, eletrica, pintura, interior, documentacao
         const { error } = await supabase.from('vessel_inspections').insert({
           ativo_id: ativoId,
           category: category,
           description: formData.descricao || formData.pintura_descricao || formData.interior_descricao,
           observation_alert: formData.observacao,
-          items_json: formData // Store checkboxes and other raw data here
+          items_json: formData
         })
         if (error) throw error
       }
@@ -142,147 +171,145 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
     }
   }
 
+  const handleCheck = (item: string) => {
+    setFormData((prev: any) => {
+      const current = prev.checkedItems || []
+      const isChecked = current.includes(item)
+      return {
+        ...prev,
+        checkedItems: isChecked ? current.filter((i: string) => i !== item) : [...current, item]
+      }
+    })
+  }
+
+  // Estilos de Input High Ticket
+  const inputStyle = "w-full bg-white border border-gray-200 rounded-sm py-4 px-5 text-gray-800 font-medium placeholder:text-gray-400 focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] transition-all outline-none text-sm shadow-inner"
+  const labelStyle = "text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] ml-1 mb-2 block"
+
+  const renderChecklist = (items: string[]) => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8">
+      {items.map((item, i) => {
+        const isChecked = (formData.checkedItems || []).includes(item)
+        return (
+          <div 
+            key={i} 
+            onClick={() => handleCheck(item)}
+            className={`flex items-center gap-4 p-4 rounded-sm border cursor-pointer transition-all duration-300 ${
+              isChecked 
+                ? 'bg-[#c5a059]/10 border-[#c5a059]/50 shadow-[0_0_15px_rgba(197,160,89,0.1)]' 
+                : 'bg-[#010c20]/50 border-white/5 hover:border-[#c5a059]/30'
+            }`}
+          >
+            <div className={`w-5 h-5 rounded-sm flex items-center justify-center border transition-colors ${
+              isChecked ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 'bg-[#010c20] border-white/20 text-transparent'
+            }`}>
+              <Save size={12} strokeWidth={3} className={isChecked ? 'opacity-100' : 'opacity-0'} />
+            </div>
+            <span className={`text-[11px] font-semibold tracking-wide uppercase transition-colors ${
+              isChecked ? 'text-[#c5a059]' : 'text-white/60'
+            }`}>
+              {item}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+
   const renderFormContent = () => {
     switch (category) {
       case 'motor':
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Fabricante</label>
+              <div>
+                <label className={labelStyle}>Fabricante</label>
                 <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Ex: MTU, Volvo Penta, MAN"
-                    className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                    onChange={(e) => setFormData({...formData, fabricante: e.target.value})}
-                  />
-                  <Zap className="absolute right-4 top-1/2 -translate-y-1/2 text-white/10" size={18} />
+                  <input type="text" placeholder="Ex: MTU, Volvo Penta, MAN" className={inputStyle} onChange={(e) => setFormData({...formData, fabricante: e.target.value})} />
+                  <Zap className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Modelo</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: 16V 2000 M96L"
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                  onChange={(e) => setFormData({...formData, modelo: e.target.value})}
-                />
+              <div>
+                <label className={labelStyle}>Modelo</label>
+                <input type="text" placeholder="Ex: 16V 2000 M96L" className={inputStyle} onChange={(e) => setFormData({...formData, modelo: e.target.value})} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Potência (HP)</label>
-                <input 
-                  type="number" 
-                  placeholder="2600"
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                  onChange={(e) => setFormData({...formData, hp: e.target.value})}
-                />
+              <div>
+                <label className={labelStyle}>Potência (HP)</label>
+                <input type="number" placeholder="2600" className={inputStyle} onChange={(e) => setFormData({...formData, hp: e.target.value})} />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Horas</label>
-                <input 
-                  type="number" 
-                  placeholder="120"
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                  onChange={(e) => setFormData({...formData, horas: e.target.value})}
-                />
+              <div>
+                <label className={labelStyle}>Horas</label>
+                <input type="number" placeholder="120" className={inputStyle} onChange={(e) => setFormData({...formData, horas: e.target.value})} />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Série</label>
-                <input 
-                  type="text" 
-                  placeholder="SN12345"
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                  onChange={(e) => setFormData({...formData, serie: e.target.value})}
-                />
+              <div>
+                <label className={labelStyle}>Série</label>
+                <input type="text" placeholder="SN12345" className={inputStyle} onChange={(e) => setFormData({...formData, serie: e.target.value})} />
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descrição Geral dos Motores</label>
-                <textarea 
-                  placeholder="Histórico, performance e estado geral..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[80px] resize-none"
-                  onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                ></textarea>
+              <div>
+                <label className={labelStyle}>Descrição Geral dos Motores</label>
+                <textarea placeholder="Histórico, performance e estado geral..." className={`${inputStyle} min-h-[100px] resize-none`} onChange={(e) => setFormData({...formData, descricao: e.target.value})}></textarea>
               </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção (Detalhes de Atenção)
+              <div className="p-6 bg-[#021431] border border-[#c5a059]/20 rounded-sm">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] ml-1 flex items-center gap-2 mb-3">
+                  <AlertCircle size={14} /> Observações de Atenção
                 </label>
-                <textarea 
-                  placeholder="Pontos críticos que exigem atenção imediata..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
+                <textarea placeholder="Pontos críticos que exigem atenção imediata..." className={`${inputStyle} bg-white text-gray-800 min-h-[80px] resize-none`} onChange={(e) => setFormData({...formData, observacao: e.target.value})}></textarea>
               </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/5">
+              <h4 className="text-[#e5d5b7] font-serif font-bold text-lg mb-2">Checklist de Propulsão</h4>
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Itens obrigatórios de inspeção</p>
+              {renderChecklist(checklists.motor)}
             </div>
           </div>
         )
 
-
       case 'manutencao':
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Data do Serviço</label>
+              <div>
+                <label className={labelStyle}>Data do Serviço</label>
                 <div className="relative">
-                  <input 
-                    type="date" 
-                    className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                    onChange={(e) => setFormData({...formData, data: e.target.value})}
-                  />
-                  <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-white/10" size={18} />
+                  <input type="date" className={inputStyle} onChange={(e) => setFormData({...formData, data: e.target.value})} />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Responsável Técnico</label>
+              <div>
+                <label className={labelStyle}>Responsável Técnico</label>
                 <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Nome do Engenheiro ou Oficina"
-                    className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none"
-                    onChange={(e) => setFormData({...formData, responsavel: e.target.value})}
-                  />
-                  <User className="absolute right-4 top-1/2 -translate-y-1/2 text-white/10" size={18} />
+                  <input type="text" placeholder="Nome do Engenheiro ou Oficina" className={inputStyle} onChange={(e) => setFormData({...formData, responsavel: e.target.value})} />
+                  <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descrição do Serviço</label>
-                <textarea 
-                  placeholder="Descreva detalhadamente o serviço realizado..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[100px] resize-none"
-                  onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção (Detalhes de Atenção)
+            <div>
+              <label className={labelStyle}>Descrição do Serviço</label>
+              <textarea placeholder="Descreva detalhadamente o serviço realizado..." className={`${inputStyle} min-h-[120px] resize-none`} onChange={(e) => setFormData({...formData, descricao: e.target.value})}></textarea>
+            </div>
+            
+            <div className="p-6 bg-[#021431] border border-[#c5a059]/20 rounded-sm">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] ml-1 flex items-center gap-2 mb-3">
+                  <AlertCircle size={14} /> Observações de Atenção
                 </label>
-                <textarea 
-                  placeholder="Ex: Próxima revisão deve focar nos bicos injetores..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
-              </div>
+                <textarea placeholder="Ex: Próxima revisão focar em compressores..." className={`${inputStyle} bg-white text-gray-800 min-h-[80px] resize-none`} onChange={(e) => setFormData({...formData, observacao: e.target.value})}></textarea>
             </div>
 
-            <div onClick={triggerFileInput} className="p-8 border-2 border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/30 transition-colors cursor-pointer group">
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:text-[#c5a059] group-hover:bg-[#c5a059]/10 transition-all">
+            <div onClick={triggerFileInput} className="p-10 border border-white/10 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/50 transition-colors cursor-pointer group bg-[#010c20]/50 shadow-inner">
+              <div className="w-16 h-16 rounded-full bg-[#021a3d] border border-white/5 flex items-center justify-center text-[#c5a059] group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all duration-500">
                 {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Camera size={24} />}
               </div>
               <div className="text-center">
-                <p className="text-white text-xs font-bold">{isUploading ? 'Enviando...' : 'Anexar Nota Fiscal ou Relatório'}</p>
-                <p className="text-[9px] text-white/20 uppercase tracking-widest mt-1">
-                  {uploadedFiles.length > 0 ? `${uploadedFiles.length} ARQUIVO(S) ANEXADO(S)` : 'PDF, JPG ou PNG até 10MB'}
+                <p className="text-[#e5d5b7] font-serif text-lg">{isUploading ? 'Enviando...' : 'Anexar Nota Fiscal ou Laudo'}</p>
+                <p className="text-[9px] text-white/30 uppercase tracking-widest mt-2">
+                  {uploadedFiles.length > 0 ? <span className="text-[#c5a059] font-bold">{uploadedFiles.length} ARQUIVO(S) ANEXADO(S)</span> : 'PDF, JPG ou PNG até 10MB'}
                 </p>
               </div>
             </div>
@@ -292,62 +319,25 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
       case 'documentacao':
         return (
           <div className="space-y-8">
-            <p className="text-xs text-white/40 leading-relaxed">Faça o upload dos documentos obrigatórios para manter a conformidade do ativo. Arquivos criptografados via <span className="text-[#c5a059]">Atlas Protocol</span>.</p>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descrição da Situação Documental</label>
-                <textarea 
-                  placeholder="Informações sobre a validade ou origem dos documentos..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[80px] resize-none"
-                  onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção
-                </label>
-                <textarea 
-                  placeholder="Ex: TIE vencendo em 30 dias ou transferência pendente..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
-              </div>
+            <div>
+              <label className={labelStyle}>Situação Documental</label>
+              <textarea placeholder="Informações sobre a validade ou origem dos documentos..." className={`${inputStyle} min-h-[100px] resize-none`} onChange={(e) => setFormData({...formData, descricao: e.target.value})}></textarea>
             </div>
 
-            <div className="space-y-4">
-              {[
-                { name: 'Título de Inscrição (TIE)', status: 'pending' },
-                { name: 'Seguro DPEM / Apólice', status: 'pending' },
-                { name: 'Certificado de Segurança (CSE)', status: 'pending' },
-                { name: 'Habilitação do Proprietário', status: 'pending' }
-              ].map((doc, i) => (
-                <div key={i} className="bg-[#010c20]/30 border border-white/5 p-5 rounded-sm flex items-center justify-between group hover:border-[#c5a059]/20 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-sm bg-white/5 flex items-center justify-center text-white/20 group-hover:text-[#c5a059] transition-colors">
-                      <FileText size={20} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-white font-medium">{doc.name}</p>
-                      <p className="text-[9px] text-white/20 uppercase tracking-widest mt-1">Status: Aguardando Upload</p>
-                    </div>
-                  </div>
-                  <button onClick={triggerFileInput} type="button" className="px-4 py-2 bg-white/5 hover:bg-[#c5a059] hover:text-[#010c20] text-white/40 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-2">
-                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-                    Upload
-                  </button>
-                </div>
-              ))}
+            <div className="pt-2 border-t border-white/5">
+              <h4 className="text-[#e5d5b7] font-serif font-bold text-lg mb-2">Conformidade Legal</h4>
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Marque os documentos conferidos</p>
+              {renderChecklist(checklists.documentacao)}
             </div>
 
-            <div onClick={triggerFileInput} className="p-8 border-2 border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/30 transition-colors cursor-pointer group bg-white/[0.01]">
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:text-[#c5a059] group-hover:bg-[#c5a059]/10 transition-all">
+            <div onClick={triggerFileInput} className="p-10 border border-white/10 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/50 transition-colors cursor-pointer group bg-[#010c20]/50 shadow-inner mt-8">
+              <div className="w-16 h-16 rounded-full bg-[#021a3d] border border-white/5 flex items-center justify-center text-[#c5a059] group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all duration-500">
                 {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Plus size={24} />}
               </div>
               <div className="text-center">
-                <p className="text-white text-xs font-bold">{isUploading ? 'Enviando...' : 'Adicionar Outro Documento'}</p>
-                <p className="text-[9px] text-white/20 uppercase tracking-widest mt-1">
-                  {uploadedFiles.length > 0 ? `${uploadedFiles.length} ARQUIVO(S) ADICIONAL(IS)` : 'Notas fiscais, recibos, etc.'}
+                <p className="text-[#e5d5b7] font-serif text-lg">{isUploading ? 'Enviando...' : 'Fazer Upload de Documentos'}</p>
+                <p className="text-[9px] text-white/30 uppercase tracking-widest mt-2">
+                  {uploadedFiles.length > 0 ? <span className="text-[#c5a059] font-bold">{uploadedFiles.length} ANEXO(S)</span> : 'Arraste os arquivos ou clique'}
                 </p>
               </div>
             </div>
@@ -357,43 +347,15 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
       case 'seguranca':
         return (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                'Extintores de Incêndio (Validade)',
-                'Coletes Salva-vidas (Quantidade)',
-                'Boias Circulares',
-                'Pirotécnicos (Foguetes)',
-                'Balsa de Abandono',
-                'Rádio VHF / EPIRB',
-                'Bombas de Esgoto',
-                'Ancoragem (Ferro e Amarras)'
-              ].map((item, i) => (
-                <label key={i} className="bg-[#010c20]/30 border border-white/5 p-4 rounded-sm flex items-center gap-4 cursor-pointer hover:border-[#c5a059]/20 transition-all group">
-                  <input type="checkbox" className="w-4 h-4 rounded-sm border-white/10 bg-transparent checked:bg-[#c5a059] focus:ring-0 accent-[#c5a059]" />
-                  <span className="text-xs text-white/60 group-hover:text-white transition-colors">{item}</span>
-                </label>
-              ))}
+            <div>
+              <label className={labelStyle}>Relatório de Salvatagem</label>
+              <textarea placeholder="Estado geral dos equipamentos de salvatagem e combate a incêndio..." className={`${inputStyle} min-h-[100px] resize-none`} onChange={(e) => setFormData({...formData, descricao: e.target.value})}></textarea>
             </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descrição Geral de Segurança</label>
-                <textarea 
-                  placeholder="Estado geral dos equipamentos de salvatagem..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[80px] resize-none"
-                  onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção (Detalhes de Atenção)
-                </label>
-                <textarea 
-                  placeholder="Ex: Requer substituição da bateria do rádio..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
-              </div>
+            
+            <div className="pt-2 border-t border-white/5">
+              <h4 className="text-[#e5d5b7] font-serif font-bold text-lg mb-2">Checklist de Segurança</h4>
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Itens vitais de proteção</p>
+              {renderChecklist(checklists.seguranca)}
             </div>
           </div>
         )
@@ -401,55 +363,15 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
       case 'eletrica':
         return (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                'Baterias (Tensão/Carga)',
-                'Inversor / Carregador',
-                'Painéis Solares (Se houver)',
-                'Iluminação de Navegação',
-                'Chartplotter / GPS',
-                'Sonar / Echo Sounder',
-                'Radar',
-                'Piloto Automático'
-              ].map((item, i) => (
-                <label key={i} className="bg-[#010c20]/30 border border-white/5 p-4 rounded-sm flex items-center gap-4 cursor-pointer hover:border-[#c5a059]/20 transition-all group">
-                  <input type="checkbox" className="w-4 h-4 rounded-sm border-white/10 bg-transparent checked:bg-[#c5a059] focus:ring-0 accent-[#c5a059]" />
-                  <span className="text-xs text-white/60 group-hover:text-white transition-colors">{item}</span>
-                </label>
-              ))}
+            <div>
+              <label className={labelStyle}>Sistemas Elétricos</label>
+              <textarea placeholder="Descreva estado das fiações, baterias, plotters e eletrônica..." className={`${inputStyle} min-h-[100px] resize-none`} onChange={(e) => setFormData({...formData, descricao: e.target.value})}></textarea>
             </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descrição do Sistema Elétrico</label>
-                <textarea 
-                  placeholder="Descreva modificações, upgrades ou problemas elétricos..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[80px] resize-none"
-                  onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção (Detalhes de Atenção)
-                </label>
-                <textarea 
-                  placeholder="Ex: Inversor apresentando aquecimento ocasional..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
-              </div>
-            </div>
-
-            <div onClick={triggerFileInput} className="p-8 border-2 border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/30 transition-colors cursor-pointer group bg-white/[0.01]">
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:text-[#c5a059] group-hover:bg-[#c5a059]/10 transition-all">
-                {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Camera size={24} />}
-              </div>
-              <div className="text-center">
-                <p className="text-white text-xs font-bold">{isUploading ? 'Enviando...' : 'Upload de Diagramas ou Fotos do Painel'}</p>
-                <p className="text-[9px] text-white/20 uppercase tracking-widest mt-1">
-                  {uploadedFiles.length > 0 ? `${uploadedFiles.length} ANEXO(S)` : 'Esquemas elétricos e fotos da casa de baterias'}
-                </p>
-              </div>
+            
+            <div className="pt-2 border-t border-white/5">
+              <h4 className="text-[#e5d5b7] font-serif font-bold text-lg mb-2">Inspeção Eletrônica</h4>
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Componentes de navegação e energia</p>
+              {renderChecklist(checklists.eletrica)}
             </div>
           </div>
         )
@@ -457,44 +379,26 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
       case 'pintura':
         return (
           <div className="space-y-8">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Estado da Pintura e Gelcoat</label>
-                <textarea 
-                  placeholder="Descreva o estado atual do costado, convés e pintura de fundo..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[100px] resize-none"
-                  onChange={(e) => setFormData({...formData, pintura_descricao: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção (Detalhes de Atenção)
-                </label>
-                <textarea 
-                  placeholder="Ex: Pequena lasca no gelcoat próximo à linha d'água na popa..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Último Polimento</label>
-                <input type="date" className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white outline-none" />
+              <div>
+                <label className={labelStyle}>Último Polimento</label>
+                <input type="date" className={inputStyle} onChange={(e) => setFormData({...formData, polimento_data: e.target.value})} />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Antivegetativa</label>
-                <input type="date" className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white outline-none" />
+              <div>
+                <label className={labelStyle}>Última Antivegetativa</label>
+                <input type="date" className={inputStyle} onChange={(e) => setFormData({...formData, antivegetativa_data: e.target.value})} />
               </div>
             </div>
-
-            <div onClick={triggerFileInput} className="p-8 border-2 border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/30 transition-colors cursor-pointer group bg-white/[0.01]">
-              {isUploading ? <Loader2 size={24} className="animate-spin text-[#c5a059]" /> : <Camera size={24} className="text-white/20 group-hover:text-[#c5a059]" />}
-              <div className="text-center">
-                <p className="text-white text-xs font-bold">{isUploading ? 'Enviando...' : 'Upload de Fotos do Exterior'}</p>
-                {uploadedFiles.length > 0 && <p className="text-[9px] text-[#c5a059] uppercase tracking-widest mt-1">{uploadedFiles.length} ANEXO(S)</p>}
-              </div>
+            
+            <div>
+              <label className={labelStyle}>Condição da Superfície</label>
+              <textarea placeholder="Descreva gelcoat, costado e estado do fundo..." className={`${inputStyle} min-h-[100px] resize-none`} onChange={(e) => setFormData({...formData, pintura_descricao: e.target.value})}></textarea>
+            </div>
+            
+            <div className="pt-2 border-t border-white/5">
+              <h4 className="text-[#e5d5b7] font-serif font-bold text-lg mb-2">Itens de Acabamento Externo</h4>
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Verificação estética e estrutural de superfície</p>
+              {renderChecklist(checklists.pintura)}
             </div>
           </div>
         )
@@ -502,46 +406,18 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
       case 'interior':
         return (
           <div className="space-y-8">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Condição do Interior e Acabamentos</label>
-                <textarea 
-                  placeholder="Descreva o estado das tapeçarias, madeiras, eletrônicos e cabines..."
-                  className="w-full bg-[#010c20]/50 border border-white/10 rounded-sm py-4 px-5 text-white placeholder:text-white/10 focus:border-[#c5a059]/50 transition-all outline-none min-h-[100px] resize-none"
-                  onChange={(e) => setFormData({...formData, interior_descricao: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="space-y-2 p-4 bg-amber-500/5 border border-amber-500/10 rounded-sm">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ml-1 flex items-center gap-2">
-                  <AlertCircle size={12} /> Observações de Atenção (Detalhes de Atenção)
-                </label>
-                <textarea 
-                  placeholder="Ex: Estofado do flybridge com pequena mancha..."
-                  className="w-full bg-transparent border-none py-2 text-white outline-none min-h-[60px] resize-none placeholder:text-amber-500/20"
-                  onChange={(e) => setFormData({...formData, observacao: e.target.value})}
-                ></textarea>
-              </div>
+            <div>
+              <label className={labelStyle}>Condição do Interior</label>
+              <textarea placeholder="Tapeçaria, madeiras, hidraúlica e conforto..." className={`${inputStyle} min-h-[100px] resize-none`} onChange={(e) => setFormData({...formData, interior_descricao: e.target.value})}></textarea>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {['Ar Condicionado', 'Cozinha', 'Geladeiras', 'Gerador', 'Estofados', 'Madeiras'].map((item, i) => (
-                <label key={i} className="bg-[#010c20]/30 border border-white/5 p-4 rounded-sm flex items-center gap-4 cursor-pointer hover:border-[#c5a059]/20 transition-all group">
-                  <input type="checkbox" className="accent-[#c5a059]" />
-                  <span className="text-[10px] text-white/60 group-hover:text-white transition-colors">{item}</span>
-                </label>
-              ))}
-            </div>
-
-            <div onClick={triggerFileInput} className="p-8 border-2 border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center gap-4 hover:border-[#c5a059]/30 transition-colors cursor-pointer group bg-white/[0.01]">
-              {isUploading ? <Loader2 size={24} className="animate-spin text-[#c5a059]" /> : <Camera size={24} className="text-white/20 group-hover:text-[#c5a059]" />}
-              <div className="text-center">
-                <p className="text-white text-xs font-bold">{isUploading ? 'Enviando...' : 'Upload de Fotos do Interior'}</p>
-                {uploadedFiles.length > 0 && <p className="text-[9px] text-[#c5a059] uppercase tracking-widest mt-1">{uploadedFiles.length} ANEXO(S)</p>}
-              </div>
+            
+            <div className="pt-2 border-t border-white/5">
+              <h4 className="text-[#e5d5b7] font-serif font-bold text-lg mb-2">Acomodações e Conforto</h4>
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Avaliação do mobiliário e climatização</p>
+              {renderChecklist(checklists.interior)}
             </div>
           </div>
         )
-
 
       default:
         return (
@@ -549,7 +425,7 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
               <Icon size={32} strokeWidth={1} />
             </div>
-            <p className="font-serif italic text-white/60">Módulo em desenvolvimento</p>
+            <p className="font-serif italic text-[#e5d5b7] text-lg">Módulo em Desenvolvimento</p>
             <p className="text-[10px] uppercase tracking-[0.3em] mt-2">Esta tela será rica em detalhes técnicos para <span className="text-[#c5a059]">{title}</span>.</p>
           </div>
         )
@@ -558,72 +434,54 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-[#010c20]/95 backdrop-blur-md animate-in fade-in duration-500" 
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-[#010c20]/95 backdrop-blur-md animate-in fade-in duration-500" onClick={onClose} />
       
-      {/* Modal */}
-      <div className="relative w-full max-w-3xl bg-[#021a3d] border border-white/10 rounded-sm shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-500">
+      <div className="relative w-full max-w-4xl bg-[#021431] border border-[#c5a059]/20 rounded-sm shadow-[0_0_50px_rgba(1,12,32,0.9)] flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-500">
         
         {/* Header */}
-        <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
+        <div className="p-8 md:p-10 border-b border-white/5 flex items-center justify-between shrink-0 bg-[#010c20]/80">
           <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-[#c5a059]/10 border border-[#c5a059]/20 rounded-sm flex items-center justify-center text-[#c5a059]">
+            <div className="w-14 h-14 bg-[#c5a059]/10 border border-[#c5a059]/30 rounded-sm flex items-center justify-center text-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]">
               <Icon size={28} strokeWidth={1.5} />
             </div>
             <div>
-              <h3 className="text-white font-serif font-bold text-2xl tracking-tight">{title}</h3>
-              <p className="text-[10px] text-white/30 uppercase tracking-[0.3em] mt-1">
-                Ativo: <span className="text-white/60">{ativoName}</span> • ID: #{ativoId.slice(0,8).toUpperCase()}
+              <h3 className="text-[#e5d5b7] font-serif font-bold text-3xl tracking-tight">{title}</h3>
+              <p className="text-[10px] text-[#c5a059] uppercase tracking-[0.3em] mt-2 font-black">
+                Dossiê Oficial <span className="text-white/20 mx-2">•</span> {ativoName}
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="w-10 h-10 rounded-full border border-white/5 flex items-center justify-center text-white/20 hover:text-white hover:border-white/20 transition-all"
-          >
-            <X size={20} />
+          <button onClick={onClose} className="w-12 h-12 rounded-sm border border-white/5 flex items-center justify-center text-white/20 hover:text-[#c5a059] hover:border-[#c5a059]/30 hover:bg-[#c5a059]/5 transition-all">
+            <X size={24} strokeWidth={1} />
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            onChange={handleFileUpload} 
-            accept="image/*,.pdf"
-          />
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar">
+          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*,.pdf" />
           {renderFormContent()}
         </form>
 
         {/* Footer */}
-        <div className="p-8 border-t border-white/5 bg-white/[0.02] flex items-center justify-between shrink-0">
-          <button 
-            type="button"
-            onClick={onClose}
-            className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-white transition-colors"
-          >
-            Cancelar
+        <div className="p-6 md:p-8 border-t border-[#c5a059]/20 bg-[#010c20] flex items-center justify-between shrink-0 shadow-[0_-10px_30px_rgba(1,12,32,0.5)]">
+          <button type="button" onClick={onClose} className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-[#c5a059] transition-colors">
+            Cancelar Operação
           </button>
           
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="group relative px-10 py-4 bg-[#c5a059] hover:bg-[#d4b36d] text-[#010c20] font-black text-[10px] uppercase tracking-[0.3em] rounded-sm transition-all shadow-xl shadow-[#c5a059]/10 disabled:opacity-50 flex items-center gap-3"
+            className="group relative px-12 py-5 bg-gradient-to-r from-[#c5a059] to-[#b38f4d] hover:from-[#d4b36d] hover:to-[#c5a059] text-[#010c20] font-black text-[11px] uppercase tracking-[0.3em] rounded-sm transition-all shadow-[0_0_25px_rgba(197,160,89,0.2)] hover:shadow-[0_0_35px_rgba(197,160,89,0.4)] hover:-translate-y-0.5 disabled:opacity-50 flex items-center gap-4"
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-[#010c20]/20 border-t-[#010c20] rounded-full animate-spin"></div>
-                Salvando...
+                <div className="w-5 h-5 border-2 border-[#010c20]/20 border-t-[#010c20] rounded-full animate-spin"></div>
+                Processando...
               </>
             ) : (
               <>
-                <Save size={16} />
-                Confirmar Registro
+                <Save size={18} />
+                Selar Informações
               </>
             )}
           </button>

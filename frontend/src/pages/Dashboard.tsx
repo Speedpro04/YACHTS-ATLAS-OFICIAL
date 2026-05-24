@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { Ativo } from '../types'
-import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Anchor, Download } from 'lucide-react'
+import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileCheck, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
@@ -98,6 +98,49 @@ export default function Dashboard() {
                 <p className="text-4xl font-serif font-bold text-white tracking-tight">{stat.value}</p>
               </div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Categorias Técnicas — Canvas Principal */}
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-serif font-bold text-white tracking-tight flex items-center gap-4">
+              <Wrench size={22} className="text-[#c5a059]" />
+              Painel Técnico
+            </h2>
+            <p className="text-[10px] text-white/30 uppercase tracking-[0.4em] font-black mt-2">Acesso rápido às categorias de inspeção</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+          {[
+            { id: 'documentacao', label: 'Documentação', desc: 'Legal & Conformidade', icon: FileText },
+            { id: 'motor', label: 'Motor', desc: 'Propulsão & Mecânica', icon: Zap },
+            { id: 'eletrica', label: 'Elétrica', desc: 'Eletrônica & Navegação', icon: Cpu },
+            { id: 'seguranca', label: 'Segurança', desc: 'Salvatagem & Proteção', icon: Shield },
+            { id: 'manutencao', label: 'Manutenção', desc: 'Serviços & Revisões', icon: Wrench },
+            { id: 'pintura', label: 'Pintura', desc: 'Estética & Superfície', icon: Paintbrush },
+            { id: 'interior', label: 'Interior', desc: 'Acomodações & Conforto', icon: Armchair },
+            { id: 'dossie', label: 'Dossiê', desc: 'Integridade Certificada', icon: FileCheck },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => navigate('/app/ativos', { state: { openCategory: cat.id } })}
+              className="group relative bg-[#0a2540] border border-white/5 rounded-sm p-6 text-left hover:border-[#c5a059]/40 transition-all duration-500 hover:-translate-y-1 shadow-lg overflow-hidden"
+            >
+              {/* Glow sutil no hover */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#c5a059]/5 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
+              <div className="relative z-10">
+                <div className="w-11 h-11 bg-[#c5a059]/10 border border-[#c5a059]/20 rounded-sm flex items-center justify-center text-[#c5a059] mb-4 group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all duration-500">
+                  <cat.icon size={22} strokeWidth={1.5} />
+                </div>
+                <p className="text-white font-bold text-sm tracking-wide group-hover:text-[#c5a059] transition-colors">{cat.label}</p>
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-black mt-1.5">{cat.desc}</p>
+              </div>
+            </button>
           ))}
         </div>
       </div>
