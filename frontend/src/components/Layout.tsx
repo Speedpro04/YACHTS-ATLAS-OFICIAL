@@ -1,11 +1,10 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Home, Ship, FileText, LogOut, Bell, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Layout() {
   const location = useLocation()
-  const navigate = useNavigate()
   const { t } = useTranslation()
   
   const navItems = [
