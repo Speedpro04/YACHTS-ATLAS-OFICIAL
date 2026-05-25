@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react'
 import { 
   X, Save, Plus, FileText, Wrench, Zap, Cpu, Shield, Paintbrush, Armchair, FileCheck,
-  Calendar, User, Camera, AlertCircle, Loader2
+  User, Camera, AlertCircle, Loader2
 } from 'lucide-react'
 
-import { supabase, api } from '../services/api'
+import { supabase } from '../services/api'
 
 interface TechnicalFormOverlayProps {
   category: string
@@ -94,7 +94,7 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
       const fileExt = file.name.split('.').pop()
       const fileName = `${ativoId}/${category}/${Date.now()}.${fileExt}`
       
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('media')
         .upload(fileName, file, { upsert: false })
 

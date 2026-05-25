@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, Users, Anchor, Zap, Shield, Cpu, Paintbrush, Armchair, FileCheck, Wrench, Settings } from 'lucide-react'
+import { Home, Ship, FileText, LogOut, Bell, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 
@@ -15,19 +15,7 @@ export default function Layout() {
     { path: '/app/parceiros', label: t('common.partners'), icon: Users },
   ]
 
-  const categoryItems = [
-    { id: 'motor', label: 'Motor', icon: Zap },
-    { id: 'eletrica', label: 'Elétrica', icon: Cpu },
-    { id: 'seguranca', label: 'Segurança', icon: Shield },
-    { id: 'manutencao', label: 'Manutenção', icon: Wrench },
-    { id: 'pintura', label: 'Pintura', icon: Paintbrush },
-    { id: 'interior', label: 'Interior', icon: Armchair },
-    { id: 'dossie', label: 'Dossiê', icon: FileCheck },
-  ]
 
-  const handleCategoryClick = (categoryId: string) => {
-    navigate('/app/ativos', { state: { openCategory: categoryId } })
-  }
   
   const handleLogout = () => {
     localStorage.removeItem('yachts_token')
