@@ -81,6 +81,21 @@ export const api = {
     parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>
       apiRequest('/leads/parceiro', { method: 'POST', body: JSON.stringify(data) }),
   },
+  parceiros: {
+    // Fire-and-forget: registra o clique sem bloquear a navegação (keepalive)
+    registrarClique: (data: { partner_id: string; categoria: string; tipo_contato: 'whatsapp' | 'email' | 'site' }) => {
+      try {
+        fetch(`${API_URL}/parceiros/clique`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+          keepalive: true,
+        }).catch(() => {})
+      } catch {
+        /* nunca interromper o usuário por causa do rastreio */
+      }
+    },
+  },
   registros: {
     list: (ativoId: string) => apiRequest(`/registros/${ativoId}`),
     create: (data: {

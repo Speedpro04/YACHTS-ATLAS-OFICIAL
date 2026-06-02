@@ -7,6 +7,7 @@ import {
 import {
   CATEGORIAS_PARCEIRO, categoriasParceiroPorGrupo, type CategoriaParceiro,
 } from '../config/parceirosCategorias'
+import { api } from '../services/api'
 
 const ICONES: Record<string, React.ElementType> = {
   Briefcase, ShieldCheck, Tractor, Forklift, Truck, Container, Cog, Wrench, Hammer,
@@ -132,17 +133,35 @@ export default function Parceiros() {
                 {/* Contatos diretos (clicáveis de verdade) */}
                 <div className="mt-auto pt-6 flex items-center gap-2">
                   {p.telefone && (
-                    <a href={`https://wa.me/${p.telefone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 border border-white/10 hover:border-[#c5a059]/40 hover:text-[#c5a059] text-white/60 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all">
+                    <a
+                      href={`https://wa.me/${p.telefone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => api.parceiros.registrarClique({ partner_id: p.id, categoria: p.categoria, tipo_contato: 'whatsapp' })}
+                      className="flex-1 flex items-center justify-center gap-2 border border-white/10 hover:border-[#c5a059]/40 hover:text-[#c5a059] text-white/60 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+                    >
                       <Phone size={13} /> Contatar
                     </a>
                   )}
                   {p.email && (
-                    <a href={`mailto:${p.email}`} className="w-10 h-10 flex items-center justify-center border border-white/10 hover:border-[#c5a059]/40 hover:text-[#c5a059] text-white/40 rounded-sm transition-all" title="E-mail">
+                    <a
+                      href={`mailto:${p.email}`}
+                      onClick={() => api.parceiros.registrarClique({ partner_id: p.id, categoria: p.categoria, tipo_contato: 'email' })}
+                      className="w-10 h-10 flex items-center justify-center border border-white/10 hover:border-[#c5a059]/40 hover:text-[#c5a059] text-white/40 rounded-sm transition-all"
+                      title="E-mail"
+                    >
                       <Mail size={15} />
                     </a>
                   )}
                   {p.site && (
-                    <a href={p.site} target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center border border-white/10 hover:border-[#c5a059]/40 hover:text-[#c5a059] text-white/40 rounded-sm transition-all" title="Site">
+                    <a
+                      href={p.site}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => api.parceiros.registrarClique({ partner_id: p.id, categoria: p.categoria, tipo_contato: 'site' })}
+                      className="w-10 h-10 flex items-center justify-center border border-white/10 hover:border-[#c5a059]/40 hover:text-[#c5a059] text-white/40 rounded-sm transition-all"
+                      title="Site"
+                    >
                       <Globe size={15} />
                     </a>
                   )}

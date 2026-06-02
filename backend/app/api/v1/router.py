@@ -2,7 +2,7 @@
 Yachts Atlas — API v1 Router
 """
 from fastapi import APIRouter
-from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner
+from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros
 
 router = APIRouter()
 
@@ -19,3 +19,4 @@ router.include_router(leads.router, prefix="/leads", tags=["leads"])
 router.include_router(registros.router, prefix="/registros", tags=["registros"])
 router.include_router(dossie.router, prefix="/dossie", tags=["dossie"])
 router.include_router(owner.router, prefix="/owner", tags=["owner"])
+router.include_router(parceiros.router, prefix="/parceiros", tags=["parceiros"])
