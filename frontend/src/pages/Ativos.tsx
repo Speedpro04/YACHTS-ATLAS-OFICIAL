@@ -482,7 +482,7 @@ export default function Ativos() {
                          Registrar Foto de Vistoria
                       </button>
                       <button 
-                        onClick={() => navigate(`/app/pagamento-dossie?ativo_id=${selectedAtivo.id}&nivel=${selectedAtivo.porte_categoria}`)}
+                        onClick={() => navigate(`/app/pagamento-dossie?ativo_id=${selectedAtivo.id}&pes=${selectedAtivo.comprimento_pes}`)}
                         className="w-full bg-[#c5a059] text-[#010c20] py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 shadow-xl hover:bg-[#b38f4d] transition-colors">
                          <Download size={16} />
                          Gerar Dossiê (Serviço Pago)

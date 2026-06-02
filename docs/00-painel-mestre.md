@@ -37,6 +37,7 @@ Arquitetura parametrizável por país (não chumbar no Brasil).
 - ✅ **Decidido/documentado:** modelo, dossiê único, preços, parceiros, visão geográfica.
 - ✅ **Já no ar:** SEO avançado, responsividade, repos privados, links Stripe (3 de 8).
 - 🔨 **Falta construir:** sincronia sistema↔dossiê, 5 preços novos no Stripe, categorias de parceiro, lógica de receita (100%/18m), hash único por dossiê.
-- 🔨 **Home page (LandingPage) desatualizada:** a seção "O Dossiê: A Identidade do seu Ativo" ainda mostra 3 classes (Compact/Executive/Superyacht) e 3 preços. Trocar para o modelo novo: **dossiê único sem classes** + comunicar as **8 faixas de preço por tamanho** (não como níveis de qualidade).
+- ✅ **Home atualizada:** dossiê único + 8 faixas de preço (lê de config/precosDossie.ts).
+- ✅ **8 links Stripe criados e conectados** (config/precosDossie.ts; checkout usa ?pes= → faixa → link).
 - ✅ **Página /sobre criada** e reposicionada para CUSTÓDIA (não inspeção); home alinhada ao mesmo conceito.
 - 🔨 **Esclarecer faixa de entrada:** deixar explícito que jet skis, motos aquáticas e embarcações pequenas (motorizadas ou não) entram na faixa "até 26 pés / US$ 100". Sugerido: subtítulo no card da faixa + micro-FAQ na home (bom p/ SEO). Confirmar se o corte é 26 ou 28 pés.

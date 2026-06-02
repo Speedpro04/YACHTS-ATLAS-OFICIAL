@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import Header from '../components/Header'
+import { FAIXAS_DOSSIE, formatarPreco } from '../config/precosDossie'
 
 const FAQS = [
   {
@@ -145,19 +146,10 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-            {[
-              { faixa: 'até 26 pés', preco: 'US$ 100' },
-              { faixa: '27 a 35 pés', preco: 'US$ 150' },
-              { faixa: '36 a 45 pés', preco: 'US$ 200' },
-              { faixa: '46 a 60 pés', preco: 'US$ 300' },
-              { faixa: '61 a 79 pés', preco: 'US$ 400' },
-              { faixa: '80 a 99 pés', preco: 'US$ 600' },
-              { faixa: '100 a 149 pés', preco: 'US$ 900' },
-              { faixa: '150+ pés', preco: 'US$ 1.500' },
-            ].map((faixa, i) => (
-              <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-sm text-center hover:border-[#c5a059]/40 hover:bg-white/[0.04] transition-all duration-500">
-                <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black mb-3">{faixa.faixa}</p>
-                <p className="text-2xl font-serif font-bold text-[#c5a059]">{faixa.preco}</p>
+            {FAIXAS_DOSSIE.map((faixa) => (
+              <div key={faixa.id} className="bg-white/[0.02] border border-white/5 p-6 rounded-sm text-center hover:border-[#c5a059]/40 hover:bg-white/[0.04] transition-all duration-500">
+                <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black mb-3">{faixa.label}</p>
+                <p className="text-2xl font-serif font-bold text-[#c5a059]">{formatarPreco(faixa.precoUSD)}</p>
               </div>
             ))}
           </div>

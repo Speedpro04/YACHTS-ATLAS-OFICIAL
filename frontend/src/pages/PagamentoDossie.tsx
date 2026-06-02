@@ -1,47 +1,38 @@
-import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Shield, Download, CheckCircle2, Lock,
-  FileCheck, ArrowLeft, ExternalLink, Zap, Award
+  FileCheck, ArrowLeft, ExternalLink, Zap
 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { faixaPorPes, formatarPreco } from '../config/precosDossie'
 
-type NivelDossie = 'compact' | 'executive' | 'superyacht'
-
-const STRIPE_LINKS: Record<NivelDossie, string> = {
-  compact:    'https://buy.stripe.com/00w6oG8aW1MUeiufHk9IQ06',
-  executive:  'https://buy.stripe.com/14AfZg9f09fm0rE66K9IQ08',
-  superyacht: 'https://buy.stripe.com/3cI4gyfDoajq5LYan09IQ09',
-}
-
-const PRECOS = {
-  compact:    { valor: 200, label: 'Compacto', descricao: 'Até 45 pés', color: 'text-blue-400', border: 'border-blue-400/20', bg: 'bg-blue-400/5' },
-  executive:  { valor: 400, label: 'Executivo', descricao: '46 a 79 pés', color: 'text-[#c5a059]', border: 'border-[#c5a059]/20', bg: 'bg-[#c5a059]/5' },
-  superyacht: { valor: 600, label: 'Superyacht', descricao: '80 pés ou mais', color: 'text-purple-400', border: 'border-purple-400/20', bg: 'bg-purple-400/5' },
-}
+const INCLUSOS = [
+  'Identificação e procedência',
+  'Histórico de propriedade',
+  'Documentação certificada',
+  'Histórico de manutenção e motorização',
+  'Registro fotográfico (datado e geolocalizado)',
+  'Laudos de terceiros custodiados',
+  'Trilha de integridade SHA-256',
+  'Assinatura digital verificável',
+]
 
 export default function PagamentoDossie() {
-  const { } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  
-  const nivelParam = (searchParams.get('nivel') || 'compact') as NivelDossie
 
-  const [nivelSelecionado, setNivelSelecionado] = useState<NivelDossie>(nivelParam)
-  
-  const preco = PRECOS[nivelSelecionado]
-  const splitMarina = preco.valor / 2
-  const splitPlataforma = preco.valor / 2
+  const pes = Number(searchParams.get('pes')) || 0
+  const faixa = faixaPorPes(pes)
+  const precoFmt = formatarPreco(faixa.precoUSD)
 
   const handlePagar = () => {
-    window.location.href = STRIPE_LINKS[nivelSelecionado]
+    window.location.href = faixa.stripeLink
   }
 
   return (
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
       {/* Header */}
       <div className="border-b border-white/5 px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
-        <button 
+        <button
           onClick={() => navigate('/app/ativos')}
           className="flex items-center gap-3 text-white/40 hover:text-[#c5a059] transition-colors text-[10px] font-black uppercase tracking-widest"
         >
@@ -67,99 +58,50 @@ export default function PagamentoDossie() {
         </div>
 
         <div className="grid lg:grid-cols-5 gap-10">
-          {/* Seleção de Nível */}
-          <div className="lg:col-span-3 space-y-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-6">Selecione o Nível do Dossiê</h2>
-            
-            {(Object.entries(PRECOS) as [NivelDossie, typeof PRECOS[NivelDossie]][]).map(([nivel, info]) => (
-              <button
-                key={nivel}
-                onClick={() => setNivelSelecionado(nivel)}
-                className={`w-full text-left p-6 rounded-sm border transition-all duration-300 group ${
-                  nivelSelecionado === nivel
-                    ? `${info.border} ${info.bg}`
-                    : 'border-white/5 bg-white/[0.02] hover:border-white/10'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                      nivelSelecionado === nivel ? `border-[#c5a059] bg-[#c5a059]` : 'border-white/20'
-                    }`}>
-                      {nivelSelecionado === nivel && <div className="w-2 h-2 rounded-full bg-[#010c20]"></div>}
-                    </div>
-                    <div>
-                      <span className={`block text-sm font-black uppercase tracking-[0.2em] ${nivelSelecionado === nivel ? info.color : 'text-white/60'}`}>
-                        {info.label}
-                      </span>
-                      <span className="block text-[10px] text-white/30 uppercase tracking-widest mt-0.5">{info.descricao}</span>
-                    </div>
+          {/* Esquerda: o dossiê único + o que reúne */}
+          <div className="lg:col-span-3 space-y-8">
+            <div className="p-6 rounded-sm border border-[#c5a059]/20 bg-[#c5a059]/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-black uppercase tracking-[0.2em] text-[#c5a059]">Dossiê Yachts Atlas</span>
+                  <span className="block text-[10px] text-white/30 uppercase tracking-widest mt-1">Porte do ativo: {faixa.label}</span>
+                </div>
+                <span className="text-3xl font-serif font-bold text-[#c5a059]">{precoFmt}</span>
+              </div>
+              <p className="text-[11px] text-white/40 leading-relaxed mt-4">
+                Um único dossiê, sempre completo. O preço acompanha o porte do ativo — da lancha ao megayacht.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-6">O que o dossiê reúne</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {INCLUSOS.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
+                    <span className="text-[11px] text-white/50">{item}</span>
                   </div>
-                  <span className={`text-2xl font-serif font-bold ${nivelSelecionado === nivel ? info.color : 'text-white/30'}`}>
-                    US$ {info.valor}
-                  </span>
-                </div>
-
-                {/* Itens inclusos */}
-                <div className="grid grid-cols-2 gap-2 mt-4 pl-9">
-                  {[
-                    'Histórico completo de manutenção',
-                    'Documentação certificada',
-                    'Fotos com timestamp',
-                    'Trilha de auditoria SHA-256',
-                    'Assinatura digital',
-                    nivel === 'superyacht' ? 'Compliance internacional' : nivel === 'executive' ? 'Laudos técnicos' : 'Relatório básico',
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <CheckCircle2 size={12} className={nivelSelecionado === nivel ? 'text-emerald-500' : 'text-white/10'} />
-                      <span className="text-[10px] text-white/40">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </button>
-            ))}
-
-            {/* Aviso Split */}
-            <div className="flex items-start gap-4 p-5 rounded-sm border border-[#c5a059]/10 bg-[#c5a059]/5">
-              <Award size={20} className="text-[#c5a059] flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] mb-1">Divisão de Receita 50/50</p>
-                <p className="text-[11px] text-white/40 leading-relaxed">
-                  A marina que gerencia este ativo recebe automaticamente <strong className="text-white/60">US$ {splitMarina}</strong> via Stripe Connect. 
-                  Você paga uma vez, a plataforma distribui em tempo real.
-                </p>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Resumo e Pagamento */}
+          {/* Direita: resumo e pagamento */}
           <div className="lg:col-span-2">
             <div className="sticky top-8 space-y-6">
-              {/* Card Resumo */}
               <div className="bg-white/[0.02] border border-white/5 rounded-sm overflow-hidden">
                 <div className="p-6 border-b border-white/5">
                   <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">Resumo do Pedido</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-white/60">Dossiê {PRECOS[nivelSelecionado].label}</span>
-                      <span className="text-sm font-bold text-white">US$ {preco.valor}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-white/30">Repasse à marina (50%)</span>
-                      <span className="text-emerald-500/70">− US$ {splitMarina}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-white/30">Plataforma Yachts Atlas (50%)</span>
-                      <span className="text-white/30">− US$ {splitPlataforma}</span>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white/60">Dossiê — {faixa.label}</span>
+                    <span className="text-sm font-bold text-white">{precoFmt}</span>
                   </div>
                 </div>
 
                 <div className="p-6 border-b border-white/5 bg-white/[0.01]">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black uppercase tracking-widest text-white/40">Total a Pagar</span>
-                    <span className="text-3xl font-serif font-bold text-[#c5a059]">US$ {preco.valor}</span>
+                    <span className="text-3xl font-serif font-bold text-[#c5a059]">{precoFmt}</span>
                   </div>
                   <p className="text-[9px] text-white/20 mt-2 uppercase tracking-widest">Pagamento único • Sem recorrência</p>
                 </div>
@@ -174,12 +116,11 @@ export default function PagamentoDossie() {
                     <ExternalLink size={14} />
                   </button>
 
-                  {/* Garantias */}
                   <div className="space-y-3 pt-2">
                     {[
                       { icon: Lock, texto: 'Pagamento 100% seguro via Stripe' },
-                      { icon: Shield, texto: 'Dados protegidos por criptografia SHA-256' },
-                      { icon: Zap, texto: 'Dossiê disponível imediatamente após pagamento' },
+                      { icon: Shield, texto: 'Integridade garantida por SHA-256' },
+                      { icon: Zap, texto: 'Acesso ao dossiê após a confirmação' },
                     ].map(({ icon: Icon, texto }, i) => (
                       <div key={i} className="flex items-center gap-3 text-[10px] text-white/20">
                         <Icon size={14} className="text-white/20 flex-shrink-0" />
@@ -190,7 +131,6 @@ export default function PagamentoDossie() {
                 </div>
               </div>
 
-              {/* Badge Stripe */}
               <div className="flex items-center justify-center gap-3 opacity-40">
                 <Lock size={12} />
                 <span className="text-[9px] uppercase tracking-widest text-white/50 font-black">Processado com segurança pela Stripe</span>
