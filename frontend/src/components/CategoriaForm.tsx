@@ -26,7 +26,7 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
   const [campos, setCampos] = useState<Record<string, string>>({})
   const [marcados, setMarcados] = useState<string[]>([])
   const [observacao, setObservacao] = useState('')
-  const [arquivos, setArquivos] = useState<{ nome: string; url: string }[]>([])
+  const [arquivos, setArquivos] = useState<{ nome: string; url: string; hash: string; tamanho: number }[]>([])
   const [enviando, setEnviando] = useState(false)
   const [subindo, setSubindo] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -37,17 +37,29 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
   const toggleItem = (item: string) =>
     setMarcados((prev) => (prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]))
 
+  // Calcula o SHA-256 do arquivo (custódia: sela o conteúdo no momento do upload)
+  const sha256Hex = async (file: File): Promise<string> => {
+    const buf = await file.arrayBuffer()
+    const digest = await crypto.subtle.digest('SHA-256', buf)
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+  }
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setSubindo(true)
     try {
+      const hash = await sha256Hex(file)
       const ext = file.name.split('.').pop()
       const path = `${ativoId}/${categoria.id}/${Date.now()}.${ext}`
       const { error } = await supabase.storage.from('media').upload(path, file, { upsert: false })
       if (error) throw error
       const { data } = supabase.storage.from('media').getPublicUrl(path)
-      if (data?.publicUrl) setArquivos((prev) => [...prev, { nome: file.name, url: data.publicUrl }])
+      if (data?.publicUrl) {
+        setArquivos((prev) => [...prev, { nome: file.name, url: data.publicUrl, hash, tamanho: file.size }])
+      }
     } catch (err: any) {
       alert('Erro no upload: ' + (err?.message || err))
     } finally {
@@ -190,10 +202,23 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
                 </div>
                 <p className="text-sm text-[#e5d5b7] font-serif">{subindo ? 'Enviando...' : 'Anexar documento, laudo ou imagem'}</p>
                 <p className="text-[9px] text-white/30 uppercase tracking-widest">
-                  {arquivos.length > 0 ? <span className="text-[#c5a059] font-bold">{arquivos.length} arquivo(s) anexado(s)</span> : 'PDF, JPG ou PNG — datado e selado'}
+                  {arquivos.length > 0 ? <span className="text-[#c5a059] font-bold">{arquivos.length} arquivo(s) selado(s)</span> : 'PDF, JPG ou PNG — datado e selado com SHA-256'}
                 </p>
               </div>
               <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf" onChange={handleUpload} />
+
+              {arquivos.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {arquivos.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-sm px-4 py-2">
+                      <span className="text-[11px] text-white/60 truncate">{a.nome}</span>
+                      <span className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059]/70 shrink-0" title={`SHA-256: ${a.hash}`}>
+                        <Lock size={10} /> {a.hash.slice(0, 10)}…
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
