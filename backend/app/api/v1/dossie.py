@@ -1,9 +1,10 @@
 """
 Yachts Atlas — Dossiê (montagem de dados reais a partir do banco)
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from app.core.security import verify_token
 from app.services.dossie_data import montar_dados_dossie
+from app.services.dossie_pdf import gerar_pdf_dossie
 
 router = APIRouter()
 
@@ -22,7 +23,18 @@ async def dados_dossie(ativo_id: str, token: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# PRÓXIMO PASSO (rodar/testar no backend com python + reportlab):
-#   @router.get("/{ativo_id}/pdf") -> usar montar_dados_dossie() para alimentar
-#   o dossie_engine (sections.py) e devolver o PDF gerado a partir de dados reais.
-#   Requer o dossie_engine importável no PYTHONPATH e reportlab instalado.
+@router.get("/{ativo_id}/pdf")
+async def pdf_dossie(ativo_id: str, token: dict = Depends(verify_token)):
+    """Gera o PDF do dossiê a partir dos dados reais do banco (só seções com dado)."""
+    try:
+        dados = montar_dados_dossie(ativo_id)
+        pdf = gerar_pdf_dossie(dados)
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="dossie_{ativo_id}.pdf"'},
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

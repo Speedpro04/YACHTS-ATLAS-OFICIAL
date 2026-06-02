@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext'
 
 export default function PrivateRoute() {
   const { session, loading } = useAuth()
-  const devToken = localStorage.getItem('yachts_token')
 
   if (loading) {
     return (
@@ -13,7 +12,7 @@ export default function PrivateRoute() {
     )
   }
 
-  if (!session && devToken !== 'dev_free_pass') {
+  if (!session) {
     return <Navigate to="/login" replace />
   }
 

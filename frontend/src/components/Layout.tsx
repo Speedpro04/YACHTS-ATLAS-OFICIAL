@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Home, Ship, FileText, LogOut, Bell, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
+import { supabase } from '../services/api'
 
 export default function Layout() {
   const location = useLocation()
@@ -16,7 +17,8 @@ export default function Layout() {
 
 
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     localStorage.removeItem('yachts_token')
     window.location.href = '/'
   }

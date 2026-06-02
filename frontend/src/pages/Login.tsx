@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Lock, Mail, ArrowLeft, ArrowRight, Shield, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { supabase } from '../services/api'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -24,15 +25,14 @@ export default function Login() {
     setError('')
     
     try {
-      // PASSE LIVRE (Free Pass) para Desenvolvimento
-      // const data = await api.auth.login(email, password)
-      // localStorage.setItem('yachts_token', data.access_token)
-      
-      await new Promise(resolve => setTimeout(resolve, 800)) // fake delay
-      localStorage.setItem('yachts_token', 'dev_free_pass')
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) {
+        setError(t('auth.error_credentials') || 'E-mail ou senha incorretos.')
+        return
+      }
       navigate('/app')
     } catch (err) {
-      setError(t('auth.error_credentials'))
+      setError(t('auth.error_credentials') || 'Não foi possível entrar. Tente novamente.')
       console.error(err)
     } finally {
       setLoading(false)
