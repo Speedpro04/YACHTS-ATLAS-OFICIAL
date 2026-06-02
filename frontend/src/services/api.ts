@@ -81,8 +81,15 @@ export const api = {
   },
   registros: {
     list: (ativoId: string) => apiRequest(`/registros/${ativoId}`),
-    create: (data: { ativo_id: string; categoria: string; titulo: string; descricao: string }) =>
-      apiRequest('/registros/', { method: 'POST', body: JSON.stringify(data) }),
+    create: (data: {
+      ativo_id: string
+      categoria: string
+      titulo?: string
+      observacao?: string
+      dados?: Record<string, unknown>
+      checklist?: unknown[]
+      status?: 'registrado' | 'pendente' | 'atencao' | 'concluido'
+    }) => apiRequest('/registros/', { method: 'POST', body: JSON.stringify(data) }),
     stats: (ativoId: string) => apiRequest(`/registros/stats/${ativoId}`),
   },
   ativos: {

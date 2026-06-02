@@ -4,7 +4,7 @@ import {
   User, Camera, AlertCircle, Loader2
 } from 'lucide-react'
 
-import { supabase } from '../services/api'
+import { supabase, api } from '../services/api'
 
 interface TechnicalFormOverlayProps {
   category: string
@@ -129,43 +129,25 @@ export default function TechnicalFormOverlay({ category, ativoId, ativoName, onC
     setIsSubmitting(true)
 
     try {
-      if (category === 'motor') {
-        const { error } = await supabase.from('engines').insert({
-          ativo_id: ativoId,
-          fabricante: formData.fabricante,
-          modelo: formData.modelo,
-          hp: parseInt(formData.hp) || null,
-          horas: parseInt(formData.horas) || null,
-          serie: formData.serie,
-          description: formData.descricao,
-          observation_alert: formData.observacao
-        })
-        if (error) throw error
-      } else if (category === 'manutencao') {
-        const { error } = await supabase.from('maintenance_logs').insert({
-          ativo_id: ativoId,
-          description: formData.descricao,
-          data: formData.data,
-          responsavel: formData.responsavel,
-          observation_alert: formData.observacao
-        })
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('vessel_inspections').insert({
-          ativo_id: ativoId,
-          category: category,
-          description: formData.descricao || formData.pintura_descricao || formData.interior_descricao,
-          observation_alert: formData.observacao,
-          items_json: formData
-        })
-        if (error) throw error
-      }
+      // Todas as categorias gravam na tabela unificada `registros`
+      // (categoria + dados em JSONB). O backend resolve o usuario_id (dono do ativo).
+      const titulo =
+        formData.descricao || formData.pintura_descricao || formData.interior_descricao || title
+
+      await api.registros.create({
+        ativo_id: ativoId,
+        categoria: category,
+        titulo: typeof titulo === 'string' ? titulo.slice(0, 120) : title,
+        observacao: formData.observacao,
+        dados: formData,
+        checklist: formData.checkedItems || [],
+      })
 
       onSave({ category, ...formData })
       onClose()
     } catch (err: any) {
       console.error('Error saving technical data:', err)
-      alert('Erro ao salvar os dados: ' + err.message)
+      alert('Erro ao salvar os dados: ' + (err?.message || err))
     } finally {
       setIsSubmitting(false)
     }

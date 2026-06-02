@@ -4,13 +4,15 @@ import { Ship, Anchor, Calendar, Clock, CheckCircle, AlertTriangle, Plus, Wrench
 import RegistroForm from '../components/RegistroForm'
 import { api } from '../services/api'
 
+type RegistroStatus = 'registrado' | 'pendente' | 'atencao' | 'concluido'
+
 interface Registro {
   id: string
   categoria: string
   titulo: string
   descricao: string
   data: string
-  status: 'pending' | 'completed' | 'attention'
+  status: RegistroStatus
 }
 
 const CATEGORIAS = {
@@ -37,10 +39,10 @@ export default function Registros() {
       const mapped: Registro[] = (data || []).map((r: any) => ({
         id: r.id,
         categoria: r.categoria,
-        titulo: r.titulo,
-        descricao: r.descricao,
+        titulo: r.titulo || '',
+        descricao: r.observacao || '',
         data: r.created_at,
-        status: r.status,
+        status: (r.status as RegistroStatus) || 'registrado',
       }))
       setRegistros(mapped)
     }).catch(console.error)
@@ -53,23 +55,28 @@ export default function Registros() {
   const handleSave = async (data: Omit<Registro, 'id' | 'data' | 'status'>) => {
     if (!ativoId) return
     try {
-      const saved = await api.registros.create({ ...data, ativo_id: ativoId })
+      const saved = await api.registros.create({
+        ativo_id: ativoId,
+        categoria: data.categoria,
+        titulo: data.titulo,
+        observacao: data.descricao,
+      })
       const newRegistro: Registro = {
         id: saved.id || Date.now().toString(),
         categoria: saved.categoria || data.categoria,
         titulo: saved.titulo || data.titulo,
-        descricao: saved.descricao || data.descricao,
+        descricao: saved.observacao || data.descricao,
         data: saved.created_at || new Date().toISOString(),
-        status: saved.status || 'pending',
+        status: (saved.status as RegistroStatus) || 'registrado',
       }
       setRegistros(prev => [newRegistro, ...prev])
     } catch {
-      // Fallback to local state if backend unavailable
+      // Fallback para estado local se o backend estiver indisponível
       const newRegistro: Registro = {
         ...data,
         id: Date.now().toString(),
         data: new Date().toISOString(),
-        status: 'pending',
+        status: 'registrado',
       }
       setRegistros(prev => [newRegistro, ...prev])
     }
@@ -113,7 +120,7 @@ export default function Registros() {
             <CheckCircle size={20} className="text-emerald-400" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Concluídos</span>
           </div>
-          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'completed').length}</div>
+          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'concluido').length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Este Mês</div>
         </div>
         <div className="bg-white/[0.02] border border-white/5 p-6 rounded-sm">
@@ -121,7 +128,7 @@ export default function Registros() {
             <AlertTriangle size={20} className="text-amber-400" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Atenção</span>
           </div>
-          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'attention').length}</div>
+          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'atencao').length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Pendências</div>
         </div>
         <div className="bg-white/[0.02] border border-white/5 p-6 rounded-sm">
@@ -129,7 +136,7 @@ export default function Registros() {
             <Calendar size={20} className="text-[#c5a059]" />
             <span className="text-[8px] uppercase tracking-widest text-white/30">Próximos</span>
           </div>
-          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'pending').length}</div>
+          <div className="text-3xl font-bold text-white">{registros.filter(r => r.status === 'pendente').length}</div>
           <div className="text-[9px] text-white/40 uppercase tracking-widest mt-1">Agendados</div>
         </div>
       </div>
