@@ -12,6 +12,7 @@ import Frota from './pages/Frota'
 import Seguranca from './pages/Seguranca'
 import RegistroMarina from './pages/RegistroMarina'
 import MarinaParceira from './pages/MarinaParceira'
+import SejaParceiro from './pages/SejaParceiro'
 import PagamentoDossie from './pages/PagamentoDossie'
 import Parceiros from './pages/Parceiros'
 import LoginProprietario from './pages/LoginProprietario'
@@ -36,6 +37,7 @@ function App() {
         <Route path="/portal-proprietario" element={<PortalProprietario />} />
         <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/marina-parceira" element={<MarinaParceira />} />
+        <Route path="/seja-parceiro" element={<SejaParceiro />} />
         <Route path="/termos-fundadores" element={<TermosFundadores />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route element={<PrivateRoute />}>

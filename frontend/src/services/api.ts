@@ -78,6 +78,8 @@ export const api = {
   leads: {
     marina: (data: { marina: string; name: string; email: string; fleet: string; source?: string }) =>
       apiRequest('/leads/marina', { method: 'POST', body: JSON.stringify(data) }),
+    parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>
+      apiRequest('/leads/parceiro', { method: 'POST', body: JSON.stringify(data) }),
   },
   registros: {
     list: (ativoId: string) => apiRequest(`/registros/${ativoId}`),
