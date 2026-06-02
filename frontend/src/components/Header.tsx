@@ -8,8 +8,8 @@ export default function Header() {
   const { t } = useTranslation()
 
   return (
-    <header 
-      className="fixed top-0 left-0 right-0 z-50 py-4 h-[166px] flex items-center shadow-2xl overflow-hidden"
+    <header
+      className="fixed top-0 left-0 right-0 z-50 py-4 h-[var(--header-h)] flex items-center shadow-2xl overflow-hidden"
       style={{
         background: 'radial-gradient(circle at center, #021a3d 0%, #010c20 70%)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
@@ -18,12 +18,14 @@ export default function Header() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#c5a059]/5 blur-[120px] rounded-full pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-6 w-full flex items-center justify-between relative z-10">
-        <Link to="/" className="group transition-all">
-          <div className="w-[180px] relative">
-             <img 
-               src="/logo-transparent.png" 
-               alt="Yachts Atlas" 
+        <Link to="/" className="group transition-all" aria-label="Yachts Atlas — Página inicial">
+          <div className="w-[130px] md:w-[180px] relative">
+             <img
+               src="/logo-transparent.png"
+               alt="Yachts Atlas — Custódia digital de ativos náuticos"
                className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+               width={180}
+               height={60}
              />
           </div>
         </Link>

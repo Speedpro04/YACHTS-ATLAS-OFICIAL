@@ -4,7 +4,7 @@ export default function TermosFundadores() {
   return (
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
       <Header />
-      <main className="pt-[166px] pb-20 px-6">
+      <main className="pt-[var(--header-h)] pb-20 px-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6">Termos do Programa Fundador</h1>
           <p className="text-white/60 mb-10">

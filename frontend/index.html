@@ -3,23 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon-v2.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Yachts Atlas | Registro Digital e Integridade Náutica</title>
-    <meta name="description" content="Plataforma SaaS para marinas, estaleiros e proprietários com registro digital, compliance, rastreabilidade e segurança documental náutica." />
-    <meta name="keywords" content="yachts atlas, marina, iates, nautica, registro digital, compliance nautico, dossie nautico, documentacao embarcacao" />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="apple-touch-icon" href="/favicon-v2.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#010c20" />
+    <meta name="google-site-verification" content="G2rwU5lWDqMhHe7eI5ilbn9RvQy1c8MmvR9xexC16mQ" />
+    <title>Yachts Atlas | Dossiê Digital e Custódia de Ativos Náuticos</title>
+    <meta name="description" content="Custódia digital e dossiê imutável para iates e embarcações de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam e aceleram a negociação do seu patrimônio marítimo." />
+    <meta name="keywords" content="dossiê náutico, custódia digital de iates, registro digital de embarcação, avaliação de iate, compliance náutico, due diligence marítima, marina parceira, certificação de embarcação" />
+    <meta name="author" content="Yachts Atlas" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://yachtsatlas.com/" />
+    <link rel="alternate" hreflang="pt-BR" href="https://yachtsatlas.com/" />
+    <link rel="alternate" hreflang="en" href="https://yachtsatlas.com/" />
+    <link rel="alternate" hreflang="es" href="https://yachtsatlas.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://yachtsatlas.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Yachts Atlas" />
-    <meta property="og:title" content="Yachts Atlas | Registro Digital e Integridade Náutica" />
-    <meta property="og:description" content="Plataforma SaaS para marinas, estaleiros e proprietários com registro digital, compliance e rastreabilidade náutica." />
+    <meta property="og:title" content="Yachts Atlas | Dossiê Digital e Custódia de Ativos Náuticos" />
+    <meta property="og:description" content="Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam e aceleram a negociação do seu patrimônio marítimo." />
     <meta property="og:url" content="https://yachtsatlas.com/" />
     <meta property="og:image" content="https://yachtsatlas.com/logo-with-bg-light.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Yachts Atlas — Custódia digital de ativos náuticos" />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="es_ES" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Yachts Atlas | Registro Digital e Integridade Náutica" />
-    <meta name="twitter:description" content="Plataforma SaaS para marinas, estaleiros e proprietários com registro digital e segurança documental náutica." />
+    <meta name="twitter:title" content="Yachts Atlas | Dossiê Digital e Custódia de Ativos Náuticos" />
+    <meta name="twitter:description" content="Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade total." />
     <meta name="twitter:image" content="https://yachtsatlas.com/logo-with-bg-light.jpg" />
+    <meta name="twitter:image:alt" content="Yachts Atlas — Custódia digital de ativos náuticos" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap">
@@ -27,12 +41,64 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Yachts Atlas",
-        "url": "https://yachtsatlas.com",
-        "logo": "https://yachtsatlas.com/logo-transparent.png",
-        "sameAs": [],
-        "description": "SaaS para gestão, registro digital e integridade documental de ativos náuticos."
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://yachtsatlas.com/#organization",
+            "name": "Yachts Atlas",
+            "url": "https://yachtsatlas.com",
+            "logo": "https://yachtsatlas.com/logo-transparent.png",
+            "image": "https://yachtsatlas.com/logo-with-bg-light.jpg",
+            "description": "Custódia digital, dossiê imutável e integridade documental de ativos náuticos de alto valor.",
+            "email": "contato@yachtsatlas.com",
+            "sameAs": [],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "email": "contato@yachtsatlas.com",
+              "contactType": "customer support",
+              "availableLanguage": ["Portuguese", "English", "Spanish"]
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://yachtsatlas.com/#website",
+            "url": "https://yachtsatlas.com",
+            "name": "Yachts Atlas",
+            "publisher": { "@id": "https://yachtsatlas.com/#organization" },
+            "inLanguage": "pt-BR"
+          },
+          {
+            "@type": "Service",
+            "name": "Dossiê Digital de Embarcação",
+            "serviceType": "Custódia digital e certificação de ativos náuticos",
+            "provider": { "@id": "https://yachtsatlas.com/#organization" },
+            "areaServed": "Worldwide",
+            "description": "Dossiê imutável com auditoria técnica, histórico de manutenção, avaliação de mercado e rastreabilidade SHA-256.",
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "Dossiê Compact — até 45 pés",
+                "price": "200",
+                "priceCurrency": "USD",
+                "category": "Compact"
+              },
+              {
+                "@type": "Offer",
+                "name": "Dossiê Executive — 46 a 79 pés",
+                "price": "400",
+                "priceCurrency": "USD",
+                "category": "Executive"
+              },
+              {
+                "@type": "Offer",
+                "name": "Dossiê Superyacht — 80+ pés",
+                "price": "600",
+                "priceCurrency": "USD",
+                "category": "Superyacht"
+              }
+            ]
+          }
+        ]
       }
     </script>
   </head>

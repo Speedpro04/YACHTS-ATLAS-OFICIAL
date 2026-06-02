@@ -7,7 +7,7 @@ export default function Frota() {
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
       <Header />
 
-      <main className="mt-[166px]">
+      <main className="mt-[var(--header-h)]">
         {/* Hero Section */}
         <section className="relative py-[328px] overflow-hidden border-b border-white/5">
           <div className="absolute inset-0">

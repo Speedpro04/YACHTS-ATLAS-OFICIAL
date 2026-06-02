@@ -54,7 +54,7 @@ export default function MarinaParceira() {
   return (
     <div className="min-h-screen bg-[#010c20]">
       <Header />
-      <div className="pt-[100px]">
+      <div className="pt-[var(--header-h)]">
         <section className={styles.section}>
           <div className={styles.bgGlow} aria-hidden="true" />
 

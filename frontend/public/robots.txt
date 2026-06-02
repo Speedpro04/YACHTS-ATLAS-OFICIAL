@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /app
+Disallow: /login
+Disallow: /portal-proprietario
+Disallow: /success
 
 Sitemap: https://yachtsatlas.com/sitemap.xml

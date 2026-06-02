@@ -98,7 +98,7 @@ export default function RegistroMarina() {
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-gold-500 selection:text-[#010c20]">
       <Header />
       
-      <main className="pt-[166px] pb-20 px-6">
+      <main className="pt-[var(--header-h)] pb-20 px-6">
         <div className="max-w-4xl mx-auto">
           
           {/* Progress Header */}

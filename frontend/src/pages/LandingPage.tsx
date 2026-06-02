@@ -11,13 +11,14 @@ export default function LandingPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative min-h-[calc(100vh-166px+100px)] mt-[166px] flex items-center justify-center overflow-hidden py-[50px]">
+      <section className="relative min-h-[calc(100vh-var(--header-h))] mt-[var(--header-h)] flex items-center justify-center overflow-hidden py-[50px]">
         <div className="absolute inset-0">
-          <img 
-            src="/hero-yacht-v2-light.jpg" 
-            alt="Luxury Yacht" 
+          <img
+            src="/hero-yacht-v2-light.jpg"
+            alt="Iate de luxo ancorado — custódia digital de ativos náuticos Yachts Atlas"
             className="w-full h-full object-cover animate-slow-zoom"
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-[#010c20]/[0.9]"></div>
         </div>
@@ -253,11 +254,13 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-12 gap-16 items-center">
             <div className="lg:col-span-6 relative">
                <div className="relative rounded-sm group">
-                 <img 
-                   src="/turquoise-yacht-light.jpg" 
-                   alt="Luxury Turquoise Yacht" 
+                 <img
+                   src="/turquoise-yacht-light.jpg"
+                   alt="Superiate em águas turquesa — autoridade e padrão Yachts Atlas"
                    className="w-full h-[600px] object-cover transition-transform duration-1000 group-hover:scale-105"
                    loading="lazy"
+                   width={800}
+                   height={600}
                  />
                  <div className="absolute bottom-[-118px] left-8 right-8 z-20 bg-[#021431]/95 backdrop-blur-xl border border-[#c5a059]/30 p-8 rounded-sm shadow-2xl">
                     <div className="flex items-center gap-6 mb-6">
