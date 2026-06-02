@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import AssetHealthDashboard from '../components/AssetHealthDashboard'
 import SecureCameraUpload from '../components/SecureCameraUpload'
 import TechnicalFormOverlay from '../components/TechnicalFormOverlay'
+import DossieCategorias from '../components/DossieCategorias'
 
 export default function Ativos() {
   const { t } = useTranslation()
@@ -495,8 +496,15 @@ export default function Ativos() {
                 </div>
               </div>
               
-              {/* Coluna Direita - Dashboard de Saúde */}
+              {/* Coluna Direita - Dossiê + Dashboard de Saúde */}
               <div className="lg:w-2/3 space-y-10">
+                 {/* Categorias do Dossiê (sob medida por porte do ativo) */}
+                 <DossieCategorias
+                   ativoId={selectedAtivo.id}
+                   ativoNome={`${selectedAtivo.marca} ${selectedAtivo.modelo}`}
+                   comprimentoPes={selectedAtivo.comprimento_pes}
+                 />
+
                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h3 className="text-xl font-serif font-bold text-white tracking-tight uppercase flex items-center gap-4">
                        <Award size={24} className="text-[#c5a059]" />
