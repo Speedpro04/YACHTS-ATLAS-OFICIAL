@@ -14,17 +14,19 @@ alter function public.update_updated_at_column()   set search_path = public;
 alter function public.update_updated_at()          set search_path = public;
 alter function public.rls_auto_enable()            set search_path = public;
 
--- 2. Funções SECURITY DEFINER executáveis por anônimo/autenticado via RPC.
+-- 2. Funções SECURITY DEFINER executáveis via RPC.
 --    São funções de trigger/interno — não devem ser chamáveis pela API.
-revoke execute on function public.handle_new_user() from anon, authenticated;
-revoke execute on function public.rls_auto_enable() from anon, authenticated;
+--    IMPORTANTE: revogar do role `public` (anon/authenticated herdam dele;
+--    revogar só dos filhos NÃO remove o acesso). Triggers não dependem
+--    de EXECUTE, então isso não quebra o signup.
+revoke execute on function public.handle_new_user() from public;
+revoke execute on function public.rls_auto_enable() from public;
 
--- 3. (REVISAR ANTES) Bucket `media` é público e permite LISTAR todos os arquivos.
---    Para acesso por URL pública (getPublicUrl) NÃO é necessária política
---    SELECT ampla em storage.objects. Remover a listagem fecha a exposição
---    sem quebrar o acesso por URL direta.
---    Confirme que o app NÃO lista o bucket antes de aplicar:
--- drop policy if exists "Public Access to Media" on storage.objects;
+-- 3. Bucket `media` permitia LISTAR todos os arquivos. Removida a política
+--    de listagem — arquivos seguem acessíveis por URL direta (getPublicUrl),
+--    mas ninguém lista o bucket inteiro. (APLICADO)
+--    Futuro: tornar bucket privado + signed URLs para dados sensíveis.
+drop policy if exists "Public Access to Media" on storage.objects;
 
 -- 4. marina_leads: o INSERT público é INTENCIONAL (formulário público de leads).
 --    Não alterar. As leituras/edições já são restritas (service role).
