@@ -1,13 +1,18 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { 
-  Shield, Download, CheckCircle2, AlertCircle, Lock, 
+import {
+  Shield, Download, CheckCircle2, Lock,
   FileCheck, ArrowLeft, ExternalLink, Zap, Award
 } from 'lucide-react'
-import { api } from '../services/api'
 import { useTranslation } from 'react-i18next'
 
 type NivelDossie = 'compact' | 'executive' | 'superyacht'
+
+const STRIPE_LINKS: Record<NivelDossie, string> = {
+  compact:    'https://buy.stripe.com/00w6oG8aW1MUeiufHk9IQ06',
+  executive:  'https://buy.stripe.com/14AfZg9f09fm0rE66K9IQ08',
+  superyacht: 'https://buy.stripe.com/3cI4gyfDoajq5LYan09IQ09',
+}
 
 const PRECOS = {
   compact:    { valor: 200, label: 'Compacto', descricao: 'Até 45 pés', color: 'text-blue-400', border: 'border-blue-400/20', bg: 'bg-blue-400/5' },
@@ -20,42 +25,16 @@ export default function PagamentoDossie() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   
-  const ativoId = searchParams.get('ativo_id') || ''
   const nivelParam = (searchParams.get('nivel') || 'compact') as NivelDossie
-  
+
   const [nivelSelecionado, setNivelSelecionado] = useState<NivelDossie>(nivelParam)
-  const [loading, setLoading] = useState(false)
-  const [erro, setErro] = useState('')
   
   const preco = PRECOS[nivelSelecionado]
   const splitMarina = preco.valor / 2
   const splitPlataforma = preco.valor / 2
 
-  const handlePagar = async () => {
-    setLoading(true)
-    setErro('')
-    try {
-      const successUrl = `${window.location.origin}/app/dossie-sucesso?ativo_id=${ativoId}&nivel=${nivelSelecionado}`
-      const cancelUrl = `${window.location.origin}/app/ativos`
-
-      const sessao = await api.pagamentos.checkoutDossie({
-        dossier_level: nivelSelecionado,
-        ativo_id: ativoId,
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-      })
-
-      // Redirecionar para a página de pagamento da Stripe
-      if (sessao?.url) {
-        window.location.href = sessao.url
-      } else {
-        setErro('Não foi possível iniciar o pagamento. Tente novamente.')
-      }
-    } catch (err: any) {
-      setErro(err.message || 'Erro ao processar pagamento.')
-    } finally {
-      setLoading(false)
-    }
+  const handlePagar = () => {
+    window.location.href = STRIPE_LINKS[nivelSelecionado]
   }
 
   return (
@@ -186,30 +165,13 @@ export default function PagamentoDossie() {
                 </div>
 
                 <div className="p-6 space-y-4">
-                  {erro && (
-                    <div className="flex items-center gap-3 p-4 rounded-sm bg-rose-500/10 border border-rose-500/20">
-                      <AlertCircle size={16} className="text-rose-250 flex-shrink-0" />
-                      <p className="text-xs text-rose-300">{erro}</p>
-                    </div>
-                  )}
-
                   <button
                     onClick={handlePagar}
-                    disabled={loading}
-                    className="w-full bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-50 disabled:cursor-not-allowed text-[#010c20] py-5 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#c5a059]/10"
+                    className="w-full bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] py-5 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#c5a059]/10"
                   >
-                    {loading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-[#010c20] border-t-transparent rounded-full animate-spin"></div>
-                        Redirecionando para o Stripe...
-                      </>
-                    ) : (
-                      <>
-                        <Download size={16} />
-                        Pagar e Gerar Dossiê
-                        <ExternalLink size={14} />
-                      </>
-                    )}
+                    <Download size={16} />
+                    Pagar e Gerar Dossiê
+                    <ExternalLink size={14} />
                   </button>
 
                   {/* Garantias */}

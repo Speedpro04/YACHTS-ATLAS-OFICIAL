@@ -67,45 +67,12 @@ export default function RegistroMarina() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const STRIPE_MARINA_LINK = 'https://buy.stripe.com/aFaeVcdvgezGgqCeDg9IQ05'
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    
-    try {
-      // 1. First, we create a temporary record or just use the metadata
-      // For this flow, we'll use the backend to create the checkout session
-      // with the marina data in metadata.
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/payments/checkout/onboarding`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          marina_id: formData.cnpj.replace(/\D/g, ''), // Use CNPJ as ID for now
-          plan_type: 'marina',
-          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: window.location.href,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Erro ao criar sessão de pagamento')
-      }
-
-      const { url } = await response.json()
-      
-      // Redirect to Stripe
-      window.location.href = url
-      
-    } catch (err: any) {
-      console.error('Erro no checkout:', err)
-      alert(`Erro ao processar pagamento: ${err.message}`)
-    } finally {
-      setLoading(false)
-    }
+    window.location.href = STRIPE_MARINA_LINK
   }
 
   if (success) {
