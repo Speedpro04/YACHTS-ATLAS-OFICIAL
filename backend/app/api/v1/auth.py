@@ -2,7 +2,7 @@
 Yachts Atlas — Authentication Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
-from app.schemas.models import UsuarioCreate, UsuarioResponse, MaintenanceLoginRequest
+from app.schemas.models import UsuarioCreate, UsuarioResponse, MaintenanceLoginRequest, LoginRequest
 from app.core.supabase import get_supabase_admin
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.config import settings
@@ -137,15 +137,18 @@ async def signup(user: UsuarioCreate, request: Request):
 
 
 @router.post("/login")
-async def login(email: str, password: str, request: Request):
+async def login(data: LoginRequest, request: Request):
     """Login with complete audit tracking"""
     supabase = get_supabase_admin()
-    
+
+    email = data.email
+    password = data.password
+
     # Get client information
     ip_address = get_client_ip(request)
     user_agent = get_user_agent(request)
     location = get_client_location(request)
-    
+
     try:
         response = supabase.auth.sign_in_with_password({
             "email": email,

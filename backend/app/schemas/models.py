@@ -107,6 +107,19 @@ class MaintenanceLoginRequest(BaseModel):
     password: str
 
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class LeadMarinaCreate(BaseModel):
+    marina: str
+    name: str
+    email: EmailStr
+    fleet: str
+    source: Optional[str] = None
+
+
 # --- Ativo Models ---
 
 class AtivoBase(BaseModel):

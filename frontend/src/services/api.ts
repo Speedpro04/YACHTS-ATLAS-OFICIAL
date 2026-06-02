@@ -69,11 +69,21 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
 export const api = {
   auth: {
-    login: (email: string, password: string) => 
+    login: (email: string, password: string) =>
       apiRequest('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     signup: (data: { email: string; password: string; nome: string }) =>
       apiRequest('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
+  },
+  leads: {
+    marina: (data: { marina: string; name: string; email: string; fleet: string; source?: string }) =>
+      apiRequest('/leads/marina', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  registros: {
+    list: (ativoId: string) => apiRequest(`/registros/${ativoId}`),
+    create: (data: { ativo_id: string; categoria: string; titulo: string; descricao: string }) =>
+      apiRequest('/registros/', { method: 'POST', body: JSON.stringify(data) }),
+    stats: (ativoId: string) => apiRequest(`/registros/stats/${ativoId}`),
   },
   ativos: {
     list: () => apiRequest('/ativos'),

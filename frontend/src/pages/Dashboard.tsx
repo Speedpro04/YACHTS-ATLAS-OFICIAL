@@ -9,29 +9,36 @@ export default function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [ativos, setAtivos] = useState<Ativo[]>([])
+  const [dossierCount, setDossierCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  
+
   useEffect(() => {
     loadDashboard()
   }, [])
-  
+
   const loadDashboard = async () => {
     try {
-      const data = await api.ativos.list()
-      setAtivos(data)
+      const [ativosData, plansData] = await Promise.allSettled([
+        api.ativos.list(),
+        api.pagamentos.planos(),
+      ])
+      if (ativosData.status === 'fulfilled') setAtivos(ativosData.value)
+      if (plansData.status === 'fulfilled' && plansData.value?.dossier_count != null) {
+        setDossierCount(plansData.value.dossier_count)
+      }
     } catch (err) {
       console.error('Erro ao carregar:', err)
     } finally {
       setLoading(false)
     }
   }
-  
+
   const stats = {
     total: ativos.length,
     gold: ativos.filter(a => a.classificacao === 'gold').length,
     compliance: Math.round(ativos.reduce((acc, curr) => acc + curr.progresso, 0) / (ativos.length || 1)),
-    dossiers: 12, // Mocked for demo
-    revenue: 4800, // Mocked for demo ($400 average * 12)
+    dossiers: dossierCount ?? 0,
+    revenue: (dossierCount ?? 0) * 400,
   }
   
   if (loading) {

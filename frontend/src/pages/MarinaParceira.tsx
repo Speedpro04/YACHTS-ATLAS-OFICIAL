@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styles from './MarinaParceira.module.css';
 import Header from '../components/Header';
+import { api } from '../services/api';
 
 export default function MarinaParceira() {
   const [form, setForm] = useState({
@@ -12,6 +13,8 @@ export default function MarinaParceira() {
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const TOTAL_SPOTS = 40;
   const TAKEN_SPOTS = 12; // Atualizar dinamicamente se necessário
@@ -22,7 +25,7 @@ export default function MarinaParceira() {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: false }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const required = ['marina', 'name', 'email', 'fleet'];
     const newErrors: Record<string, boolean> = {};
     required.forEach((key) => {
@@ -34,9 +37,16 @@ export default function MarinaParceira() {
       return;
     }
 
-    // TODO: integrar com API /api/marina-partner
-    console.log('Partner request:', form);
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await api.leads.marina(form);
+      setSubmitted(true);
+    } catch {
+      setSubmitError('Erro ao enviar. Tente novamente ou entre em contato por e-mail.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const fillPercent = Math.round((TAKEN_SPOTS / TOTAL_SPOTS) * 100);
@@ -194,8 +204,11 @@ export default function MarinaParceira() {
                     Ao solicitar, sua marina entra na fila de análise. Retorno em até 48h via e-mail
                     com as condições do programa e os termos comerciais aplicáveis.
                   </p>
-                  <button className={styles.btn} onClick={handleSubmit}>
-                    Solicitar Parceria →
+                  {submitError && (
+                    <p className="text-red-400 text-xs mb-4">{submitError}</p>
+                  )}
+                  <button className={styles.btn} onClick={handleSubmit} disabled={submitting}>
+                    {submitting ? 'Enviando...' : 'Solicitar Parceria →'}
                   </button>
                 </div>
               </>

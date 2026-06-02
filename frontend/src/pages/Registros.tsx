@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { Ship, Anchor, Calendar, Clock, CheckCircle, AlertTriangle, Plus, Wrench, Shield, Zap, FileText, Camera, Activity, Box, Ship as ShipIcon, Gauge } from 'lucide-react'
 import RegistroForm from '../components/RegistroForm'
+import { api } from '../services/api'
 
 interface Registro {
   id: string
@@ -24,23 +26,53 @@ const CATEGORIAS = {
 }
 
 export default function Registros() {
+  const { ativoId } = useParams<{ ativoId: string }>()
   const [showForm, setShowForm] = useState(false)
   const [registros, setRegistros] = useState<Registro[]>([])
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todas')
+
+  useEffect(() => {
+    if (!ativoId) return
+    api.registros.list(ativoId).then((data) => {
+      const mapped: Registro[] = (data || []).map((r: any) => ({
+        id: r.id,
+        categoria: r.categoria,
+        titulo: r.titulo,
+        descricao: r.descricao,
+        data: r.created_at,
+        status: r.status,
+      }))
+      setRegistros(mapped)
+    }).catch(console.error)
+  }, [ativoId])
 
   const registrosFiltrados = filtroCategoria === 'todas'
     ? registros
     : registros.filter(r => r.categoria === filtroCategoria)
 
-  const handleSave = (data: Omit<Registro, 'id' | 'data' | 'status'>) => {
-    const newRegistro: Registro = {
-      ...data,
-      id: Date.now().toString(),
-      data: new Date().toISOString(),
-      status: 'pending'
+  const handleSave = async (data: Omit<Registro, 'id' | 'data' | 'status'>) => {
+    if (!ativoId) return
+    try {
+      const saved = await api.registros.create({ ...data, ativo_id: ativoId })
+      const newRegistro: Registro = {
+        id: saved.id || Date.now().toString(),
+        categoria: saved.categoria || data.categoria,
+        titulo: saved.titulo || data.titulo,
+        descricao: saved.descricao || data.descricao,
+        data: saved.created_at || new Date().toISOString(),
+        status: saved.status || 'pending',
+      }
+      setRegistros(prev => [newRegistro, ...prev])
+    } catch {
+      // Fallback to local state if backend unavailable
+      const newRegistro: Registro = {
+        ...data,
+        id: Date.now().toString(),
+        data: new Date().toISOString(),
+        status: 'pending',
+      }
+      setRegistros(prev => [newRegistro, ...prev])
     }
-    // Registro imutável - uma vez salvo, não muda mais
-    setRegistros(prev => [...prev, newRegistro])
     setShowForm(false)
   }
 

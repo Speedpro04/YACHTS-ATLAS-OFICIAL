@@ -4,6 +4,7 @@ import Ativos from './pages/Ativos'
 import Documentos from './pages/Documentos'
 import Login from './pages/Login'
 import Layout from './components/Layout'
+import PrivateRoute from './components/PrivateRoute'
 
 import LandingPage from './pages/LandingPage'
 import Frota from './pages/Frota'
@@ -35,14 +36,16 @@ function App() {
         <Route path="/marina-parceira" element={<MarinaParceira />} />
         <Route path="/termos-fundadores" element={<TermosFundadores />} />
         <Route path="/success" element={<SuccessOnboarding />} />
-        <Route path="/app" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="ativos" element={<Ativos />} />
-          <Route path="documentos" element={<Documentos />} />
-          <Route path="parceiros" element={<Parceiros />} />
-          <Route path="pagamento-dossie" element={<PagamentoDossie />} />
-          <Route path="dossie-sucesso" element={<SuccessDossie />} />
-          <Route path="registros/:ativoId" element={<Registros />} />
+        <Route element={<PrivateRoute />}>
+          <Route path="/app" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="ativos" element={<Ativos />} />
+            <Route path="documentos" element={<Documentos />} />
+            <Route path="parceiros" element={<Parceiros />} />
+            <Route path="pagamento-dossie" element={<PagamentoDossie />} />
+            <Route path="dossie-sucesso" element={<SuccessDossie />} />
+            <Route path="registros/:ativoId" element={<Registros />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
