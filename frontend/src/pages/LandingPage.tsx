@@ -1,10 +1,43 @@
-import { Shield, ArrowRight, History, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor } from 'lucide-react'
+import { ArrowRight, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Camera, FileText, History, ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import Header from '../components/Header'
+
+const FAQS = [
+  {
+    q: 'Meu jet ski ou lancha pequena tem dossiê?',
+    a: 'Sim. Todo ativo náutico até 26 pés — incluindo jet skis, motos aquáticas e embarcações de pequeno porte, motorizadas ou não — entra na faixa de entrada do Dossiê Yachts Atlas, a partir de US$ 100.',
+  },
+  {
+    q: 'Quanto custa o dossiê?',
+    a: 'O preço acompanha o porte do ativo, de US$ 100 (até 26 pés) a US$ 1.500 (acima de 150 pés). É um dossiê único e completo — o valor varia apenas pela complexidade do ativo, nunca pela qualidade do documento.',
+  },
+  {
+    q: 'O Yachts Atlas inspeciona a embarcação?',
+    a: 'Não. Somos a custódia digital do ativo: reunimos, organizamos e blindamos documentos, imagens e laudos. Inspeções, quando existem, são feitas por profissionais e estaleiros — nós guardamos e certificamos a integridade desses registros.',
+  },
+  {
+    q: 'O que entra no dossiê?',
+    a: 'Identificação e procedência, histórico de propriedade, documentação legal, histórico de manutenção e motorização, registro fotográfico datado e geolocalizado, e os laudos de terceiros — tudo selado e organizado em um único cofre digital.',
+  },
+  {
+    q: 'Por quanto tempo o dossiê fica disponível?',
+    a: 'O dossiê é permanente. Cada registro é preservado de forma imutável, formando a memória definitiva do ativo ao longo de toda a sua vida.',
+  },
+  {
+    q: 'Como sei que o dossiê não foi adulterado?',
+    a: 'Cada registro recebe uma assinatura criptográfica SHA-256 no momento em que entra no cofre. Qualquer alteração posterior fica evidente — é a sua garantia de autenticidade.',
+  },
+  {
+    q: 'Sou uma marina. Como funciona a parceria?',
+    a: 'A marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Solicite o credenciamento pelo programa de Marina Parceira.',
+  },
+]
 
 export default function LandingPage() {
   const { t } = useTranslation()
+  const [openFaq, setOpenFaq] = useState<number | null>(0)
 
   return (
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20]">
@@ -71,41 +104,60 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          {/* Um único dossiê — sem classes */}
+          <div className="max-w-3xl mx-auto text-center mb-20">
+            <p className="text-white/60 text-lg font-light leading-relaxed">
+              Não existem versões "básica" ou "premium". Existe{' '}
+              <span className="text-[#c5a059] font-medium">um único Dossiê Yachts Atlas</span> —
+              a custódia digital que reúne, organiza e blinda toda a história do seu ativo.
+              Cada documento, cada imagem, cada registro: datado, geolocalizado e à prova de fraude.
+            </p>
+          </div>
+
+          {/* Pilares — o que todo dossiê sempre reúne */}
+          <div className="text-center mb-12">
+            <span className="text-[10px] font-black tracking-[0.4em] text-[#c5a059] uppercase">O que todo dossiê reúne</span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
             {[
-              { id: 'compact', title: t('lp.cat_compact_title'), desc: t('lp.cat_compact_desc'), price: t('lp.cat_compact_price'), icon: Eye, tier: t('common.compact'), level: 1 },
-              { id: 'executive', title: t('lp.cat_executive_title'), desc: t('lp.cat_executive_desc'), price: t('lp.cat_executive_price'), icon: History, tier: t('common.executive'), level: 2 },
-              { id: 'superyacht', title: t('lp.cat_superyacht_title'), desc: t('lp.cat_superyacht_desc'), price: t('lp.cat_superyacht_price'), icon: Shield, tier: t('common.superyacht'), level: 3 }
-            ].map((item) => (
-              <div 
-                key={item.id}
-                className="group relative bg-[#021431] border border-white/5 p-10 rounded-sm hover:bg-white/[0.05] hover:border-[#c5a059]/30 transition-all duration-500"
-              >
-                <div className="mb-8 flex items-center justify-between">
-                   <div className="w-14 h-14 bg-[#c5a059]/10 rounded-full flex items-center justify-center text-[#c5a059]">
-                     <item.icon size={24} />
-                   </div>
-                   <div className="text-right">
-                      <span className="block text-[10px] font-black tracking-[0.3em] text-white/20 uppercase mb-1">{item.tier}</span>
-                      <span className="block text-xl font-serif font-bold text-[#c5a059]">{item.price}</span>
-                   </div>
+              { icon: Camera, label: 'Registro Fotográfico', sub: 'Datado e geolocalizado' },
+              { icon: FileText, label: 'Documentação & Procedência', sub: 'Cofre digital' },
+              { icon: History, label: 'Histórico Completo', sub: 'Manutenção e motorização' },
+              { icon: Lock, label: 'Selo de Integridade', sub: 'SHA-256 imutável' },
+            ].map((f, i) => (
+              <div key={i} className="bg-[#021431] border border-white/5 p-6 rounded-sm text-center group hover:border-[#c5a059]/30 transition-all duration-500">
+                <div className="w-12 h-12 mx-auto bg-[#c5a059]/10 border border-[#c5a059]/20 rounded-sm flex items-center justify-center text-[#c5a059] mb-4 group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all">
+                  <f.icon size={20} />
                 </div>
-                <h3 className="text-2xl font-serif font-bold text-white mb-4 tracking-tight group-hover:text-[#c5a059] transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-white/40 leading-relaxed text-sm">
-                  {item.desc}
-                </p>
-                <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-between">
-                   <div className="flex gap-1">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className={`w-6 h-0.5 rounded-full ${i <= item.level ? 'bg-[#c5a059]' : 'bg-white/5'}`}></div>
-                      ))}
-                   </div>
-                   <button className="text-[10px] font-black tracking-[0.2em] text-[#c5a059] uppercase">
-                     {t('common.explore')}
-                   </button>
-                </div>
+                <p className="text-white text-sm font-bold tracking-wide">{f.label}</p>
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-black mt-1">{f.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Escada de preços — 8 faixas por porte */}
+          <div className="text-center mb-12">
+            <h3 className="text-2xl md:text-3xl font-serif font-bold text-white mb-3 tracking-tight">
+              O preço acompanha o porte do ativo
+            </h3>
+            <p className="text-white/40 text-[11px] uppercase tracking-[0.3em] font-black">
+              Da lancha ao megayacht — sempre a mesma excelência
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            {[
+              { faixa: 'até 26 pés', preco: 'US$ 100' },
+              { faixa: '27 a 35 pés', preco: 'US$ 150' },
+              { faixa: '36 a 45 pés', preco: 'US$ 200' },
+              { faixa: '46 a 60 pés', preco: 'US$ 300' },
+              { faixa: '61 a 79 pés', preco: 'US$ 400' },
+              { faixa: '80 a 99 pés', preco: 'US$ 600' },
+              { faixa: '100 a 149 pés', preco: 'US$ 900' },
+              { faixa: '150+ pés', preco: 'US$ 1.500' },
+            ].map((faixa, i) => (
+              <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-sm text-center hover:border-[#c5a059]/40 hover:bg-white/[0.04] transition-all duration-500">
+                <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black mb-3">{faixa.faixa}</p>
+                <p className="text-2xl font-serif font-bold text-[#c5a059]">{faixa.preco}</p>
               </div>
             ))}
           </div>
@@ -332,6 +384,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="py-32 bg-[#010c20] border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-[#c5a059]/5 blur-[120px] rounded-full -translate-y-1/2 pointer-events-none"></div>
+        <div className="max-w-3xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
+            <span className="block text-[10px] font-black tracking-[0.4em] text-[#c5a059] uppercase mb-6">Perguntas Frequentes</span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">
+              Do jet ski ao megayacht.
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {FAQS.map((faq, i) => {
+              const isOpen = openFaq === i
+              return (
+                <div key={i} className="bg-[#021431] border border-white/5 rounded-sm overflow-hidden transition-all duration-500 hover:border-[#c5a059]/20">
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between gap-6 px-8 py-6 text-left group"
+                    aria-expanded={isOpen}
+                  >
+                    <span className={`text-base md:text-lg font-serif font-bold tracking-tight transition-colors ${isOpen ? 'text-[#c5a059]' : 'text-white group-hover:text-[#c5a059]'}`}>
+                      {faq.q}
+                    </span>
+                    <ChevronDown
+                      size={20}
+                      className={`flex-shrink-0 text-[#c5a059] transition-transform duration-500 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  <div className={`px-8 transition-all duration-500 ${isOpen ? 'max-h-96 pb-7 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                    <p className="text-white/50 text-sm md:text-[15px] leading-relaxed font-light">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-20 border-t border-white/5 bg-[#010c20] relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[200px] bg-[#c5a059]/5 blur-[100px] rounded-full pointer-events-none"></div>
@@ -351,6 +444,18 @@ export default function LandingPage() {
           </div>
           <p className="text-[8px] text-white/10 uppercase tracking-widest">
             © {new Date().getFullYear()} Yachts Atlas. {t('lp.footer_copy')}
+          </p>
+          <p className="text-[8px] text-white/15 uppercase tracking-[0.3em] mt-4">
+            Desenvolvido pela{' '}
+            <a
+              href="https://axoshub.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/30 hover:text-[#c5a059] font-bold transition-all"
+            >
+              AXOS HUB
+            </a>{' '}
+            — Arquitetura Digital
           </p>
         </div>
       </footer>

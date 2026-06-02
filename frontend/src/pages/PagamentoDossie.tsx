@@ -199,6 +199,21 @@ export default function PagamentoDossie() {
           </div>
         </div>
       </div>
+
+      <div className="border-t border-white/5 py-8 text-center">
+        <p className="text-[8px] text-white/15 uppercase tracking-[0.3em]">
+          Desenvolvido pela{' '}
+          <a
+            href="https://axoshub.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/30 hover:text-[#c5a059] font-bold transition-all"
+          >
+            AXOS HUB
+          </a>{' '}
+          — Arquitetura Digital
+        </p>
+      </div>
     </div>
   )
 }

@@ -19,6 +19,13 @@ const DEFAULT_SEO: SeoConfig = {
 
 const SEO_BY_PATH: Record<string, SeoConfig> = {
   '/': DEFAULT_SEO,
+  '/sobre': {
+    title: 'Sobre Nós — Autoridade Técnica em Inspeção Náutica | Yachts Atlas',
+    description:
+      'A casa técnica da náutica. Custódia e dossiê construídos sobre ensaio não destrutivo por ultrassom (NDT) e controle de qualidade industrial — do casco ao motor ao acabamento.',
+    keywords:
+      'sobre yachts atlas, inspeção náutica, ensaio não destrutivo, ultrassom NDT, autoridade técnica náutica, custódia de iates',
+  },
   '/frota': {
     title: 'Gestão de Frota Náutica para Marinas | Yachts Atlas',
     description:

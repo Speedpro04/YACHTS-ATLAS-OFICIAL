@@ -34,6 +34,9 @@ export default function Header() {
           <Link to="/" className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
             {t('common.menu_home')}
           </Link>
+          <Link to="/sobre" className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
+            {t('common.menu_about')}
+          </Link>
           <Link to="/frota" className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
             {t('common.menu_fleet')}
           </Link>
@@ -62,6 +65,7 @@ export default function Header() {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-[#010c20] border-b border-white/5 p-8 flex flex-col gap-6 animate-in slide-in-from-top-4 duration-500 shadow-2xl">
            <Link to="/" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_home')}</Link>
+           <Link to="/sobre" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_about')}</Link>
            <Link to="/frota" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_fleet')}</Link>
            <Link to="/seguranca" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_security')}</Link>
            <Link to="/acesso-proprietario" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_owner_portal')}</Link>

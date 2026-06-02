@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
 
 import LandingPage from './pages/LandingPage'
+import Sobre from './pages/Sobre'
 import Frota from './pages/Frota'
 import Seguranca from './pages/Seguranca'
 import RegistroMarina from './pages/RegistroMarina'
@@ -27,6 +28,7 @@ function App() {
       <SeoMeta />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/sobre" element={<Sobre />} />
         <Route path="/frota" element={<Frota />} />
         <Route path="/seguranca" element={<Seguranca />} />
         <Route path="/login" element={<Login />} />
