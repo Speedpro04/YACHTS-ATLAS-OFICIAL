@@ -20,8 +20,10 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = localStorage.getItem('yachts_token')
-  
+  // Token da sessão real do Supabase (login unificado backend <-> frontend)
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -117,11 +119,14 @@ export const api = {
   },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),
-    upload: (ativoId: string, tipo: string, categoria: string, formData: FormData) => fetch(`${API_URL}/documentos/upload/${ativoId}?tipo=${tipo}&categoria=${categoria}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('yachts_token')}` },
-      body: formData,
-    }).then(r => r.json()),
+    upload: async (ativoId: string, tipo: string, categoria: string, formData: FormData) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      return fetch(`${API_URL}/documentos/upload/${ativoId}?tipo=${tipo}&categoria=${categoria}`, {
+        method: 'POST',
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
+        body: formData,
+      }).then(r => r.json())
+    },
     get: (id: string) => apiRequest(`/documentos/${id}`),
     download: (id: string) => apiRequest(`/documentos/${id}/download`),
   },

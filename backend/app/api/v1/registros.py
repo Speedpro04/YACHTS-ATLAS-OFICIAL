@@ -7,7 +7,7 @@ Registros são imutáveis: só criação e leitura.
 """
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_admin
-from app.core.security import verify_token
+from app.core.security import get_current_user
 from pydantic import BaseModel
 from typing import Optional, Any
 
@@ -34,7 +34,7 @@ def _owner_do_ativo(supabase, ativo_id: str) -> Optional[str]:
 
 
 @router.get("/{ativo_id}")
-async def list_registros(ativo_id: str, token: dict = Depends(verify_token)):
+async def list_registros(ativo_id: str, token: dict = Depends(get_current_user)):
     """Lista os registros imutáveis de um ativo."""
     try:
         supabase = get_supabase_admin()
@@ -51,7 +51,7 @@ async def list_registros(ativo_id: str, token: dict = Depends(verify_token)):
 
 
 @router.post("/")
-async def create_registro(data: RegistroCreate, token: dict = Depends(verify_token)):
+async def create_registro(data: RegistroCreate, token: dict = Depends(get_current_user)):
     """Cria um registro imutável."""
     if data.status not in STATUS_VALIDOS:
         raise HTTPException(status_code=400, detail=f"status inválido (use: {', '.join(STATUS_VALIDOS)})")
@@ -81,7 +81,7 @@ async def create_registro(data: RegistroCreate, token: dict = Depends(verify_tok
 
 
 @router.get("/stats/{ativo_id}")
-async def get_registro_stats(ativo_id: str, token: dict = Depends(verify_token)):
+async def get_registro_stats(ativo_id: str, token: dict = Depends(get_current_user)):
     """Contagem de registros por status para um ativo."""
     try:
         supabase = get_supabase_admin()

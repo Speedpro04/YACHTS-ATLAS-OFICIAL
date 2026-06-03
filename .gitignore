@@ -1,8 +1,16 @@
-# Environment Variables
+# Environment Variables / segredos (NUNCA versionar)
 .env
 .env.local
 .env.*.local
 *.env
+VARIAVEIS-DE-HOJE/
+*VARIAVEIS*
+*variaveis*
+*variavei*
+SECRET-SERVICE-ROLE/
+*SECRET*
+*secret*
+*SERVICE-ROLE*
 
 # Node
 node_modules/

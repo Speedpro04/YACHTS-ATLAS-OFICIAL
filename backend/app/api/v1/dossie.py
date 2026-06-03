@@ -2,7 +2,7 @@
 Yachts Atlas — Dossiê (montagem de dados reais a partir do banco)
 """
 from fastapi import APIRouter, HTTPException, Depends, Response
-from app.core.security import verify_token
+from app.core.security import get_current_user
 from app.services.dossie_data import montar_dados_dossie
 from app.services.dossie_pdf import gerar_pdf_dossie
 
@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/{ativo_id}/dados")
-async def dados_dossie(ativo_id: str, token: dict = Depends(verify_token)):
+async def dados_dossie(ativo_id: str, token: dict = Depends(get_current_user)):
     """
     Retorna o pacote de dados do dossiê montado a partir do banco real
     (ativos + registros + documentos). É a fonte que o gerador de PDF consome.
@@ -24,7 +24,7 @@ async def dados_dossie(ativo_id: str, token: dict = Depends(verify_token)):
 
 
 @router.get("/{ativo_id}/pdf")
-async def pdf_dossie(ativo_id: str, token: dict = Depends(verify_token)):
+async def pdf_dossie(ativo_id: str, token: dict = Depends(get_current_user)):
     """Gera o PDF do dossiê a partir dos dados reais do banco (só seções com dado)."""
     try:
         dados = montar_dados_dossie(ativo_id)

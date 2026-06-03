@@ -2,6 +2,7 @@
 Yachts Atlas — Security Utilities
 """
 from datetime import datetime, timedelta
+from fastapi import Header, HTTPException
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
@@ -43,3 +44,34 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_current_user(authorization: str = Header(None)) -> dict:
+    """
+    Dependência unificada: lê o JWT da sessão Supabase no header Authorization
+    e valida via Supabase Auth. Retorna {sub, email}.
+    Substitui o esquema antigo (token em query) — agora alinhado ao login real.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Token ausente")
+    token = authorization.split(" ", 1)[1].strip()
+
+    # Bypass de manutenção (admin da plataforma)
+    if (
+        settings.MAINTENANCE_BYPASS_ENABLED
+        and settings.MAINTENANCE_MASTER_TOKEN
+        and token == settings.MAINTENANCE_MASTER_TOKEN
+    ):
+        return {"sub": "maintenance-admin", "email": None, "role": "owner"}
+
+    try:
+        from app.core.supabase import get_supabase_admin
+        res = get_supabase_admin().auth.get_user(token)
+        user = getattr(res, "user", None)
+        if not user:
+            raise HTTPException(status_code=401, detail="Sessão inválida")
+        return {"sub": user.id, "email": getattr(user, "email", None), "role": "owner"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Sessão inválida")
