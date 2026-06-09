@@ -5,4 +5,4 @@ Disallow: /login
 Disallow: /portal-proprietario
 Disallow: /success
 
-Sitemap: https://yachtsatlas.com/sitemap.xml
+Sitemap: https://yachtsatlas.online/sitemap.xml

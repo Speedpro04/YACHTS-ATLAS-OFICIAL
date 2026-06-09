@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-const BASE_URL = 'https://yachtsatlas.com'
+const BASE_URL = 'https://yachtsatlas.online'
 
 type SeoConfig = {
   title: string
@@ -12,7 +12,7 @@ type SeoConfig = {
 const DEFAULT_SEO: SeoConfig = {
   title: 'Yachts Atlas | Dossiê Digital e Custódia de Ativos Náuticos',
   description:
-    'Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam e aceleram a negociação do seu patrimônio marítimo.',
+    'Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam seu patrimônio marítimo.',
   keywords:
     'dossiê náutico, custódia digital de iates, registro digital de embarcação, avaliação de iate, compliance náutico, due diligence marítima, marina parceira, certificação de embarcação',
 }
