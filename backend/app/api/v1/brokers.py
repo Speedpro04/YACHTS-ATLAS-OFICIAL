@@ -7,7 +7,7 @@ from app.services.broker_service import BrokerService, BrokerStatus, DealStatus,
 from app.schemas.partners import BrokerCreate, BrokerUpdate, DealCreate
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
-from app.core.security import verify_token
+from app.core.security import get_current_user_id
 from typing import Optional
 
 router = APIRouter()
@@ -15,15 +15,10 @@ broker_service = BrokerService()
 audit_service = AuditService()
 
 
-def get_current_user_id(token: str = Depends(verify_token)) -> str:
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return token.get("sub")
-
-
 @router.post("/brokers")
 async def create_broker(
     broker_in: BrokerCreate,
+    user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
     """Create new broker"""
@@ -109,6 +104,7 @@ async def get_broker(
 @router.get("/brokers/user/{user_id}")
 async def get_broker_by_user_id(
     user_id: str,
+    _current_user: str = Depends(get_current_user_id),
     request: Request = None
 ):
     """Get broker by user ID"""

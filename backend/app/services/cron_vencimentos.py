@@ -6,7 +6,7 @@ Executado diariamente para verificar alertas de vencimento
 import sys
 from datetime import datetime
 from app.services.alert_service import process_alerts
-from app.core.supabase import supabase
+from app.core.supabase import get_supabase_admin
 
 def main():
     """
@@ -16,7 +16,7 @@ def main():
 
     try:
         # Busca todos os registros com data de vencimento
-        response = supabase.from_('registros').select('*').execute()
+        response = get_supabase_admin().from_('registros').select('*').execute()
         registros = response.data if response.data else []
 
         if not registros:

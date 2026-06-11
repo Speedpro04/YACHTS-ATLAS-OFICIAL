@@ -2,17 +2,18 @@
 Endpoints para gestão de alertas de vencimento
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from typing import List, Dict
 from datetime import datetime
 from app.services.alert_service import process_alerts, check_vencimentos, ALERT_EMAIL
-from app.core.supabase import supabase
+from app.core.supabase import get_supabase_admin
+from app.core.security import require_platform_admin
 
 router = APIRouter()
 
 
 @router.get("/alertas/configurar")
-async def configurar_alertas():
+async def configurar_alertas(_admin: dict = Depends(require_platform_admin)):
     """
     Configura os alertas de vencimento.
     Retorna a configuração atual dos alertas.
@@ -33,13 +34,13 @@ async def configurar_alertas():
 
 
 @router.get("/alertas/verificar")
-async def verificar_vencimentos():
+async def verificar_vencimentos(_admin: dict = Depends(require_platform_admin)):
     """
     Verifica todos os registros e retorna aqueles que estão nos períodos de alerta.
     """
     try:
         # Busca todos os registros com data de vencimento
-        response = supabase.from_('registros').select('*').execute()
+        response = get_supabase_admin().from_('registros').select('*').execute()
         registros = response.data if response.data else []
 
         alertas = check_vencimentos(registros)
@@ -62,14 +63,14 @@ async def verificar_vencimentos():
 
 
 @router.post("/alertas/enviar")
-async def enviar_alertas(background_tasks: BackgroundTasks):
+async def enviar_alertas(background_tasks: BackgroundTasks, _admin: dict = Depends(require_platform_admin)):
     """
     Envia todos os alertas de vencimento pendentes.
     Pode ser executado em background.
     """
     try:
         # Busca todos os registros
-        response = supabase.from_('registros').select('*').execute()
+        response = get_supabase_admin().from_('registros').select('*').execute()
         registros = response.data if response.data else []
 
         resultados = process_alerts(registros)
@@ -83,7 +84,7 @@ async def enviar_alertas(background_tasks: BackgroundTasks):
 
 
 @router.post("/alertas/testar")
-async def testar_envio_email():
+async def testar_envio_email(_admin: dict = Depends(require_platform_admin)):
     """
     Envia um email de teste para o email configurado.
     """

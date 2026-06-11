@@ -16,6 +16,8 @@ def _parse_allowed_origins(raw: str | None) -> list[str]:
             "https://yachts.axoshub.com",
             "https://yachtsatlas.com",
             "https://www.yachtsatlas.com",
+            "https://yachtsatlas.online",
+            "https://www.yachtsatlas.online",
         ]
 
     raw = raw.strip()
@@ -53,6 +55,9 @@ class Settings(BaseSettings):
     MAINTENANCE_PASSWORD: str = os.getenv("MAINTENANCE_PASSWORD", "")
     MAINTENANCE_BYPASS_ENABLED: bool = os.getenv("MAINTENANCE_BYPASS_ENABLED", "false").lower() == "true"
     MAINTENANCE_MASTER_TOKEN: str = os.getenv("MAINTENANCE_MASTER_TOKEN", "")
+
+    # Dossiê: quando true, o PDF só sai para ativo com pagamento concluído
+    DOSSIER_REQUIRE_PAYMENT: bool = os.getenv("DOSSIER_REQUIRE_PAYMENT", "false").lower() == "true"
 
     # Email Configuration for Alerts
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "yachtsatlas@gmail.com")

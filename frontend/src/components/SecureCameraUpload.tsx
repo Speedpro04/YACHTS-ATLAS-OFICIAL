@@ -45,14 +45,15 @@ export default function SecureCameraUpload({ ativoId, onUploadSuccess, onClose }
     formData.append('file', file)
     
     try {
-      // O FastAPI cuidará de gerar o Hash SHA-256 e salvar com WORM via S3
-      await api.documentos.upload(ativoId, 'Vistoria', 'integridade', formData)
-      // O backend retorna os dados do upload, incluindo o Hash (resposta mockada aqui por enquanto)
-      const mockHash = 'a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a'
-      onUploadSuccess(mockHash)
-      
+      // O backend calcula o SHA-256 real e armazena no Supabase Storage
+      const result = await api.documentos.upload(ativoId, 'Vistoria', 'integridade', formData)
+      if (!result?.hash) {
+        throw new Error('Upload sem hash de integridade')
+      }
+      onUploadSuccess(result.hash)
+
     } catch (err: any) {
-      setError('Falha ao processar o arquivo. Verifique sua conexão e tente novamente.')
+      setError(err?.message || 'Falha ao processar o arquivo. Verifique sua conexão e tente novamente.')
       console.error(err)
     } finally {
       setIsUploading(false)

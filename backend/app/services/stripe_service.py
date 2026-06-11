@@ -379,9 +379,29 @@ class StripeService:
         user_id = metadata.get('user_id')
         plan_type = metadata.get('plan_type')
         payment_type = metadata.get('payment_type', 'subscription')
-        
+
         logger.info(f"Checkout completed for user {user_id}, plan {plan_type}")
-        
+
+        # Persiste o pagamento — é isso que libera o dossiê e dá rastreio financeiro
+        try:
+            from app.core.supabase import get_supabase_admin
+            get_supabase_admin().table("payments").insert({
+                "usuario_id": user_id,
+                "stripe_checkout_session_id": session.id,
+                "stripe_payment_intent_id": getattr(session, "payment_intent", None),
+                "stripe_subscription_id": getattr(session, "subscription", None),
+                "amount": (session.amount_total or 0) / 100,
+                "currency": session.currency,
+                "status": "completed",
+                "payment_type": payment_type,
+                "plan_type": plan_type,
+                "dossier_level": metadata.get("dossier_level"),
+                "ativo_id": metadata.get("ativo_id"),
+                "metadata": dict(metadata) if metadata else {},
+            }).execute()
+        except Exception as e:
+            logger.error(f"Falha ao persistir pagamento do checkout {session.id}: {e}")
+
         return {
             "status": "completed",
             "user_id": user_id,

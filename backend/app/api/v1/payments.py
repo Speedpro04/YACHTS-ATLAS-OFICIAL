@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Header
 from app.services.stripe_service import StripeService, PlanType, DossierLevel
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
-from app.core.security import verify_token
+from app.core.security import get_current_user, get_current_user_id
 from typing import Optional
 
 from pydantic import BaseModel
@@ -66,10 +66,18 @@ async def create_onboarding_checkout(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_current_user_id(token: str = Depends(verify_token)) -> str:
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return token.get("sub")
+def _assert_subscription_owner(subscription_id: str, user: dict) -> None:
+    """Bloqueia acesso a assinaturas de outros usuários (anti-IDOR)."""
+    if user.get("sub") == "maintenance-admin":
+        return
+    import stripe
+    try:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+    except stripe.error.StripeError:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    owner_id = (subscription.metadata or {}).get("user_id")
+    if not owner_id or owner_id != user.get("sub"):
+        raise HTTPException(status_code=403, detail="Not authorized for this subscription")
 
 
 @router.get("/plans")
@@ -167,15 +175,21 @@ async def create_dossier_checkout(
         supabase = get_supabase_client()
         
         # 1. Look up the asset and its associated marina
-        ativo = supabase.table("ativos").select("marina_id").eq("id", ativo_id).execute()
-        marina_id = ativo.data[0].get("marina_id") if ativo.data else None
-        
-        # 2. Look up the marina's Stripe Account ID for the split
+        # (tolerante a schema sem marina_id/tabela marinas — split fica inativo)
+        marina_id = None
         marina_stripe_account = None
-        if marina_id:
-            marina = supabase.table("marinas").select("stripe_account_id").eq("id", marina_id).execute()
-            if marina.data:
-                marina_stripe_account = marina.data[0].get("stripe_account_id")
+        try:
+            ativo = supabase.table("ativos").select("*").eq("id", ativo_id).execute()
+            marina_id = ativo.data[0].get("marina_id") if ativo.data else None
+
+            # 2. Look up the marina's Stripe Account ID for the split
+            if marina_id:
+                marina = supabase.table("marinas").select("stripe_account_id").eq("id", marina_id).execute()
+                if marina.data:
+                    marina_stripe_account = marina.data[0].get("stripe_account_id")
+        except Exception:
+            marina_id = None
+            marina_stripe_account = None
         
         session = stripe_service.create_dossier_checkout_session(
             user_id=user_id,
@@ -298,10 +312,12 @@ async def stripe_webhook(
 @router.get("/subscription/{subscription_id}/status")
 async def get_subscription_status(
     subscription_id: str,
-    user_id: str = Depends(get_current_user_id),
+    user: dict = Depends(get_current_user),
     request: Request = None
 ):
     """Get subscription status"""
+    user_id = user["sub"]
+    _assert_subscription_owner(subscription_id, user)
     # Get client information
     ip_address = get_client_ip(request)
     user_agent = get_user_agent(request)
@@ -352,10 +368,12 @@ async def get_subscription_status(
 async def cancel_subscription(
     subscription_id: str,
     at_period_end: bool = True,
-    user_id: str = Depends(get_current_user_id),
+    user: dict = Depends(get_current_user),
     request: Request = None
 ):
     """Cancel subscription"""
+    user_id = user["sub"]
+    _assert_subscription_owner(subscription_id, user)
     # Get client information
     ip_address = get_client_ip(request)
     user_agent = get_user_agent(request)

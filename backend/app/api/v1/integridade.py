@@ -3,16 +3,10 @@ Yachts Atlas — Integridade Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_client
-from app.core.security import verify_token
+from app.core.security import get_current_user_id
 from app.services.s3_service import get_s3_service
 
 router = APIRouter()
-
-
-def get_current_user_id(token: str = Depends(verify_token)) -> str:
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return token.get("sub")
 
 
 @router.get("/{doc_id}/verify")

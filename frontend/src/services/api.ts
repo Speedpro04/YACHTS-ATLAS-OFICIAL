@@ -121,11 +121,19 @@ export const api = {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),
     upload: async (ativoId: string, tipo: string, categoria: string, formData: FormData) => {
       const { data: { session } } = await supabase.auth.getSession()
-      return fetch(`${API_URL}/documentos/upload/${ativoId}?tipo=${tipo}&categoria=${categoria}`, {
+      const response = await fetch(`${API_URL}/documentos/upload/${ativoId}?tipo=${tipo}&categoria=${categoria}`, {
         method: 'POST',
         headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
         body: formData,
-      }).then(r => r.json())
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        const message = (payload && typeof payload === 'object' && 'detail' in payload && typeof payload.detail === 'string')
+          ? payload.detail
+          : `Upload falhou (${response.status})`
+        throw new ApiError(message, response.status, payload)
+      }
+      return payload
     },
     get: (id: string) => apiRequest(`/documentos/${id}`),
     download: (id: string) => apiRequest(`/documentos/${id}/download`),

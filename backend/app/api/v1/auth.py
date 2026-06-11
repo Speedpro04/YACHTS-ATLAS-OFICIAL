@@ -1,7 +1,7 @@
 """
 Yachts Atlas — Authentication Endpoints
 """
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Header, HTTPException, Depends, Request
 from app.schemas.models import UsuarioCreate, UsuarioResponse, MaintenanceLoginRequest, LoginRequest
 from app.core.supabase import get_supabase_admin
 from app.core.security import hash_password, verify_password, create_access_token
@@ -199,9 +199,16 @@ async def login(data: LoginRequest, request: Request):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
+def _bearer_token(authorization: str | None) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Token ausente")
+    return authorization.split(" ", 1)[1].strip()
+
+
 @router.post("/logout")
-async def logout(token: str, request: Request):
+async def logout(request: Request, authorization: str = Header(None)):
     """Logout with audit tracking"""
+    token = _bearer_token(authorization)
     supabase = get_supabase_admin()
     
     # Get client information
@@ -249,8 +256,9 @@ async def logout(token: str, request: Request):
 
 
 @router.get("/me")
-async def get_me(token: str, request: Request):
+async def get_me(request: Request, authorization: str = Header(None)):
     """Get current user info with audit tracking"""
+    token = _bearer_token(authorization)
     supabase = get_supabase_admin()
     
     # Get client information

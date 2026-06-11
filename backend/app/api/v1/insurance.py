@@ -7,18 +7,12 @@ from app.services.insurance_service import InsuranceService, InsuranceStatus
 from app.schemas.partners import InsuranceCompanyCreate, InsuranceCompanyUpdate
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
-from app.core.security import verify_token
+from app.core.security import get_current_user_id
 from typing import Optional
 
 router = APIRouter()
 insurance_service = InsuranceService()
 audit_service = AuditService()
-
-
-def get_current_user_id(token: str = Depends(verify_token)) -> str:
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return token.get("sub")
 
 
 @router.post("/companies")

@@ -41,7 +41,7 @@ def _bg(canvas, doc):
     canvas.setFont("Helvetica", 6.5)
     canvas.setFillColor(GOLD_DIM)
     canvas.drawString(20 * mm, 12 * mm, "ATLAS YACHTS — CUSTÓDIA DIGITAL DE ATIVOS NÁUTICOS")
-    canvas.drawRightString(A4[0] - 14 * mm, 12 * mm, "yachtsatlas.com")
+    canvas.drawRightString(A4[0] - 14 * mm, 12 * mm, "yachtsatlas.online")
     canvas.restoreState()
 
 

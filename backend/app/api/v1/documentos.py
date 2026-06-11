@@ -3,7 +3,8 @@ Yachts Atlas — Documentos Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
 from app.core.supabase import get_supabase_client
-from app.core.security import verify_token
+from app.core.security import get_current_user_id
+from app.core.authz import get_ativo_autorizado
 from app.services.s3_service import get_s3_service
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
@@ -14,10 +15,6 @@ router = APIRouter()
 audit_service = AuditService()
 
 
-def get_current_user_id(token: str = Depends(verify_token)) -> str:
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return token.get("sub")
 @router.get("/ativo/{ativo_id}")
 async def list_documentos(
     ativo_id: str,
@@ -33,31 +30,9 @@ async def list_documentos(
     location = get_client_location(request)
     
     try:
-        # Check authorization
-        profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-        if not profile_response.data:
-            raise HTTPException(status_code=404, detail="Profile not found")
-        profile = profile_response.data[0]
-        
-        user_role = profile.get("user_role")
-        user_marina_id = profile.get("marina_id")
-        
-        ativo_response = supabase.table("ativos").select("marina_id", "owner_id").eq("id", ativo_id).execute()
-        if not ativo_response.data:
-            raise HTTPException(status_code=404, detail="Ativo not found")
-        ativo = ativo_response.data[0]
-        
-        authorized = False
-        if user_role == "admin":
-            authorized = True
-        elif user_role == "marina_manager" and user_marina_id and str(ativo.get("marina_id")) == str(user_marina_id):
-            authorized = True
-        elif user_role == "owner" and str(ativo.get("owner_id")) == str(user_id):
-            authorized = True
-            
-        if not authorized:
-            raise HTTPException(status_code=403, detail="Not authorized to access these documents")
-            
+        # Check authorization (tolerante aos dois schemas)
+        get_ativo_autorizado(ativo_id, user_id)
+
         response = supabase.table("documentos").select("*").eq("ativo_id", ativo_id).execute()
         
         # Populate nome_arquivo dynamically from storage_path
@@ -130,32 +105,9 @@ async def upload_documento(
     location = get_client_location(request)
     
     try:
-        # Get asset details to get marina_id and check permission
-        ativo_response = supabase.table("ativos").select("marina_id", "owner_id").eq("id", ativo_id).execute()
-        if not ativo_response.data:
-            raise HTTPException(status_code=404, detail="Ativo not found")
-        ativo = ativo_response.data[0]
-        marina_id = ativo["marina_id"]
-        
-        profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-        if not profile_response.data:
-            raise HTTPException(status_code=404, detail="Profile not found")
-        profile = profile_response.data[0]
-        
-        user_role = profile.get("user_role")
-        user_marina_id = profile.get("marina_id")
-        
-        authorized = False
-        if user_role == "admin":
-            authorized = True
-        elif user_role == "marina_manager" and user_marina_id and str(ativo.get("marina_id")) == str(user_marina_id):
-            authorized = True
-        elif user_role == "owner" and str(ativo.get("owner_id")) == str(user_id):
-            authorized = True
-            
-        if not authorized:
-            raise HTTPException(status_code=403, detail="Not authorized to upload documents for this asset")
-            
+        # Check permission (tolerante aos dois schemas)
+        get_ativo_autorizado(ativo_id, user_id)
+
         contents = await file.read()
         file_hash = s3_service.calculate_hash(contents)
         
@@ -187,16 +139,19 @@ async def upload_documento(
             
             raise HTTPException(status_code=500, detail="Failed to upload file")
         
-        # Create document record
+        # Create document record (colunas existentes na tabela documentos)
         doc_data = {
             "id": doc_id,
             "ativo_id": ativo_id,
-            "marina_id": str(marina_id),
+            "usuario_id": None if user_id == "maintenance-admin" else user_id,
+            "nome_arquivo": file.filename,
             "tipo": tipo,
             "categoria": categoria,
             "url_arquivo": upload_result.get("public_url") or "",
             "storage_path": s3_key,
             "hash_sha256": file_hash,
+            "tamanho_bytes": len(contents),
+            "mime_type": file.content_type,
             "status": "verified"
         }
         
@@ -281,31 +236,9 @@ async def get_documento(doc_id: str, user_id: str = Depends(get_current_user_id)
         doc = response.data[0]
         ativo_id = doc["ativo_id"]
         
-        # Authorization check
-        profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-        if not profile_response.data:
-            raise HTTPException(status_code=404, detail="Profile not found")
-        profile = profile_response.data[0]
-        
-        user_role = profile.get("user_role")
-        user_marina_id = profile.get("marina_id")
-        
-        ativo_response = supabase.table("ativos").select("marina_id", "owner_id").eq("id", ativo_id).execute()
-        if not ativo_response.data:
-            raise HTTPException(status_code=404, detail="Ativo not found")
-        ativo = ativo_response.data[0]
-        
-        authorized = False
-        if user_role == "admin":
-            authorized = True
-        elif user_role == "marina_manager" and user_marina_id and str(ativo.get("marina_id")) == str(user_marina_id):
-            authorized = True
-        elif user_role == "owner" and str(ativo.get("owner_id")) == str(user_id):
-            authorized = True
-            
-        if not authorized:
-            raise HTTPException(status_code=403, detail="Not authorized to view this document")
-            
+        # Authorization check (tolerante aos dois schemas)
+        get_ativo_autorizado(ativo_id, user_id)
+
         # Dynamically set nome_arquivo
         parts = doc.get("storage_path", "").split("/")
         filename_part = parts[-1] if parts else "documento.pdf"
@@ -384,31 +317,9 @@ async def download_documento(doc_id: str, user_id: str = Depends(get_current_use
         doc = response.data[0]
         ativo_id = doc["ativo_id"]
         
-        # Check permissions
-        profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-        if not profile_response.data:
-            raise HTTPException(status_code=404, detail="Profile not found")
-        profile = profile_response.data[0]
-        
-        user_role = profile.get("user_role")
-        user_marina_id = profile.get("marina_id")
-        
-        ativo_response = supabase.table("ativos").select("marina_id", "owner_id").eq("id", ativo_id).execute()
-        if not ativo_response.data:
-            raise HTTPException(status_code=404, detail="Ativo not found")
-        ativo = ativo_response.data[0]
-        
-        authorized = False
-        if user_role == "admin":
-            authorized = True
-        elif user_role == "marina_manager" and user_marina_id and str(ativo.get("marina_id")) == str(user_marina_id):
-            authorized = True
-        elif user_role == "owner" and str(ativo.get("owner_id")) == str(user_id):
-            authorized = True
-            
-        if not authorized:
-            raise HTTPException(status_code=403, detail="Not authorized to download this document")
-        
+        # Check permissions (tolerante aos dois schemas)
+        get_ativo_autorizado(ativo_id, user_id)
+
         # Generate URL
         url = s3_service.get_presigned_url(doc["storage_path"])
         

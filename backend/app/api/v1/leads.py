@@ -1,11 +1,12 @@
 """
 Yachts Atlas — Leads (marinas e parceiros)
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from app.schemas.models import LeadMarinaCreate
 from app.core.supabase import get_supabase_admin
+from app.core.security import require_platform_admin
 
 router = APIRouter()
 
@@ -65,7 +66,7 @@ async def create_partner_lead(data: LeadParceiroCreate):
 
 
 @router.get("/marina")
-async def list_marina_leads():
+async def list_marina_leads(_admin: dict = Depends(require_platform_admin)):
     """List all marina leads (admin use)"""
     try:
         supabase = get_supabase_admin()
