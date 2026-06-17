@@ -183,5 +183,11 @@ async def get_progresso(ativo_id: str, user_id: str = Depends(get_current_user_i
         
     if not authorized:
         raise HTTPException(status_code=403, detail="Not authorized to access this asset progress")
-        
-    return {"progresso": ativo["progresso"], "classificacao": ativo["classificacao"]}
+
+    # Asset Score calculado ao vivo a partir dos registros + documentos reais
+    try:
+        from app.services.asset_score_service import calcular_saude_ativo
+        return calcular_saude_ativo(ativo_id)
+    except Exception:
+        # Fallback para o valor persistido se o cálculo falhar
+        return {"progresso": ativo["progresso"], "classificacao": ativo["classificacao"]}

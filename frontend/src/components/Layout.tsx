@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, Users } from 'lucide-react'
+import { Home, Ship, FileText, LogOut, Bell, Users, FileCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 import { supabase } from '../services/api'
@@ -12,6 +12,7 @@ export default function Layout() {
     { path: '/app', label: t('common.dashboard'), icon: Home },
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
     { path: '/app/documentos', label: t('dossier.level_3'), icon: FileText },
+    { path: '/app/solicitacoes-dossie', label: 'Dossiês', icon: FileCheck },
     { path: '/app/parceiros', label: t('common.partners'), icon: Users },
   ]
 

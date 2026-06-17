@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
-  Shield, Download, CheckCircle2, Lock,
-  FileCheck, ArrowLeft, ExternalLink, Zap
+  Shield, CheckCircle2, FileCheck, ArrowLeft, FileDown, Hash
 } from 'lucide-react'
 import { faixaPorPes, formatarPreco } from '../config/precosDossie'
+import { api } from '../services/api'
 
 const INCLUSOS = [
   'Identificação e procedência',
@@ -20,12 +21,26 @@ export default function PagamentoDossie() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
+  const ativoId = searchParams.get('ativo_id') || ''
   const pes = Number(searchParams.get('pes')) || 0
   const faixa = faixaPorPes(pes)
   const precoFmt = formatarPreco(faixa.precoUSD)
 
-  const handlePagar = () => {
-    window.location.href = faixa.stripeLink
+  const [gerando, setGerando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  const handleEmitir = async () => {
+    if (!ativoId) { setErro('Ativo não identificado. Volte aos ativos e tente novamente.'); return }
+    setGerando(true)
+    setErro('')
+    try {
+      const url = await api.dossie.pdfUrl(ativoId)
+      window.open(url, '_blank', 'noopener')
+    } catch (e: any) {
+      setErro(e?.message || 'Não foi possível gerar o dossiê agora.')
+    } finally {
+      setGerando(false)
+    }
   }
 
   return (
@@ -58,7 +73,7 @@ export default function PagamentoDossie() {
         </div>
 
         <div className="grid lg:grid-cols-5 gap-10">
-          {/* Esquerda: o dossiê único + o que reúne */}
+          {/* Esquerda: o que o dossiê reúne */}
           <div className="lg:col-span-3 space-y-8">
             <div className="p-6 rounded-sm border border-[#c5a059]/20 bg-[#c5a059]/5">
               <div className="flex items-center justify-between">
@@ -69,7 +84,7 @@ export default function PagamentoDossie() {
                 <span className="text-3xl font-serif font-bold text-[#c5a059]">{precoFmt}</span>
               </div>
               <p className="text-[11px] text-white/40 leading-relaxed mt-4">
-                Um único dossiê, sempre completo. O preço acompanha o porte do ativo — da lancha ao megayacht.
+                Valor de referência conforme o porte. O pagamento do dossiê é tratado diretamente com a marina responsável.
               </p>
             </div>
 
@@ -86,41 +101,34 @@ export default function PagamentoDossie() {
             </div>
           </div>
 
-          {/* Direita: resumo e pagamento */}
+          {/* Direita: emissão */}
           <div className="lg:col-span-2">
             <div className="sticky top-8 space-y-6">
               <div className="bg-white/[0.02] border border-white/5 rounded-sm overflow-hidden">
                 <div className="p-6 border-b border-white/5">
-                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">Resumo do Pedido</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-white/60">Dossiê — {faixa.label}</span>
-                    <span className="text-sm font-bold text-white">{precoFmt}</span>
-                  </div>
-                </div>
-
-                <div className="p-6 border-b border-white/5 bg-white/[0.01]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-widest text-white/40">Total a Pagar</span>
-                    <span className="text-3xl font-serif font-bold text-[#c5a059]">{precoFmt}</span>
-                  </div>
-                  <p className="text-[9px] text-white/20 mt-2 uppercase tracking-widest">Pagamento único • Sem recorrência</p>
+                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">Emissão</h3>
+                  <p className="text-[11px] text-white/40 leading-relaxed">
+                    Gere agora o PDF do dossiê deste ativo, sempre com os dados mais recentes do cofre digital.
+                  </p>
                 </div>
 
                 <div className="p-6 space-y-4">
                   <button
-                    onClick={handlePagar}
-                    className="w-full bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] py-5 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#c5a059]/10"
+                    onClick={handleEmitir}
+                    disabled={gerando}
+                    className="w-full bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-50 text-[#010c20] py-5 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#c5a059]/10"
                   >
-                    <Download size={16} />
-                    Pagar e Gerar Dossiê
-                    <ExternalLink size={14} />
+                    <FileDown size={16} />
+                    {gerando ? 'Gerando…' : 'Gerar Dossiê (PDF)'}
                   </button>
+
+                  {erro && <p className="text-rose-400 text-xs text-center">{erro}</p>}
 
                   <div className="space-y-3 pt-2">
                     {[
-                      { icon: Lock, texto: 'Pagamento 100% seguro via Stripe' },
-                      { icon: Shield, texto: 'Integridade garantida por SHA-256' },
-                      { icon: Zap, texto: 'Acesso ao dossiê após a confirmação' },
+                      { icon: Hash, texto: 'Integridade garantida por SHA-256' },
+                      { icon: Shield, texto: 'Trilha de auditoria registrada' },
+                      { icon: FileCheck, texto: 'Somente seções com dado entram no PDF' },
                     ].map(({ icon: Icon, texto }, i) => (
                       <div key={i} className="flex items-center gap-3 text-[10px] text-white/20">
                         <Icon size={14} className="text-white/20 flex-shrink-0" />
@@ -129,11 +137,6 @@ export default function PagamentoDossie() {
                     ))}
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-3 opacity-40">
-                <Lock size={12} />
-                <span className="text-[9px] uppercase tracking-widest text-white/50 font-black">Processado com segurança pela Stripe</span>
               </div>
             </div>
           </div>

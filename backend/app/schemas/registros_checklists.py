@@ -18,6 +18,13 @@ class CategoriaChecklist(str, Enum):
     RASTREABILIDADE_SERVICOS = "rastreabilidade_servicos"
     INTERIOR_ACOMODACOES = "interior_acomodacoes"
     NAVEGABILIDADE = "navegabilidade"
+    # Camada internacional / superiate
+    CLASSE_CERTIFICACAO = "classe_certificacao"
+    FISCAL_INTERNACIONAL = "fiscal_internacional"
+    TRIPULACAO = "tripulacao"
+    NAVEGACAO_LOGBOOK = "navegacao_logbook"
+    INVENTARIO_PATRIMONIO = "inventario_patrimonio"
+    HISTORICO_REFIT = "historico_refit"
 
 
 # Checklists pré-definidas por categoria
@@ -181,6 +188,80 @@ CHECKLISTS: Dict[str, List[Dict[str, Any]]] = {
         {"item": "Documentação de importação", "tipo": "checkbox", "obrigatorio": False},
         {"item": "Certificado de arqueação", "tipo": "checkbox", "obrigatorio": False},
     ],
+
+    # --- Camada internacional / superiate -------------------------------
+
+    "classe_certificacao": [
+        {"item": "Sociedade classificadora (ABS / DNV / Lloyd's Register / RINA / Bureau Veritas)", "tipo": "texto", "obrigatorio": False},
+        {"item": "Certificado de Classe vigente", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Survey de renovação de classe (relatório)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Validade do certificado de classe", "tipo": "data", "obrigatorio": False},
+        {"item": "Load Line Certificate (linha de carga)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "International Tonnage Certificate (arqueação)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Certificado ISM (gestão de segurança, >500 GT)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Certificado ISPS (segurança marítima)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "MLC — Maritime Labour Certificate", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Próxima docagem/survey programada", "tipo": "data", "obrigatorio": False},
+    ],
+
+    "fiscal_internacional": [
+        {"item": "Flag State / Bandeira (Cayman, Malta, Bahamas, etc.)", "tipo": "texto", "obrigatorio": False},
+        {"item": "Certificate of Registry (registro internacional)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "VAT status (pago / não pago)", "tipo": "texto", "obrigatorio": False},
+        {"item": "Comprovante de VAT pago", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Admissão temporária (Temporary Admission)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Comprovante de desembaraço alfandegário / importação", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Bill of Sale (cadeia de propriedade)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Histórico de transmissão de donos (sucessão)", "tipo": "texto_longo", "obrigatorio": False},
+        {"item": "Ship Radio License (licença de rádio internacional)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Estrutura de propriedade (PJ / trust / beneficial owner)", "tipo": "texto", "obrigatorio": False},
+    ],
+
+    "tripulacao": [
+        {"item": "Nome e função (capitão / chief engineer / tripulação)", "tipo": "texto", "obrigatorio": False},
+        {"item": "STCW do capitão (certificado)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Certificate of Competency (CoC) — nível/limite", "tipo": "anexo", "obrigatorio": False},
+        {"item": "STCW dos engenheiros / tripulação", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Exame médico (ENG1 ou equivalente) — validade", "tipo": "data", "obrigatorio": False},
+        {"item": "Seafarer Employment Agreement (contrato)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Matriz de certificações da tripulação", "tipo": "texto_longo", "obrigatorio": False},
+        {"item": "Treinamentos de segurança (firefighting, sea survival)", "tipo": "checkbox", "obrigatorio": False},
+        {"item": "Passaportes / vistos / seaman's book", "tipo": "checkbox", "obrigatorio": False},
+    ],
+
+    "navegacao_logbook": [
+        {"item": "Logbook de navegação (diário de bordo)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Áreas/rotas navegadas (histórico)", "tipo": "texto_longo", "obrigatorio": False},
+        {"item": "Conformidade com zonas de exclusão (guerra/sanção)", "tipo": "checkbox", "obrigatorio": False},
+        {"item": "Conformidade com temporada de furacões (cruising area)", "tipo": "checkbox", "obrigatorio": False},
+        {"item": "Horas de navegação por ano", "tipo": "numero", "obrigatorio": False},
+        {"item": "Histórico de track AIS", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Limites de navegação da apólice de seguro", "tipo": "texto", "obrigatorio": False},
+        {"item": "Porto base / berço habitual", "tipo": "texto", "obrigatorio": False},
+    ],
+
+    "inventario_patrimonio": [
+        {"item": "Inventory list detalhado (item a item)", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Tenders (marca, modelo, ano, série)", "tipo": "texto", "obrigatorio": False},
+        {"item": "Water toys (jet ski, seabob, etc.)", "tipo": "texto", "obrigatorio": False},
+        {"item": "Eletrônicos e equipamentos de bordo", "tipo": "texto_longo", "obrigatorio": False},
+        {"item": "Obras de arte / itens de valor", "tipo": "texto_longo", "obrigatorio": False},
+        {"item": "Fotos datadas do inventário", "tipo": "foto", "obrigatorio": False},
+        {"item": "Avaliação / valor declarado dos itens", "tipo": "medicao", "unidade": "USD", "obrigatorio": False},
+        {"item": "O que fica e o que sai na venda", "tipo": "texto_longo", "obrigatorio": False},
+    ],
+
+    "historico_refit": [
+        {"item": "Descrição da reforma / refit", "tipo": "texto_longo", "obrigatorio": False},
+        {"item": "Estaleiro / empresa responsável", "tipo": "texto", "obrigatorio": False},
+        {"item": "Período (entrada / saída)", "tipo": "data", "obrigatorio": False},
+        {"item": "Notas fiscais do refit", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Projeto de design / engenharia", "tipo": "anexo", "obrigatorio": False},
+        {"item": "Fotos antes da reforma", "tipo": "foto", "obrigatorio": False},
+        {"item": "Fotos depois da reforma", "tipo": "foto", "obrigatorio": False},
+        {"item": "Valor investido no refit", "tipo": "medicao", "unidade": "USD", "obrigatorio": False},
+        {"item": "Garantias dos serviços/equipamentos", "tipo": "texto", "obrigatorio": False},
+    ],
 }
 
 
@@ -207,6 +288,12 @@ def get_categorias_with_labels() -> List[Dict[str, str]]:
         "rastreabilidade_servicos": "Rastreabilidade de Serviços",
         "interior_acomodacoes": "Interior e Acomodações",
         "navegabilidade": "Navegabilidade",
+        "classe_certificacao": "Classe e Certificação Internacional",
+        "fiscal_internacional": "Fiscal e Alfandegário (Internacional)",
+        "tripulacao": "Tripulação e Qualificação",
+        "navegacao_logbook": "Logbook e Histórico de Navegação",
+        "inventario_patrimonio": "Inventário e Patrimônio de Bordo",
+        "historico_refit": "Histórico de Refit e Reformas",
     }
 
     return [

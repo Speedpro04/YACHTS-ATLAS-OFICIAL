@@ -9,13 +9,16 @@ export default function Header() {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 py-4 h-[var(--header-h)] flex items-center shadow-2xl overflow-hidden"
+      className="fixed top-0 left-0 right-0 z-50 py-4 h-[var(--header-h)] flex items-center shadow-2xl"
       style={{
         background: 'radial-gradient(circle at center, #021a3d 0%, #010c20 70%)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
       }}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#c5a059]/5 blur-[120px] rounded-full pointer-events-none"></div>
+      {/* Brilho dourado: o clipping fica só aqui, para não cortar o menu mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#c5a059]/5 blur-[120px] rounded-full"></div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 w-full flex items-center justify-between relative z-10">
         <Link to="/" className="group transition-all" aria-label="Yachts Atlas — Página inicial">
@@ -63,14 +66,15 @@ export default function Header() {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-[#010c20] border-b border-white/5 p-8 flex flex-col gap-6 animate-in slide-in-from-top-4 duration-500 shadow-2xl">
-           <Link to="/" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_home')}</Link>
-           <Link to="/sobre" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_about')}</Link>
-           <Link to="/frota" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_fleet')}</Link>
-           <Link to="/seguranca" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_security')}</Link>
-           <Link to="/acesso-proprietario" className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_owner_portal')}</Link>
-           <Link 
-            to="/login" 
+        <div className="md:hidden absolute top-full left-0 right-0 z-50 bg-[#010c20] border-b border-white/5 p-8 flex flex-col gap-6 animate-in slide-in-from-top-4 duration-500 shadow-2xl">
+           <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_home')}</Link>
+           <Link to="/sobre" onClick={() => setIsMobileMenuOpen(false)} className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_about')}</Link>
+           <Link to="/frota" onClick={() => setIsMobileMenuOpen(false)} className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_fleet')}</Link>
+           <Link to="/seguranca" onClick={() => setIsMobileMenuOpen(false)} className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_security')}</Link>
+           <Link to="/acesso-proprietario" onClick={() => setIsMobileMenuOpen(false)} className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_owner_portal')}</Link>
+           <Link
+            to="/login"
+            onClick={() => setIsMobileMenuOpen(false)}
             className="bg-[#c5a059] text-[#010c20] text-center py-4 rounded-sm text-xs font-black uppercase tracking-[0.2em] mt-4"
           >
             {t('common.access_vault')}

@@ -56,18 +56,45 @@ class Settings(BaseSettings):
     MAINTENANCE_BYPASS_ENABLED: bool = os.getenv("MAINTENANCE_BYPASS_ENABLED", "false").lower() == "true"
     MAINTENANCE_MASTER_TOKEN: str = os.getenv("MAINTENANCE_MASTER_TOKEN", "")
 
-    # Dossiê: quando true, o PDF só sai para ativo com pagamento concluído
+    # Dossiê: quando true, o PDF só sai para ativo com pagamento concluído.
+    # Mantido false — o dossiê não é mais vendido pela plataforma (vai direto
+    # marina <-> dono). O dono/marina sempre acessa o próprio dossiê.
     DOSSIER_REQUIRE_PAYMENT: bool = os.getenv("DOSSIER_REQUIRE_PAYMENT", "false").lower() == "true"
+
+    # Senha-mestra para liberação de dossiê a terceiros (broker/comprador/
+    # seguradora) via link público no celular. Defina em variável de ambiente.
+    DOSSIER_MASTER_PASSWORD: str = os.getenv("DOSSIER_MASTER_PASSWORD", "")
+
+    # URL pública do site (usada em e-mails de liberação de dossiê)
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://yachtsatlas.online")
 
     # Email Configuration for Alerts
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "yachtsatlas@gmail.com")
     EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
 
+    # Telegram — aviso de novo pedido de dossiê no celular do fundador
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
+
     # Referral Program — real limit is 30 (frontend displays 14 for scarcity)
+    # Modelo definitivo: marina que indica fica com 100% dos dossiês por 18 meses.
+    # Após o 1º ano de operação: assinatura sobe p/ $300 e 100% do dossiê é da
+    # marina permanentemente (negócio = recorrência mensal).
     REFERRAL_MAX_SLOTS: int = 30
-    REFERRAL_DOSSIER_SHARE_PERCENT: int = 100  # 100% for referred marinas
-    REFERRAL_REWARD_MONTHS: int = 12
+    REFERRAL_DOSSIER_SHARE_PERCENT: int = 100  # 100% for referring marina
+    REFERRAL_REWARD_MONTHS: int = 18
     REFERRAL_MIN_RETENTION_MONTHS: int = 3  # referred marina must stay 3 months
+
+    # Programa de Lançamento — 7 Marinas Fundadoras
+    # $180/mês por 12 meses → depois $300/mês. Bônus: 100% dos dossiês por 18
+    # meses, destravado ao trazer 7 marinas. Marinas indicadas pagam $250/mês.
+    LAUNCH_SLOTS: int = 7
+    LAUNCH_PRICE_MONTHLY: int = 180
+    LAUNCH_PROMO_MONTHS: int = 12
+    LAUNCH_PRICE_AFTER: int = 300
+    LAUNCH_REFERRED_PRICE: int = 250
+    LAUNCH_REFERRALS_REQUIRED: int = 7
+    LAUNCH_DOSSIER_BONUS_MONTHS: int = 18
 
     class Config:
         env_file = ".env"

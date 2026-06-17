@@ -155,96 +155,24 @@ async def create_subscription_checkout(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/checkout/dossier")
+@router.post("/checkout/dossier", deprecated=True)
 async def create_dossier_checkout(
-    dossier_level: DossierLevel,
-    ativo_id: str,
-    success_url: str,
-    cancel_url: str,
+    dossier_level: DossierLevel = None,
+    ativo_id: str = None,
+    success_url: str = None,
+    cancel_url: str = None,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
-    """Create checkout session for dossier certification with 50/50 split"""
-    # Get client information
-    ip_address = get_client_ip(request)
-    user_agent = get_user_agent(request)
-    location = get_client_location(request)
-    
-    try:
-        from app.core.supabase import get_supabase_client
-        supabase = get_supabase_client()
-        
-        # 1. Look up the asset and its associated marina
-        # (tolerante a schema sem marina_id/tabela marinas — split fica inativo)
-        marina_id = None
-        marina_stripe_account = None
-        try:
-            ativo = supabase.table("ativos").select("*").eq("id", ativo_id).execute()
-            marina_id = ativo.data[0].get("marina_id") if ativo.data else None
-
-            # 2. Look up the marina's Stripe Account ID for the split
-            if marina_id:
-                marina = supabase.table("marinas").select("stripe_account_id").eq("id", marina_id).execute()
-                if marina.data:
-                    marina_stripe_account = marina.data[0].get("stripe_account_id")
-        except Exception:
-            marina_id = None
-            marina_stripe_account = None
-        
-        session = stripe_service.create_dossier_checkout_session(
-            user_id=user_id,
-            dossier_level=dossier_level,
-            ativo_id=ativo_id,
-            success_url=success_url,
-            cancel_url=cancel_url,
-            marina_stripe_account_id=marina_stripe_account,
-            metadata={
-                "ip_address": ip_address,
-                "user_agent": user_agent[:100] if user_agent else None,
-                "marina_id": marina_id
-            }
-        )
-        
-        # Log checkout creation
-        audit_service.create_audit_log(
-            action=AuditAction.ASSET_CREATE,
-            user_id=user_id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            success=True,
-            location=location,
-            details={
-                "action": "create_dossier_checkout",
-                "dossier_level": dossier_level.value,
-                "ativo_id": ativo_id,
-                "session_id": session["session_id"],
-                "amount": session["amount"],
-                "split_active": bool(marina_stripe_account)
-            },
-            severity=AuditSeverity.INFO
-        )
-        
-        return session
-        
-    except Exception as e:
-        # Log error
-        audit_service.create_audit_log(
-            action=AuditAction.ASSET_CREATE,
-            user_id=user_id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            success=False,
-            error_message=str(e),
-            location=location,
-            details={
-                "action": "create_dossier_checkout",
-                "dossier_level": dossier_level.value,
-                "ativo_id": ativo_id
-            },
-            severity=AuditSeverity.ERROR
-        )
-        
-        raise HTTPException(status_code=500, detail=str(e))
+    """
+    DESATIVADO. O dossiê não é mais vendido pela plataforma — o pagamento é
+    direto marina <-> dono (melhor tributação para a Yachts Atlas). A liberação
+    do dossiê agora é feita em /api/v1/dossie/solicitar + liberação manual.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail="Checkout de dossiê desativado. Use /api/v1/dossie/solicitar para pedir o dossiê.",
+    )
 
 
 @router.post("/webhook")

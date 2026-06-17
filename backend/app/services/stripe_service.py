@@ -534,21 +534,20 @@ class StripeService:
             raise Exception(f"Failed to cancel subscription: {str(e)}")
     
     def get_pricing_plans(self) -> Dict[str, Any]:
-        """Get all available pricing plans"""
+        """
+        Planos ativos na plataforma. Modelo atual: uma única recorrência B2B
+        de $250/mês (Marina). O dossiê não é vendido pela plataforma — vai
+        direto marina <-> dono — então não aparece aqui.
+        """
+        marina = self.PRICING[PlanType.MARINA]
         return {
             "plans": {
-                plan_type.value: {
-                    "monthly": config["monthly"],
-                    "name": config["name"],
-                    "features": config["features"]
+                PlanType.MARINA.value: {
+                    "monthly": marina["monthly"],
+                    "name": marina["name"],
+                    "features": marina["features"],
                 }
-                for plan_type, config in self.PRICING.items()
             },
-            "dossiers": {
-                level.value: price
-                for level, price in self.DOSSIER_PRICING.items()
-            },
-            "dossier_roi_split_ratio": self.DOSSIER_ROI_SPLIT_RATIO,
             "currency": "USD"
         }
 

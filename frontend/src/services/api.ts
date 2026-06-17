@@ -144,17 +144,46 @@ export const api = {
   },
   pagamentos: {
     planos: () => apiRequest('/payments/plans'),
-    checkoutDossie: (data: {
-      dossier_level: 'compact' | 'executive' | 'superyacht',
-      ativo_id: string,
-      success_url: string,
-      cancel_url: string,
-    }) => apiRequest(`/payments/checkout/dossier?dossier_level=${data.dossier_level}&ativo_id=${data.ativo_id}&success_url=${encodeURIComponent(data.success_url)}&cancel_url=${encodeURIComponent(data.cancel_url)}`, { method: 'POST' }),
     checkoutOnboarding: (data: {
       email: string,
       marina_id: string,
       success_url: string,
       cancel_url: string,
     }) => apiRequest('/payments/checkout/onboarding', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  dossie: {
+    // Pedido público de dossiê (broker / comprador / seguradora)
+    solicitar: (data: {
+      solicitante_nome: string
+      solicitante_email: string
+      solicitante_telefone?: string
+      finalidade?: 'venda' | 'seguro' | 'outro'
+      marina_nome?: string
+      ativo_id?: string
+      mensagem?: string
+    }) => apiRequest('/dossie/solicitar', { method: 'POST', body: JSON.stringify(data) }),
+    // Painel (autenticado): listar / liberar / recusar pedidos
+    listSolicitacoes: (status?: string) =>
+      apiRequest(`/dossie/solicitacoes${status ? `?status=${status}` : ''}`),
+    liberar: (id: string) =>
+      apiRequest(`/dossie/solicitacoes/${id}/liberar`, { method: 'POST' }),
+    recusar: (id: string) =>
+      apiRequest(`/dossie/solicitacoes/${id}/recusar`, { method: 'POST' }),
+    // Gera o PDF do dossiê do próprio ativo (dono/marina) e devolve uma URL local
+    pdfUrl: async (ativoId: string) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch(`${API_URL}/dossie/${ativoId}/pdf`, {
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        const message = (payload && typeof payload === 'object' && 'detail' in payload && typeof payload.detail === 'string')
+          ? payload.detail
+          : `Falha ao gerar dossiê (${response.status})`
+        throw new ApiError(message, response.status, payload)
+      }
+      const blob = await response.blob()
+      return URL.createObjectURL(blob)
+    },
   },
 }

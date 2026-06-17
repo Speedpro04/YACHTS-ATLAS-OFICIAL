@@ -13,6 +13,8 @@ import Seguranca from './pages/Seguranca'
 import RegistroMarina from './pages/RegistroMarina'
 import MarinaParceira from './pages/MarinaParceira'
 import SejaParceiro from './pages/SejaParceiro'
+import SolicitarDossie from './pages/SolicitarDossie'
+import SolicitacoesDossie from './pages/SolicitacoesDossie'
 import PagamentoDossie from './pages/PagamentoDossie'
 import Parceiros from './pages/Parceiros'
 import LoginProprietario from './pages/LoginProprietario'
@@ -38,6 +40,7 @@ function App() {
         <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/marina-parceira" element={<MarinaParceira />} />
         <Route path="/seja-parceiro" element={<SejaParceiro />} />
+        <Route path="/solicitar-dossie" element={<SolicitarDossie />} />
         <Route path="/termos-fundadores" element={<TermosFundadores />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route element={<PrivateRoute />}>
@@ -46,6 +49,7 @@ function App() {
             <Route path="ativos" element={<Ativos />} />
             <Route path="documentos" element={<Documentos />} />
             <Route path="parceiros" element={<Parceiros />} />
+            <Route path="solicitacoes-dossie" element={<SolicitacoesDossie />} />
             <Route path="pagamento-dossie" element={<PagamentoDossie />} />
             <Route path="dossie-sucesso" element={<SuccessDossie />} />
             <Route path="registros/:ativoId" element={<Registros />} />
