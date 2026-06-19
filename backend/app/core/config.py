@@ -52,8 +52,10 @@ class Settings(BaseSettings):
     REDIS_DEFAULT_TTL: int = int(os.getenv("REDIS_DEFAULT_TTL", "3600"))
 
     # OpenAI — chatbot de normas (RAG). Secrets só em variável de ambiente.
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_CHAT_MODEL: str = os.getenv("OPENAI_CHAT_MODEL", "gpt-5-mini")
+    # Aceita os dois nomes de variável (OPENAI_API_KEY e o legado API_KEY_OPENAI)
+    # para evitar erro de configuração no painel. Idem para o modelo (MODELO).
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY_OPENAI", "")
+    OPENAI_CHAT_MODEL: str = (os.getenv("OPENAI_CHAT_MODEL") or os.getenv("MODELO") or "gpt-5-mini").lower()
     OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
     # Anti-abuso/sondagem: máximo de perguntas por usuário por minuto.
     CHATBOT_RATE_LIMIT_PER_MIN: int = int(os.getenv("CHATBOT_RATE_LIMIT_PER_MIN", "15"))
