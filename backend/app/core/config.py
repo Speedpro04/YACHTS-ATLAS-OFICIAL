@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
     SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
+    # Redis — cache de velocidade. Secret só em variável de ambiente (repo público).
+    # Se vazio ou indisponível, o app funciona normalmente (cache é opcional).
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
+    REDIS_DEFAULT_TTL: int = int(os.getenv("REDIS_DEFAULT_TTL", "3600"))
+
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
     AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
