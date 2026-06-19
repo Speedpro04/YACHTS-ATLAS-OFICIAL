@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, Users, FileCheck } from 'lucide-react'
+import { Home, Ship, FileText, LogOut, Bell, Users, FileCheck, Scale } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
+import CapitaSolara from './CapitaSolara'
 import { supabase } from '../services/api'
 
 export default function Layout() {
@@ -13,6 +14,7 @@ export default function Layout() {
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
     { path: '/app/documentos', label: t('dossier.level_3'), icon: FileText },
     { path: '/app/solicitacoes-dossie', label: 'Dossiês', icon: FileCheck },
+    { path: '/app/normas', label: 'Normas', icon: Scale },
     { path: '/app/parceiros', label: t('common.partners'), icon: Users },
   ]
 
@@ -137,6 +139,9 @@ export default function Layout() {
           <span className="text-[8px] font-black uppercase tracking-[0.2em]">{t('lp.terms')}</span>
         </button>
       </nav>
+
+      {/* Assistente de Normas — Capitã Solara (sistema inteiro) */}
+      <CapitaSolara />
     </div>
   )
 }

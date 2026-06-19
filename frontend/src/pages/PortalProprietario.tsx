@@ -37,7 +37,7 @@ export default function PortalProprietario() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#010c20] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#0b2a4a] flex flex-col items-center justify-center">
         <div className="animate-spin w-12 h-12 border-2 border-[#c5a059] border-t-transparent rounded-full mb-6"></div>
         <span className="text-white/40 uppercase tracking-[0.3em] text-[10px] font-black">Acessando Cofre...</span>
       </div>
@@ -45,10 +45,10 @@ export default function PortalProprietario() {
   }
 
   return (
-    <div className="min-h-screen bg-[#010c20] font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] animate-in fade-in duration-1000">
+    <div className="min-h-screen bg-gradient-to-b from-[#0d3056] to-[#0b2a4a] font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] animate-in fade-in duration-1000">
       
       {/* Premium Header */}
-      <div className="border-b border-white/5 bg-[#021a3d]/50 backdrop-blur-md sticky top-0 z-40">
+      <div className="border-b border-white/10 bg-[#0e3460]/60 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <img src="/logo-transparent.png" alt="Yachts Atlas" className="h-8" />
@@ -85,7 +85,7 @@ export default function PortalProprietario() {
             alt="Embarcação" 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-[#010c20]/50 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b2a4a] via-[#0b2a4a]/50 to-transparent"></div>
           
           <div className="absolute bottom-8 left-8 right-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -185,7 +185,7 @@ export default function PortalProprietario() {
               <div 
                 className="rounded-sm p-8 flex flex-col items-center text-center relative overflow-hidden group border border-[#c5a059]/20 cursor-pointer"
                 onClick={() => setShowCamera(true)}
-                style={{ background: 'radial-gradient(circle at center, #021a3d 0%, #010c20 100%)' }}
+                style={{ background: 'radial-gradient(circle at center, #10406f 0%, #0b2a4a 100%)' }}
               >
                 <div className="absolute inset-0 bg-[#c5a059]/5 group-hover:bg-[#c5a059]/10 transition-colors"></div>
                 

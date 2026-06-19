@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Camera, FileText, History, ChevronDown } from 'lucide-react'
+import { ArrowRight, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Camera, FileText, History, ChevronDown, Globe, BellRing, Scale, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
@@ -29,6 +29,10 @@ const FAQS = [
   {
     q: 'Como sei que o dossiê não foi adulterado?',
     a: 'Cada registro recebe uma assinatura criptográfica SHA-256 no momento em que entra no cofre. Qualquer alteração posterior fica evidente — é a sua garantia de autenticidade.',
+  },
+  {
+    q: 'O dossiê segue as normas náuticas?',
+    a: 'Sim. Cada dossiê é organizado segundo as principais normas náuticas brasileiras e internacionais — NORMAM (Marinha do Brasil), ABNT (incluindo a NBR 14574) e referências ISO. O Yachts Atlas organiza e acompanha a conformidade documental do ativo; a emissão de certificados oficiais cabe aos órgãos competentes, e o dossiê já fica pronto para ela.',
   },
   {
     q: 'Sou uma marina. Como funciona a parceria?',
@@ -152,6 +156,106 @@ export default function LandingPage() {
                 <p className="text-2xl font-serif font-bold text-[#c5a059]">{formatarPreco(faixa.precoUSD)}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* NAUTICAL NORMS / COMPLIANCE SECTION */}
+      <section className="py-32 bg-[#010c20] border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-[#c5a059]/5 blur-[120px] rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-20">
+            <span className="block text-[10px] font-black tracking-[0.4em] text-[#c5a059] uppercase mb-6">
+              Conformidade Regulatória
+            </span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 tracking-tight leading-tight">
+              Construído sobre as normas <br className="hidden md:block" />
+              que regem o mar.
+            </h2>
+            <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-8"></div>
+            <p className="text-white/50 text-lg font-light leading-relaxed max-w-2xl mx-auto">
+              Cada Dossiê Yachts Atlas é organizado segundo as principais normas náuticas —
+              brasileiras e internacionais. Não é papel solto: é o seu ativo documentado na
+              linguagem que <span className="text-[#c5a059] font-medium">a Autoridade Marítima,
+              seguradoras e compradores</span> reconhecem.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            {[
+              {
+                icon: Anchor,
+                tag: 'NORMAM · Marinha do Brasil',
+                title: 'Autoridade Marítima',
+                desc: 'Esporte e recreio, mar aberto e navegação interior (NORMAM-211, 201 e 202) — o padrão oficial da Marinha do Brasil.',
+              },
+              {
+                icon: Scale,
+                tag: 'ABNT · Brasil',
+                title: 'Norma Técnica Nacional',
+                desc: 'NBR 14574 e o padrão do Selo ABNT-ACOBAR para embarcações de recreio, referência de construção e segurança.',
+              },
+              {
+                icon: Globe,
+                tag: 'ISO · Internacional',
+                title: 'Padrão Global',
+                desc: 'Referências ISO para grandes iates, estabilidade e flotabilidade — a ponte do seu ativo para os mercados de EUA e Europa.',
+              },
+              {
+                icon: BellRing,
+                tag: 'Sempre atualizado',
+                title: 'Alertas de Atualização',
+                desc: 'Norma muda, certificado vence — o Atlas avisa. Sua frota nunca fica para trás da regulação.',
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="group bg-[#021431] border border-white/5 p-8 rounded-sm hover:border-[#c5a059]/30 transition-all duration-700 shadow-2xl"
+              >
+                <div className="w-12 h-12 bg-[#c5a059]/10 border border-[#c5a059]/20 flex items-center justify-center text-[#c5a059] mb-6 group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all">
+                  <item.icon size={20} />
+                </div>
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-black mb-3">{item.tag}</p>
+                <h4 className="text-white text-sm font-bold tracking-wide mb-3 group-hover:text-[#c5a059] transition-all">
+                  {item.title}
+                </h4>
+                <p className="text-white/40 text-sm leading-relaxed font-light">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Destaque — Assistente de IA de Conformidade */}
+          <div className="max-w-4xl mx-auto mb-8 relative group">
+            <div className="absolute -inset-px bg-gradient-to-r from-[#c5a059]/0 via-[#c5a059]/40 to-[#c5a059]/0 rounded-sm blur opacity-60 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <div className="relative bg-gradient-to-br from-[#021431] to-[#010c20] border border-[#c5a059]/30 rounded-sm p-8 md:p-10 flex flex-col md:flex-row items-center gap-8">
+              <div className="w-16 h-16 flex-shrink-0 bg-[#c5a059]/10 border border-[#c5a059]/30 flex items-center justify-center text-[#c5a059] rounded-sm">
+                <Sparkles size={28} />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-[10px] font-black tracking-[0.35em] text-[#c5a059] uppercase mb-3">
+                  Novo · Inteligência Artificial
+                </p>
+                <h3 className="text-2xl md:text-3xl font-serif font-bold text-white mb-3 tracking-tight">
+                  Uma IA para verificação de normas e conformidade.
+                </h3>
+                <p className="text-white/50 text-sm md:text-base font-light leading-relaxed">
+                  Pergunte sobre qualquer norma náutica e receba a resposta na hora — com a fonte
+                  oficial citada. O assistente responde <span className="text-white/70">somente com base
+                  em normas verificadas</span>, sem achismo. Conformidade na palma da mão, dentro do sistema.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Disclaimer honesto — posiciona a certificação sem prometer selo oficial */}
+          <div className="max-w-3xl mx-auto p-6 border border-[#c5a059]/20 bg-[#c5a059]/[0.04] rounded-sm flex gap-4 items-start">
+            <ShieldCheck size={18} className="text-[#c5a059] flex-shrink-0 mt-0.5" />
+            <p className="text-white/50 text-sm leading-relaxed font-light">
+              O Yachts Atlas <span className="text-white/70">organiza e acompanha a conformidade
+              documental</span> do ativo segundo essas normas. A emissão de certificados oficiais é
+              atribuição dos órgãos competentes — e o Atlas deixa o seu dossiê pronto para ela.
+            </p>
           </div>
         </div>
       </section>

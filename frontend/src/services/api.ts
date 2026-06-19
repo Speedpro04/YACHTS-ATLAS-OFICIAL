@@ -98,6 +98,16 @@ export const api = {
       }
     },
   },
+  normas: {
+    list: () => apiRequest('/normas/'),
+  },
+  chatbot: {
+    ask: (mensagem: string, session_id?: string) =>
+      apiRequest('/chatbot/ask', {
+        method: 'POST',
+        body: JSON.stringify({ mensagem, session_id }),
+      }),
+  },
   registros: {
     list: (ativoId: string) => apiRequest(`/registros/${ativoId}`),
     create: (data: {
