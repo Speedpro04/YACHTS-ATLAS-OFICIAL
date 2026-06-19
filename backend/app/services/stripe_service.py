@@ -402,6 +402,22 @@ class StripeService:
         except Exception as e:
             logger.error(f"Falha ao persistir pagamento do checkout {session.id}: {e}")
 
+        # E-mail de boas-vindas da MARCA (best-effort, nunca derruba o webhook).
+        # O recibo financeiro fica a cargo da processadora; este é o "obrigado"
+        # do Yachts Atlas no exato momento da liberação do acesso.
+        if payment_type != "dossier":
+            try:
+                from app.services.email_service import send_welcome_email
+                to_email = None
+                details = getattr(session, "customer_details", None)
+                if details:
+                    to_email = details.get("email") if isinstance(details, dict) else getattr(details, "email", None)
+                to_email = to_email or metadata.get("email") or getattr(session, "customer_email", None)
+                nome = metadata.get("marina_nome") or metadata.get("nome")
+                send_welcome_email(to_email, nome=nome)
+            except Exception as e:
+                logger.error(f"Falha ao enviar e-mail de boas-vindas ({session.id}): {e}")
+
         return {
             "status": "completed",
             "user_id": user_id,

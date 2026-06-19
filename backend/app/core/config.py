@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     # Email Configuration for Alerts
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "yachtsatlas@gmail.com")
     EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
+    EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
+    EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "465"))
 
     # Telegram — aviso de novo pedido de dossiê no celular do fundador
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
