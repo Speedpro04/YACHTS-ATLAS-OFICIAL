@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Yachts Atlas"
     VERSION: str = "0.1.0"
     DEBUG: bool = False
-    ALLOWED_ORIGINS: list[str] = _parse_allowed_origins(os.getenv("ALLOWED_ORIGINS"))
+    # Lido como STRING crua do ambiente (CSV ou JSON). Não usar list[str] aqui:
+    # o pydantic-settings tenta json.loads em campos lista vindos de env e quebra
+    # com valor separado por vírgula. A lista parseada fica em `cors_origins`.
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "")
 
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
@@ -112,6 +115,11 @@ class Settings(BaseSettings):
     LAUNCH_REFERRED_PRICE: int = 250
     LAUNCH_REFERRALS_REQUIRED: int = 7
     LAUNCH_DOSSIER_BONUS_MONTHS: int = 18
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """Lista de origens permitidas (parseia o ALLOWED_ORIGINS — CSV ou JSON)."""
+        return _parse_allowed_origins(self.ALLOWED_ORIGINS or None)
 
     class Config:
         env_file = ".env"
