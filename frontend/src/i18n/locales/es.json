@@ -84,6 +84,21 @@
     "authenticated_by": "Autenticado por el Protocolo Yachts Atlas",
     "standard_title": "Eleve su ",
     "standard_highlight": "Estándar.",
-    "standard_desc": "Acceda a la plataforma de gestión de activos marítimos más rigurosa del mundo. Proteja el legado de su flota con precisión criptográfica."
+    "standard_desc": "Acceda a la plataforma de gestión de activos marítimos más rigurosa del mundo. Proteja el legado de su flota con precisión criptográfica.",
+    "forgot_need_email": "Ingrese el correo de la bóveda arriba para enviarle el enlace de restablecimiento.",
+    "forgot_sent": "Enlace de restablecimiento enviado. Revise su correo.",
+    "forgot_error": "No se pudo enviar el enlace. Inténtelo de nuevo.",
+    "reset_title": "Definir Nueva Clave",
+    "reset_new_key": "Nueva Clave de Seguridad",
+    "reset_confirm_key": "Confirme la Nueva Clave",
+    "reset_cta": "Restablecer Clave",
+    "reset_saving": "Guardando...",
+    "reset_too_short": "La nueva clave debe tener al menos 8 caracteres.",
+    "reset_mismatch": "Las claves no coinciden.",
+    "reset_error": "No se pudo restablecer. El enlace puede haber expirado.",
+    "reset_success": "Su clave se ha restablecido correctamente.",
+    "reset_redirecting": "Redirigiendo al inicio de sesión...",
+    "reset_validating": "Validando su enlace de restablecimiento...",
+    "reset_back_login": "Volver al inicio de sesión"
   }
 }

@@ -11,6 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isFocused, setIsFocused] = useState<'email' | 'password' | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -33,6 +34,31 @@ export default function Login() {
       navigate('/app')
     } catch (err) {
       setError(t('auth.error_credentials') || 'Não foi possível entrar. Tente novamente.')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    setError('')
+    setInfo('')
+    if (!email) {
+      setError(t('auth.forgot_need_email') || 'Informe o e-mail do cofre acima para enviarmos o link de redefinição.')
+      return
+    }
+    setLoading(true)
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      })
+      if (resetError) {
+        setError(t('auth.forgot_error') || 'Não foi possível enviar o link. Tente novamente.')
+        return
+      }
+      setInfo(t('auth.forgot_sent') || 'Link de redefinição enviado. Verifique seu e-mail.')
+    } catch (err) {
+      setError(t('auth.forgot_error') || 'Não foi possível enviar o link. Tente novamente.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -145,6 +171,15 @@ export default function Login() {
           </div>
         )}
 
+        {info && (
+          <div className="bg-[#c5a059]/10 border border-[#c5a059]/50 p-4 rounded-sm mb-8 animate-in fade-in duration-300">
+            <p className="text-[#c5a059] text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+               <Mail size={14} />
+               {info}
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-6">
           <div className={`space-y-2 group transition-all duration-300 ${isFocused === 'email' ? 'scale-[1.02]' : ''}`}>
             <label className="text-[10px] font-black uppercase tracking-widest text-white/40 group-focus-within:text-[#c5a059] transition-colors">
@@ -179,7 +214,7 @@ export default function Login() {
               <label className="text-[10px] font-black uppercase tracking-widest text-white/40 group-focus-within:text-[#c5a059] transition-colors">
                 {t('auth.security_key')}
               </label>
-              <a href="#" className="text-[9px] font-bold text-[#c5a059] uppercase tracking-widest hover:text-white transition-all">{t('auth.forgot_key')}</a>
+              <button type="button" onClick={handleForgotPassword} disabled={loading} className="text-[9px] font-bold text-[#c5a059] uppercase tracking-widest hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">{t('auth.forgot_key')}</button>
             </div>
             <div className="relative">
                <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${isFocused === 'password' ? 'text-[#c5a059] scale-110' : 'text-white/20'}`} size={18} />
@@ -230,9 +265,9 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-16 pt-8 border-t border-white/5 flex items-center justify-between text-[10px] text-white/20 uppercase tracking-widest font-bold">
-           <span>{t('auth.no_account')}</span>
-           <Link to="/registro-marina" className="text-[#c5a059] hover:text-white transition-all flex items-center gap-2">
+        <div className="mt-16 pt-8 border-t border-white/5 flex items-center justify-between gap-3 text-[12px] uppercase tracking-widest font-bold">
+           <Link to="/registro-marina" className="text-white/35 hover:text-[#c5a059] transition-colors">{t('auth.no_account')}</Link>
+           <Link to="/registro-marina" className="text-[#c5a059] border border-[#c5a059] rounded-sm px-4 py-2.5 flex items-center gap-2 hover:bg-[#c5a059] hover:text-[#010c20] transition-all">
              {t('auth.request_membership')}
              <ArrowRight size={14} />
            </Link>

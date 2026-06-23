@@ -84,7 +84,22 @@
     "authenticated_by": "Authenticated by Yachts Atlas Protocol",
     "standard_title": "Elevate your ",
     "standard_highlight": "Standard.",
-    "standard_desc": "Access the world's most rigorous maritime asset management platform. Protect your fleet's legacy with cryptographic precision."
+    "standard_desc": "Access the world's most rigorous maritime asset management platform. Protect your fleet's legacy with cryptographic precision.",
+    "forgot_need_email": "Enter the vault email above so we can send the reset link.",
+    "forgot_sent": "Reset link sent. Check your email.",
+    "forgot_error": "Could not send the link. Please try again.",
+    "reset_title": "Set New Key",
+    "reset_new_key": "New Security Key",
+    "reset_confirm_key": "Confirm New Key",
+    "reset_cta": "Reset Key",
+    "reset_saving": "Saving...",
+    "reset_too_short": "The new key must be at least 8 characters.",
+    "reset_mismatch": "The keys do not match.",
+    "reset_error": "Could not reset. The link may have expired.",
+    "reset_success": "Your key has been reset successfully.",
+    "reset_redirecting": "Redirecting to login...",
+    "reset_validating": "Validating your reset link...",
+    "reset_back_login": "Back to login"
   },
   "marina_onboarding": {
     "step_3_title": "THE GLOBAL STANDARD FOR NAUTICAL CUSTODY",

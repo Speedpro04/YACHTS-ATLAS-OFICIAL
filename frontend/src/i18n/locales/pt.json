@@ -116,7 +116,22 @@
     "standard_highlight": "Padrão.",
     "standard_desc": "Acesse a plataforma de gestão de ativos marítimos mais rigorosa do mundo. Proteja o legado de sua frota com precisão criptográfica.",
     "marina_registration": "Registro de Marina",
-    "request_access": "Solicitar Acesso"
+    "request_access": "Solicitar Acesso",
+    "forgot_need_email": "Informe o e-mail do cofre acima para enviarmos o link de redefinição.",
+    "forgot_sent": "Link de redefinição enviado. Verifique seu e-mail.",
+    "forgot_error": "Não foi possível enviar o link. Tente novamente.",
+    "reset_title": "Definir Nova Chave",
+    "reset_new_key": "Nova Chave de Segurança",
+    "reset_confirm_key": "Confirme a Nova Chave",
+    "reset_cta": "Redefinir Chave",
+    "reset_saving": "Salvando...",
+    "reset_too_short": "A nova chave deve ter ao menos 8 caracteres.",
+    "reset_mismatch": "As chaves não coincidem.",
+    "reset_error": "Não foi possível redefinir. O link pode ter expirado.",
+    "reset_success": "Sua chave foi redefinida com sucesso.",
+    "reset_redirecting": "Redirecionando para o login...",
+    "reset_validating": "Validando seu link de redefinição...",
+    "reset_back_login": "Voltar ao login"
   },
   "marina_onboarding": {
     "step_3_title": "O PADRÃO GLOBAL DE CUSTÓDIA NÁUTICA",

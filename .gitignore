@@ -11,6 +11,11 @@ SECRET-SERVICE-ROLE/
 *SECRET*
 *secret*
 *SERVICE-ROLE*
+# Arquivos avulsos de credenciais
+*supabase*.txt
+*credenciais*
+*credentials*
+*-keys.txt
 
 # Node
 node_modules/

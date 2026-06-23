@@ -18,6 +18,7 @@ import SolicitacoesDossie from './pages/SolicitacoesDossie'
 import PagamentoDossie from './pages/PagamentoDossie'
 import Parceiros from './pages/Parceiros'
 import LoginProprietario from './pages/LoginProprietario'
+import RedefinirSenha from './pages/RedefinirSenha'
 import PortalProprietario from './pages/PortalProprietario'
 import SuccessDossie from './pages/SuccessDossie'
 import SuccessOnboarding from './pages/SuccessOnboarding'
@@ -37,6 +38,7 @@ function App() {
         <Route path="/seguranca" element={<Seguranca />} />
         <Route path="/login" element={<Login />} />
         <Route path="/acesso-proprietario" element={<LoginProprietario />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/portal-proprietario" element={<PortalProprietario />} />
         <Route path="/registro-marina" element={<RegistroMarina />} />
         <Route path="/marina-parceira" element={<MarinaParceira />} />
