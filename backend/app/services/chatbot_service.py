@@ -224,9 +224,21 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
         resp = client.chat.completions.create(
             model=settings.OPENAI_CHAT_MODEL,
             messages=messages,
-            max_completion_tokens=600,
+            # gpt-5-mini é modelo de raciocínio: o budget inclui os tokens de
+            # "pensamento". 600 era baixo demais (o raciocínio consumia tudo e a
+            # resposta vinha vazia). Folga generosa garante texto de saída.
+            max_completion_tokens=3000,
         )
         raw = resp.choices[0].message.content or ""
+        if not raw.strip():
+            logger.warning(
+                "Resposta vazia do modelo (finish_reason=%s).",
+                getattr(resp.choices[0], "finish_reason", "?"),
+            )
+            raw = (
+                "Consegui localizar a(s) norma(s) relacionada(s) abaixo, mas não "
+                "gerei o texto da resposta agora. Tente perguntar de novo, por favor."
+            )
     except Exception as exc:  # noqa: BLE001
         logger.error("Falha na chamada ao modelo: %s", exc)
         return {
