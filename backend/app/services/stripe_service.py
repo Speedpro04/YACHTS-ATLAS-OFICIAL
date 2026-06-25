@@ -430,7 +430,7 @@ class StripeService:
                     marina_email = details.get("email") if isinstance(details, dict) else getattr(details, "email", None)
                 marina_email = marina_email or metadata.get("email") or getattr(session, "customer_email", None)
                 if marina_email:
-                    get_supabase_admin().rpc("cadastrar_marina_fundadora", {
+                    _res = get_supabase_admin().rpc("cadastrar_marina_fundadora", {
                         "p_email": marina_email,
                         "p_marina_nome": metadata.get("marina_nome"),
                         "p_responsavel": metadata.get("responsavel"),
@@ -438,7 +438,10 @@ class StripeService:
                         "p_uf": metadata.get("uf"),
                         "p_stripe_checkout": session.id,
                     }).execute()
-                    logger.info(f"Marina fundadora cadastrada por e-mail {marina_email} (checkout {session.id})")
+                    # Retorno: {modo:'fundadora', slot, ...} ou {modo:'tradicional', ...}
+                    # (tradicional = as 20 vagas fundadoras esgotaram; marina segue no fluxo padrao)
+                    _r = _res.data if isinstance(_res.data, dict) else {}
+                    logger.info(f"Cadastro marina {marina_email}: modo={_r.get('modo')} slot={_r.get('slot')} (checkout {session.id})")
                 else:
                     logger.warning(f"Checkout fundadora {session.id} sem e-mail — cadastro nao realizado")
             except Exception as e:

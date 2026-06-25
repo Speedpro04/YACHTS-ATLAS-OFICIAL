@@ -46,58 +46,9 @@ select g, 'disponivel', 200, 12, 300, 250, 7, 18
 from generate_series(1, 20) as g
 on conflict (slot) do nothing;
 
--- 6) Função de cadastro por e-mail: ocupa a próxima vaga fundadora disponível.
---    Idempotente por e-mail; segura para concorrência (FOR UPDATE SKIP LOCKED).
---    Chamada pelo webhook do Stripe (checkout.session.completed) quando
---    metadata.programa == 'marina_fundadora'.
-create or replace function public.cadastrar_marina_fundadora(
-  p_email           text,
-  p_marina_nome     text default null,
-  p_responsavel     text default null,
-  p_telefone        text default null,
-  p_uf              text default null,
-  p_stripe_checkout text default null
-) returns public.marinas_lancamento
-language plpgsql
-as $$
-declare
-  v_slot int;
-  v_row  public.marinas_lancamento;
-begin
-  if p_email is null or length(trim(p_email)) = 0 then
-    raise exception 'E-mail da marina e obrigatorio';
-  end if;
-
-  -- Ja cadastrada por e-mail? devolve o slot dela (idempotente)
-  select * into v_row from public.marinas_lancamento
-   where lower(email) = lower(p_email) limit 1;
-  if found then
-    return v_row;
-  end if;
-
-  -- Ocupa o menor slot fundador disponivel
-  select slot into v_slot from public.marinas_lancamento
-   where status = 'disponivel' and tipo = 'fundadora'
-   order by slot limit 1
-   for update skip locked;
-
-  if v_slot is null then
-    raise exception 'Sem vagas fundadoras disponiveis';
-  end if;
-
-  update public.marinas_lancamento
-     set email           = p_email,
-         marina_nome     = p_marina_nome,
-         responsavel     = p_responsavel,
-         telefone        = p_telefone,
-         uf              = coalesce(p_uf, uf),
-         stripe_checkout = p_stripe_checkout,
-         status          = 'ativo',
-         ativada_em      = now(),
-         updated_at      = now()
-   where slot = v_slot
-  returning * into v_row;
-
-  return v_row;
-end;
-$$;
+-- 6) Cadastro da marina fundadora:
+--    A função public.cadastrar_marina_fundadora(...) foi MOVIDA para a tabela
+--    dedicada da oferta — ver migration_marinas_fundadoras.sql.
+--    A oferta especial (20 vagas a US$ 200) agora vive em public.marinas_fundadoras,
+--    que começa vazia (0 linhas = 20 vagas) e cai no modo tradicional ao esgotar.
+--    As colunas acrescentadas acima em marinas_lancamento permanecem como legado.
