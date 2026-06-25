@@ -418,6 +418,32 @@ class StripeService:
             except Exception as e:
                 logger.error(f"Falha ao enviar e-mail de boas-vindas ({session.id}): {e}")
 
+        # Programa Marinas Fundadoras: cadastra/ocupa a vaga automaticamente,
+        # keyado pelo e-mail do cliente. Best-effort — nunca derruba o webhook.
+        # Requer metadata.programa == 'marina_fundadora' no Payment Link/checkout.
+        if (metadata or {}).get("programa") == "marina_fundadora":
+            try:
+                from app.core.supabase import get_supabase_admin
+                details = getattr(session, "customer_details", None)
+                marina_email = None
+                if details:
+                    marina_email = details.get("email") if isinstance(details, dict) else getattr(details, "email", None)
+                marina_email = marina_email or metadata.get("email") or getattr(session, "customer_email", None)
+                if marina_email:
+                    get_supabase_admin().rpc("cadastrar_marina_fundadora", {
+                        "p_email": marina_email,
+                        "p_marina_nome": metadata.get("marina_nome"),
+                        "p_responsavel": metadata.get("responsavel"),
+                        "p_telefone": metadata.get("telefone"),
+                        "p_uf": metadata.get("uf"),
+                        "p_stripe_checkout": session.id,
+                    }).execute()
+                    logger.info(f"Marina fundadora cadastrada por e-mail {marina_email} (checkout {session.id})")
+                else:
+                    logger.warning(f"Checkout fundadora {session.id} sem e-mail — cadastro nao realizado")
+            except Exception as e:
+                logger.error(f"Falha ao cadastrar marina fundadora ({session.id}): {e}")
+
         return {
             "status": "completed",
             "user_id": user_id,
