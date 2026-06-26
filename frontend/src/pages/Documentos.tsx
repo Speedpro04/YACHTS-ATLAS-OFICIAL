@@ -83,7 +83,7 @@ export default function Documentos() {
     return (
       <div className="flex flex-col items-center justify-center h-96">
         <div className="animate-spin w-10 h-10 border-2 border-[#c5a059] border-t-transparent rounded-full mb-4"></div>
-        <span className="text-white/40 uppercase tracking-[0.2em] text-xs font-bold">Accessing Vault...</span>
+        <span className="text-white/40 uppercase tracking-[0.2em] text-xs font-bold">Acessando o cofre...</span>
       </div>
     )
   }
@@ -94,13 +94,13 @@ export default function Documentos() {
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight uppercase flex items-center gap-3">
              <FileCheck size={24} className="text-[#c5a059]" />
-             Digital Vault
+             Cofre Digital
           </h1>
-          <p className="text-white/40 text-sm mt-1 uppercase tracking-widest font-medium">Secured document dossier for your maritime assets</p>
+          <p className="text-white/40 text-sm mt-1 uppercase tracking-widest font-medium">Dossiê de documentos protegido para seus ativos náuticos</p>
         </div>
         
         <div className="bg-[#0a1326] border border-white/5 p-2 rounded-sm flex items-center gap-4">
-           <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-4">Selected Vessel:</span>
+           <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-4">Embarcação selecionada:</span>
            <select
              value={selectedAtivo}
              onChange={(e) => setSelectedAtivo(e.target.value)}
@@ -122,7 +122,7 @@ export default function Documentos() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#c5a059]/5 blur-3xl rounded-full group-hover:bg-[#c5a059]/10 transition-all"></div>
             
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-white uppercase tracking-widest">New Deposit</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-widest">Novo Depósito</h3>
               <Shield size={18} className="text-[#c5a059]" />
             </div>
 
@@ -137,13 +137,13 @@ export default function Documentos() {
               {uploading ? (
                 <div className="flex flex-col items-center">
                   <div className="animate-spin w-8 h-8 border-2 border-[#c5a059] border-t-transparent rounded-full mb-4"></div>
-                  <span className="text-[10px] font-bold text-[#c5a059] uppercase tracking-widest">Encrypting...</span>
+                  <span className="text-[10px] font-bold text-[#c5a059] uppercase tracking-widest">Criptografando...</span>
                 </div>
               ) : (
                 <>
                   <Upload size={32} className="mx-auto text-white/10 group-hover:text-[#c5a059] transition-all mb-4" />
-                  <p className="text-white text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-[#c5a059] transition-all">Upload Document</p>
-                  <p className="text-white/20 text-[10px] uppercase tracking-widest">PDF, JPG, PNG up to 10MB</p>
+                  <p className="text-white text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-[#c5a059] transition-all">Enviar Documento</p>
+                  <p className="text-white/20 text-[10px] uppercase tracking-widest">PDF, JPG, PNG até 10MB</p>
                 </>
               )}
             </label>
@@ -151,34 +151,34 @@ export default function Documentos() {
             <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
                <div className="flex items-center gap-3 text-white/40">
                   <CheckCircle size={14} className="text-[#c5a059]" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">SHA-256 Immutability</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Imutabilidade SHA-256</span>
                </div>
                <div className="flex items-center gap-3 text-white/40">
                   <CheckCircle size={14} className="text-[#c5a059]" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">WORM Storage Locking</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Bloqueio de Armazenamento WORM</span>
                </div>
             </div>
           </div>
 
           <div className="bg-[#c5a059]/5 border border-[#c5a059]/10 p-8 rounded-sm">
-             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] mb-4">Vault Integrity</h4>
+             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] mb-4">Integridade do Cofre</h4>
              <p className="text-white/60 text-xs leading-relaxed italic">
-               "All documents deposited in the Yachts Atlas vault are automatically hashed and locked. 
-               This ensures a tamper-proof digital history for your world-class assets."
+               "Todo documento depositado no cofre do Yachts Atlas é automaticamente hasheado e travado.
+               Isso garante um histórico digital à prova de adulteração para seus ativos de alto padrão."
              </p>
           </div>
         </div>
 
-        {/* Right: Document List */}
+        {/* Lado direito: lista de documentos */}
         <div className="lg:col-span-2">
           <div className="bg-[#0a1326] border border-white/5 rounded-sm overflow-hidden flex flex-col min-h-[500px]">
              <div className="p-6 border-b border-white/5 bg-white/2 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Dossier Contents</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Conteúdo do Dossiê</h3>
                 <div className="relative">
                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                    <input 
                      type="text" 
-                     placeholder="Search files..." 
+                     placeholder="Buscar arquivos..."
                      className="bg-white/5 border border-white/10 rounded-sm pl-9 pr-4 py-1.5 text-[10px] text-white focus:border-[#c5a059]/50 outline-none w-48 transition-all"
                    />
                 </div>
@@ -188,7 +188,7 @@ export default function Documentos() {
                 {documentos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full py-24">
                     <FileText size={48} className="text-white/5 mb-6" />
-                    <p className="text-white/20 uppercase tracking-[0.2em] text-xs font-bold">Vault is currently empty</p>
+                    <p className="text-white/20 uppercase tracking-[0.2em] text-xs font-bold">O cofre está vazio no momento</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-white/5">
@@ -209,7 +209,7 @@ export default function Documentos() {
                           <span className={`px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.2em] border shadow-sm ${
                             doc.status === 'verified' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-[#c5a059]/10 border-[#c5a059]/30 text-[#c5a059]'
                           }`}>
-                            {doc.status === 'verified' ? 'Verified' : 'Processing'}
+                            {doc.status === 'verified' ? 'Verificado' : 'Processando'}
                           </span>
                            <button 
                             onClick={() => handleDownload(doc.id)}
@@ -229,10 +229,10 @@ export default function Documentos() {
                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                         <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">All documents cryptographically verified</span>
+                         <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Todos os documentos verificados criptograficamente</span>
                       </div>
                       <span className="text-[9px] font-mono text-white/20 uppercase tracking-tighter">
-                         Active Hash: {documentos[0]?.hash_sha256?.substring(0, 16)}...
+                         Hash ativo: {documentos[0]?.hash_sha256?.substring(0, 16)}...
                       </span>
                    </div>
                 </div>

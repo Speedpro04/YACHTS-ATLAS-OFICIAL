@@ -123,13 +123,13 @@ class LeadMarinaCreate(BaseModel):
 # --- Ativo Models ---
 
 class AtivoBase(BaseModel):
-    marina_id: str
+    marina_id: Optional[str] = None
     owner_id: Optional[str] = None
     tipo: TipoAtivo
     marca: str
     modelo: str
     ano_fabricacao: int
-    comprimento_pes: float
+    comprimento_pes: Optional[float] = None
     comprimento_metres: Optional[float] = None
     status: str = "ativo"
 

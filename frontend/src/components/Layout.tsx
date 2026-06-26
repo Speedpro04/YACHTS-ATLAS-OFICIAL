@@ -12,7 +12,7 @@ export default function Layout() {
   const navItems = [
     { path: '/app', label: t('common.dashboard'), icon: Home },
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
-    { path: '/app/documentos', label: t('dossier.level_3'), icon: FileText },
+    { path: '/app/documentos', label: 'Documentos', icon: FileText },
     { path: '/app/solicitacoes-dossie', label: 'Dossiês', icon: FileCheck },
     { path: '/app/normas', label: 'Normas', icon: Scale },
     { path: '/app/parceiros', label: t('common.partners'), icon: Users },

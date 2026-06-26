@@ -1,193 +1,133 @@
 """
 Yachts Atlas — Ativos Endpoints
+Alinhado ao schema REAL do banco (legado): ativos.usuario_id + ativos.comprimento.
+Usa a chave de serviço (o backend já autentica o usuário via get_current_user_id).
 """
 from fastapi import APIRouter, HTTPException, Depends
-from app.schemas.models import AtivoCreate, AtivoResponse
-from app.core.supabase import get_supabase_client
+from app.schemas.models import AtivoCreate
+from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
 import uuid
 
 router = APIRouter()
 
 
+def _role(supabase, user_id: str) -> str | None:
+    if user_id == "maintenance-admin":
+        return "admin"
+    prof = supabase.table("profiles").select("user_role").eq("id", user_id).execute()
+    return prof.data[0].get("user_role") if prof.data else None
+
+
+def _enrich(ativo: dict) -> dict:
+    """Compat com o frontend: expõe comprimento_pes a partir de comprimento."""
+    if ativo is not None and "comprimento_pes" not in ativo:
+        ativo["comprimento_pes"] = ativo.get("comprimento")
+    return ativo
+
+
 @router.get("")
 async def list_ativos(user_id: str = Depends(get_current_user_id)):
-    supabase = get_supabase_client()
-    # Get user profile first to identify their role and marina
-    profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if not profile_response.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    profile = profile_response.data[0]
-    
-    user_role = profile.get("user_role")
-    marina_id = profile.get("marina_id")
-    
-    if user_role == "marina_manager":
-        if not marina_id:
-            return []
-        response = supabase.table("ativos").select("*").eq("marina_id", marina_id).execute()
-    elif user_role == "owner":
-        response = supabase.table("ativos").select("*").eq("owner_id", user_id).execute()
-    elif user_role == "admin":
-        response = supabase.table("ativos").select("*").execute()
+    supabase = get_supabase_admin()
+    role = _role(supabase, user_id)
+    if role == "admin":
+        response = supabase.table("ativos").select("*").order("created_at", desc=True).execute()
     else:
-        response = supabase.table("ativos").select("*").eq("owner_id", user_id).execute()
-        
-    return response.data
+        response = supabase.table("ativos").select("*").eq("usuario_id", user_id).order("created_at", desc=True).execute()
+    return [_enrich(a) for a in (response.data or [])]
 
 
 @router.post("")
-async def create_ativo(
-    ativo: AtivoCreate,
-    user_id: str = Depends(get_current_user_id)
-):
-    supabase = get_supabase_client()
-    
-    # Get user profile to check roles
-    profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if not profile_response.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    profile = profile_response.data[0]
-    
-    user_role = profile.get("user_role")
-    user_marina_id = profile.get("marina_id")
-    
-    # Determine the marina_id to assign
-    marina_id = ativo.marina_id or user_marina_id
-    if not marina_id:
-        raise HTTPException(status_code=400, detail="marina_id is required")
-        
-    # Verify manager belongs to the assigned marina
-    if user_role == "marina_manager" and user_marina_id and str(user_marina_id) != str(marina_id):
-        raise HTTPException(status_code=403, detail="You can only add assets to your own marina")
-        
-    ativo_id = f"YA-{ativo.tipo.upper()}-{ativo.ano_fabricacao}-{str(uuid.uuid4())[:4].upper()}"
-    
+async def create_ativo(ativo: AtivoCreate, user_id: str = Depends(get_current_user_id)):
+    supabase = get_supabase_admin()
+
+    tipo = ativo.tipo.value if hasattr(ativo.tipo, "value") else ativo.tipo
+    ativo_id = f"YA-{str(tipo).upper()}-{ativo.ano_fabricacao}-{str(uuid.uuid4())[:4].upper()}"
+
+    # Dono do ativo = usuário logado (ou owner_id explícito, se enviado).
+    owner = str(ativo.owner_id) if getattr(ativo, "owner_id", None) else user_id
+    if owner == "maintenance-admin":
+        owner = None
+
     data = {
         "id": ativo_id,
-        "marina_id": str(marina_id),
-        "owner_id": str(ativo.owner_id) if ativo.owner_id else None,
-        "tipo": ativo.tipo.value if hasattr(ativo.tipo, 'value') else ativo.tipo,
+        "usuario_id": owner,
+        "tipo": tipo,
         "marca": ativo.marca,
         "modelo": ativo.modelo,
         "ano_fabricacao": ativo.ano_fabricacao,
-        "comprimento_pes": ativo.comprimento_pes,
-        "classificacao": "bronze",  # Valid check constraint ('bronze', 'silver', 'gold')
+        "classificacao": "bronze",
         "progresso": 0,
-        "status": "ativo"
+        "status": "ativo",
     }
-    
-    if ativo.comprimento_metres:
-        data["comprimento_metres"] = ativo.comprimento_metres
-    if ativo.largura:
-        data["largura"] = ativo.largura
-    if ativo.calado:
-        data["calado"] = ativo.calado
-    if ativo.material_casco:
-        data["material_casco"] = ativo.material_casco.value if hasattr(ativo.material_casco, 'value') else ativo.material_casco
-    if ativo.capacidade_passageiros:
-        data["capacidade_passageiros"] = ativo.capacidade_passageiros
-    
-    response = supabase.table("ativos").insert(data).execute()
-    
+
+    # Coluna real é 'comprimento'. Aceita comprimento_pes (front) ou metros.
+    comp = getattr(ativo, "comprimento_pes", None) or getattr(ativo, "comprimento_metres", None)
+    if comp:
+        data["comprimento"] = comp
+
+    # Campos técnicos opcionais que existem no schema real
+    for attr, col in [
+        ("largura", "largura"),
+        ("calado", "calado"),
+        ("capacidade_passageiros", "capacidade_passageiros"),
+    ]:
+        v = getattr(ativo, attr, None)
+        if v:
+            data[col] = v
+    mat = getattr(ativo, "material_casco", None)
+    if mat:
+        data["material_casco"] = mat.value if hasattr(mat, "value") else mat
+
+    try:
+        response = supabase.table("ativos").insert(data).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Falha ao cadastrar embarcação: {e}")
+
     if response.data:
-        return response.data[0]
-    
-    raise HTTPException(status_code=400, detail="Failed to create ativo")
+        return _enrich(response.data[0])
+    raise HTTPException(status_code=400, detail="Falha ao cadastrar embarcação")
 
 
 @router.get("/{ativo_id}")
 async def get_ativo(ativo_id: str, user_id: str = Depends(get_current_user_id)):
-    supabase = get_supabase_client()
-    profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if not profile_response.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    profile = profile_response.data[0]
-    
-    user_role = profile.get("user_role")
-    marina_id = profile.get("marina_id")
-    
-    query = supabase.table("ativos").select("*").eq("id", ativo_id)
-    if user_role == "marina_manager" and marina_id:
-        query = query.eq("marina_id", marina_id)
-    elif user_role == "owner":
-        query = query.eq("owner_id", user_id)
-    elif user_role == "admin":
-        pass
-    else:
-        query = query.eq("owner_id", user_id)
-        
-    response = query.execute()
-    if response.data:
-        return response.data[0]
-    
-    raise HTTPException(status_code=404, detail="Ativo not found")
+    supabase = get_supabase_admin()
+    response = supabase.table("ativos").select("*").eq("id", ativo_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Ativo not found")
+    ativo = response.data[0]
+    role = _role(supabase, user_id)
+    if role != "admin" and str(ativo.get("usuario_id")) != str(user_id):
+        raise HTTPException(status_code=403, detail="Not authorized for this asset")
+    return _enrich(ativo)
 
 
 @router.delete("/{ativo_id}")
 async def delete_ativo(ativo_id: str, user_id: str = Depends(get_current_user_id)):
-    supabase = get_supabase_client()
-    profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if not profile_response.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    profile = profile_response.data[0]
-    
-    user_role = profile.get("user_role")
-    marina_id = profile.get("marina_id")
-    
-    query = supabase.table("ativos").select("id, marina_id, owner_id").eq("id", ativo_id)
-    response = query.execute()
+    supabase = get_supabase_admin()
+    response = supabase.table("ativos").select("id, usuario_id").eq("id", ativo_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Ativo not found")
     ativo = response.data[0]
-    
-    authorized = False
-    if user_role == "admin":
-        authorized = True
-    elif user_role == "marina_manager" and marina_id and str(ativo.get("marina_id")) == str(marina_id):
-        authorized = True
-    elif user_role == "owner" and str(ativo.get("owner_id")) == str(user_id):
-        authorized = True
-        
-    if not authorized:
+    role = _role(supabase, user_id)
+    if role != "admin" and str(ativo.get("usuario_id")) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized to delete this asset")
-        
     supabase.table("ativos").delete().eq("id", ativo_id).execute()
     return {"message": "Ativo deleted"}
 
 
 @router.get("/{ativo_id}/progresso")
 async def get_progresso(ativo_id: str, user_id: str = Depends(get_current_user_id)):
-    supabase = get_supabase_client()
-    profile_response = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if not profile_response.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    profile = profile_response.data[0]
-    
-    user_role = profile.get("user_role")
-    marina_id = profile.get("marina_id")
-    
-    query = supabase.table("ativos").select("progresso, classificacao, marina_id, owner_id").eq("id", ativo_id)
-    response = query.execute()
+    supabase = get_supabase_admin()
+    response = supabase.table("ativos").select("progresso, classificacao, usuario_id").eq("id", ativo_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Ativo not found")
-        
     ativo = response.data[0]
-    authorized = False
-    if user_role == "admin":
-        authorized = True
-    elif user_role == "marina_manager" and marina_id and str(ativo.get("marina_id")) == str(marina_id):
-        authorized = True
-    elif user_role == "owner" and str(ativo.get("owner_id")) == str(user_id):
-        authorized = True
-        
-    if not authorized:
+    role = _role(supabase, user_id)
+    if role != "admin" and str(ativo.get("usuario_id")) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized to access this asset progress")
-
-    # Asset Score calculado ao vivo a partir dos registros + documentos reais
     try:
         from app.services.asset_score_service import calcular_saude_ativo
         return calcular_saude_ativo(ativo_id)
     except Exception:
-        # Fallback para o valor persistido se o cálculo falhar
         return {"progresso": ativo["progresso"], "classificacao": ativo["classificacao"]}

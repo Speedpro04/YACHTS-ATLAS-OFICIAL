@@ -2,7 +2,7 @@
 Yachts Atlas — Documentos Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_client, get_supabase_admin
 from app.core.security import get_current_user_id
 from app.core.authz import get_ativo_autorizado
 from app.services.s3_service import get_s3_service
@@ -22,7 +22,7 @@ async def list_documentos(
     request: Request = None
 ):
     """List documents for an asset with audit tracking"""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
     
     # Get client information
     ip_address = get_client_ip(request)
@@ -96,7 +96,9 @@ async def upload_documento(
     request: Request = None
 ):
     """Upload document with complete audit tracking"""
-    supabase = get_supabase_client()
+    # Insert via service key: o backend já autorizou via get_ativo_autorizado;
+    # a chave anônima é barrada pelo RLS da tabela documentos.
+    supabase = get_supabase_admin()
     s3_service = get_s3_service()
     
     # Get client information
@@ -152,26 +154,30 @@ async def upload_documento(
             "hash_sha256": file_hash,
             "tamanho_bytes": len(contents),
             "mime_type": file.content_type,
+            "nivel": 1,
             "status": "verified"
         }
         
         response = supabase.table("documentos").insert(doc_data).execute()
         
         if response.data:
-            # Log successful upload
-            audit_service.log_document_upload(
-                user_id=user_id,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                document_id=doc_id,
-                ativo_id=ativo_id,
-                file_name=file.filename,
-                file_size=len(contents),
-                file_hash=file_hash,
-                success=True,
-                location=location
-            )
-            
+            # Log de auditoria nunca pode derrubar o upload (best-effort)
+            try:
+                audit_service.log_document_upload(
+                    user_id=user_id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    document_id=doc_id,
+                    ativo_id=ativo_id,
+                    file_name=file.filename,
+                    file_size=len(contents),
+                    file_hash=file_hash,
+                    success=True,
+                    location=location
+                )
+            except Exception:
+                pass
+
             return {
                 "id": doc_id,
                 "hash": file_hash,
@@ -222,7 +228,7 @@ async def upload_documento(
 @router.get("/{doc_id}")
 async def get_documento(doc_id: str, user_id: str = Depends(get_current_user_id), request: Request = None):
     """Get document details with audit tracking"""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
     
     # Get client information
     ip_address = get_client_ip(request)
@@ -290,7 +296,7 @@ async def get_documento(doc_id: str, user_id: str = Depends(get_current_user_id)
 @router.get("/{doc_id}/download")
 async def download_documento(doc_id: str, user_id: str = Depends(get_current_user_id), request: Request = None):
     """Download document with complete audit tracking"""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
     s3_service = get_s3_service()
     
     # Get client information
