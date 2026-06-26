@@ -96,24 +96,46 @@ def _load_norms_with_embeddings() -> list[dict]:
     if cached:
         return cached
 
-    supabase = get_supabase_admin()
-    rows = (
-        supabase.table("normas")
-        .select("codigo,titulo,descricao,orgao,serie,versao,fonte_url")
-        .eq("ativo", True)
-        .eq("status_verificacao", "verificada")
-        .execute()
-        .data
-        or []
-    )
+    try:
+        # Tenta buscar os trechos detalhados (Expert Upgrade)
+        res_expert = supabase.table("normas_conteudo").select(
+            "id, norma_codigo, secao, conteudo, normas(titulo, fonte_url, ativo, status_verificacao)"
+        ).execute()
+        
+        if res_expert.data:
+            rows = [r for r in res_expert.data if r.get("normas", {}).get("ativo") and r.get("normas", {}).get("status_verificacao") == "verificada"]
+            for r in rows:
+                norma = r["normas"]
+                texto = f"{r['norma_codigo']} — {norma.get('titulo','')} | Seção: {r.get('secao','')}. {r.get('conteudo','')}"
+                emb = _embed(texto)
+                if emb is None: continue
+                enriched.append({
+                    "codigo": r["norma_codigo"],
+                    "titulo": f"{norma.get('titulo','')} ({r.get('secao','')})",
+                    "descricao": r.get("conteudo",""),
+                    "fonte_url": norma.get("fonte_url",""),
+                    "_embedding": emb
+                })
+    except Exception as exc:
+        logger.warning("Tabela normas_conteudo não encontrada ou erro, usando fallback: %s", exc)
 
-    enriched: list[dict] = []
-    for n in rows:
-        texto = f"{n['codigo']} — {n.get('titulo','')}. {n.get('descricao','')}"
-        emb = _embed(texto)
-        if emb is None:
-            continue
-        enriched.append({**n, "_embedding": emb})
+    if not enriched:
+        # Fallback para tabela normas legada
+        rows = (
+            supabase.table("normas")
+            .select("codigo,titulo,descricao,orgao,serie,versao,fonte_url")
+            .eq("ativo", True)
+            .eq("status_verificacao", "verificada")
+            .execute()
+            .data
+            or []
+        )
+        for n in rows:
+            texto = f"{n['codigo']} — {n.get('titulo','')}. {n.get('descricao','')}"
+            emb = _embed(texto)
+            if emb is None:
+                continue
+            enriched.append({**n, "_embedding": emb})
 
     if enriched:
         cache_set_json(_NORMS_EMB_CACHE_KEY, enriched, ttl=_NORMS_EMB_TTL)
