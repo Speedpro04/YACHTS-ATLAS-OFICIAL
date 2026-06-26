@@ -1,7 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// Fallbacks fixos. A chave publishable é PÚBLICA por design (roda no navegador,
+// protegida por RLS) — gravá-la aqui garante login mesmo se o build arg estiver
+// vazio ou com a chave LEGADA desativada (eyJ..., desligada pela Supabase em jun/2026).
+const SUPABASE_URL_FALLBACK = 'https://owzelkiyorumnlaycral.supabase.co'
+const SUPABASE_KEY_FALLBACK = 'sb_publishable_8LUgM9ojfBs_RPQ2cPgHNA_jxBlIDHE'
+
+const envUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+const supabaseUrl = envUrl || SUPABASE_URL_FALLBACK
+// Só aceita chave no formato novo (sb_*). Chave legada (eyJ...) está morta → usa o fallback.
+const supabaseKey = envKey.startsWith('sb_') ? envKey : SUPABASE_KEY_FALLBACK
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
