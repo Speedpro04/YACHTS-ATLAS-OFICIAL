@@ -16,7 +16,6 @@ import SejaParceiro from './pages/SejaParceiro'
 import SolicitarDossie from './pages/SolicitarDossie'
 import SolicitacoesDossie from './pages/SolicitacoesDossie'
 import PagamentoDossie from './pages/PagamentoDossie'
-import Parceiros from './pages/Parceiros'
 import LoginProprietario from './pages/LoginProprietario'
 import RedefinirSenha from './pages/RedefinirSenha'
 import PortalProprietario from './pages/PortalProprietario'
@@ -51,7 +50,6 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="ativos" element={<Ativos />} />
             <Route path="documentos" element={<Documentos />} />
-            <Route path="parceiros" element={<Parceiros />} />
             <Route path="normas" element={<NormasTecnicas />} />
             <Route path="solicitacoes-dossie" element={<SolicitacoesDossie />} />
             <Route path="pagamento-dossie" element={<PagamentoDossie />} />

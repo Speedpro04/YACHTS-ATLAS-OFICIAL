@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search, ArrowRight, Phone, Mail, Globe, MapPin, BadgeCheck,
   Briefcase, ShieldCheck, Tractor, Forklift, Truck, Container, Cog, Wrench, Hammer,
+  Radio, Snowflake, Paintbrush, Armchair,
 } from 'lucide-react'
 import {
   CATEGORIAS_PARCEIRO, categoriasParceiroPorGrupo, type CategoriaParceiro,
@@ -11,6 +12,7 @@ import { api } from '../services/api'
 
 const ICONES: Record<string, React.ElementType> = {
   Briefcase, ShieldCheck, Tractor, Forklift, Truck, Container, Cog, Wrench, Hammer,
+  Radio, Snowflake, Paintbrush, Armchair,
 }
 
 interface Parceiro {

@@ -31,8 +31,12 @@ export const CATEGORIAS_PARCEIRO: CategoriaParceiro[] = [
 
   { id: 'outboard_motor', label: 'Motores de Popa', descricao: 'Venda e assistência de motores de popa.', icon: 'Cog', grupo: 'mecanico' },
   { id: 'engine_rebuild', label: 'Retíficas de Motores', descricao: 'Recuperação e reconstrução de motores.', icon: 'Wrench', grupo: 'mecanico' },
+  { id: 'eletronicos', label: 'Eletrônicos Náuticos', descricao: 'GPS, sonar, rádio, painéis e instrumentação de bordo.', icon: 'Radio', grupo: 'mecanico' },
+  { id: 'climatizacao', label: 'Climatização & Refrigeração', descricao: 'Ar-condicionado, geladeiras e sistemas de bordo.', icon: 'Snowflake', grupo: 'mecanico' },
 
   { id: 'refit', label: 'Retrofit & Refit', descricao: 'Reforma e modernização que valorizam o ativo.', icon: 'Hammer', grupo: 'reforma' },
+  { id: 'tintas', label: 'Tintas & Antifouling', descricao: 'Tintas especiais, antincrustante e acabamento de casco.', icon: 'Paintbrush', grupo: 'reforma' },
+  { id: 'estofados', label: 'Estofados & Tapeçaria', descricao: 'Estofados náuticos, capas e acabamento interno.', icon: 'Armchair', grupo: 'reforma' },
 ]
 
 export function categoriasParceiroPorGrupo() {

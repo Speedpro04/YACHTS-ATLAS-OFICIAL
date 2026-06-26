@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, Users, FileCheck, Scale } from 'lucide-react'
+import { Home, Ship, FileText, LogOut, Bell, FileCheck, Scale } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 import CapitaSolara from './CapitaSolara'
@@ -15,7 +15,6 @@ export default function Layout() {
     { path: '/app/documentos', label: 'Documentos', icon: FileText },
     { path: '/app/solicitacoes-dossie', label: 'Dossiês', icon: FileCheck },
     { path: '/app/normas', label: 'Normas', icon: Scale },
-    { path: '/app/parceiros', label: t('common.partners'), icon: Users },
   ]
 
 
