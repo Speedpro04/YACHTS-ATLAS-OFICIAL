@@ -41,8 +41,13 @@ class BrokerService:
     """Service for managing broker partnerships and deals"""
     
     def __init__(self):
-        self.supabase = get_supabase_client()
-        logger.info("BrokerService initialized")
+        logger.info("BrokerService initialized (cliente Supabase lazy)")
+
+    @property
+    def supabase(self):
+        # Lazy: evita crash no boot do app se as envs do Supabase ainda nao
+        # estiverem configuradas. So falha quando o endpoint e realmente usado.
+        return get_supabase_client()
     
     def create_broker(
         self,
