@@ -197,6 +197,11 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
             "blocked": True, "reason": "rate_limited", "sources": [],
         }
 
+    # 2b) Saudação / abertura: recebe com calor e pergunta como pode ajudar
+    #     (sem exigir norma — cumprimento não é pergunta técnica).
+    if guard.is_greeting(clean_msg):
+        return {"answer": guard.WELCOME, "blocked": False, "reason": "greeting", "sources": []}
+
     # 3) Recuperação + guard rail de ESCOPO
     norms = retrieve(clean_msg)
     top = norms[0]["_score"] if norms else None
