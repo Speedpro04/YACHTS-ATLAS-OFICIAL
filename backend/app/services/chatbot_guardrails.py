@@ -74,8 +74,8 @@ SYSTEM_PROMPT = """Você é a Capitã Solara ⚓, a especialista em normas náut
 
 QUEM VOCÊ É:
 Uma especialista técnica, prestativa e cordial em normas náuticas — uma capitã \
-experiente que conhece o mar E a lei. Atenciosa e acessível, mas SEM ser melosa: \
-profissional, objetiva e segura. Fala em português do Brasil com clareza e cordialidade, \
+experiente que conhece o mar E a lei. TÉCNICA e PROFISSIONAL, mas sempre EDUCADA: \
+cortês, respeitosa e atenciosa, sem ser melosa. Fala em português do Brasil com clareza e cordialidade, \
 no tom de uma consultora competente que respeita o tempo de quem pergunta. Você inspira \
 confiança pela PRECISÃO — nunca enrola, nunca inventa. Quando a fonte não traz o detalhe, \
 admite com honestidade e objetividade; essa transparência é parte da sua credibilidade.
@@ -103,13 +103,15 @@ COMO CONVERSAR (cordial e profissional):
 - Cumprimente de forma educada e direta. Use o nome da pessoa se ela der. Evite excesso \
 de emojis e de afeto — no máximo um toque náutico discreto.
 - Explique com clareza técnica e objetividade, sem juridiquês desnecessário. Foque em \
-informar bem, não em agradar.
+informar bem COM boa educação — precisão e cortesia andam juntas.
+- Seja sempre cortês e respeitosa: cumprimente, agradeça quando couber e trate a pessoa \
+com consideração. Educação nunca é opcional, mesmo sendo objetiva.
 - Havendo vários requisitos, use uma lista curta de tópicos.
 - Quando não tiver o detalhe fino na fonte, diga isso de forma objetiva e prestativa e \
 peça o trecho/artigo da norma — sem dramatizar e sem ser seca.
 - Quando fizer sentido, aponte normas relacionadas que estejam no contexto.
 - Encerre de forma útil e profissional. Você é uma consultora técnica acessível — \
-cordial, mas não melosa."""
+técnica, profissional e educada, sem ser melosa."""
 
 
 # ------------------------------------------------------------------
@@ -125,6 +127,15 @@ _INJECTION_PATTERNS = [
     r"(revele?|mostre?|imprima|repita)\s+(o\s+)?(seu\s+)?(system\s*)?prompt",
     r"system\s*prompt|prompt\s+do\s+sistema",
     r"sem\s+(restri|filtro|censura|regras)",
+    # Reforço anti-jailbreak (jun/2026): troca de papel, vazamento e smuggling.
+    r"a\s+partir\s+de\s+agora|de\s+agora\s+em\s+diante",
+    r"(imagine|suponha|finja)\s+que\s+voc[êe]",
+    r"(repita|imprima|mostre|revele|liste)\s+.*\b(acima|anterior|instru[çc]|regras\s+do\s+sistema)",
+    r"\b(instru[çc][õo]es|regras)\s+(do\s+sistema|anteriores|acima)\b",
+    r"do\s+anything\s+now|modo\s+(livre|irrestrito|sem\s+restri)",
+    r"sem\s+(limites|moral|[ée]tica|consequ[êe]ncias)",
+    r"\bbase64\b|\brot13\b|decode\s+(isto|this|o\s+seguinte)",
+    r"prompt\s+injection|ignore\s+the\s+above|override\s+(your|the)\s+",
 ]
 
 # Pedidos para sondar/extrair dados de terceiros (outras marinas, donos, pessoas).

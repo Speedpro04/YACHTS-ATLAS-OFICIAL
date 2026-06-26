@@ -61,7 +61,10 @@ class Settings(BaseSettings):
     CHATBOT_RATE_LIMIT_PER_MIN: int = int(os.getenv("CHATBOT_RATE_LIMIT_PER_MIN", "15"))
     # Score mínimo de similaridade para considerar que existe norma relevante.
     # Abaixo disso, o bot recusa em vez de "inventar" (anti-alucinação).
-    CHATBOT_MIN_RELEVANCE: float = float(os.getenv("CHATBOT_MIN_RELEVANCE", "0.35"))
+    # 0.40: calibrado para o RAG com pgvector (text-embedding-3-small). Acertos
+    # válidos ficam >= 0.53; este piso corta a cauda fracamente relevante e
+    # fortalece o guard rail de escopo sem barrar perguntas legítimas.
+    CHATBOT_MIN_RELEVANCE: float = float(os.getenv("CHATBOT_MIN_RELEVANCE", "0.40"))
 
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")

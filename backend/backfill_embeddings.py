@@ -44,7 +44,10 @@ SUPABASE_URL: str = os.environ["SUPABASE_URL"]
 SUPABASE_KEY: str = os.environ["SUPABASE_SERVICE_KEY"]  # service role
 OPENAI_API_KEY: str = os.environ["OPENAI_API_KEY"]
 
-EMBEDDING_MODEL = "text-embedding-ada-002"
+# IMPORTANTE: precisa ser EXATAMENTE o mesmo modelo usado pelo chatbot para
+# gerar o embedding da PERGUNTA (config.OPENAI_EMBEDDING_MODEL). Corpus e query
+# precisam viver no mesmo espaço vetorial, senão a similaridade vira ruído.
+EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 EMBEDDING_DIM = 1536
 BATCH_SIZE = 50          # registros por chamada à OpenAI
 UPDATE_CHUNK = 100       # registros por upsert no Supabase
@@ -175,7 +178,9 @@ def save_embeddings(sb: Client, df: pl.DataFrame) -> None:
                 "norma_codigo": row["norma_codigo"],
                 "secao": row["secao"],
                 "conteudo": row["conteudo"],
-                "embedding": row["embedding"],
+                # pgvector aceita o literal "[v1,v2,...]". Stringificar evita
+                # ambiguidade na serialização JSON do PostgREST para o tipo vector.
+                "embedding": "[" + ",".join(map(str, row["embedding"])) + "]",
             }
             for row in chunk_df.iter_rows(named=True)
         ]

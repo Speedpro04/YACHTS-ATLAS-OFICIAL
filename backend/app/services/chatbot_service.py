@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
-import math
+import re
 from typing import Any, Optional
 
 from app.core.cache import cache_get_json, cache_set_json, get_client as get_redis
@@ -79,80 +79,135 @@ def _embed(text: str) -> Optional[list[float]]:
 
 
 # ------------------------------------------------------------------
-# Recuperação (RAG) — busca as normas mais relevantes
+# Recuperação (RAG) — busca HÍBRIDA (código + semântica)
 # ------------------------------------------------------------------
-def _cosine(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(y * y for y in b))
-    if na == 0 or nb == 0:
-        return 0.0
-    return dot / (na * nb)
+_known_codes: Optional[list[str]] = None
 
 
-def _load_norms_with_embeddings() -> list[dict]:
-    """Carrega normas verificadas/ativas + seus embeddings (cacheados no Redis)."""
-    cached = cache_get_json(_NORMS_EMB_CACHE_KEY)
-    if cached:
-        return cached
-
+def _load_known_codes() -> list[str]:
+    """Códigos de normas ativas/verificadas, em cache de processo."""
+    global _known_codes
+    if _known_codes is not None:
+        return _known_codes
     try:
-        # Tenta buscar os trechos detalhados (Expert Upgrade)
-        res_expert = supabase.table("normas_conteudo").select(
-            "id, norma_codigo, secao, conteudo, normas(titulo, fonte_url, ativo, status_verificacao)"
-        ).execute()
-        
-        if res_expert.data:
-            rows = [r for r in res_expert.data if r.get("normas", {}).get("ativo") and r.get("normas", {}).get("status_verificacao") == "verificada"]
-            for r in rows:
-                norma = r["normas"]
-                texto = f"{r['norma_codigo']} — {norma.get('titulo','')} | Seção: {r.get('secao','')}. {r.get('conteudo','')}"
-                emb = _embed(texto)
-                if emb is None: continue
-                enriched.append({
-                    "codigo": r["norma_codigo"],
-                    "titulo": f"{norma.get('titulo','')} ({r.get('secao','')})",
-                    "descricao": r.get("conteudo",""),
-                    "fonte_url": norma.get("fonte_url",""),
-                    "_embedding": emb
-                })
-    except Exception as exc:
-        logger.warning("Tabela normas_conteudo não encontrada ou erro, usando fallback: %s", exc)
-
-    if not enriched:
-        # Fallback para tabela normas legada
         rows = (
-            supabase.table("normas")
-            .select("codigo,titulo,descricao,orgao,serie,versao,fonte_url")
+            get_supabase_admin()
+            .table("normas")
+            .select("codigo")
             .eq("ativo", True)
             .eq("status_verificacao", "verificada")
             .execute()
             .data
             or []
         )
-        for n in rows:
-            texto = f"{n['codigo']} — {n.get('titulo','')}. {n.get('descricao','')}"
-            emb = _embed(texto)
-            if emb is None:
-                continue
-            enriched.append({**n, "_embedding": emb})
-
-    if enriched:
-        cache_set_json(_NORMS_EMB_CACHE_KEY, enriched, ttl=_NORMS_EMB_TTL)
-    return enriched
+        _known_codes = [r["codigo"] for r in rows]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Falha ao carregar códigos de normas (busca híbrida): %s", exc)
+        _known_codes = []
+    return _known_codes
 
 
-def retrieve(query: str, k: int = 3) -> list[dict]:
-    """Retorna as `k` normas mais relevantes, cada uma com `_score` (0..1)."""
+def _codes_in_query(query: str) -> list[str]:
+    """Detecta códigos de norma citados na pergunta (ex.: 'NORMAM-211', 'SOLAS').
+
+    Códigos alfabéticos (LESTA, SOLAS, MARPOL...) exigem fronteira de palavra
+    para não casarem dentro de outra palavra (ex.: 'molesta'). Códigos com
+    dígito/separador (NORMAM-211, NBR-ISO-8666) casam por forma normalizada,
+    tolerando variações de espaço/hífen.
+    """
+    up = query.upper()
+    qn = re.sub(r"[\s\-]", "", up)
+    hits: list[str] = []
+    for code in _load_known_codes():
+        cu = code.upper()
+        if cu.isalpha():
+            if re.search(rf"\b{re.escape(cu)}\b", up):
+                hits.append(code)
+        else:
+            cn = re.sub(r"[\s\-]", "", cu)
+            if len(cn) >= 4 and cn in qn:
+                hits.append(code)
+    return hits
+
+
+def _sections_by_codes(codes: list[str], k: int) -> list[dict]:
+    """Match lexical: seções das normas citadas pelo código, direto do banco."""
+    if not codes:
+        return []
+    sb = get_supabase_admin()
+    try:
+        metas = (
+            sb.table("normas").select("codigo,titulo,fonte_url")
+            .in_("codigo", codes).eq("ativo", True).eq("status_verificacao", "verificada")
+            .execute().data or []
+        )
+        meta = {m["codigo"]: m for m in metas}
+        if not meta:
+            return []
+        secs = (
+            sb.table("normas_conteudo").select("norma_codigo,secao,conteudo")
+            .in_("norma_codigo", list(meta)).order("ordem").execute().data or []
+        )
+        return [
+            {
+                "codigo": s["norma_codigo"],
+                "titulo": f"{meta[s['norma_codigo']]['titulo']} ({s['secao']})",
+                "descricao": s["conteudo"],
+                "fonte_url": meta[s["norma_codigo"]]["fonte_url"],
+                "_score": 1.0,  # citação explícita do código = match forte
+            }
+            for s in secs[: k + 2]
+        ]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Busca por código falhou: %s", exc)
+        return []
+
+
+def _semantic_search(query: str, k: int) -> list[dict]:
+    """Busca semântica via pgvector (Supabase RPC)."""
     q_emb = _embed(query)
     if q_emb is None:
         return []
-    ranked = []
-    for n in _load_norms_with_embeddings():
-        score = _cosine(q_emb, n["_embedding"])
-        ranked.append({**{k: v for k, v in n.items() if k != "_embedding"}, "_score": score})
-    ranked.sort(key=lambda x: x["_score"], reverse=True)
-    return ranked[:k]
+    try:
+        res = get_supabase_admin().rpc("match_normas_conteudo", {
+            "query_embedding": q_emb,
+            "match_threshold": settings.CHATBOT_MIN_RELEVANCE,
+            "match_count": k,
+        }).execute()
+        return [
+            {
+                "codigo": r["norma_codigo"],
+                "titulo": f"{r['titulo']} ({r['secao']})",
+                "descricao": r["conteudo"],
+                "fonte_url": r["fonte_url"],
+                "_score": r["similarity"],
+            }
+            for r in (res.data or [])
+        ]
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Busca vetorial RPC falhou (pgvector ativo?): %s", exc)
+        return []
+
+
+def retrieve(query: str, k: int = 3) -> list[dict]:
+    """Recuperação HÍBRIDA das normas mais relevantes.
+
+    Combina (a) match lexical por código citado na pergunta — "o que diz a
+    NORMAM-211?" — com (b) busca semântica via pgvector. O match por código vem
+    primeiro: quando a pessoa cita a norma pelo nome, é isso que ela quer ver.
+    """
+    direct = _sections_by_codes(_codes_in_query(query), k)
+    semantic = _semantic_search(query, k)
+
+    out: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for item in direct + semantic:
+        key = (item["codigo"], item["titulo"])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(item)
+    return out[: max(k, len(direct))]
 
 
 # ------------------------------------------------------------------
@@ -204,6 +259,36 @@ def _build_context(norms: list[dict]) -> str:
     return "\n\n---\n\n".join(blocos)
 
 
+def _fallback_from_norms(norms: list[dict], limit: int = 2) -> str:
+    """Resposta de contingência quando o LLM está indisponível.
+
+    Em vez de deixar a Capitã muda, servimos o conteúdo da(s) norma(s)
+    recuperada(s) direto da fonte. A promessa central — citar a norma — continua
+    de pé mesmo sem o modelo de linguagem (resiliência a queda/quota da OpenAI).
+    """
+    blocos = []
+    for n in norms[:limit]:
+        corpo = (n.get("descricao") or "").strip()
+        if not corpo:
+            continue
+        bloco = f"**{n.get('codigo', '')} — {n.get('titulo', '')}**\n\n{corpo}"
+        if n.get("fonte_url"):
+            bloco += f"\n\nFonte: {n['fonte_url']}"
+        blocos.append(bloco)
+
+    if not blocos:
+        return (
+            "Estou com uma instabilidade momentânea para gerar a resposta. "
+            "Tente novamente em instantes, por favor."
+        )
+
+    return (
+        "Estou com uma instabilidade momentânea no meu gerador de respostas, "
+        "mas localizei a norma que trata disso e te trago o trecho direto da fonte:\n\n"
+        + "\n\n———\n\n".join(blocos)
+    )
+
+
 def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
     """Processa uma pergunta com todas as camadas de guard rail."""
     # 1) Guard rail de ENTRADA
@@ -247,6 +332,8 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
         "content": f"CONTEXTO DE NORMAS (use apenas isto):\n\n{contexto}\n\nPERGUNTA: {clean_msg}",
     })
 
+    reason = "ok"
+    raw = ""
     try:
         resp = client.chat.completions.create(
             model=settings.OPENAI_CHAT_MODEL,
@@ -262,19 +349,20 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
                 "Resposta vazia do modelo (finish_reason=%s).",
                 getattr(resp.choices[0], "finish_reason", "?"),
             )
-            raw = (
-                "Consegui localizar a(s) norma(s) relacionada(s) abaixo, mas não "
-                "gerei o texto da resposta agora. Tente perguntar de novo, por favor."
-            )
     except Exception as exc:  # noqa: BLE001
-        logger.error("Falha na chamada ao modelo: %s", exc)
-        return {
-            "answer": "Não consegui responder agora. Tente novamente em instantes.",
-            "blocked": True, "reason": "model_error", "sources": [],
-        }
+        # Loga o TIPO do erro (quota/modelo inválido/timeout/…) para diagnóstico.
+        logger.error("Falha na chamada ao modelo (%s): %s", type(exc).__name__, exc)
 
     # 5) Guard rail de SAÍDA
     answer = guard.scrub_output(raw)
+
+    # CONTINGÊNCIA: se o modelo falhou ou veio vazio, a Capitã NÃO fica muda.
+    # Servimos o conteúdo da norma recuperada direto da fonte. Ela só fica
+    # indisponível de verdade se nem isso houver (não deveria, pois já passou
+    # pelo guard rail de escopo com norma relevante).
+    if not answer.strip():
+        reason = "model_degraded"
+        answer = guard.scrub_output(_fallback_from_norms(norms))
 
     # Atualiza memória da conversa
     new_history = history + [
@@ -283,5 +371,13 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
     ]
     _save_session(session_id, new_history)
 
-    sources = [{"codigo": n["codigo"], "titulo": n.get("titulo"), "fonte_url": n.get("fonte_url")} for n in norms]
-    return {"answer": answer, "blocked": False, "reason": "ok", "sources": sources}
+    # Fontes para a UI: uma por norma (dedupe por código; várias seções da
+    # mesma norma não devem virar vários chips repetidos).
+    sources = []
+    seen_src: set[str] = set()
+    for n in norms:
+        if n["codigo"] in seen_src:
+            continue
+        seen_src.add(n["codigo"])
+        sources.append({"codigo": n["codigo"], "titulo": n.get("titulo"), "fonte_url": n.get("fonte_url")})
+    return {"answer": answer, "blocked": False, "reason": reason, "sources": sources}

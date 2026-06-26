@@ -40,7 +40,122 @@ export default function Dashboard() {
     dossiers: dossierCount ?? 0,
     revenue: (dossierCount ?? 0) * 400,
   }
-  
+
+  // Gera um relatório executivo da frota (branded) e abre o diálogo de
+  // impressão — o usuário salva como PDF. Sem dependências externas.
+  const generateReport = () => {
+    const esc = (s: unknown) =>
+      String(s ?? '—').replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
+
+    const tipoLabel: Record<string, string> = {
+      iate: 'Iate', lancha: 'Lancha', veleiro: 'Veleiro', jetski: 'Jet Ski', barco_pesca: 'Barco de Pesca',
+    }
+    const statusLabel: Record<string, string> = {
+      ativo: 'Ativo', inativo: 'Inativo', vendido: 'Vendido', manutencao: 'Manutenção',
+    }
+
+    const carimbo = new Date().toLocaleString('pt-BR')
+
+    const rows = ativos.length
+      ? ativos.map((a, i) => `
+          <tr>
+            <td class="num">${String(i + 1).padStart(2, '0')}</td>
+            <td>${esc(tipoLabel[a.tipo] ?? a.tipo)}</td>
+            <td><strong>${esc(a.marca)} ${esc(a.modelo)}</strong></td>
+            <td class="num">${esc(a.ano_fabricacao)}</td>
+            <td class="num">${esc(a.comprimento_pes)} pés</td>
+            <td>${esc(a.proprietario_nome)}</td>
+            <td><span class="tag tag-${esc(a.classificacao)}">${esc(a.classificacao)}</span></td>
+            <td>${esc(statusLabel[a.status] ?? a.status)}</td>
+            <td class="num">${esc(a.progresso)}%</td>
+          </tr>`).join('')
+      : `<tr><td colspan="9" class="empty">Nenhum ativo cadastrado nesta frota.</td></tr>`
+
+    const card = (label: string, value: string | number) => `
+      <div class="card">
+        <span class="card-label">${label}</span>
+        <span class="card-value">${value}</span>
+      </div>`
+
+    const html = `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Relatório de Frota — Marina Hub</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #010c20; padding: 48px 56px; }
+  .eyebrow { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: .42em; font-weight: 800;
+             text-transform: uppercase; color: #c5a059; }
+  h1 { font-size: 38px; line-height: 1.05; margin: 10px 0 4px; }
+  h1 em { color: #c5a059; }
+  .sub { font-family: Arial, sans-serif; font-size: 12px; color: #5b6473; }
+  .rule { height: 2px; background: #c5a059; width: 64px; margin: 18px 0 28px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 34px; }
+  .card { border: 1px solid #e3e6ec; border-top: 3px solid #c5a059; padding: 16px 18px; border-radius: 2px; }
+  .card-label { display: block; font-family: Arial, sans-serif; font-size: 8.5px; letter-spacing: .26em;
+                font-weight: 800; text-transform: uppercase; color: #8a93a3; margin-bottom: 8px; }
+  .card-value { font-size: 28px; font-weight: 700; color: #010c20; }
+  h2 { font-size: 14px; font-family: Arial, sans-serif; letter-spacing: .2em; text-transform: uppercase;
+       color: #021a3d; margin-bottom: 12px; border-bottom: 1px solid #e3e6ec; padding-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
+  thead th { text-align: left; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase;
+             color: #8a93a3; padding: 8px 10px; border-bottom: 1.5px solid #010c20; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #eef0f4; color: #2b3340; }
+  tbody tr:nth-child(even) td { background: #fafbfc; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.empty { text-align: center; color: #8a93a3; padding: 28px; font-style: italic; }
+  .tag { font-size: 8.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+         padding: 2px 8px; border-radius: 999px; color: #fff; }
+  .tag-gold { background: #c5a059; } .tag-silver { background: #9ca3af; } .tag-bronze { background: #b08d57; }
+  footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #e3e6ec;
+           font-family: Arial, sans-serif; font-size: 9px; color: #8a93a3; display: flex; justify-content: space-between; }
+  @page { margin: 16mm; }
+  @media print { body { padding: 0; } tr { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+  <div class="eyebrow">Marina Hub · Custódia Digital</div>
+  <h1>Relatório de <em>Frota</em></h1>
+  <div class="sub">Gerado em ${carimbo} · Auditoria e rastreamento em tempo real</div>
+  <div class="rule"></div>
+
+  <div class="cards">
+    ${card('Total de Ativos', stats.total)}
+    ${card('Compliance Médio', stats.compliance + '%')}
+    ${card('Ativos Gold', stats.gold)}
+    ${card('Dossiês Gerados', stats.dossiers)}
+  </div>
+
+  <h2>Inventário de Ativos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Tipo</th><th>Embarcação</th><th>Ano</th><th>Comprimento</th>
+        <th>Proprietário</th><th>Classe</th><th>Status</th><th>Compliance</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <footer>
+    <span>Yachts Atlas — Documento confidencial</span>
+    <span>${ativos.length} ativo(s) · ${carimbo}</span>
+  </footer>
+  <script>window.addEventListener('load', function () { setTimeout(function () { window.focus(); window.print(); }, 250); });<\/script>
+</body>
+</html>`
+
+    const w = window.open('', '_blank', 'width=900,height=1000')
+    if (!w) {
+      alert('Não foi possível abrir o relatório. Habilite os pop-ups para este site e tente novamente.')
+      return
+    }
+    w.document.write(html)
+    w.document.close()
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96">
@@ -83,7 +198,10 @@ export default function Dashboard() {
               <Plus size={16} />
               {t('common.add_asset')}
             </button>
-            <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3">
+            <button
+              onClick={generateReport}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3"
+            >
               <Download size={16} />
               Report
             </button>
