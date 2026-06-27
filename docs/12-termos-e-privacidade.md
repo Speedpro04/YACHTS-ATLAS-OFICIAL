@@ -1,6 +1,8 @@
 # Yachts Atlas — Termos de Uso e Política de Privacidade
 
-## Data de Vigência: 2026-04-25
+## Data de Vigência: 2026-06-26
+
+> Política de Privacidade publicada para o usuário em `/privacidade` (página `frontend/src/pages/Privacidade.tsx`). Este documento é a referência interna e deve ser mantido em sincronia com a página.
 
 ---
 
@@ -58,12 +60,11 @@ O Yachts Atlas é uma plataforma de registro digital de documentos para ativos n
 
 ### 1.7 Armazenamento e Imutabilidade
 
-Os documentos uploadados são armazenados com:
-- Hash SHA-256
-- WORM Lock (impossível alterar/deletar)
-- Logs de auditoria (CloudTrail)
+Os documentos enviados são armazenados no Supabase Storage (infraestrutura em região do Brasil) com:
+- Hash SHA-256 para verificação de integridade
+- Controle de acesso e registros de auditoria
 
-Uma vez uploadado, o documento NÃO pode ser alterado ou excluído. Qualquer tentativa será registrada.
+A integridade de cada documento é verificável pelo hash; qualquer alteração é detectável.
 
 ### 1.8 Isenção de Responsabilidade
 
@@ -120,9 +121,9 @@ Seus dados são usados para:
 ### 2.3 Compartilhamento
 
 Seus dados NÃO são vendidos. São compartilhados apenas com:
-- Supabase (banco de dados)
-- AWS (armazenamento S3)
+- Supabase (banco de dados e armazenamento de arquivos — região Brasil)
 - Stripe (pagamentos)
+- OpenAI (assistente Solara — recebe apenas a pergunta sobre normas, sem dados pessoais)
 - Autoridades legais (quando exigido)
 
 ### 2.4 Seus Direitos (LGPD)
@@ -139,7 +140,7 @@ Seus dados NÃO são vendidos. São compartilhados apenas com:
 ### 2.5 Contato DPO
 
 Para exercer seus direitos ou tirar dúvidas:
-- Email: privacidade@yachtsatlas.com
+- Email: yachtsatlas@gmail.com
 
 ### 2.6 Retenção de Dados
 
@@ -153,11 +154,11 @@ Para exercer seus direitos ou tirar dúvidas:
 ### 2.7 Segurança
 
 Implementamos:
-- Criptografia TLS 1.3
-- Criptografia AES-256 (dados)
-- WORM Lock (documentos)
-- Logs de auditoria
-- Acesso restrito
+- Criptografia em trânsito (TLS)
+- Criptografia em repouso na infraestrutura de armazenamento
+- Verificação de integridade por hash SHA-256
+- Controle de acesso por papéis e isolamento por linha (RLS)
+- Registros de auditoria e monitoramento de acessos
 
 ### 2.8 Cookies
 
@@ -226,10 +227,10 @@ Se qualquer cláusula for inválida, as demais permanecem.
 ### 5.3 Contato
 
 **Yachts Atlas**
-- Email: contato@yachtsatlas.com
+- Email: yachtsatlas@gmail.com
 - Website: https://yachtsatlas.com
 
 ---
 
-**Versão:** 1.0
-**Data:** 2026-04-25
+**Versão:** 1.1
+**Data:** 2026-06-26

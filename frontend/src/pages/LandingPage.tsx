@@ -535,8 +535,8 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-8 mb-12">
             <Link to="/termos-fundadores" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.terms')}</Link>
-            <a href="#" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.privacy')}</a>
-            <a href="#" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.contact')}</a>
+            <Link to="/privacidade" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.privacy')}</Link>
+            <a href="mailto:yachtsatlas@gmail.com" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.contact')}</a>
           </div>
           <p className="text-[8px] text-white/10 uppercase tracking-widest">
             © {new Date().getFullYear()} Yachts Atlas. {t('lp.footer_copy')}

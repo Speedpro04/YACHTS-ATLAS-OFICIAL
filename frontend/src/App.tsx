@@ -25,6 +25,7 @@ import Registros from './pages/Registros'
 import NormasTecnicas from './pages/NormasTecnicas'
 import SeoMeta from './components/SeoMeta'
 import TermosFundadores from './pages/TermosFundadores'
+import Privacidade from './pages/Privacidade'
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
         <Route path="/seja-parceiro" element={<SejaParceiro />} />
         <Route path="/solicitar-dossie" element={<SolicitarDossie />} />
         <Route path="/termos-fundadores" element={<TermosFundadores />} />
+        <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route element={<PrivateRoute />}>
           <Route path="/app" element={<Layout />}>
