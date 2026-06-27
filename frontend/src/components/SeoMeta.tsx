@@ -49,7 +49,7 @@ const SEO_BY_PATH: Record<string, SeoConfig> = {
   '/marina-parceira': {
     title: 'Programa Marina Parceira — Receita de Dossiês | Yachts Atlas',
     description:
-      'Conheça os benefícios comerciais do programa fundador: receita de dossiês, indicação rentável e condições vitalícias para as primeiras 40 marinas.',
+      'Conheça os benefícios comerciais do programa fundador: receita de dossiês, indicação rentável e condições exclusivas para marinas aprovadas.',
     keywords: 'marina parceira, programa de parceria, split de receita, ecossistema náutico, programa fundador',
   },
   '/acesso-proprietario': {

@@ -16,9 +16,6 @@ export default function MarinaParceira() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const TOTAL_SPOTS = 40;
-  const TAKEN_SPOTS = 12; // Atualizar dinamicamente se necessário
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -49,6 +46,8 @@ export default function MarinaParceira() {
     }
   };
 
+  const TOTAL_SPOTS = 120;
+  const TAKEN_SPOTS = 12;
   const fillPercent = Math.round((TAKEN_SPOTS / TOTAL_SPOTS) * 100);
 
   return (
@@ -58,7 +57,7 @@ export default function MarinaParceira() {
         <section className={styles.section}>
           <div className={styles.bgGlow} aria-hidden="true" />
 
-          <span className={styles.eyebrow}>Programa de Parceria Exclusiva</span>
+          <span className={styles.eyebrow}>3 Vagas Fundadoras</span>
 
           <h2 className={styles.headline}>
             Sua marina.<br />
@@ -68,6 +67,10 @@ export default function MarinaParceira() {
           <p className={styles.subtext}>
             As primeiras marinas a integrar a rede Atlas operam em condições fundadoras — benefícios
             exclusivos que não estarão disponíveis para novos parceiros após o encerramento desta fase.
+          </p>
+
+          <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#C9A84C]/80 text-center">
+            Oferta oficial: USD 250/mês • Meta pública: 120 vagas
           </p>
 
           <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl mx-auto">
@@ -113,11 +116,11 @@ export default function MarinaParceira() {
               },
               {
                 num: '03',
-                title: 'Acesso Vitalício',
+                title: 'Posição Oficial',
                 text: (
                   <>
-                    Condições fundadoras são{' '}
-                    <strong>permanentes para quem ingressa agora</strong>. O padrão aumenta. O seu custo, não.
+                    A página oficial trabalha a escala da rede com{' '}
+                    <strong>120 vagas e mensalidade de USD 250</strong> para marinas em operação.
                   </>
                 ),
               },

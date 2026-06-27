@@ -24,6 +24,12 @@ Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo 
 - Suporte prioritário.
 - **Receita:** Split fixo de ROI dos dossiês em 50/50 com marinas parceiras.
 
+### Estrutura de Ofertas
+- **Página oficial:** $250/mês com meta pública de 120 vagas.
+- **Página de lançamento:** $200 com 20 vagas fundadoras.
+- A página oficial sustenta a expansão comercial.
+- A página de lançamento concentra prova social, urgência e cases iniciais.
+
 ### Camada 3: Proprietários (Clientes Finais)
 - Acesso via marina (gratuito ou custo incluído)
 - Proteção de ativos de milhões

@@ -361,7 +361,7 @@ export default function LandingPage() {
             </h2>
             
             <p className="text-white/40 text-lg md:text-xl mb-16 font-light leading-relaxed max-w-2xl mx-auto">
-               Não aceitamos qualquer marina. Estamos selecionando rigorosamente 40 parceiros fundadores para operar com um modelo de negócio que nunca mais será repetido.
+               Estamos escolhendo parceiros fundadores com cuidado para construir uma rede confiável, bem posicionada e com valor real para toda a operação.
             </p>
             
             <div className="inline-block p-[1px] bg-gradient-to-b from-white/10 via-[#c5a059]/30 to-transparent rounded-sm relative group">

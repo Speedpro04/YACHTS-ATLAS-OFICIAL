@@ -74,3 +74,28 @@ async def list_marina_leads(_admin: dict = Depends(require_platform_admin)):
         return result.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/marina/spots")
+async def get_marina_founder_spots():
+    """Return founder spot availability for the public marina partnership page."""
+    try:
+        supabase = get_supabase_admin()
+        result = supabase.table("founder_program_spots").select(
+            "slot_number,status,marina_name,contact_name,email,billing_status,access_status,updated_at"
+        ).order("slot_number").execute()
+
+        spots = result.data or []
+        total_spots = 3
+        occupied_statuses = {"reserved", "occupied"}
+        taken_spots = sum(1 for spot in spots if spot.get("status") in occupied_statuses)
+        available_spots = max(total_spots - taken_spots, 0)
+
+        return {
+            "total_spots": total_spots,
+            "taken_spots": taken_spots,
+            "available_spots": available_spots,
+            "spots": spots,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

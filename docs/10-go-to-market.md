@@ -18,6 +18,15 @@
 | Fase 2 (Growth) | Marinas parceiras | 50 marinas |
 | Fase 3 (Scale) | Escala LATAM | 500+ usuários |
 
+### 1.3 Arquitetura de Ofertas
+
+| Página / Oferta | Preço | Vagas | Objetivo |
+|---|---|---|---|
+| **Página oficial** | **USD 250/mês** | **120 vagas** | Venda recorrente e expansão da rede |
+| **Página de lançamento** | **USD 200** | **20 vagas fundadoras** | Prova social, cases e urgência comercial |
+
+Regra de ouro: a página oficial vende o plano recorrente da operação; a página de lançamento vende a entrada fundadora limitada.
+
 ---
 
 ## 2. Canais de Aquisição
