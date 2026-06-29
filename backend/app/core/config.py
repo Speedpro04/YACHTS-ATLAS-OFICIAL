@@ -110,15 +110,14 @@ class Settings(BaseSettings):
     REFERRAL_REWARD_MONTHS: int = 18
     REFERRAL_MIN_RETENTION_MONTHS: int = 3  # referred marina must stay 3 months
 
-    # Programa de Lançamento — 7 Marinas Fundadoras
-    # $180/mês por 12 meses → depois $300/mês. Bônus: 100% dos dossiês por 18
-    # meses, destravado ao trazer 7 marinas. Marinas indicadas pagam $250/mês.
-    LAUNCH_SLOTS: int = 7
-    LAUNCH_PRICE_MONTHLY: int = 180
-    LAUNCH_PROMO_MONTHS: int = 12
-    LAUNCH_PRICE_AFTER: int = 300
-    LAUNCH_REFERRED_PRICE: int = 250
-    LAUNCH_REFERRALS_REQUIRED: int = 7
+    # Modelo de cobrança DEFINITIVO — só dois preços, nada além disto:
+    #   • 20 marinas de lançamento   → $200/mês  (link de pagamento de $200)
+    #   • até 120 marinas restantes  → $250/mês  (link de pagamento de $250)
+    # Total: 140 marinas. Sem outros valores.
+    LAUNCH_SLOTS: int = 20             # marinas de lançamento a $200
+    LAUNCH_PRICE_MONTHLY: int = 200    # preço das 20 de lançamento
+    TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
+    TRADITIONAL_PRICE_MONTHLY: int = 250
     LAUNCH_DOSSIER_BONUS_MONTHS: int = 18
 
     @property
