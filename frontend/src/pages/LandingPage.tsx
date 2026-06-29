@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     q: 'O que entra no dossiê?',
-    a: 'Identificação e procedência, histórico de propriedade, documentação legal, histórico de manutenção e motorização, registro fotográfico datado e geolocalizado, e os laudos de terceiros — tudo selado e organizado em um único cofre digital.',
+    a: 'Identificação e procedência, histórico de propriedade, documentação legal, histórico de manutenção e motorização, registro fotográfico datado e geolocalizado (até 400 imagens por embarcação, organizadas por categoria), e os laudos de terceiros — tudo selado e organizado em um único cofre digital.',
   },
   {
     q: 'Por quanto tempo o dossiê fica disponível?',
@@ -125,7 +125,7 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
             {[
-              { icon: Camera, label: 'Registro Fotográfico', sub: 'Datado e geolocalizado' },
+              { icon: Camera, label: 'Registro Fotográfico', sub: 'Até 400 imagens · datadas e geolocalizadas' },
               { icon: FileText, label: 'Documentação & Procedência', sub: 'Cofre digital' },
               { icon: History, label: 'Histórico Completo', sub: 'Manutenção e motorização' },
               { icon: Lock, label: 'Selo de Integridade', sub: 'SHA-256 imutável' },

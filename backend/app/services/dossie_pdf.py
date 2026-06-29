@@ -21,6 +21,30 @@ WHITE = colors.HexColor("#f0ede6")
 WHITE_DIM = colors.HexColor("#9aa0aa")
 BORDER = colors.HexColor("#1a2740")
 
+_ROTULO_EVID = {
+    "nota_fiscal": "Nota fiscal",
+    "peca_nova": "Foto da peça nova",
+    "peca_velha": "Foto da peça velha",
+    "fotos_servico": "Foto do serviço",
+}
+
+# Títulos náuticos das categorias ricas do dossiê (dossieCategorias.ts)
+TITULOS_DOSSIE = {
+    "especificacoes": "Especificações Técnicas",
+    "sistemas_auxiliares": "Sistemas Auxiliares",
+    "inspecao_tecnica": "Inspeção Técnica (Laudo de Terceiro)",
+    "auditoria_casco": "Auditoria Estrutural do Casco (END)",
+    "sinistros": "Histórico de Sinistros e Reparos",
+    "avaliacao_mercado": "Avaliação de Mercado",
+    "relatorio_seguradora": "Relatório para Seguradora",
+    "compliance_imo": "Compliance Internacional (IMO)",
+    "tripulacao": "Tripulação",
+    "tenders_toys": "Tenders & Toys",
+    "areas": "Áreas & Acomodações",
+}
+# Chaves internas que não devem virar linha da ficha
+INTERNAS_DADOS = {"arquivos", "evidencias", "enviado_por", "enviado_em"}
+
 S = {
     "eyebrow": ParagraphStyle("eyebrow", fontName="Helvetica-Bold", fontSize=7, textColor=GOLD_DIM, leading=11),
     "h1": ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=26, textColor=WHITE, leading=30),
@@ -88,6 +112,37 @@ def _data_table(header, linhas, col_widths):
     return t
 
 
+def _render_ficha(story, m: dict):
+    """Renderiza uma ficha de serviço rica (logbook) com evidências seladas.
+    Mesmo layout para TODAS as categorias técnicas (alinhado ao painel)."""
+    cab = f"<b>{m.get('servico') or 'Serviço'}</b>"
+    if m.get("status"):
+        cab += f"  ·  {m.get('status')}"
+    story.append(Paragraph(cab, S["value"]))
+    ficha = _info_table([
+        ("Data", m.get("data")), ("Tipo", m.get("tipo")),
+        ("Responsável", m.get("resp")), ("Prestador", m.get("prestador")),
+        ("CNPJ", m.get("cnpj")), ("Local", m.get("local")),
+        ("Horímetro (motor)", f"{m.get('horimetro')} h" if m.get("horimetro") else None),
+        ("Horas trabalhadas", f"{m.get('horas_trabalhadas')} h" if m.get("horas_trabalhadas") else None),
+        ("Valor", f"R$ {m.get('valor')}" if m.get("valor") else None),
+        ("Próxima revisão", m.get("proxima_revisao")),
+        ("Peça trocada", m.get("peca")), ("Part number", m.get("peca_part_number")),
+        ("Nº de série", m.get("peca_serie")),
+    ])
+    if ficha:
+        story.append(ficha)
+    if m.get("observacao"):
+        story.append(Paragraph(m["observacao"], S["small"]))
+    for ev in (m.get("evidencias") or []):
+        rotulo = _ROTULO_EVID.get(ev.get("slot"), ev.get("slot") or "Evidência")
+        h = (ev.get("hash") or "")[:16]
+        story.append(Paragraph(f"&#128274; {rotulo} — {ev.get('nome') or ''} · SHA-256 {h}…", S["small"]))
+    if m.get("enviado_por"):
+        story.append(Paragraph(f"Enviado por {m['enviado_por']} — registro imutável", S["small"]))
+    story.append(Spacer(1, 8))
+
+
 def gerar_pdf_dossie(dados: dict) -> bytes:
     """Gera o PDF do dossiê em memória e devolve os bytes."""
     buf = BytesIO()
@@ -132,35 +187,79 @@ def gerar_pdf_dossie(dados: dict) -> bytes:
         for d in docs:
             story.append(Paragraph(f"✓  {d}", S["body"]))
 
-    # 04 — Manutenção
-    manut = dados.get("manutencao") or []
-    if manut:
-        story.append(_section_title("04 — Histórico de Manutenção"))
-        story.append(_data_table(
-            ["DATA", "SERVIÇO", "RESPONSÁVEL", "STATUS"],
-            [[m.get("data"), m.get("servico"), m.get("resp"), m.get("status")] for m in manut],
-            [22 * mm, 78 * mm, 40 * mm, 36 * mm],
-        ))
+    # 04+ — Seções técnicas (todas com a MESMA ficha rica do painel/logbook)
+    n = 4
+    secoes_tecnicas = dados.get("secoes_tecnicas")
+    if secoes_tecnicas is None:
+        # Compat: monta a seção de manutenção a partir da chave antiga.
+        secoes_tecnicas = [{"titulo": "Histórico de Manutenção", "categoria": "manutencao",
+                            "fichas": dados.get("manutencao") or []}]
+    categorias_tratadas = {"proprietarios", "documentacao"}
+    for sec in secoes_tecnicas:
+        fichas = sec.get("fichas") or []
+        if not fichas:
+            continue
+        categorias_tratadas.add(sec.get("categoria"))
+        story.append(_section_title(f"{n:02d} — {sec.get('titulo') or 'Registros Técnicos'}"))
+        for m in fichas:
+            _render_ficha(story, m)
+        n += 1
 
-    # Demais categorias com registro (a partir de registros crus)
+    # Seção fotográfica — galeria selada por categoria (até a capacidade)
+    foto = dados.get("fotografico") or {}
+    if foto.get("total"):
+        cap = foto.get("capacidade") or ""
+        story.append(_section_title(f"{n:02d} — Registro Fotográfico"))
+        com_geo = foto.get("com_geo") or 0
+        story.append(Paragraph(
+            f"{foto['total']} imagem(ns) selada(s) e datada(s)"
+            + (f" · capacidade de {cap} por embarcação" if cap else "")
+            + (f" · {com_geo} geolocalizada(s)" if com_geo else "")
+            + " · cada arquivo com hash SHA-256 imutável.", S["body"]))
+        cats = foto.get("categorias") or []
+        if cats:
+            story.append(_data_table(
+                ["CATEGORIA", "IMAGENS"],
+                [[c.get("label"), c.get("total")] for c in cats],
+                [130 * mm, 46 * mm],
+            ))
+        n += 1
+
+    # Demais categorias com registro não mapeadas acima (fallback)
     registros = dados.get("registros") or []
-    ja_tratadas = {"proprietarios", "documentacao", "manutencao"}
     outras = {}
     for r in registros:
         cat = r.get("categoria")
-        if cat in ja_tratadas:
+        if cat in categorias_tratadas:
             continue
         outras.setdefault(cat, []).append(r)
-    n = 5
     for cat, regs in outras.items():
-        story.append(_section_title(f"{n:02d} — {cat.replace('_', ' ').title()}"))
+        titulo = TITULOS_DOSSIE.get(cat, str(cat).replace("_", " ").title())
+        story.append(_section_title(f"{n:02d} — {titulo}"))
         for r in regs:
-            titulo = r.get("titulo") or "Registro"
-            obs = r.get("observacao") or ""
-            story.append(Paragraph(f"<b>{titulo}</b>", S["value"]))
-            if obs:
-                story.append(Paragraph(obs, S["small"]))
-            story.append(Spacer(1, 4))
+            story.append(Paragraph(f"<b>{r.get('titulo') or 'Registro'}</b>", S["value"]))
+            d = r.get("dados") or {}
+            # Campos estruturados da ficha (ex.: laudo, seguradora, especificações)
+            pares = [
+                (k.replace("_", " ").title(), v)
+                for k, v in d.items()
+                if k not in INTERNAS_DADOS and v not in (None, "", [], {})
+            ]
+            tinfo = _info_table(pares)
+            if tinfo:
+                story.append(tinfo)
+            # Itens marcados no checklist
+            for item in (r.get("checklist") or []):
+                story.append(Paragraph(f"&#10003; {item}", S["small"]))
+            # Anexos selados (laudos/documentos de terceiros)
+            for a in (d.get("arquivos") or []):
+                if not isinstance(a, dict):
+                    continue
+                h = (a.get("hash") or "")[:16]
+                story.append(Paragraph(f"&#128274; {a.get('nome') or 'Anexo'} · SHA-256 {h}…", S["small"]))
+            if r.get("observacao"):
+                story.append(Paragraph(r["observacao"], S["small"]))
+            story.append(Spacer(1, 6))
         n += 1
 
     # Assinatura

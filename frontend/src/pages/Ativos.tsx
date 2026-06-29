@@ -1,10 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { api } from '../services/api'
 import { Ativo } from '../types'
-import { Ship, Plus, Trash2, Anchor, Filter, Search, ChevronRight, X } from 'lucide-react'
+import { Ship, Plus, Trash2, Anchor, Filter, Search, ChevronRight, X, Upload, Camera, Check, Loader2, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import AtivoHub from '../components/AtivoHub'
+import { obterGeo } from '../utils/geo'
+
+// Categorias da galeria fotográfica da embarcação (organizada + sai no dossiê)
+const GALERIA_CATS: { key: string; label: string }[] = [
+  { key: 'casco_exterior', label: 'Casco / Exterior' },
+  { key: 'motor', label: 'Motor / Propulsão' },
+  { key: 'pintura', label: 'Pintura' },
+  { key: 'interior', label: 'Interior' },
+  { key: 'eletronica', label: 'Eletrônica / Navegação' },
+  { key: 'notas_fiscais', label: 'Notas Fiscais' },
+  { key: 'antes_depois', label: 'Antes e Depois' },
+  { key: 'outros', label: 'Outros' },
+]
 
 export default function Ativos() {
   const { t } = useTranslation()
@@ -20,6 +33,19 @@ export default function Ativos() {
     comprimento_pes: 0,
     ano_fabricacao: new Date().getFullYear(),
   })
+  // Galeria inicial organizada por categoria (até 400 fotos por embarcação)
+  const MAX_FOTOS = 400
+  const [novoAtivo, setNovoAtivo] = useState<Ativo | null>(null)
+  const [galeria, setGaleria] = useState<Record<string, any[]>>({})
+  const [catAtiva, setCatAtiva] = useState<string>(GALERIA_CATS[0].key)
+  const [uploadingFotos, setUploadingFotos] = useState(false)
+  const totalFotos = Object.values(galeria).reduce((a, b) => a + b.length, 0)
+  // Vitrine: fotos de apresentação (interior/exterior) — até 30, SEPARADAS das 400
+  const MAX_VITRINE = 30
+  const [vitrineFiles, setVitrineFiles] = useState<File[]>([])
+  const [salvando, setSalvando] = useState(false)
+  const vitrinePreviews = useMemo(() => vitrineFiles.map((f) => URL.createObjectURL(f)), [vitrineFiles])
+  useEffect(() => () => { vitrinePreviews.forEach((u) => URL.revokeObjectURL(u)) }, [vitrinePreviews])
 
   useEffect(() => {
     if (location.state && (location.state as any).openForm) {
@@ -45,18 +71,90 @@ export default function Ativos() {
     }
   }
 
+  const handleVitrineSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setVitrineFiles((prev) => {
+      const merged = [...prev, ...files]
+      if (merged.length > MAX_VITRINE) {
+        alert(`Máximo de ${MAX_VITRINE} fotos de apresentação. As excedentes foram ignoradas.`)
+      }
+      return merged.slice(0, MAX_VITRINE)
+    })
+    e.target.value = ''
+  }
+  const removeVitrine = (idx: number) => setVitrineFiles((prev) => prev.filter((_, i) => i !== idx))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSalvando(true)
     try {
-      await api.ativos.create(formData)
+      const created = await api.ativos.create(formData)
+      // Fotos de apresentação (vitrine) — enviadas com categoria 'vitrine',
+      // separadas da galeria documental de 400.
+      if (created?.id && vitrineFiles.length) {
+        const geo = await obterGeo() // GPS do dispositivo (com permissão); null se negado
+        for (const file of vitrineFiles) {
+          const fd = new FormData()
+          fd.append('file', file)
+          await api.documentos.upload(created.id, 'foto', 'vitrine', fd, geo)
+        }
+      }
+      setVitrineFiles([])
       setShowForm(false)
       setFormData({ tipo: 'iate', marca: '', modelo: '', comprimento_pes: 0, ano_fabricacao: new Date().getFullYear() })
       loadAtivos()
+      // Etapa de fotos: galeria inicial organizada da embarcação recém-criada
+      if (created?.id) {
+        setNovoAtivo(created)
+        setGaleria({})
+        setCatAtiva(GALERIA_CATS[0].key)
+      }
     } catch (err) {
       console.error('Erro ao criar:', err)
       alert('Não foi possível cadastrar a embarcação. Verifique a conexão com o servidor.')
+    } finally {
+      setSalvando(false)
     }
   }
+
+  const recarregarGaleria = async (ativoId: string) => {
+    const data = await api.documentos.list(ativoId)
+    const grp: Record<string, any[]> = {}
+    ;(Array.isArray(data) ? data : []).forEach((d: any) => {
+      const cat = String(d.categoria || '')
+      if (cat.startsWith('galeria_')) {
+        const k = cat.replace('galeria_', '')
+        ;(grp[k] = grp[k] || []).push(d)
+      }
+    })
+    setGaleria(grp)
+  }
+
+  const handleFotos = async (catKey: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length || !novoAtivo) return
+    const espaco = MAX_FOTOS - totalFotos
+    if (espaco <= 0) { e.target.value = ''; return }
+    const lote = files.slice(0, espaco)
+    setUploadingFotos(true)
+    try {
+      const geo = await obterGeo() // GPS do dispositivo (com permissão); null se negado
+      for (const file of lote) {
+        const fd = new FormData()
+        fd.append('file', file)
+        await api.documentos.upload(novoAtivo.id, 'foto', `galeria_${catKey}`, fd, geo)
+      }
+      await recarregarGaleria(novoAtivo.id)
+    } catch {
+      alert('Falha no upload. O primeiro envio pode levar ~20s (servidor acordando). Tente novamente.')
+    } finally {
+      setUploadingFotos(false)
+      e.target.value = ''
+    }
+  }
+
+  const concluirGaleria = () => { setNovoAtivo(null); setGaleria({}) }
 
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta embarcação?')) {
@@ -148,13 +246,153 @@ export default function Ativos() {
                 </div>
               ))}
             </div>
+            {/* Fotos de apresentação (vitrine) — interior e exterior, separadas das 400 */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-black flex items-center gap-2">
+                    <Camera size={13} className="text-[#c5a059]" /> Fotos da Embarcação · Interior e Exterior
+                  </label>
+                  <p className="text-white/25 text-[10px] mt-1.5 tracking-wide">
+                    Imagens de apresentação da embarcação. <span className="text-[#c5a059]/80 font-bold">Separadas da galeria documental de {MAX_FOTOS} fotos.</span>
+                  </p>
+                </div>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-sm border ${
+                  vitrineFiles.length >= MAX_VITRINE ? 'text-rose-400 border-rose-400/30 bg-rose-400/10' : 'text-[#c5a059] border-[#c5a059]/20 bg-[#c5a059]/10'
+                }`}>
+                  {vitrineFiles.length} / {MAX_VITRINE}
+                </span>
+              </div>
+
+              <label className={`block border border-dashed rounded-sm p-8 text-center transition-all ${
+                vitrineFiles.length >= MAX_VITRINE ? 'border-white/10 opacity-40 pointer-events-none' : 'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'
+              }`}>
+                <input type="file" className="hidden" multiple accept="image/png,image/jpeg" disabled={vitrineFiles.length >= MAX_VITRINE} onChange={handleVitrineSelect} />
+                {vitrineFiles.length >= MAX_VITRINE ? (
+                  <p className="text-white/50 text-xs font-black uppercase tracking-widest">Limite de {MAX_VITRINE} fotos de apresentação atingido</p>
+                ) : (
+                  <>
+                    <Upload size={26} className="mx-auto text-white/15 mb-3" />
+                    <p className="text-white text-xs font-black uppercase tracking-widest mb-1">Adicionar fotos de apresentação</p>
+                    <p className="text-white/25 text-[10px] uppercase tracking-widest">PNG ou JPG · interior e exterior · restam {MAX_VITRINE - vitrineFiles.length}</p>
+                  </>
+                )}
+              </label>
+
+              {vitrineFiles.length > 0 && (
+                <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                  {vitrinePreviews.map((url, i) => (
+                    <div key={url} className="group relative rounded-sm overflow-hidden border border-white/10 aspect-square bg-[#010c20]">
+                      <img src={url} alt={`Apresentação ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeVitrine(i)}
+                        className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-[#010c20]/80 text-white/60 hover:text-rose-400 rounded-sm opacity-0 group-hover:opacity-100 transition-all"
+                        title="Remover"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-6 pt-6">
-              <button type="submit" className="bg-[#c5a059] text-[#010c20] px-12 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-[#b38f4d] transition-all">Confirmar Cadastro</button>
-              <button type="button" onClick={() => setShowForm(false)} className="text-white/30 hover:text-white px-8 py-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all">Cancelar</button>
+              <button type="submit" disabled={salvando} className="bg-[#c5a059] text-[#010c20] px-12 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-[#b38f4d] disabled:opacity-50 transition-all flex items-center gap-3">
+                {salvando ? <Loader2 size={15} className="animate-spin" /> : null}
+                {salvando ? 'Salvando...' : 'Confirmar Cadastro'}
+              </button>
+              <button type="button" onClick={() => setShowForm(false)} disabled={salvando} className="text-white/30 hover:text-white px-8 py-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all disabled:opacity-30">Cancelar</button>
             </div>
           </form>
         </div>
       )}
+
+      {/* Galeria organizada por categoria — até 400 fotos, sai no dossiê */}
+      {novoAtivo && (() => {
+        const cheio = totalFotos >= MAX_FOTOS
+        const fotosCat = galeria[catAtiva] || []
+        return (
+          <div className="p-10 rounded-sm border border-[#c5a059]/25 bg-[#021431] animate-in slide-in-from-top-4 duration-500 space-y-6">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h3 className="text-xl font-serif font-bold text-white tracking-tight flex items-center gap-3">
+                  <Camera size={20} className="text-[#c5a059]" /> Galeria da Embarcação
+                </h3>
+                <p className="text-white/40 text-[10px] mt-1.5 uppercase tracking-[0.3em] font-black">
+                  {novoAtivo.marca} {novoAtivo.modelo} · organizada por categoria · sai no dossiê
+                </p>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-4 py-2 rounded-sm">
+                {totalFotos} / {MAX_FOTOS}
+              </span>
+            </div>
+
+            {/* Abas de categoria */}
+            <div className="flex flex-wrap gap-2">
+              {GALERIA_CATS.map((c) => {
+                const n = (galeria[c.key] || []).length
+                const on = c.key === catAtiva
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => setCatAtiva(c.key)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-[0.15em] border transition-all ${
+                      on ? 'bg-[#c5a059] text-[#010c20] border-[#c5a059]' : 'text-white/50 border-white/10 hover:border-[#c5a059]/40 hover:text-white/80'
+                    }`}
+                  >
+                    {c.label}
+                    {n > 0 && <span className={`px-1.5 rounded-sm ${on ? 'bg-[#010c20]/20' : 'bg-[#c5a059]/15 text-[#c5a059]'}`}>{n}</span>}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Upload da categoria ativa */}
+            <label className={`block border border-dashed rounded-sm p-8 text-center transition-all ${
+              uploadingFotos ? 'border-[#c5a059]/40 bg-[#c5a059]/5 pointer-events-none' :
+              cheio ? 'border-white/10 opacity-40 pointer-events-none' :
+              'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'
+            }`}>
+              <input type="file" className="hidden" multiple accept="image/png,image/jpeg" disabled={uploadingFotos || cheio} onChange={(e) => handleFotos(catAtiva, e)} />
+              {uploadingFotos ? (
+                <div className="flex flex-col items-center">
+                  <Loader2 size={26} className="text-[#c5a059] animate-spin mb-3" />
+                  <span className="text-[10px] font-black text-[#c5a059] uppercase tracking-widest">Enviando e selando (SHA-256)...</span>
+                </div>
+              ) : cheio ? (
+                <p className="text-white/50 text-xs font-black uppercase tracking-widest">Limite de {MAX_FOTOS} fotos atingido</p>
+              ) : (
+                <>
+                  <Upload size={28} className="mx-auto text-white/15 mb-3" />
+                  <p className="text-white text-xs font-black uppercase tracking-widest mb-1">Adicionar em "{GALERIA_CATS.find((c) => c.key === catAtiva)?.label}"</p>
+                  <p className="text-white/25 text-[10px] uppercase tracking-widest">PNG ou JPG · várias de uma vez · restam {MAX_FOTOS - totalFotos}</p>
+                </>
+              )}
+            </label>
+
+            {/* Fotos da categoria ativa */}
+            {fotosCat.length > 0 && (
+              <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3">
+                {fotosCat.map((f) => (
+                  <div key={f.id} className="relative rounded-sm overflow-hidden border border-white/10 aspect-square bg-[#010c20]">
+                    <img src={f.url_arquivo} alt={f.nome_arquivo} className="w-full h-full object-cover" loading="lazy" />
+                    <span className="absolute bottom-0 right-0 bg-[#010c20]/80 text-[#c5a059] p-1"><Lock size={9} /></span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/5">
+              <p className="text-white/30 text-[10px] uppercase tracking-widest">Cada foto é datada e selada com SHA-256 — imutável. Aparece no dossiê na sua categoria.</p>
+              <button onClick={concluirGaleria} className="flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 py-3 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all">
+                <Check size={15} /> Concluir
+              </button>
+            </div>
+          </div>
+        )
+      })()}
 
       {!selectedAtivo ? (
         <>
@@ -196,12 +434,29 @@ export default function Ativos() {
                           <div className="w-16 h-16 bg-[#010c20] border border-white/10 rounded-sm flex items-center justify-center text-[#c5a059] group-hover:border-[#c5a059]/50 group-hover:bg-[#021a3d] transition-all duration-700">
                             <Ship size={32} strokeWidth={1} />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="text-white font-serif font-bold text-xl tracking-tight group-hover:text-[#c5a059] transition-all duration-500">{ativo.marca} {ativo.modelo}</div>
                             <div className="text-[9px] text-white/20 font-black uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
                                <span className="w-1.5 h-1.5 rounded-full bg-white/5 group-hover:bg-[#c5a059] transition-colors"></span>
                                ID: #{String(ativo.id).slice(0, 8).toUpperCase()}
                             </div>
+                            {/* Medidor de fotos da embarcação (0–200) */}
+                            {(() => {
+                              const n = ativo.total_fotos || 0
+                              const pct = Math.min(100, (n / MAX_FOTOS) * 100)
+                              return (
+                                <div className="mt-2.5 flex items-center gap-2 max-w-[200px]" title={`${n} de ${MAX_FOTOS} fotos`}>
+                                  <Camera size={11} className="text-white/25 shrink-0" />
+                                  <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-1000 ${n >= MAX_FOTOS ? 'bg-rose-400/80' : 'bg-gradient-to-r from-[#c5a059] to-[#E5D5B7]'}`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[9px] font-black text-white/35 tabular-nums shrink-0">{n}/{MAX_FOTOS}</span>
+                                </div>
+                              )
+                            })()}
                           </div>
                         </div>
                       </td>

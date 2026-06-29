@@ -16,17 +16,22 @@ import {
   Lock
 } from 'lucide-react'
 import Header from '../components/Header'
+import { api } from '../services/api'
 
 export default function RegistroMarina() {
   const { t } = useTranslation()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [success] = useState(false)
-  
+  const [success, setSuccess] = useState(false)
+  const [freeMode, setFreeMode] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+
   const [formData, setFormData] = useState({
     name: '',
     cnpj: '',
     email: '',
+    password: '',
+    passwordConfirm: '',
     phone: '',
     zip_code: '',
     address: '',
@@ -69,10 +74,46 @@ export default function RegistroMarina() {
 
   const STRIPE_MARINA_LINK = 'https://buy.stripe.com/aFaeVcdvgezGgqCeDg9IQ05'
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError('')
+
+    if (formData.password.length < 6) {
+      setSubmitError('A senha precisa ter pelo menos 6 caracteres.')
+      return
+    }
+    if (formData.password !== formData.passwordConfirm) {
+      setSubmitError('As senhas não conferem.')
+      return
+    }
+
     setLoading(true)
-    window.location.href = STRIPE_MARINA_LINK
+    try {
+      const res = await api.leads.registrarMarina({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        cnpj: formData.cnpj,
+        phone: formData.phone,
+        city: formData.city,
+        state: formData.state,
+        website: formData.website,
+      })
+
+      if (res.modo === 'gratis') {
+        // Marina fundadora pré-autorizada: acesso liberado, sem checkout.
+        setFreeMode(true)
+        setSuccess(true)
+        return
+      }
+      // Demais marinas seguem para o pagamento de USD 250/mês.
+      window.location.href = STRIPE_MARINA_LINK
+    } catch {
+      // Em caso de falha, não trava a marina: segue para o fluxo pago.
+      window.location.href = STRIPE_MARINA_LINK
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (success) {
@@ -82,13 +123,31 @@ export default function RegistroMarina() {
           <div className="w-24 h-24 bg-gold-500/10 rounded-full flex items-center justify-center mx-auto border border-gold-500/20 shadow-[0_0_50px_rgba(197,160,89,0.2)]">
             <CheckCircle2 size={48} className="text-gold-500" />
           </div>
-          <h2 className="text-4xl font-serif font-bold text-white tracking-tight">Protocolo Concluído.</h2>
-          <p className="text-white/40 leading-relaxed font-light uppercase tracking-[0.2em] text-[10px]">
-            Sua marina foi integrada ao ecossistema Atlas. <br /> Redirecionando para o cofre de segurança...
-          </p>
-          <div className="flex justify-center">
-            <Loader2 className="animate-spin text-gold-500/30" size={24} />
-          </div>
+          {freeMode ? (
+            <>
+              <h2 className="text-4xl font-serif font-bold text-white tracking-tight">Bem-vinda, Marina Fundadora.</h2>
+              <p className="text-white/60 leading-relaxed font-light text-sm">
+                Seu acesso está liberado — <strong className="text-gold-500">6 meses de cortesia</strong> (custódia + dossiês).
+                Entre com o e-mail e a senha que você acabou de criar.
+              </p>
+              <a
+                href="/login"
+                className="inline-flex items-center justify-center gap-3 bg-gold-500 hover:bg-gold-400 text-[#010c20] px-12 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all"
+              >
+                Entrar no Cofre <ArrowRight size={16} />
+              </a>
+            </>
+          ) : (
+            <>
+              <h2 className="text-4xl font-serif font-bold text-white tracking-tight">Protocolo Concluído.</h2>
+              <p className="text-white/40 leading-relaxed font-light uppercase tracking-[0.2em] text-[10px]">
+                Sua marina foi integrada ao ecossistema Atlas. <br /> Redirecionando para o cofre de segurança...
+              </p>
+              <div className="flex justify-center">
+                <Loader2 className="animate-spin text-gold-500/30" size={24} />
+              </div>
+            </>
+          )}
         </div>
       </div>
     )
@@ -201,14 +260,48 @@ export default function RegistroMarina() {
                       <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
                         <Globe size={14} /> {t('marina_onboarding.field_website')}
                       </label>
-                      <input 
-                        type="url" 
+                      <input
+                        type="url"
                         name="website"
                         value={formData.website}
                         onChange={handleChange}
                         placeholder={t('marina_onboarding.placeholder_website')}
                         className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
                       />
+                    </div>
+
+                    {/* Senha de acesso — a própria marina cria, direto no site oficial */}
+                    <div className="grid md:grid-cols-2 gap-12 pt-4 border-t border-white/5">
+                      <div className="space-y-4 group">
+                        <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
+                          <Lock size={14} /> Senha de acesso
+                        </label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          required
+                          minLength={6}
+                          placeholder="Mínimo 6 caracteres"
+                          className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
+                        />
+                      </div>
+                      <div className="space-y-4 group">
+                        <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
+                          <Lock size={14} /> Confirmar senha
+                        </label>
+                        <input
+                          type="password"
+                          name="passwordConfirm"
+                          value={formData.passwordConfirm}
+                          onChange={handleChange}
+                          required
+                          minLength={6}
+                          placeholder="Repita a senha"
+                          className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -430,6 +523,12 @@ export default function RegistroMarina() {
                           </div>
                        </div>
                     </div>
+                  </div>
+                )}
+
+                {submitError && step === 4 && (
+                  <div className="mt-10 bg-red-500/10 border border-red-500/40 p-4 rounded-sm">
+                    <p className="text-red-400 text-xs font-bold text-center">{submitError}</p>
                   </div>
                 )}
 

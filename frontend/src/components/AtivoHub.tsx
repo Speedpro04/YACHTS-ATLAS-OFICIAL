@@ -4,8 +4,14 @@ import { api } from '../services/api'
 import {
   ArrowLeft, Ship, FileText, Wrench, Zap, Cpu, Shield, Paintbrush, Armchair,
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
-  Award, ChevronRight, X, Download, Upload, Lock
+  Award, ChevronRight, X, Download, Upload, Lock,
+  Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe
 } from 'lucide-react'
+import FichaServicoForm from './FichaServicoForm'
+import CoberturaFotos from './CoberturaFotos'
+import CategoriaForm from './CategoriaForm'
+import { SERVICOS } from '../config/servicosCategorias'
+import { CATEGORIAS as DOSSIE_CATS, type Categoria as DossieCat } from '../config/dossieCategorias'
 
 type Health = 'ok' | 'warning' | 'critical' | 'info' | 'na'
 
@@ -57,6 +63,22 @@ const CLASSIF: Record<string, { label: string; cls: string }> = {
   bronze: { label: 'Bronze', cls: 'bg-[#a06a3c]/20 text-[#c98b54] border-[#a06a3c]/40' },
 }
 
+// Categorias ricas do dossiê (dossieCategorias.ts) que NÃO estão no painel
+// operacional — procedência, especificações, laudos de terceiros e seguro.
+// Abrem o CategoriaForm e fluem para o dossiê via `registros`.
+const DOSSIE_EXTRA_IDS = [
+  'proprietarios', 'especificacoes', 'sistemas_auxiliares',
+  'inspecao_tecnica', 'auditoria_casco', 'sinistros',
+  'avaliacao_mercado', 'relatorio_seguradora', 'compliance_imo',
+  'tripulacao', 'tenders_toys', 'areas',
+]
+const DOSSIE_EXTRA_ICONS: Record<string, typeof Ship> = {
+  proprietarios: Users, especificacoes: Ship, sistemas_auxiliares: Cpu,
+  inspecao_tecnica: ClipboardCheck, auditoria_casco: Waves, sinistros: AlertTriangle,
+  avaliacao_mercado: TrendingUp, relatorio_seguradora: ShieldCheck, compliance_imo: Globe,
+  tripulacao: Users, tenders_toys: Sailboat, areas: Armchair,
+}
+
 interface Props {
   ativo: Ativo
   onBack: () => void
@@ -64,9 +86,12 @@ interface Props {
 
 export default function AtivoHub({ ativo, onBack }: Props) {
   const [secao, setSecao] = useState<Categoria | null>(null)
+  const [dossieAberta, setDossieAberta] = useState<DossieCat | null>(null)
   const [contagem, setContagem] = useState<Record<string, number>>({})
   const cats = categorias(ativo.tipo)
   const classif = CLASSIF[ativo.classificacao] || CLASSIF.bronze
+  const comprimento = ativo.comprimento_pes || 0
+  const dossieExtra = DOSSIE_CATS.filter((c) => DOSSIE_EXTRA_IDS.includes(c.id) && comprimento >= c.porteMinimoPes)
 
   // Contagem real de registros por categoria (dá vida aos cards)
   const carregarContagem = async () => {
@@ -176,20 +201,77 @@ export default function AtivoHub({ ativo, onBack }: Props) {
               )
             })}
           </div>
+
+          {/* ===== Dossiê Completo & Laudos de Terceiros ===== */}
+          {dossieExtra.length > 0 && (
+            <div className="space-y-5 pt-4">
+              <div>
+                <h2 className="text-xl font-serif font-bold text-white tracking-tight flex items-center gap-3">
+                  <FileCheck size={20} className="text-[#c5a059]" /> Dossiê Completo & Laudos
+                </h2>
+                <p className="text-white/30 text-[10px] mt-1.5 uppercase tracking-[0.3em] font-black">
+                  Procedência · especificações · laudos de terceiros · seguro — entram no dossiê
+                </p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+                {dossieExtra.map((c) => {
+                  const Icon = DOSSIE_EXTRA_ICONS[c.id] || FileCheck
+                  const n = contagem[c.id] || 0
+                  const temRegistro = n > 0
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setDossieAberta(c)}
+                      className="group relative text-left bg-[#021431] border border-white/[0.06] rounded-sm p-7 transition-all duration-500 hover:border-[#c5a059]/40 hover:-translate-y-0.5 hover:bg-[#021a3d] shadow-xl overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-[#c5a059]/0 group-hover:bg-[#c5a059]/5 blur-2xl rounded-full transition-all duration-700" />
+                      <div className="relative z-10">
+                        <div className="w-12 h-12 bg-[#c5a059]/10 border border-[#c5a059]/20 rounded-sm flex items-center justify-center text-[#c5a059] mb-6 group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all duration-500">
+                          <Icon size={22} strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-white text-base font-serif font-bold tracking-tight group-hover:text-[#c5a059] transition-colors">{c.label}</h3>
+                        <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-black mt-1 line-clamp-2">{c.descricao}</p>
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                          <span className="flex items-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full ${temRegistro ? 'bg-[#c5a059]' : 'bg-white/20'}`} />
+                            <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${temRegistro ? 'text-[#c5a059]' : 'text-white/30'}`}>
+                              {temRegistro ? `${n} ${n === 1 ? 'registro' : 'registros'}` : 'Sem registro'}
+                            </span>
+                          </span>
+                          <ChevronRight size={15} className="text-white/15 group-hover:text-[#c5a059] group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (secao.key === 'fotos' || secao.key === 'documentacao') ? (
+      ) : secao.key === 'fotos' ? (
+        <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} />
+      ) : secao.key === 'documentacao' ? (
         <UploadSecao categoria={secao} ativo={ativo} onBack={() => setSecao(null)} />
       ) : (
         <SecaoDetalhe categoria={secao} ativo={ativo} onBack={() => setSecao(null)} />
+      )}
+
+      {dossieAberta && (
+        <CategoriaForm
+          categoria={dossieAberta}
+          ativoId={ativo.id}
+          ativoNome={`${ativo.marca} ${ativo.modelo}`}
+          onClose={() => setDossieAberta(null)}
+          onSaved={carregarContagem}
+        />
       )}
     </div>
   )
 }
 
-/* ===== Fotos / Documentação — UPLOAD real (Supabase Storage) ===== */
+/* ===== Documentação — UPLOAD real (Supabase Storage), cofre de documentos ===== */
 function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo: Ativo; onBack: () => void }) {
   const Icon = categoria.icon
-  const isFotos = categoria.key === 'fotos'
   const [docs, setDocs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -217,7 +299,7 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
       for (const file of Array.from(files)) {
         const fd = new FormData()
         fd.append('file', file)
-        await api.documentos.upload(ativo.id, isFotos ? 'foto' : 'documento', categoria.key, fd)
+        await api.documentos.upload(ativo.id, 'documento', categoria.key, fd)
       }
       await carregar()
     } catch {
@@ -240,8 +322,10 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
         </h2>
       </div>
 
-      <label className={`block border border-dashed rounded-sm p-10 text-center cursor-pointer transition-all ${uploading ? 'border-[#c5a059]/40 bg-[#c5a059]/5 pointer-events-none' : 'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02]'}`}>
-        <input type="file" className="hidden" multiple accept={isFotos ? 'image/png,image/jpeg' : '.pdf,.jpg,.jpeg,.png'} disabled={uploading} onChange={handleFiles} />
+      <label className={`block border border-dashed rounded-sm p-10 text-center transition-all ${
+        uploading ? 'border-[#c5a059]/40 bg-[#c5a059]/5 pointer-events-none cursor-default'
+        : 'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'}`}>
+        <input type="file" className="hidden" multiple accept=".pdf,.jpg,.jpeg,.png" disabled={uploading} onChange={handleFiles} />
         {uploading ? (
           <div className="flex flex-col items-center">
             <div className="animate-spin w-8 h-8 border-2 border-[#c5a059] border-t-transparent rounded-full mb-4" />
@@ -250,8 +334,8 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
         ) : (
           <>
             <Upload size={32} className="mx-auto text-white/15 mb-4" />
-            <p className="text-white text-xs font-black uppercase tracking-widest mb-1">{isFotos ? 'Adicionar Fotos' : 'Enviar Documento'}</p>
-            <p className="text-white/25 text-[10px] uppercase tracking-widest">{isFotos ? 'PNG, JPG até 10MB' : 'PDF, PNG, JPG até 10MB'} · pode selecionar várias</p>
+            <p className="text-white text-xs font-black uppercase tracking-widest mb-1">Enviar Documento</p>
+            <p className="text-white/25 text-[10px] uppercase tracking-widest">PDF, PNG, JPG até 10MB · pode selecionar várias</p>
           </>
         )}
       </label>
@@ -261,18 +345,7 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
       ) : docs.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-12 bg-white/[0.01] border border-dashed border-white/10 rounded-sm">
           <Icon size={40} strokeWidth={1} className="text-white/10 mb-4" />
-          <p className="text-white/50 text-sm font-bold uppercase tracking-[0.2em]">{isFotos ? 'Sem fotos ainda' : 'Cofre vazio'}</p>
-        </div>
-      ) : isFotos ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {docs.map((d) => (
-            <div key={d.id} className="group relative rounded-sm overflow-hidden border border-white/10 aspect-square bg-[#021431]">
-              <img src={d.url_arquivo} alt={d.nome_arquivo} className="w-full h-full object-cover" loading="lazy" />
-              <a href={d.url_arquivo} target="_blank" rel="noopener noreferrer" download className="absolute inset-0 flex items-center justify-center bg-[#010c20]/0 group-hover:bg-[#010c20]/70 opacity-0 group-hover:opacity-100 transition-all">
-                <span className="flex items-center gap-2 text-[#c5a059] text-[10px] font-black uppercase tracking-widest"><Download size={16} /> Baixar</span>
-              </a>
-            </div>
-          ))}
+          <p className="text-white/50 text-sm font-bold uppercase tracking-[0.2em]">Cofre vazio</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -311,6 +384,7 @@ const STATUS_COR: Record<string, string> = {
 function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativo: Ativo; onBack: () => void }) {
   const Icon = categoria.icon
   const isManut = categoria.key === 'manutencao'
+  const cfg = SERVICOS[categoria.key]
   const [registros, setRegistros] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -384,7 +458,18 @@ function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativ
         </button>
       </div>
 
-      {showForm && (
+      {showForm && cfg && (
+        <FichaServicoForm
+          categoriaKey={categoria.key}
+          categoriaTitulo={categoria.titulo}
+          ativoId={ativo.id}
+          config={cfg}
+          onSaved={() => { setShowForm(false); carregar() }}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+
+      {showForm && !cfg && (
         <form onSubmit={salvar} className="bg-[#021431] border border-white/10 rounded-sm p-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -464,9 +549,42 @@ function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativ
                   {r.status}
                 </span>
               </div>
-              <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-white/25 text-[9px] font-black uppercase tracking-[0.2em]">
-                <CalendarClock size={12} />
-                {r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : ''}
+              {/* Métricas-chave da ficha rica */}
+              {(r.dados?.horimetro || r.dados?.valor || r.dados?.tipo || r.dados?.peca_descricao) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {r.dados?.tipo && <span className="text-[9px] font-black uppercase tracking-widest text-white/50 bg-white/5 border border-white/10 px-2.5 py-1 rounded-sm">{r.dados.tipo}</span>}
+                  {r.dados?.horimetro && <span className="text-[9px] font-black uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-2.5 py-1 rounded-sm">{r.dados.horimetro}h motor</span>}
+                  {r.dados?.valor && <span className="text-[9px] font-black uppercase tracking-widest text-emerald-300/80 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1 rounded-sm">R$ {r.dados.valor}</span>}
+                  {r.dados?.peca_descricao && <span className="text-[9px] font-black uppercase tracking-widest text-white/50 bg-white/5 border border-white/10 px-2.5 py-1 rounded-sm">Peça: {r.dados.peca_descricao}</span>}
+                </div>
+              )}
+
+              {/* Evidências seladas (SHA-256) */}
+              {Array.isArray(r.dados?.evidencias) && r.dados.evidencias.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {r.dados.evidencias.map((ev: any, i: number) => {
+                    const isImg = /\.(png|jpe?g|webp)$/i.test(ev.nome || ev.url || '')
+                    return isImg ? (
+                      <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" title={`${ev.slot} · SHA-256 ${ev.hash?.slice(0, 12)}…`}
+                        className="group relative w-14 h-14 rounded-sm overflow-hidden border border-white/10 hover:border-[#c5a059]/50 transition-all">
+                        <img src={ev.url} alt={ev.slot} className="w-full h-full object-cover" loading="lazy" />
+                        <span className="absolute bottom-0 inset-x-0 bg-[#010c20]/80 text-[#c5a059] text-[6px] font-black uppercase tracking-wider text-center py-0.5">
+                          {ev.slot === 'peca_nova' ? 'nova' : ev.slot === 'peca_velha' ? 'velha' : 'foto'}
+                        </span>
+                      </a>
+                    ) : (
+                      <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" title={`SHA-256 ${ev.hash?.slice(0, 16)}…`}
+                        className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-2.5 py-1.5 rounded-sm hover:bg-[#c5a059]/20 transition-all">
+                        <FileText size={11} /> {ev.slot === 'nota_fiscal' ? 'Nota fiscal' : 'Doc'} <Lock size={9} />
+                      </a>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap items-center gap-x-4 gap-y-1 text-white/25 text-[9px] font-black uppercase tracking-[0.2em]">
+                <span className="flex items-center gap-2"><CalendarClock size={12} />{r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : ''}</span>
+                {r.dados?.enviado_por && <span className="flex items-center gap-1.5"><Lock size={10} /> Enviado por {r.dados.enviado_por}</span>}
               </div>
             </div>
           ))}

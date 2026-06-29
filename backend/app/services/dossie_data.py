@@ -35,8 +35,91 @@ PORTE_MINIMO = {
 }
 
 
+# Categorias técnicas do PAINEL (servicosCategorias.ts) → título náutico no dossiê.
+# Todas usam a MESMA ficha rica (logbook). Ordem = ordem das seções no PDF.
+CATEGORIAS_TECNICAS: list[tuple[str, str]] = [
+    ("manutencao", "Histórico de Manutenção"),
+    ("motor", "Motorização & Propulsão"),
+    ("velame", "Mastro, Rigging & Velame"),
+    ("eletrica", "Sistema Elétrico & Eletrônica de Navegação"),
+    ("seguranca", "Segurança & Salvatagem"),
+    ("pintura", "Casco, Pintura & Acabamento"),
+    ("interior", "Interior & Acomodações"),
+    ("seguro", "Seguro & Cobertura"),
+]
+
+# Rótulos náuticos da galeria fotográfica (espelha GALERIA_CATS no front).
+GALERIA_LABELS: dict[str, str] = {
+    "casco_exterior": "Casco / Exterior",
+    "motor": "Motor / Propulsão",
+    "pintura": "Pintura",
+    "interior": "Interior",
+    "eletronica": "Eletrônica / Navegação",
+    "notas_fiscais": "Notas Fiscais",
+    "antes_depois": "Antes e Depois",
+    "outros": "Outros",
+    "fotos": "Registro Geral",
+}
+
+MAX_FOTOS = 400  # capacidade fotográfica por embarcação (espelha o front)
+
+
 def _por_categoria(registros: list[dict], categoria: str) -> list[dict]:
     return [r for r in registros if r.get("categoria") == categoria]
+
+
+def _ficha_rica(r: dict) -> dict[str, Any]:
+    """Extrai a ficha de serviço completa (logbook) de um registro — mesma
+    estrutura para TODAS as categorias técnicas (alinhado ao painel)."""
+    d = r.get("dados") or {}
+    evidencias = d.get("evidencias") or []
+    return {
+        "data": d.get("data"),
+        "servico": d.get("servico") or r.get("titulo"),
+        "tipo": d.get("tipo"),
+        "resp": d.get("responsavel"),
+        "prestador": d.get("prestador"),
+        "cnpj": d.get("cnpj"),
+        "local": d.get("local"),
+        "horimetro": d.get("horimetro"),
+        "horas_trabalhadas": d.get("horas_trabalhadas"),
+        "proxima_revisao": d.get("proxima_revisao"),
+        "valor": d.get("valor"),
+        "peca": d.get("peca_descricao"),
+        "peca_serie": d.get("peca_serie"),
+        "peca_part_number": d.get("peca_part_number"),
+        "observacao": r.get("observacao"),
+        "enviado_por": d.get("enviado_por"),
+        "enviado_em": d.get("enviado_em"),
+        "evidencias": [
+            {"slot": e.get("slot"), "nome": e.get("nome"), "hash": e.get("hash"), "url": e.get("url")}
+            for e in evidencias if isinstance(e, dict)
+        ],
+        "status": "OK" if r.get("status") in ("registrado", "concluido") else (r.get("status") or "—"),
+    }
+
+
+def _resumo_fotografico(documentos: list[dict]) -> dict[str, Any]:
+    """Sumariza a galeria fotográfica selada por categoria (até MAX_FOTOS)."""
+    por_cat: dict[str, int] = {}
+    total = 0
+    com_geo = 0
+    for doc in documentos:
+        if doc.get("tipo") != "foto":
+            continue
+        # Vitrine = fotos de apresentação (interior/exterior), separadas do pool de 400
+        if doc.get("categoria") == "vitrine":
+            continue
+        total += 1
+        if doc.get("latitude") is not None and doc.get("longitude") is not None:
+            com_geo += 1
+        cat = str(doc.get("categoria") or "fotos").replace("galeria_", "") or "fotos"
+        por_cat[cat] = por_cat.get(cat, 0) + 1
+    categorias = [
+        {"chave": k, "label": GALERIA_LABELS.get(k, k.replace("_", " ").title()), "total": v}
+        for k, v in sorted(por_cat.items(), key=lambda kv: kv[1], reverse=True)
+    ]
+    return {"total": total, "capacidade": MAX_FOTOS, "categorias": categorias, "com_geo": com_geo}
 
 
 def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
@@ -88,16 +171,24 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         documentacao.extend(r.get("checklist") or [])
     documentacao = sorted(set(documentacao))
 
-    # 04 — Manutenção (registros categoria=manutencao)
-    manutencao = []
-    for r in _por_categoria(registros, "manutencao"):
-        d = r.get("dados") or {}
-        manutencao.append({
-            "data": d.get("data"),
-            "servico": d.get("servico") or r.get("titulo"),
-            "resp": d.get("responsavel"),
-            "status": "OK" if r.get("status") in ("registrado", "concluido") else (r.get("status") or "—"),
+    # 04+ — Seções técnicas (TODAS com a mesma ficha rica do painel/logbook).
+    # Cada categoria do painel com registro vira uma seção náutica do dossiê.
+    secoes_tecnicas = []
+    for cat, titulo in CATEGORIAS_TECNICAS:
+        regs = _por_categoria(registros, cat)
+        if not regs:
+            continue
+        secoes_tecnicas.append({
+            "categoria": cat,
+            "titulo": titulo,
+            "fichas": [_ficha_rica(r) for r in regs],
         })
+
+    # Compat: mantém a chave `manutencao` (consumida hoje no PDF/preview).
+    manutencao = [_ficha_rica(r) for r in _por_categoria(registros, "manutencao")]
+
+    # Resumo fotográfico (galeria selada por categoria, até MAX_FOTOS).
+    fotografico = _resumo_fotografico(documentos)
 
     return {
         "ativo_id": ativo_id,
@@ -106,6 +197,9 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         "proprietarios": proprietarios,
         "documentacao": documentacao,
         "manutencao": manutencao,
+        # NOVO: seções técnicas alinhadas ao painel (rico) + resumo de fotos
+        "secoes_tecnicas": secoes_tecnicas,
+        "fotografico": fotografico,
         # registros crus por categoria (para as demais seções do dossiê)
         "registros": registros,
         "documentos": documentos,

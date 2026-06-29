@@ -45,6 +45,7 @@ export interface Ativo {
   progresso: number;
   status: 'ativo' | 'inativo' | 'vendido' | 'manutencao';
   health_status?: Record<string, 'ok' | 'warning' | 'critical' | 'info' | 'na'>;
+  total_fotos?: number;
   created_at: string;
 }
 

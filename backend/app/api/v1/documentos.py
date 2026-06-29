@@ -2,9 +2,11 @@
 Yachts Atlas — Documentos Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
+from pydantic import BaseModel
 from app.core.supabase import get_supabase_client, get_supabase_admin
 from app.core.security import get_current_user_id
 from app.core.authz import get_ativo_autorizado
+from app.services.vision_service import classificar_foto, CATEGORIAS as GALERIA_CATS
 from app.services.s3_service import get_s3_service
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
@@ -13,6 +15,45 @@ from datetime import datetime
 
 router = APIRouter()
 audit_service = AuditService()
+
+
+class ClassificarFotoBody(BaseModel):
+    url: str
+
+
+class MoverCategoriaBody(BaseModel):
+    categoria: str  # chave da galeria, ex.: 'motor' (sem o prefixo 'galeria_')
+
+
+@router.post("/classificar")
+async def classificar_foto_endpoint(
+    body: ClassificarFotoBody,
+    _user_id: str = Depends(get_current_user_id),
+):
+    """Sugere a categoria da galeria para a foto (semi-automático).
+    A sugestão é um ponto de partida — o usuário confirma/corrige na UI."""
+    categoria = classificar_foto(body.url)
+    return {"categoria": categoria}
+
+
+@router.patch("/{doc_id}/categoria")
+async def mover_categoria(
+    doc_id: str,
+    body: MoverCategoriaBody,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Move uma foto para outra categoria da galeria (correção de 1 clique).
+    Só metadado — o arquivo e o hash permanecem imutáveis."""
+    chave = (body.categoria or "").replace("galeria_", "").strip()
+    if chave not in GALERIA_CATS:
+        raise HTTPException(status_code=400, detail="Categoria inválida")
+    supabase = get_supabase_admin()
+    res = supabase.table("documentos").select("ativo_id").eq("id", doc_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Foto não encontrada")
+    get_ativo_autorizado(res.data[0]["ativo_id"], user_id)
+    supabase.table("documentos").update({"categoria": f"galeria_{chave}"}).eq("id", doc_id).execute()
+    return {"id": doc_id, "categoria": f"galeria_{chave}"}
 
 
 @router.get("/ativo/{ativo_id}")
@@ -92,6 +133,10 @@ async def upload_documento(
     tipo: str,
     categoria: str,
     file: UploadFile = File(...),
+    latitude: float | None = None,
+    longitude: float | None = None,
+    geo_precisao: float | None = None,
+    geo_fonte: str | None = None,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
@@ -157,6 +202,13 @@ async def upload_documento(
             "nivel": 1,
             "status": "verified"
         }
+
+        # Geolocalização do dispositivo no momento do upload (opcional)
+        if latitude is not None and longitude is not None:
+            doc_data["latitude"] = latitude
+            doc_data["longitude"] = longitude
+            doc_data["geo_precisao"] = geo_precisao
+            doc_data["geo_fonte"] = geo_fonte or "dispositivo"
         
         response = supabase.table("documentos").insert(doc_data).execute()
         

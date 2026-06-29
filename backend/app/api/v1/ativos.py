@@ -26,6 +26,32 @@ def _enrich(ativo: dict) -> dict:
     return ativo
 
 
+def _anexar_total_fotos(supabase, ativos: list[dict]) -> None:
+    """Conta as fotos (tipo='foto') de cada ativo em UMA única consulta (sem N+1)
+    e injeta `total_fotos` em cada item. Falha de forma silenciosa => 0."""
+    ids = [a["id"] for a in ativos if a.get("id")]
+    contagem: dict[str, int] = {}
+    if ids:
+        try:
+            # Exclui a vitrine (fotos de apresentação, separadas do pool de 400)
+            res = (
+                supabase.table("documentos")
+                .select("ativo_id")
+                .in_("ativo_id", ids)
+                .eq("tipo", "foto")
+                .neq("categoria", "vitrine")
+                .execute()
+            )
+            for row in (res.data or []):
+                aid = row.get("ativo_id")
+                if aid:
+                    contagem[aid] = contagem.get(aid, 0) + 1
+        except Exception:
+            pass
+    for a in ativos:
+        a["total_fotos"] = contagem.get(a.get("id"), 0)
+
+
 @router.get("")
 async def list_ativos(user_id: str = Depends(get_current_user_id)):
     supabase = get_supabase_admin()
@@ -34,7 +60,9 @@ async def list_ativos(user_id: str = Depends(get_current_user_id)):
         response = supabase.table("ativos").select("*").order("created_at", desc=True).execute()
     else:
         response = supabase.table("ativos").select("*").eq("usuario_id", user_id).order("created_at", desc=True).execute()
-    return [_enrich(a) for a in (response.data or [])]
+    ativos = [_enrich(a) for a in (response.data or [])]
+    _anexar_total_fotos(supabase, ativos)
+    return ativos
 
 
 @router.post("")
@@ -99,7 +127,9 @@ async def get_ativo(ativo_id: str, user_id: str = Depends(get_current_user_id)):
     role = _role(supabase, user_id)
     if role != "admin" and str(ativo.get("usuario_id")) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized for this asset")
-    return _enrich(ativo)
+    ativo = _enrich(ativo)
+    _anexar_total_fotos(supabase, [ativo])
+    return ativo
 
 
 @router.delete("/{ativo_id}")

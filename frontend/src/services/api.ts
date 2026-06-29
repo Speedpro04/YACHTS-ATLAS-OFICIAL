@@ -92,6 +92,13 @@ export const api = {
       apiRequest('/leads/marina', { method: 'POST', body: JSON.stringify(data) }),
     parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>
       apiRequest('/leads/parceiro', { method: 'POST', body: JSON.stringify(data) }),
+    // Cadastro da marina: retorna { modo: 'gratis' | 'pago' }. 'gratis' = vaga
+    // fundadora pré-autorizada (6 meses, sem checkout); 'pago' = segue p/ Stripe.
+    registrarMarina: (data: {
+      name: string; email: string; password: string;
+      cnpj?: string; phone?: string; city?: string; state?: string; website?: string
+    }): Promise<{ modo: 'gratis' | 'pago'; marina?: string; billing_starts_at?: string; slot_number?: number }> =>
+      apiRequest('/leads/marina/registrar', { method: 'POST', body: JSON.stringify(data) }),
   },
   parceiros: {
     // Fire-and-forget: registra o clique sem bloquear a navegação (keepalive)
@@ -139,9 +146,22 @@ export const api = {
   },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),
-    upload: async (ativoId: string, tipo: string, categoria: string, formData: FormData) => {
+    upload: async (
+      ativoId: string,
+      tipo: string,
+      categoria: string,
+      formData: FormData,
+      geo?: { lat: number; lng: number; acc?: number } | null,
+    ) => {
       const { data: { session } } = await supabase.auth.getSession()
-      const response = await fetch(`${API_URL}/documentos/upload/${ativoId}?tipo=${tipo}&categoria=${categoria}`, {
+      const params = new URLSearchParams({ tipo, categoria })
+      if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
+        params.set('latitude', String(geo.lat))
+        params.set('longitude', String(geo.lng))
+        if (typeof geo.acc === 'number' && Number.isFinite(geo.acc)) params.set('geo_precisao', String(geo.acc))
+        params.set('geo_fonte', 'dispositivo')
+      }
+      const response = await fetch(`${API_URL}/documentos/upload/${ativoId}?${params.toString()}`, {
         method: 'POST',
         headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
         body: formData,
