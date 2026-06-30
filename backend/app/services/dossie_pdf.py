@@ -119,17 +119,45 @@ def _render_ficha(story, m: dict):
     if m.get("status"):
         cab += f"  ·  {m.get('status')}"
     story.append(Paragraph(cab, S["value"]))
-    ficha = _info_table([
-        ("Data", m.get("data")), ("Tipo", m.get("tipo")),
-        ("Responsável", m.get("resp")), ("Prestador", m.get("prestador")),
-        ("CNPJ", m.get("cnpj")), ("Local", m.get("local")),
-        ("Horímetro (motor)", f"{m.get('horimetro')} h" if m.get("horimetro") else None),
-        ("Horas trabalhadas", f"{m.get('horas_trabalhadas')} h" if m.get("horas_trabalhadas") else None),
-        ("Valor", f"R$ {m.get('valor')}" if m.get("valor") else None),
-        ("Próxima revisão", m.get("proxima_revisao")),
-        ("Peça trocada", m.get("peca")), ("Part number", m.get("peca_part_number")),
-        ("Nº de série", m.get("peca_serie")),
-    ])
+
+    # Diário de Bordo (operação): tem campos próprios, que chegam no passthrough `campos`.
+    c = m.get("campos") or {}
+    if c.get("condutor") or c.get("hora_saida"):
+        tempo = None
+        try:
+            hs = float(c.get("horimetro_saida"))
+            hr = float(c.get("horimetro_retorno"))
+            if hr >= hs:
+                tempo = f"{round(hr - hs, 1)} h de motor"
+        except (TypeError, ValueError):
+            tempo = None
+        ficha = _info_table([
+            ("Data", m.get("data")), ("Finalidade", c.get("finalidade")),
+            ("Local", c.get("local")), ("Condutor", c.get("condutor")),
+            ("Habilitação", c.get("habilitacao")), ("CHA nº", c.get("cha_numero")),
+            ("Validade CHA", c.get("cha_validade")), ("Pessoas a bordo", c.get("pessoas_bordo")),
+            ("Resp. manuseio", c.get("resp_manuseio")), ("Lançou na água", c.get("quem_lancou")),
+            ("Saída", c.get("hora_saida")),
+            ("Horímetro saída", f"{c.get('horimetro_saida')} h" if c.get("horimetro_saida") else None),
+            ("Retorno", c.get("hora_retorno")),
+            ("Horímetro retorno", f"{c.get('horimetro_retorno')} h" if c.get("horimetro_retorno") else None),
+            ("Tempo de uso", tempo),
+            ("Reboque p/ marina", c.get("quem_reboque")), ("Combustível", c.get("combustivel")),
+            ("Condições", c.get("condicoes")), ("Estado no retorno", c.get("retorno_estado")),
+            ("Avaria / sinistro", c.get("avaria_desc")),
+        ])
+    else:
+        ficha = _info_table([
+            ("Data", m.get("data")), ("Tipo", m.get("tipo")),
+            ("Responsável", m.get("resp")), ("Prestador", m.get("prestador")),
+            ("CNPJ", m.get("cnpj")), ("Local", m.get("local")),
+            ("Horímetro (motor)", f"{m.get('horimetro')} h" if m.get("horimetro") else None),
+            ("Horas trabalhadas", f"{m.get('horas_trabalhadas')} h" if m.get("horas_trabalhadas") else None),
+            ("Valor", f"R$ {m.get('valor')}" if m.get("valor") else None),
+            ("Próxima revisão", m.get("proxima_revisao")),
+            ("Peça trocada", m.get("peca")), ("Part number", m.get("peca_part_number")),
+            ("Nº de série", m.get("peca_serie")),
+        ])
     if ficha:
         story.append(ficha)
     if m.get("observacao"):

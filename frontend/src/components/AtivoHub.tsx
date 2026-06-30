@@ -5,7 +5,7 @@ import {
   ArrowLeft, Ship, FileText, Wrench, Zap, Cpu, Shield, Paintbrush, Armchair,
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
   Award, ChevronRight, X, Download, Upload, Lock,
-  Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe
+  Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor
 } from 'lucide-react'
 import FichaServicoForm from './FichaServicoForm'
 import CoberturaFotos from './CoberturaFotos'
@@ -28,6 +28,7 @@ function categorias(tipo: Ativo['tipo']): Categoria[] {
     { key: 'documentacao', titulo: 'Documentação', subtitulo: 'Legal & Conformidade', icon: FileText, healthKey: 'documentacao' },
     { key: 'seguro', titulo: 'Seguro', subtitulo: 'Apólice & Cobertura', icon: ShieldCheck },
     { key: 'manutencao', titulo: 'Manutenção', subtitulo: 'Serviços & Revisões', icon: Wrench, healthKey: 'manutencao' },
+    { key: 'operacao', titulo: 'Diário de Bordo', subtitulo: 'Operação & Idas ao Mar', icon: Anchor },
     { key: 'fotos', titulo: 'Fotos', subtitulo: 'Registro Visual', icon: Camera },
     { key: 'motor', titulo: 'Motor', subtitulo: 'Propulsão & Mecânica', icon: Zap, healthKey: 'motor' },
     { key: 'eletrica', titulo: 'Elétrica', subtitulo: 'Eletrônica & Navegação', icon: Cpu, healthKey: 'eletrica' },
@@ -275,6 +276,7 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
   const [docs, setDocs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [descricao, setDescricao] = useState('')
 
   const carregar = async () => {
     setLoading(true)
@@ -299,8 +301,9 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
       for (const file of Array.from(files)) {
         const fd = new FormData()
         fd.append('file', file)
-        await api.documentos.upload(ativo.id, 'documento', categoria.key, fd)
+        await api.documentos.upload(ativo.id, 'documento', categoria.key, fd, null, descricao.trim() || undefined)
       }
+      setDescricao('')
       await carregar()
     } catch {
       alert('Falha no upload. O primeiro envio pode levar ~20s (servidor acordando). Tente novamente se preciso.')
@@ -320,6 +323,19 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
           <Icon size={20} className="text-[#c5a059]" /> {categoria.titulo}
           <span className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] hidden sm:inline">· {categoria.subtitulo}</span>
         </h2>
+      </div>
+
+      {/* Descrição do que está sendo catalogado (opcional, salva com o arquivo) */}
+      <div className="space-y-1.5">
+        <label className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40">O que é este documento?</label>
+        <input
+          type="text"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          placeholder="Ex: TIE 2024 · Certificado de registro · Nota fiscal do motor"
+          className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-[#c5a059] outline-none transition-all placeholder:text-white/20"
+        />
+        <p className="text-[9px] text-white/25 uppercase tracking-widest">Salva junto com o(s) arquivo(s) que você enviar a seguir.</p>
       </div>
 
       <label className={`block border border-dashed rounded-sm p-10 text-center transition-all ${
@@ -354,8 +370,8 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-10 h-10 flex-shrink-0 bg-[#050b18] border border-white/5 rounded-sm flex items-center justify-center text-[#c5a059]"><FileText size={18} /></div>
                 <div className="min-w-0">
-                  <p className="text-white text-sm font-bold truncate">{d.nome_arquivo}</p>
-                  <p className="text-white/30 text-[9px] uppercase tracking-widest mt-0.5">{((d.tamanho_bytes || 0) / 1024).toFixed(0)} KB · {d.created_at ? new Date(d.created_at).toLocaleDateString('pt-BR') : ''}</p>
+                  <p className="text-white text-sm font-bold truncate">{d.descricao || d.nome_arquivo}</p>
+                  <p className="text-white/30 text-[9px] uppercase tracking-widest mt-0.5 truncate">{d.descricao ? `${d.nome_arquivo} · ` : ''}{((d.tamanho_bytes || 0) / 1024).toFixed(0)} KB · {d.created_at ? new Date(d.created_at).toLocaleDateString('pt-BR') : ''}</p>
                 </div>
               </div>
               <a href={d.url_arquivo} target="_blank" rel="noopener noreferrer" download className="flex-shrink-0 text-white/30 hover:text-[#c5a059] p-2 transition-all"><Download size={18} /></a>

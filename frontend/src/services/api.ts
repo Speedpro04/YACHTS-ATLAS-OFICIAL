@@ -29,7 +29,33 @@ export class ApiError extends Error {
   }
 }
 
+// Dedupe + cache curto de GETs: colapsa rajadas de requisições idênticas (várias
+// seções pedindo /registros/{id} ao mesmo tempo) numa ÚNICA ida à rede — era isso
+// que deixava a tela lenta. Qualquer escrita (POST/PUT/DELETE) limpa o cache para
+// manter o dado fresco logo após um cadastro.
+const _getCache = new Map<string, { ts: number; promise: Promise<any> }>()
+const GET_CACHE_TTL = 1500 // ms — janela curta: junta a rajada, mantém leitura fresca
+
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
+  const method = (options.method || 'GET').toUpperCase()
+
+  // Escrita invalida o cache de leitura (após criar/editar, a próxima lista vem nova)
+  if (method !== 'GET') {
+    _getCache.clear()
+    return _rawRequest(endpoint, options)
+  }
+
+  // GET: reaproveita a requisição em voo / recém-feita para o mesmo endpoint
+  const cached = _getCache.get(endpoint)
+  if (cached && Date.now() - cached.ts < GET_CACHE_TTL) return cached.promise
+
+  const promise = _rawRequest(endpoint, options)
+  _getCache.set(endpoint, { ts: Date.now(), promise })
+  promise.catch(() => _getCache.delete(endpoint)) // erro não fica grudado no cache
+  return promise
+}
+
+async function _rawRequest(endpoint: string, options: RequestInit = {}) {
   // Token da sessão real do Supabase (login unificado backend <-> frontend)
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token
@@ -152,9 +178,11 @@ export const api = {
       categoria: string,
       formData: FormData,
       geo?: { lat: number; lng: number; acc?: number } | null,
+      descricao?: string,
     ) => {
       const { data: { session } } = await supabase.auth.getSession()
       const params = new URLSearchParams({ tipo, categoria })
+      if (descricao && descricao.trim()) params.set('descricao', descricao.trim())
       if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
         params.set('latitude', String(geo.lat))
         params.set('longitude', String(geo.lng))

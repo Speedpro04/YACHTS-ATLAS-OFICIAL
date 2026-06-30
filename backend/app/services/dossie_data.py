@@ -22,6 +22,7 @@ PORTE_MINIMO = {
     "motorizacao": 0,
     "sistemas_auxiliares": 40,
     "manutencao": 0,
+    "operacao": 0,
     "inspecao_tecnica": 46,
     "auditoria_casco": 46,
     "sinistros": 0,
@@ -39,6 +40,7 @@ PORTE_MINIMO = {
 # Todas usam a MESMA ficha rica (logbook). Ordem = ordem das seções no PDF.
 CATEGORIAS_TECNICAS: list[tuple[str, str]] = [
     ("manutencao", "Histórico de Manutenção"),
+    ("operacao", "Diário de Bordo — Operações & Idas ao Mar"),
     ("motor", "Motorização & Propulsão"),
     ("velame", "Mastro, Rigging & Velame"),
     ("eletrica", "Sistema Elétrico & Eletrônica de Navegação"),
@@ -96,6 +98,9 @@ def _ficha_rica(r: dict) -> dict[str, Any]:
             for e in evidencias if isinstance(e, dict)
         ],
         "status": "OK" if r.get("status") in ("registrado", "concluido") else (r.get("status") or "—"),
+        # Passthrough completo dos campos da ficha (ex.: Diário de Bordo: condutor,
+        # habilitação, horímetros, reboque, avarias) para o dossiê não perder nada.
+        "campos": d,
     }
 
 

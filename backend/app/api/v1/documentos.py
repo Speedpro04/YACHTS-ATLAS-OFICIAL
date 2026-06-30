@@ -137,6 +137,7 @@ async def upload_documento(
     longitude: float | None = None,
     geo_precisao: float | None = None,
     geo_fonte: str | None = None,
+    descricao: str | None = None,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
@@ -209,7 +210,11 @@ async def upload_documento(
             doc_data["longitude"] = longitude
             doc_data["geo_precisao"] = geo_precisao
             doc_data["geo_fonte"] = geo_fonte or "dispositivo"
-        
+
+        # Descrição livre do que está catalogado (opcional)
+        if descricao and descricao.strip():
+            doc_data["descricao"] = descricao.strip()[:300]
+
         response = supabase.table("documentos").insert(doc_data).execute()
         
         if response.data:

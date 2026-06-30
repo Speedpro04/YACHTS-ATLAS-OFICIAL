@@ -94,12 +94,56 @@ const FICHA_PADRAO: ServicoConfig = {
     ],
 }
 
+// ── DIÁRIO DE BORDO ─────────────────────────────────────────────────
+// Registro rigoroso de cada IDA AO MAR — a cadeia de custódia completa:
+// quem manuseou, quem lançou, quem pilotou (condutor + habilitação),
+// quem rebocou de volta, e em que estado retornou. Feito p/ seguradora.
+const FICHA_OPERACAO: ServicoConfig = {
+  ctaNovo: 'Registrar Ida ao Mar',
+  fields: [
+    { key: 'data', label: 'Data da operação', type: 'date', required: true },
+    { key: 'finalidade', label: 'Finalidade', type: 'select', options: ['Lazer', 'Teste', 'Translado', 'Manutenção', 'Vistoria', 'Outro'], required: true },
+    { key: 'local', label: "Local / espelho d'água", type: 'text', placeholder: 'Onde navegou', full: true },
+
+    { key: 'condutor', label: 'Condutor (quem pilotou)', type: 'text', placeholder: 'Nome do condutor', required: true, full: true },
+    { key: 'habilitacao', label: 'Habilitação', type: 'select', options: ['Arrais-Amador', 'Mestre-Amador', 'Capitão-Amador', 'Motonauta', 'Profissional', 'Outro'], required: true },
+    { key: 'cha_numero', label: 'Nº da CHA', type: 'text', placeholder: 'Carteira de habilitação' },
+    { key: 'cha_validade', label: 'Validade da CHA', type: 'date' },
+    { key: 'pessoas_bordo', label: 'Pessoas a bordo', type: 'number' },
+
+    { key: 'resp_manuseio', label: 'Responsável pelo manuseio', type: 'text', placeholder: 'Quem preparou / tirou do seco' },
+    { key: 'quem_lancou', label: 'Quem lançou na água', type: 'text', placeholder: 'Guincho, rampa, marinheiro' },
+
+    { key: 'hora_saida', label: 'Hora de saída', type: 'time', required: true },
+    { key: 'horimetro_saida', label: 'Horímetro na saída', type: 'number', placeholder: 'Leitura ao sair', suffix: 'h', required: true },
+    { key: 'hora_retorno', label: 'Hora de retorno', type: 'time', required: true },
+    { key: 'horimetro_retorno', label: 'Horímetro no retorno', type: 'number', placeholder: 'Leitura ao voltar', suffix: 'h', required: true },
+
+    { key: 'quem_reboque', label: 'Reboque da água até a marina (quem fez)', type: 'text', placeholder: 'Quem rebocou de volta', full: true },
+    { key: 'combustivel', label: 'Combustível no retorno', type: 'select', options: ['Cheio', '3/4', '1/2', '1/4', 'Reserva'] },
+    { key: 'condicoes', label: 'Condições de mar / tempo', type: 'text', placeholder: 'Calmo, agitado, vento...' },
+
+    { key: 'retorno_estado', label: 'Retornou sem danos?', type: 'select', options: ['Sim, sem danos', 'Não, com avaria'], required: true, full: true },
+    { key: 'avaria_desc', label: 'Descrição da avaria / sinistro', type: 'textarea', placeholder: 'O que ocorreu, extensão do dano...', full: true, showIf: { key: 'retorno_estado', equals: 'Não, com avaria' }, required: true },
+
+    { key: 'observacao', label: 'Observações gerais', type: 'textarea', placeholder: 'Qualquer detalhe relevante da operação', full: true },
+  ],
+  uploads: [
+    { key: 'foto_saida', label: 'Foto na saída (antes)', hint: 'Estado do barco ao sair', accept: IMG },
+    { key: 'foto_retorno', label: 'Foto no retorno (depois)', hint: 'Estado ao voltar', accept: IMG },
+    { key: 'foto_avaria', label: 'Foto da avaria', hint: 'Obrigatória se retornou com dano', accept: IMG, showIf: { key: 'retorno_estado', equals: 'Não, com avaria' }, requiredIf: { key: 'retorno_estado', equals: 'Não, com avaria' } },
+    { key: 'cha_condutor', label: 'CHA / Arrais do condutor', hint: 'Habilitação náutica (PDF ou foto)', accept: DOC },
+  ],
+}
+
 // ── ABAS TÉCNICAS ───────────────────────────────────────────────────
-// Todas as abas usam a MESMA ficha (idênticas à manutenção).
+// Todas as abas técnicas usam a MESMA ficha (idênticas à manutenção).
+// Diário de Bordo usa a ficha de operação (FICHA_OPERACAO).
 // Fotos e Documentação são tratadas à parte (UploadSecao), por isso
 // não entram aqui.
 export const SERVICOS: Record<string, ServicoConfig> = {
   manutencao: FICHA_PADRAO,
+  operacao: FICHA_OPERACAO,
   seguro: FICHA_PADRAO,
   motor: FICHA_PADRAO,
   velame: FICHA_PADRAO,   // veleiro (substitui "motor")
