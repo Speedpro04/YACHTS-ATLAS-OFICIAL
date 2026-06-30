@@ -298,6 +298,9 @@ def gerar_pdf_dossie(dados: dict) -> bytes:
         "Documento gerado pela plataforma Atlas Yachts a partir dos registros custodiados. "
         f"Emitido em {emitido}. A integridade dos documentos é garantida por hash SHA-256 no momento do upload.",
         S["small"]))
+    story.append(Paragraph(
+        "Atlas Yachts é uma plataforma AXOS HUB · CNPJ 26.998.571/0001-50.",
+        S["small"]))
 
     doc.build(story, onFirstPage=_bg, onLaterPages=_bg)
     return buf.getvalue()

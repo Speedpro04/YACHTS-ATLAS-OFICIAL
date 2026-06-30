@@ -1,54 +1,71 @@
 # PRD — Yachts Atlas
 
+> Atualizado em 2026-06-30.
+
 ## Project Overview
-**Yachts Atlas** is a premium digital platform designed for immutable record-keeping and certification of luxury nautical assets. It provides a secure "Digital Dossier" for yachts, tracking maintenance history, technical documentation, and health metrics using a secure, audit-ready framework.
+**Yachts Atlas** é uma plataforma de **custódia digital e conformidade** de ativos náuticos de alto valor. Cada embarcação ganha um **Dossiê** — registro selado e **imutável** de histórico técnico, operação, documentação e fotos — entregue **pela marina** ao proprietário/comprador/seguradora.
 
-Production domain: **https://yachtsatlas.online** (deployed on EasyPanel, single Docker service: Nginx + FastAPI).
+Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.537/97)**, ao **RLESTA** e às **NORMAM/DPC** da Marinha do Brasil (não substitui documentos oficiais — complementa, com cadeia de custódia verificável).
 
-## Objectives
-- Provide asset owners with a verifiable "Digital Identity" for their yachts.
-- Enable marinas to manage fleets and generate revenue through certified dossiers.
-- Facilitate secure transactions and insurance processes with reliable asset history.
+- Produto da **AXOS HUB** (CNPJ 26.998.571/0001-50 — empresa solo).
+- Domínio de produção: **https://yachtsatlas.online** (EasyPanel, Docker único: Nginx + FastAPI).
+
+## Modelo de Negócio (DEFINITIVO)
+- **Recorrência é o produto.** A marina assina; **100% do dossiê é da marina** (negócio marina ↔ dono é direto, fora da plataforma).
+- **Preços (só dois):**
+  - **20 marinas de lançamento → $200/mês**
+  - **até 120 marinas restantes → $250/mês** (total 140)
+  - Cobrança via **Stripe Payment Links** (limites de uso travam as 20 e as 120). O `config.py` espelha o modelo (`LAUNCH_SLOTS=20/$200`, `TRADITIONAL_SLOTS=120/$250`).
+- **O dossiê NÃO é vendido pela plataforma** (checkout de dossiê está desativado — HTTP 410). Liberação para terceiros é por pedido + liberação manual + senha-mestra.
+- **Piloto atual:** 3 marinas rodando **grátis por 6 meses** como **prova social** antes do lançamento das fundadoras.
 
 ## Technology Stack
-- **Frontend**: React (Vite), Tailwind CSS, Lucide Icons, i18next (PT/EN/ES).
-- **Backend**: FastAPI (Python), Supabase (Auth, Database, Storage — bucket `media`).
-- **Payments**: Stripe (Connect for 50/50 splits, Subscriptions for Marinas). *Currently in TEST mode.*
-- **Deployment**: Unified Dockerfile (Nginx serves frontend, proxies `/api` to Uvicorn) on EasyPanel.
+- **Frontend**: React (Vite), Tailwind, Lucide, i18next (PT/EN/ES).
+- **Backend**: FastAPI (Python), Supabase (Auth, Postgres 17, Storage bucket `media`).
+- **RAG / IA (Capitã Solara)**: pgvector + `text-embedding-3-small`, corpus de normas náuticas (20 normas / 46 seções); pipeline de embeddings em Polars (`backfill_embeddings.py`).
+- **Pagamentos**: Stripe (Payment Links + Subscriptions; webhook persiste em `payments` e cadastra marina fundadora via RPC). *Ainda em modo TEST.*
+- **Chaves Supabase**: migrado para o formato novo — **publishable** (`sb_publishable_…`) no front, **secret** (`sb_secret_…`) no backend; as chaves legadas JWT (`eyJ…`) foram **desativadas pela Supabase** em jun/2026.
+- **Deploy**: Dockerfile unificado (Nginx serve o front e faz proxy de `/api` p/ Uvicorn) no EasyPanel, **auto-deploy observando o branch `master`**.
 
 ## Key Features
-1. **Dossier Certification**: 3 levels (Compact $200, Executive $400, Superyacht $600), generated as PDF from real custody data (`registros` + `documentos`), sections appear by vessel size — "no empty sections" rule.
-2. **Asset Management**: Tracking of technical specs, maintenance, and expiry alerts.
-3. **Document Vault**: Supabase Storage with SHA-256 integrity hash per file; authenticated users can upload but cannot update/delete stored objects (WORM-style policy).
-4. **Marina Hub**: Dashboard for marinas to monitor managed assets and track revenue shares.
-5. **Partner Network**: Directory of brokers and insurance providers, with contact-click tracking for lead billing.
+1. **Dossiê de Custódia (PDF)**: gerado a partir do **painel técnico real** (`registros` + `documentos`), espelhando as categorias do painel — "nenhuma seção vazia". Layout **premium/institucional**: capa, **Marina Custodiante** (nome, CNPJ, responsável, endereço), preâmbulo legal, **Quadro de Conformidade Regulatória** (NORMAM), seções técnicas, avaliação de mercado, registro fotográfico, **Termo de Custódia e Integridade**. Header/rodapé com logo dourada + CNPJ + protocolo. *(Kit de dossiê-modelo fictício mantido em `dossie-exemplo/`, fora do versionamento.)*
+2. **Painel Técnico**: fichas seladas (logbook) por categoria — manutenção, motor, elétrica, segurança, pintura, interior, seguro — todas no mesmo molde rico, com upload de evidências (SHA-256).
+3. **Diário de Bordo (Operação)**: registro rigoroso de cada **ida ao mar** — condutor + habilitação/CHA, manuseio, lançamento, horímetros saída/retorno (tempo de uso), reboque, estado/avaria — com evidências seladas. Flui para o dossiê. *(Pensado para seguradoras.)*
+4. **Imutabilidade real** (`registros`): cada registro recebe **hash SHA-256 no insert** (trigger) e o banco **bloqueia qualquer UPDATE** (append-only / anti-adulteração) — vale até para a `service_role`. *DELETE segue permitido por causa do cascade de exclusão de ativo (soft-delete pendente para imutabilidade total).*
+5. **Cofre de Documentos**: Supabase Storage, SHA-256 por arquivo, **descrição do que é cada documento** no upload.
+6. **Cobertura Fotográfica**: até **430 fotos por embarcação** (400 cobertura + 30 vitrine), geolocalizadas no upload.
+7. **Capitã Solara (IA)**: assistente de normas náuticas via RAG (pgvector), tom técnico-profissional, com guard-rails anti-alucinação.
 
-## Current Implementation Status
-- [x] Landing Page & Brand Identity (Premium Dark Theme, True Blue #010c20)
-- [x] Authentication — unified: frontend and backend both validate Supabase session tokens (Bearer); maintenance-admin token for platform ops
-- [x] Dashboard Layout
-- [x] Asset Listing & Detailed Forms (CategoriaForm aligned to the 17 dossier categories)
-- [x] Payment Checkout Flows (Stripe) — completed checkouts are persisted to the `payments` table via webhook
-- [x] Dossier data + PDF endpoints with per-asset access control; optional payment gate (`DOSSIER_REQUIRE_PAYMENT`)
-- [x] Checkout Success Pages (Dossier & Onboarding)
-- [x] Marina Partner Lead Form (public insert; admin-only listing)
-- [x] Containerization (unified Dockerfile) and production deploy
-- [x] Backend test suite: health + auth-protection tests (all protected endpoints require Bearer token)
+## Status de Implementação
+- [x] Landing Page & identidade (tema dark premium, True Blue #010c20) + i18n PT/EN/ES
+- [x] Auth unificada (Supabase session Bearer; token de manutenção p/ admin)
+- [x] Painel técnico com fichas seladas (mesmo molde para todas as categorias)
+- [x] **Diário de Bordo (operação / idas ao mar)** + seção no dossiê
+- [x] **Imutabilidade real** dos registros (hash SHA-256 + trigger append-only, UPDATE bloqueado) — *aplicada direto no banco*
+- [x] **Descrição de documento** no cofre (Documentação)
+- [x] Geolocalização das imagens no upload; cobertura fotográfica (430)
+- [x] Dossiê (dados + PDF) com controle de acesso por ativo; layout premium
+- [x] Pagamento: webhook Stripe persiste em `payments` + cadastra marina fundadora (RPC)
+- [x] RAG Solara (pgvector, 46/46 seções embeddadas)
+- [x] Correção de performance (dedupe/cache de GET — chamadas repetidas viram 1)
+- [x] Hardening: `search_path` fixo nas funções do banco
+- [x] Containerização + deploy de produção
 
-## Known Gaps / Next Steps (from June 2026 audit)
-1. **DB schema drift (blocker)**: live `ativos` table uses `usuario_id`/`comprimento`; newer code paths expect `marina_id`/`owner_id`/`comprimento_pes` and a `marinas` table that does not exist yet. Creating assets via the API fails until the alignment migration is applied. Document/dossier endpoints were made tolerant to both schemas.
-2. **Stripe live mode**: switch publishable/secret/webhook keys from `pk_test`/test to live before charging real customers; then set `DOSSIER_REQUIRE_PAYMENT=true` to gate PDF delivery on payment.
-3. **Secrets exposure**: `backend/.env` (Supabase service key + JWT secret) exists in the public repo's git history; keys must be rotated in the Supabase dashboard (owner decision pending).
-4. **Storage privacy**: bucket `media` is public-read; sensitive documents should move to a private bucket + signed URLs (backend already generates signed URLs).
-5. **RegistroForm (Registros page)**: its 9 service categories don't map to the 17 dossier categories, and its photo/receipt dropzones are decorative (no file input wired). Align or remove.
-6. **Responsiveness**: Tailwind breakpoints across all pages; tables outside `Ativos.tsx` still need `overflow-x-auto` for narrow screens. Visual device pass pending.
-7. **Repo hygiene**: large images (6–12 MB) and stray one-byte files at repo root; SQL migrations live at root without a versioned `supabase/migrations` folder.
+## Pendências / Próximos Passos
+1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
+2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
+3. **Stripe live** — trocar chaves test→live e confirmar os 2 Payment Links ($200 fundadora c/ `metadata.programa=marina_fundadora` · $250).
+4. **Privacidade do bucket `media`** — hoje é público; mover documentos sensíveis p/ bucket privado + URL assinada (LGPD).
+5. **Soft-delete de ativo** — para imutabilidade **total** (hoje DELETE de ativo apaga registros em cascata).
+6. **`audit_logs`** — insert está falhando por RLS (`42501`); ajustar policy para a auditoria gravar de fato.
+7. **Higiene de repositório** — imagens grandes (6–12 MB) e arquivos avulsos na raiz; duas cópias locais do repo (com/sem "H").
+8. **Portar dossiê premium p/ produção** — o layout premium hoje está só no kit local (`dossie-exemplo/`); levar para `dossie_pdf.py` quando aprovado.
 
-## Checkout Flows
-- **Certified Dossier**: one-time payment; 50/50 split (Stripe Connect) with the marina where the yacht is docked — split activates only when the marina has a `stripe_account_id` (requires the `marinas` table from the alignment migration).
-- **Marina Onboarding**: $250/mo subscription for full fleet management capabilities.
+## Acesso ao Dossiê
+- **Dono/marina (autenticado)**: acessa o próprio dossiê livremente (dados + PDF).
+- **Terceiros (broker/comprador/seguradora)**: pedem por formulário aberto (`POST /dossie/solicitar`) → Yachts Atlas libera manualmente → acesso por página mobile protegida por **senha-mestra**; saídas registradas em `dossie_saidas`.
 
-## Environment Flags
-- `ALLOWED_ORIGINS` — CORS allowlist (defaults include `yachtsatlas.online`).
-- `DOSSIER_REQUIRE_PAYMENT` — when `true`, dossier PDF only for assets with a completed `payments` row (`payment_type='dossier'`).
-- `MAINTENANCE_USERNAME/PASSWORD/MASTER_TOKEN`, `MAINTENANCE_BYPASS_ENABLED` — platform-admin maintenance access.
+## Flags de Ambiente
+- `ALLOWED_ORIGINS` — CORS (inclui `yachtsatlas.online`).
+- `MAINTENANCE_USERNAME/PASSWORD/MASTER_TOKEN`, `MAINTENANCE_BYPASS_ENABLED`, `DOSSIER_MASTER_PASSWORD` — acesso de manutenção/admin (**nunca remover sem confirmação do fundador**).
+- `SUPABASE_URL`, `SUPABASE_KEY` (publishable), `SUPABASE_SERVICE_KEY` (secret), `SUPABASE_JWT_SECRET`, `OPENAI_API_KEY`, `STRIPE_*`, `TELEGRAM_*`.
