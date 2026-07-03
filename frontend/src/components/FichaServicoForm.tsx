@@ -85,7 +85,15 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
   const validar = (): string[] => {
     const e: string[] = []
     for (const f of camposVisiveis) {
-      if (f.required && !String(campos[f.key] || '').trim()) e.push(`Campo obrigatório: ${f.label}`)
+      if (f.required) {
+        if (f.type === 'checkbox') {
+          if (campos[f.key] !== 'Sim') {
+            e.push(`Você deve confirmar o item de segurança: ${f.label}`)
+          }
+        } else if (!String(campos[f.key] || '').trim()) {
+          e.push(`Campo obrigatório: ${f.label}`)
+        }
+      }
     }
     for (const u of uploadsVisiveis) {
       const obrig = u.required || (u.requiredIf && condOk(u.requiredIf))
@@ -126,6 +134,27 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
   const inputCls = 'w-full bg-white/[0.03] border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-[#c5a059] outline-none transition-all placeholder:text-white/20'
 
   const renderField = (f: ServicoField) => {
+    if (f.type === 'checkbox') {
+      const isChecked = campos[f.key] === 'Sim'
+      return (
+        <label className="flex items-start gap-3 cursor-pointer select-none py-2 group">
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={isChecked}
+            onChange={(ev) => setCampo(f.key, ev.target.checked ? 'Sim' : 'Não')}
+          />
+          <div className={`w-5 h-5 rounded-sm border flex items-center justify-center transition-all shrink-0 mt-0.5 ${isChecked ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 'border-white/20 bg-white/[0.02] group-hover:border-[#c5a059]/50'}`}>
+            {isChecked && (
+              <svg className="w-3.5 h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className="text-white/70 text-xs leading-tight font-medium group-hover:text-white transition-colors">{f.placeholder || 'Confirmado'}</span>
+        </label>
+      )
+    }
     if (f.type === 'select') {
       return (
         <select className={inputCls + ' appearance-none'} value={campos[f.key] || ''} onChange={(ev) => setCampo(f.key, ev.target.value)}>

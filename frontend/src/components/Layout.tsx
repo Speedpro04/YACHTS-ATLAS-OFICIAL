@@ -13,7 +13,7 @@ export default function Layout() {
     { path: '/app', label: t('common.dashboard'), icon: Home },
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
     { path: '/app/documentos', label: 'Documentos', icon: FileText },
-    { path: '/app/solicitacoes-dossie', label: 'Dossiês', icon: FileCheck },
+    { path: '/app/solicitacoes-dossie', label: 'Gerar Dossiê', icon: FileCheck },
     { path: '/app/normas', label: 'Normas', icon: Scale },
   ]
 

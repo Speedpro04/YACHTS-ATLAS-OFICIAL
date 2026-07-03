@@ -10,7 +10,7 @@
  * Fase 1: Manutenção (piloto). Demais abas entram no mesmo molde.
  */
 
-export type ServicoFieldType = 'text' | 'number' | 'date' | 'time' | 'select' | 'textarea'
+export type ServicoFieldType = 'text' | 'number' | 'date' | 'time' | 'select' | 'textarea' | 'checkbox'
 
 export interface ServicoField {
   key: string
@@ -53,10 +53,11 @@ export interface ServicoConfig {
 
 const DOC = '.pdf,image/png,image/jpeg'
 const IMG = 'image/png,image/jpeg'
+const VID = 'video/mp4,video/quicktime,video/webm,.mov,.qt'
 
 // ── FICHA PADRÃO ────────────────────────────────────────────────────
-// Molde único (logbook de aeronave). TODAS as abas técnicas usam
-// exatamente esta ficha — mesmos campos, mesmo rigor, mesmas evidências.
+// Molde único (logbook de aeronave). Elétrica, pintura e
+// interior usam esta ficha para registro de serviços gerais.
 const FICHA_PADRAO: ServicoConfig = {
   ctaNovo: 'Nova Ordem de Serviço',
   fields: [
@@ -93,6 +94,94 @@ const FICHA_PADRAO: ServicoConfig = {
       { key: 'fotos_servico', label: 'Fotos do serviço (antes/depois)', hint: 'Até 12 imagens', accept: IMG, multiple: true, max: 12 },
     ],
 }
+
+// ── MANUTENÇÃO ESPECIALIZADA ────────────────────────────────────────
+// Ficha rica para manutenção náutica: troca de óleo, filtros, Arla 32,
+// fluido de arrefecimento, impeller, zincos anódicos e demais consumíveis
+// críticos para motores marítimos diesel e gasolina.
+const FICHA_MANUTENCAO: ServicoConfig = {
+  ctaNovo: 'Registrar Manutenção / Troca de Consumíveis',
+  fields: [
+    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Troca de óleo e filtros do motor BB', required: true, full: true },
+    { key: 'tipo_servico', label: 'Tipo de Serviço', type: 'select', options: [
+      'Troca de Óleo e Filtros',
+      'Troca de Filtros (sem óleo)',
+      'Troca de Impeller (Bomba de Água do Mar)',
+      'Troca de Zincos Anódicos',
+      'Troca de Fluido de Arrefecimento',
+      'Revisão Geral / Overhaul',
+      'Preventiva Programada',
+      'Corretiva',
+      'Emergencial',
+      'Outro'
+    ], required: true },
+    { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
+
+    { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Mecânico ou técnico responsável', required: true },
+    { key: 'prestador', label: 'Empresa / oficina / marina', type: 'text', placeholder: 'Oficina, estaleiro, concessionária' },
+    { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
+
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+    { key: 'horimetro', label: 'Horímetro na troca', type: 'number', placeholder: 'Leitura no horímetro', required: true, suffix: 'h' },
+    { key: 'proxima_troca_horas', label: 'Próxima troca (horímetro)', type: 'number', placeholder: 'Ex: se trocou a 500h e intervalo é 100h → 600', suffix: 'h' },
+    { key: 'proxima_revisao', label: 'Próxima revisão (data)', type: 'date' },
+
+    // ── ÓLEO DO MOTOR ──
+    { key: 'troca_oleo', label: 'Houve troca de óleo?', type: 'select', options: ['Sim', 'Não'], required: true },
+    { key: 'oleo_marca', label: 'Marca do Óleo', type: 'text', placeholder: 'Shell, Mobil, Castrol, Total, Volvo Penta OEM...', showIf: { key: 'troca_oleo', equals: 'Sim' } },
+    { key: 'oleo_viscosidade', label: 'Viscosidade / Especificação SAE', type: 'select', options: ['15W-40 (Diesel padrão)', '10W-30', '10W-40', '5W-30', '5W-40', '20W-50', '25W-40 (Marine Diesel)', 'Outro'], showIf: { key: 'troca_oleo', equals: 'Sim' } },
+    { key: 'oleo_tipo', label: 'Tipo do Óleo', type: 'select', options: ['Mineral', 'Semi-Sintético', 'Sintético', 'Marine Grade (OEM)'], showIf: { key: 'troca_oleo', equals: 'Sim' } },
+    { key: 'oleo_classificacao', label: 'Classificação API', type: 'select', options: ['CI-4 (Diesel)', 'CJ-4 (Diesel Baixa Emissão)', 'CK-4 (Diesel Tier 4)', 'SN (Gasolina)', 'SP (Gasolina)', 'N/A'], showIf: { key: 'troca_oleo', equals: 'Sim' } },
+    { key: 'oleo_qtd', label: 'Quantidade de óleo', type: 'number', placeholder: 'Litros utilizados', suffix: 'L', showIf: { key: 'troca_oleo', equals: 'Sim' } },
+
+    // ── FILTROS ──
+    { key: 'filtro_oleo', label: 'Filtro de Óleo trocado?', type: 'select', options: ['Sim', 'Não'], required: true },
+    { key: 'filtro_oleo_marca', label: 'Marca do Filtro de Óleo', type: 'text', placeholder: 'Mann, Fleetguard, Volvo Penta OEM, Racor...', showIf: { key: 'filtro_oleo', equals: 'Sim' } },
+    { key: 'filtro_oleo_pn', label: 'Part Number do Filtro de Óleo', type: 'text', placeholder: 'Ex: 21707134, 3847644', showIf: { key: 'filtro_oleo', equals: 'Sim' } },
+
+    { key: 'filtro_combustivel', label: 'Filtro de Combustível trocado?', type: 'select', options: ['Sim', 'Não'] },
+    { key: 'filtro_combustivel_marca', label: 'Marca do Filtro de Combustível', type: 'text', placeholder: 'Racor, Fleetguard, Parker...', showIf: { key: 'filtro_combustivel', equals: 'Sim' } },
+    { key: 'filtro_combustivel_pn', label: 'Part Number do Filtro de Combustível', type: 'text', placeholder: 'Ex: 2040TM-OR, R20T', showIf: { key: 'filtro_combustivel', equals: 'Sim' } },
+
+    { key: 'separador_agua', label: 'Separador de Água (Racor) trocado/drenado?', type: 'select', options: ['Trocado', 'Drenado', 'Não'] },
+    { key: 'filtro_ar', label: 'Filtro de Ar trocado?', type: 'select', options: ['Sim', 'Não'] },
+
+    // ── ARLA 32 / SCR (Conformidade MARPOL Anexo VI / IMO Tier III) ──
+    { key: 'sistema_scr', label: 'Motor possui sistema SCR (Arla 32 / DEF)?', type: 'select', options: ['Sim', 'Não', 'Não sei'] },
+    { key: 'scr_conformidade_imo', label: 'Conformidade de Emissões (IMO Tier III / EIAPP)', type: 'select', options: ['Certificado EIAPP Válido (Em conformidade)', 'Não aplicável (Motor isento/antigo)', 'Não conforme / Emissor reprovado'], required: true },
+    { key: 'scr_alarme_nox', label: 'Status do Controle de NOx', type: 'select', options: ['Sem alarmes (Operação limpa)', 'Alarme NOx ativado (Falha de emissão)', 'N/A'], showIf: { key: 'sistema_scr', equals: 'Sim' } },
+    { key: 'scr_limpeza_injetor', label: 'Manutenção do Injetor de Arla (Descarbonização)', type: 'select', options: ['Injetor Limpo/Descarbonizado nesta O.S.', 'Não realizado', 'Injetor Substituído'], showIf: { key: 'sistema_scr', equals: 'Sim' } },
+    { key: 'arla_abastecido', label: 'Arla 32 abastecido nesta manutenção?', type: 'select', options: ['Sim', 'Não'], showIf: { key: 'sistema_scr', equals: 'Sim' } },
+    { key: 'arla_qtd', label: 'Quantidade de Arla 32 abastecida', type: 'number', placeholder: 'Litros abastecidos', suffix: 'L', showIf: { key: 'arla_abastecido', equals: 'Sim' } },
+    { key: 'arla_marca', label: 'Marca do Arla 32 (Certificação ISO 22241 / Inmetro)', type: 'text', placeholder: 'Ex: BlueMax, BR, original OEM...', showIf: { key: 'arla_abastecido', equals: 'Sim' } },
+
+    // ── ARREFECIMENTO ──
+    { key: 'troca_arrefecimento', label: 'Houve troca de fluido de arrefecimento?', type: 'select', options: ['Sim', 'Não'] },
+    { key: 'arrefecimento_marca', label: 'Marca do Fluido de Arrefecimento', type: 'text', placeholder: 'Volvo Penta OEM, Prestone, Paraflu...', showIf: { key: 'troca_arrefecimento', equals: 'Sim' } },
+    { key: 'arrefecimento_tipo', label: 'Tipo', type: 'select', options: ['Orgânico (OAT)', 'Inorgânico (IAT)', 'Híbrido (HOAT)'], showIf: { key: 'troca_arrefecimento', equals: 'Sim' } },
+
+    // ── IMPELLER (Bomba de Água do Mar) ──
+    { key: 'troca_impeller', label: 'Impeller da bomba de água do mar trocado?', type: 'select', options: ['Sim', 'Não'] },
+    { key: 'impeller_marca', label: 'Marca / Part Number do Impeller', type: 'text', placeholder: 'Jabsco, Johnson, OEM...', showIf: { key: 'troca_impeller', equals: 'Sim' } },
+
+    // ── ZINCOS ANÓDICOS (Proteção Catódica) ──
+    { key: 'troca_zincos', label: 'Zincos anódicos (ânodos de sacrifício) trocados?', type: 'select', options: ['Sim', 'Não'] },
+    { key: 'zincos_qtd', label: 'Quantidade de zincos trocados', type: 'number', showIf: { key: 'troca_zincos', equals: 'Sim' } },
+    { key: 'zincos_localizacao', label: 'Localização dos zincos', type: 'text', placeholder: 'Eixo, leme, rabeta, casco...', showIf: { key: 'troca_zincos', equals: 'Sim' } },
+
+    // ── CUSTO E OBSERVAÇÕES ──
+    { key: 'valor', label: 'Custo total do serviço', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações técnicas', type: 'textarea', placeholder: 'Descreva detalhes da manutenção, condição do óleo drenado (cor, partículas metálicas), estado dos filtros removidos, nível de desgaste dos zincos...', full: true },
+  ],
+  uploads: [
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem — obrigatória quando há valor', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'foto_oleo_drenado', label: 'Foto do óleo drenado', hint: 'Cor e condição do óleo usado (escuro, partículas, leitoso)', accept: IMG, showIf: { key: 'troca_oleo', equals: 'Sim' } },
+    { key: 'foto_filtros', label: 'Foto dos filtros trocados (novos e velhos)', hint: 'Comprovação visual dos consumíveis', accept: IMG },
+    { key: 'foto_horimetro', label: 'Foto do horímetro no momento da troca', hint: 'Comprovação da leitura', accept: IMG },
+    { key: 'fotos_servico', label: 'Fotos adicionais do serviço', hint: 'Até 8 fotos', accept: IMG, multiple: true, max: 8 },
+  ],
+}
+
 
 // ── DIÁRIO DE BORDO ─────────────────────────────────────────────────
 // Registro rigoroso de cada IDA AO MAR — a cadeia de custódia completa:
@@ -136,24 +225,331 @@ const FICHA_OPERACAO: ServicoConfig = {
   ],
 }
 
+// ── MOTOR & PROPULSÃO ────────────────────────────────────────────────
+const FICHA_MOTOR: ServicoConfig = {
+  ctaNovo: 'Registrar Vistoria / Manutenção de Motor',
+  fields: [
+    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Revisão de 100 horas / Repower / Correias', required: true, full: true },
+    { key: 'tipo', label: 'Tipo', type: 'select', options: ['Preventiva', 'Corretiva', 'Emergencial', 'Vistoria'], required: true },
+    { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
+
+    { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Técnico responsável', required: true },
+    { key: 'prestador', label: 'Empresa / prestador / oficina', type: 'text', placeholder: 'Oficina ou concessionária' },
+    { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
+
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+    { key: 'concessionaria', label: 'Concessionária autorizada?', type: 'select', options: ['Não', 'Sim'] },
+    { key: 'garantia', label: 'Garantia de fábrica vigente até', type: 'date' },
+
+    { key: 'fabricante', label: 'Fabricante do Motor', type: 'text', placeholder: 'Volvo Penta, Yamaha, Mercury, MAN, Yanmar, Cummins...', required: true },
+    { key: 'modelo', label: 'Modelo / Linha', type: 'text', placeholder: 'Ex: D6-370 / IPS600', required: true },
+    { key: 'numero_serie', label: 'Número de série (gravado no bloco)', type: 'text', placeholder: 'Código de série único do motor', required: true },
+
+    { key: 'ano_fabricacao', label: 'Ano do motor', type: 'number', placeholder: 'Ano de fabricação' },
+    { key: 'qtd_motores', label: 'Quantidade de motores', type: 'select', options: ['1 (Single)', '2 (Twin)', '3 (Triple)', '4 (Quadruple)'], required: true },
+    { key: 'posicao_motores', label: 'Posição / Montagem', type: 'select', options: ['BB (Bordo)', 'BE (Estibordo)', 'Centro', 'Duplo BB/BE', 'Triplo', 'Quadruplo'] },
+
+    { key: 'tipo_combustivel', label: 'Tipo de combustível', type: 'select', options: ['Diesel', 'Gasolina', 'Elétrico', 'Híbrido'], required: true },
+    { key: 'ciclo', label: 'Ciclo', type: 'select', options: ['4 Tempos', '2 Tempos'] },
+    { key: 'potencia', label: 'Potência por motor', type: 'number', placeholder: 'Potência', suffix: 'HP' },
+
+    { key: 'transmissao', label: 'Transmissão / Drive', type: 'select', options: ['Inboard Eixo', 'Sterndrive (Rabeta)', 'Pod Drive (IPS/Zeus)', 'Jet Drive', 'Outboard (Popa)'] },
+    { key: 'arrefecimento', label: 'Sistema de arrefecimento', type: 'select', options: ['Circuito Fechado (Água Doce)', 'Circuito Aberto (Água do Mar)'] },
+    { key: 'tanque_capacidade', label: 'Capacidade do tanque', type: 'number', placeholder: 'Volume do combustível', suffix: 'L' },
+
+    { key: 'horimetro', label: 'Horímetro atual do motor', type: 'number', placeholder: 'Leitura no momento', required: true, suffix: 'h' },
+    { key: 'ultima_troca_oleo', label: 'Última troca de óleo (horímetro)', type: 'number', placeholder: 'Leitura no momento da troca', suffix: 'h' },
+    { key: 'ultima_revisao', label: 'Última revisão geral / overhaul (horímetro)', type: 'number', placeholder: 'Horímetro do overhaul', suffix: 'h' },
+
+    { key: 'compressao_cilindros', label: 'Compressão por cilindro', type: 'text', placeholder: 'Ex: C1: 150, C2: 152, C3: 150...' },
+    { key: 'estado_correias', label: 'Correias, mangueiras e coxins', type: 'select', options: ['Excelente', 'Bom/Operacional', 'Atenção (Trocar)', 'Crítico'] },
+    { key: 'estado_exaustao', label: 'Sistema de exaustão / coletores', type: 'select', options: ['Excelente', 'Bom/Operacional', 'Atenção (Carbonizado)', 'Crítico'] },
+
+    { key: 'helice_tipo', label: 'Hélice / Jato (especificação)', type: 'text', placeholder: 'Ex: Passo, diâmetro, pás' },
+    { key: 'helice_material', label: 'Material do Hélice', type: 'select', options: ['Bronze', 'Aço Inox', 'Alumínio', 'Composite'] },
+    { key: 'helice_estado', label: 'Estado visual (cavitação, amassados)', type: 'select', options: ['Excelente', 'Bom (Leve desgaste)', 'Amassado / Cavitação', 'Crítico'] },
+
+    { key: 'contrato_manutencao', label: 'Contrato de manutenção programada?', type: 'select', options: ['Não', 'Sim'] },
+    { key: 'valor', label: 'Custo do serviço / revisão', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações de diagnóstico NDT / detalhes', type: 'textarea', placeholder: 'Pontos críticos, diagnósticos, laudos e observações...', full: true },
+  ],
+  uploads: [
+    { key: 'foto_serie', label: 'Foto do número de série (bloco)', hint: 'Foto obrigatória do número gravado', accept: IMG, required: true },
+    { key: 'foto_sala_maquinas', label: 'Foto da sala de máquinas', hint: 'Foto geral nítida da montagem', accept: IMG, required: true },
+    { key: 'foto_horimetro', label: 'Foto do horímetro', hint: 'Leitura comprovada no painel', accept: IMG, required: true },
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem da NF', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'laudo_analise_oleo', label: 'Laudo de análise de óleo (se houver)', hint: 'Laudo laboratorial em PDF ou JPG', accept: DOC },
+    { key: 'laudo_vibracao', label: 'Laudo de vibração / termografia', hint: 'Ensaio técnico NDT em PDF', accept: DOC },
+    { key: 'fotos_servico', label: 'Fotos adicionais do motor', hint: 'Até 6 fotos', accept: IMG, multiple: true, max: 6 },
+  ]
+}
+
+// ── SEGURO & APÓLICE ─────────────────────────────────────────────────
+const FICHA_SEGURO: ServicoConfig = {
+  ctaNovo: 'Registrar / Atualizar Seguro da Embarcação',
+  fields: [
+    { key: 'titulo', label: 'Identificação da Apólice', type: 'text', placeholder: 'Ex: Apólice Casco Anual 2026/2027', required: true, full: true },
+    { key: 'status', label: 'Status da Apólice', type: 'select', options: ['Vigente', 'Pendente de Renovação', 'Vencida'], required: true },
+
+    { key: 'seguradora', label: 'Seguradora', type: 'text', placeholder: 'Ex: Mapfre, Allianz, Porto Seguro, Tokio Marine...', required: true },
+    { key: 'numero_apolice', label: 'Número da Apólice', type: 'text', placeholder: 'Nº do documento de cobertura', required: true },
+
+    { key: 'corretora', label: 'Corretora responsável', type: 'text', placeholder: 'Nome da corretora' },
+    { key: 'corretora_cnpj', label: 'CNPJ da Corretora', type: 'text', placeholder: '00.000.000/0000-00' },
+
+    { key: 'vigencia_inicio', label: 'Início da Vigência', type: 'date', required: true },
+    { key: 'vigencia_fim', label: 'Fim da Vigência', type: 'date', required: true },
+    { key: 'renovacao_automatica', label: 'Renovação automática?', type: 'select', options: ['Não', 'Sim'] },
+
+    { key: 'tipo_cobertura', label: 'Tipo de Cobertura', type: 'select', options: ['Casco (Básica)', 'Responsabilidade Civil (RC)', 'Total / Compreensiva'], required: true },
+    { key: 'valor', label: 'Valor Segurado (Valor em Risco)', type: 'number', placeholder: '0,00', suffix: 'R$', required: true },
+    { key: 'franquia', label: 'Valor da Franquia / Participação', type: 'text', placeholder: 'Ex: 10% do sinistro, mín R$ 15.000', required: true },
+
+    { key: 'area_navegacao', label: 'Área de navegação coberta', type: 'select', options: ['Costeira', 'Oceânica', 'Fluvial / Interior', 'Internacional'], required: true },
+    { key: 'cobertura_anexos', label: 'Cobertura de anexos (tender, jet de apoio)', type: 'text', placeholder: 'Ex: Cobre bote auxiliar até 15HP' },
+    { key: 'assistencia_24h', label: 'Assistência 24h incluída?', type: 'select', options: ['Sim', 'Não'] },
+
+    { key: 'alienacao', label: 'Alienação / Beneficiário fiduciário', type: 'text', placeholder: 'Nome do banco (se financiado)' },
+    { key: 'status_pagamento', label: 'Status de pagamento do prêmio', type: 'select', options: ['Pago (Quitado)', 'Parcelado em Dia', 'Atrasado'] },
+    { key: 'sinistros_historico', label: 'Histórico de sinistros / ocorrências', type: 'textarea', placeholder: 'Liste sinistros passados, datas e valores de franquia acionada...', full: true },
+    { key: 'observacao', label: 'Observações / Cláusulas de exclusão críticas', type: 'textarea', placeholder: 'Cláusulas limitantes da apólice...', full: true },
+  ],
+  uploads: [
+    { key: 'apolice_pdf', label: 'Apólice completa (PDF)', hint: 'PDF obrigatório com tabela de coberturas', accept: DOC, required: true },
+    { key: 'laudo_vistoria_previa', label: 'Laudo de vistoria prévia da seguradora', hint: 'Laudo técnico pré-requisito (PDF)', accept: DOC },
+  ]
+}
+
+// ── SEGURANÇA & SALVATAGEM ───────────────────────────────────────────
+const FICHA_SEGURANCA: ServicoConfig = {
+  ctaNovo: 'Registrar Vistoria de Segurança',
+  fields: [
+    { key: 'servico', label: 'Descrição da inspeção', type: 'text', placeholder: 'Ex: Vistoria anual de salvatagem NORMAM', required: true, full: true },
+    { key: 'status', label: 'Status geral de segurança', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
+    { key: 'responsavel', label: 'Responsável técnico / Inspetor', type: 'text', placeholder: 'Nome do inspetor ou empresa credenciada', required: true },
+    { key: 'data', label: 'Data da vistoria', type: 'date', required: true },
+
+    { key: 'coletes_validade', label: 'Validade dos Coletes Salva-vidas', type: 'date', required: true },
+    { key: 'coletes_qtd', label: 'Quantidade de coletes a bordo', type: 'number', placeholder: 'Qtd de coletes' },
+    { key: 'extintor_validade', label: 'Validade da carga do Extintor', type: 'date', required: true },
+    { key: 'pirotecnicos_validade', label: 'Validade dos sinalizadores pirotécnicos', type: 'date', required: true },
+
+    // Checklist NORMAM
+    { key: 'normam_coletes', label: 'Coletes Homologados', type: 'checkbox', placeholder: 'Coletes em quantidade e classes adequadas para a lotação conforme NORMAM', required: true, full: true },
+    { key: 'normam_boia', label: 'Boia Circular com Retinida', type: 'checkbox', placeholder: 'Boias circulares com cabo retinida flutuante sem emendas e em bom estado', required: true, full: true },
+    { key: 'normam_sinalizadores', label: 'Sinalizadores Pirotécnicos', type: 'checkbox', placeholder: 'Fogos e pirotécnicos homologados pela DPC e dentro do prazo de validade', required: true, full: true },
+    { key: 'normam_extintores', label: 'Extintores de Incêndio', type: 'checkbox', placeholder: 'Extintores portáteis com carga, lacre e validade em dia nos locais corretos', required: true, full: true },
+    { key: 'normam_esgotamento', label: 'Esgotamento de Porão', type: 'checkbox', placeholder: 'Bombas de porão manuais e automáticas testadas e operacionais', required: true, full: true },
+    { key: 'normam_ancora', label: 'Equipamento de Fundeio (Âncora e Cabos)', type: 'checkbox', placeholder: 'Âncora, amarras e cabos em bom estado e comprimento regulamentar', required: true, full: true },
+    { key: 'normam_primeiros_socorros', label: 'Kit de Primeiros Socorros', type: 'checkbox', placeholder: 'Caixa de primeiros socorros abastecida com medicamentos válidos', required: true, full: true },
+    { key: 'normam_luzes', label: 'Luzes de Navegação e Sinalização', type: 'checkbox', placeholder: 'Luzes de bordo, alcançado e mastro operacionais para navegação noturna', required: true, full: true },
+    { key: 'normam_buzina_sino', label: 'Buzina e Refletor de Radar', type: 'checkbox', placeholder: 'Aparelho de sinalização sonora e refletor de radar instalados e funcionais', required: true, full: true },
+    { key: 'normam_radio_vhf', label: 'Rádio VHF/HF e Equipamento de Salvaguarda', type: 'checkbox', placeholder: 'Rádio transceptor homologado com DSC funcional e antenas em ordem', required: true, full: true },
+
+    { key: 'observacao', label: 'Pontos críticos / observações de segurança', type: 'textarea', placeholder: 'Equipamentos vencendo, ausentes ou com avarias...', full: true }
+  ],
+  uploads: [
+    { key: 'foto_extintor_validade', label: 'Foto da etiqueta do extintor', hint: 'Mostrar validade visível', accept: IMG, required: true },
+    { key: 'foto_pirotecnicos_validade', label: 'Foto da validade dos sinalizadores', hint: 'Foto da gravação de validade na peça', accept: IMG, required: true },
+    { key: 'fotos_salvatagem', label: 'Fotos dos equipamentos de salvatagem', hint: 'Até 6 fotos', accept: IMG, multiple: true, max: 6 }
+  ]
+}
+
+// ── BOMBAS DE DRENAGEM / PORÃO ──────────────────────────────────────
+const FICHA_DRENAGEM: ServicoConfig = {
+  ctaNovo: 'Registrar Inspeção de Drenagem / Porão',
+  fields: [
+    { key: 'servico', label: 'Descrição da Inspeção de Drenagem', type: 'text', placeholder: 'Ex: Teste geral de bombas de porão e alarmes', required: true, full: true },
+    { key: 'status', label: 'Status do Sistema', type: 'select', options: ['Excelente', 'Pendente', 'Atenção', 'Crítico'], required: true },
+    { key: 'responsavel', label: 'Técnico / Inspetor', type: 'text', placeholder: 'Responsável pelo teste', required: true },
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+
+    { key: 'fabricante', label: 'Fabricante da Bomba', type: 'text', placeholder: 'Rule, Johnson Pump, Attwood, Jabsco...', required: true },
+    { key: 'modelo', label: 'Modelo da Bomba', type: 'text', placeholder: 'Ex: Rule-Mate 2000 GPH', required: true },
+    { key: 'zona', label: 'Zona / Compartimento', type: 'select', options: ['Proa', 'Sala de Máquinas', 'Popa', 'Meio / Cabines', 'Outra'], required: true },
+    { key: 'vazao_gph', label: 'Vazão Nominal (GPH)', type: 'number', placeholder: 'Ex: 2000', suffix: 'GPH', required: true },
+
+    { key: 'teste_automatico', label: 'Teste do Automático (Float Switch)', type: 'select', options: ['Operacional', 'Avaria / Falha', 'Não possui automático'], required: true },
+    { key: 'alarme_nivel', label: 'Alarme de Nível Alto (High Water Alarm)', type: 'select', options: ['Instalado e Operacional', 'Instalado com Falha', 'Não possui alarme instalado'], required: true },
+    { key: 'fiacao_estado', label: 'Estado da Fiação e Conexões elétricas', type: 'select', options: ['Excelente (Estanque)', 'Bom', 'Atenção (Marcas de Oxidação)', 'Crítico (Exposta / Curto)'], required: true },
+    { key: 'filtro_estado', label: 'Estado do Filtro / Ralo de Sucção', type: 'select', options: ['Limpo / Desobstruído', 'Necessita Limpeza (Parcialmente obstruído)', 'Obstruído / Danificado'], required: true },
+
+    { key: 'observacao', label: 'Observações de Funcionamento / Teste de Vazão', type: 'textarea', placeholder: 'Descreva em detalhes o tempo de esgotamento, se há retorno de água pela válvula anti-retorno, etc.', full: true }
+  ],
+  uploads: [
+    { key: 'foto_bomba', label: 'Foto da bomba instalada *', hint: 'Mostrar bomba, automático e fiação no porão', accept: IMG, required: true },
+    { key: 'video_funcionamento', label: 'Vídeo de funcionamento / teste do automático', hint: 'Vídeo até 3 min (máx 150MB) do teste mecânico do automático', accept: VID }
+  ]
+}
+
+// ── CASCO & INTEGRIDADE ESTRUTURAL ───────────────────────────────────
+const FICHA_CASCO: ServicoConfig = {
+  ctaNovo: 'Registrar Inspeção de Casco / Estrutural',
+  fields: [
+    { key: 'servico', label: 'Serviço ou Vistoria realizada', type: 'text', placeholder: 'Ex: Vistoria de fundo no seco / Inspeção estrutural periódica', required: true, full: true },
+    { key: 'status', label: 'Status estrutural do casco', type: 'select', options: ['Excelente', 'Regular / Operacional', 'Atenção (Recomenda-se Reparo)', 'Crítico (Avaria Estrutural)'], required: true },
+    { key: 'responsavel', label: 'Inspetor / Engenheiro ou Estaleiro', type: 'text', placeholder: 'Responsável técnico', required: true },
+
+    { key: 'data', label: 'Data da vistoria', type: 'date', required: true },
+    { key: 'material_casco', label: 'Material do Casco', type: 'select', options: ['Fibra de Vidro (GRP)', 'Alumínio', 'Aço', 'Carbono', 'Madeira', 'Outro'], required: true },
+    { key: 'tipo_construcao', label: 'Tipo de construção', type: 'select', options: ['Monocasco', 'Catamarã (Multicasco)', 'Trimará (Multicasco)'], required: true },
+
+    { key: 'espessura_laminado', label: 'Última medição de espessura de laminado', type: 'text', placeholder: 'Ex: Proa: 18mm, Fundo: 22mm, Costado: 12mm' },
+    { key: 'laudo_osmose', label: 'Constatação de Osmose', type: 'select', options: ['Nenhuma constatada', 'Superficial (Bolhas isoladas)', 'Moderada (Tratamento necessário)', 'Severa (Delaminação em andamento)'], required: true },
+    { key: 'gelcoat_estado', label: 'Estado visual do Gelcoat', type: 'select', options: ['Excelente', 'Trincas de tensão (aranhas)', 'Trincas estruturais', 'Restaurado'] },
+
+    { key: 'cavernas_reforcos', label: 'Condição das cavernas e anteparas', type: 'select', options: ['Excelente (Íntegro)', 'Sinais de fadiga / trincas', 'Avaria identificada'], required: true },
+    { key: 'passagem_casco_seacocks', label: 'Condição de sea-cocks e passagens de casco', type: 'select', options: ['Excelente (Operando suave)', 'Alguns travados ou oxidados', 'Crítico (Vazamento / Oxidação severa)'], required: true },
+    { key: 'quilha_estado', label: 'Quilha e leme (fixação e integridade)', type: 'select', options: ['Excelente (Sem folgas)', 'Marcas de impacto', 'Parafusos oxidados / folga na junção', 'N/A (Lancha / Sem quilha)'] },
+
+    { key: 'porao_estado', label: 'Estado geral do porão', type: 'select', options: ['Seco e limpo', 'Presença de água doce', 'Presença de água salgada', 'Presença de óleo / combustível'], required: true },
+    { key: 'valor', label: 'Estimativa de custo de reparo estrutural', type: 'number', placeholder: 'Se houver avarias (opcional)', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações estruturais detalhadas', type: 'textarea', placeholder: 'Descreva em detalhes o estado estrutural, cavernas, parafusos de quilha e áreas de porão...', full: true }
+  ],
+  uploads: [
+    { key: 'video_estrutura_interna', label: 'Vídeo da Estrutura Interna (Porão/Cavernas) *', hint: 'Vídeo até 3 min (máx 150MB) de porão, cavernas e registros', accept: VID, required: true },
+    { key: 'video_sala_maquinas', label: 'Vídeo da Sala de Máquinas (Operacional)', hint: 'Vídeo até 3 min (máx 150MB) em funcionamento', accept: VID },
+    { key: 'foto_fundo_externo', label: 'Foto do fundo externo / casco no seco *', hint: 'Foto nítida obrigatória do fundo e quilha', accept: IMG, required: true },
+    { key: 'laudo_ultrassom_pdf', label: 'Laudo de ultrassom / espessímetro (PDF)', hint: 'Documento técnico de auditoria estrutural', accept: DOC },
+    { key: 'video_quilha_externa', label: 'Vídeo da quilha e leme no seco', hint: 'Vídeo até 3 min (máx 150MB) mostrando folga ou movimento', accept: VID }
+  ]
+}
+
+// ── SISTEMA ELÉTRICO & ELETRÔNICOS ──────────────────────────────────
+const FICHA_ELETRICA: ServicoConfig = {
+  ctaNovo: 'Registrar Manutenção Elétrica / Eletrônica',
+  fields: [
+    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Troca do banco de baterias de serviço', required: true, full: true },
+    { key: 'tipo', label: 'Tipo', type: 'select', options: ['Preventiva', 'Corretiva', 'Melhoria', 'Vistoria'], required: true },
+    { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
+
+    { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Eletricista ou técnico de eletrônica', required: true },
+    { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Empresa instaladora ou marina' },
+    { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
+
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+    { key: 'horimetro', label: 'Horímetro do motor na inspeção', type: 'number', placeholder: 'Horímetro', required: true, suffix: 'h' },
+    
+    { key: 'baterias_tensao', label: 'Tensão do banco de baterias', type: 'number', placeholder: 'Ex: 12.6 ou 24.4', suffix: 'V' },
+    { key: 'baterias_estado', label: 'Estado das Baterias', type: 'select', options: ['Excelente (Saudável)', 'Operacional', 'Atenção (Necessita Carga)', 'Crítico (Substituir)'], required: true },
+
+    { key: 'gerador_modelo', label: 'Modelo do Gerador de Bordo', type: 'text', placeholder: 'Ex: Kohler 9EFKOZD / Onan 11.5kW' },
+    { key: 'gerador_horimetro', label: 'Horímetro do Gerador', type: 'number', placeholder: 'Horas de funcionamento do gerador', suffix: 'h' },
+
+    { key: 'equipamentos_navegacao', label: 'Equipamentos de Navegação e Eletrônicos', type: 'select', options: ['Todos Operacionais', 'Alguns com Avaria (Operacional)', 'Falha Crítica (Não utilizar)', 'Sem Eletrônicos instalados'], required: true },
+    { key: 'isolamento_galvanico', label: 'Isolamento Galvânico / Fuga de Corrente', type: 'select', options: ['Testado (Sem fuga detectada)', 'Alerta (Pequena fuga / zincos desgastando rápido)', 'Crítico (Fuga de corrente detectada)', 'Não testado'], required: true },
+
+    { key: 'valor', label: 'Custo da manutenção', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações técnicas do sistema elétrico', type: 'textarea', placeholder: 'Descreva a carga das baterias, estado dos inversores/carregadores de bateria, painel 12V/110V/220V...', full: true },
+  ],
+  uploads: [
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'foto_painel', label: 'Foto do painel elétrico principal *', hint: 'Foto nítida dos disjuntores e barramento', accept: IMG, required: true },
+    { key: 'laudo_eletrico', label: 'Laudo ou Relatório Técnico (PDF)', hint: 'Laudo de inspeção ou teste de baterias', accept: DOC },
+  ],
+}
+
+// ── MASTREAÇÃO & VELAME ─────────────────────────────────────────────
+const FICHA_VELAME: ServicoConfig = {
+  ctaNovo: 'Registrar Inspeção de Mastro / Velas',
+  fields: [
+    { key: 'servico', label: 'Serviço realizado', type: 'text', placeholder: 'Ex: Inspeção de rigging e lavagem de velas', required: true, full: true },
+    { key: 'status', label: 'Status estrutural e velas', type: 'select', options: ['Excelente', 'Regular / Operacional', 'Atenção (Substituir/Ajustar)', 'Crítico'], required: true },
+    { key: 'responsavel', label: 'Rigger / Velaria responsável', type: 'text', placeholder: 'Nome do rigger ou empresa', required: true },
+
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+    { key: 'rigging_idade', label: 'Idade dos cabos de aço / estais', type: 'number', placeholder: 'Anos desde a última troca', suffix: 'anos' },
+    { key: 'rigging_inspecao', label: 'Condição dos Estais e Terminais', type: 'select', options: ['Íntegros (Sem trincas/fissuras)', 'Atenção (Sinais de corrosão)', 'Crítico (Substituir cabos/terminais imediatamente)'], required: true },
+
+    { key: 'velas_estado', label: 'Estado das Velas (Mestra / Genoa)', type: 'select', options: ['Excelente (Tecido firme)', 'Regular (Pequenos reparos)', 'Atenção (Costuras fracas / UV desgastado)', 'Crítico (Rasgado / Trocar)'], required: true },
+    { key: 'catracas_lubrificacao', label: 'Catracas de bordo lubrificadas?', type: 'select', options: ['Sim, todas lubrificadas', 'Não (Recomenda-se lubrificar)', 'N/A'], required: true },
+    { key: 'enrolador_genoa', label: 'Funcionamento do Enrolador de Genoa', type: 'select', options: ['Suave e operacional', 'Pesado / Travando', 'Não possui enrolador', 'N/A'], required: true },
+
+    { key: 'valor', label: 'Custo do serviço', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações de rigging, mastreação e velas', type: 'textarea', placeholder: 'Descreva a tensão dos estais, marcas de desgaste em adriças/escotas, estado do tecido das velas...', full: true },
+  ],
+  uploads: [
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'foto_rigging', label: 'Foto de estais / mastreação *', hint: 'Foto nítida de conexões ou terminais', accept: IMG, required: true },
+    { key: 'fotos_velas', label: 'Fotos das velas ou ferragens', hint: 'Até 4 fotos', accept: IMG, multiple: true, max: 4 },
+  ],
+}
+
+// ── PINTURA & LIMPEZA DE FUNDO ──────────────────────────────────────
+const FICHA_PINTURA: ServicoConfig = {
+  ctaNovo: 'Registrar Serviço de Pintura / Polimento',
+  fields: [
+    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Pintura de fundo e polimento do costado', required: true, full: true },
+    { key: 'status', label: 'Status de pintura/polimento', type: 'select', options: ['Excelente', 'Operacional', 'Atenção (Pintura gasta)', 'Crítico (Sem proteção/craca)'], required: true },
+    { key: 'responsavel', label: 'Responsável / Pintor', type: 'text', placeholder: 'Nome do responsável', required: true },
+
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+    { key: 'tipo_tinta_fundo', label: 'Tipo/Marca da Tinta de Fundo', type: 'text', placeholder: 'Ex: Antifouling Internacional Trilux / Cobre' },
+    { key: 'demaos_fundo', label: 'Quantidade de Demãos aplicadas', type: 'number', placeholder: 'Demãos' },
+
+    { key: 'polimento_costado', label: 'Polimento e Vitrificação do Costado?', type: 'select', options: ['Sim, costado completo', 'Apenas gelcoat limpo', 'Não realizado'], required: true },
+    { key: 'limpeza_fundo_frequencia', label: 'Limpeza periódica por mergulhador', type: 'text', placeholder: 'Ex: A cada 30 dias / Mensal' },
+    { key: 'anodos_sacrificio', label: 'Ânodos de Sacrifício (Zincos)', type: 'select', options: ['Trocados (100% novos)', 'Troca parcial', 'Não trocados (Em bom estado)'], required: true },
+
+    { key: 'valor', label: 'Custo total da pintura/polimento', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações de casco, costado e fundo', type: 'textarea', placeholder: 'Descreva a espessura da tinta antiga, se houve bolhas de osmose tratadas, estado dos eixos/hélices antes da limpeza...', full: true },
+  ],
+  uploads: [
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'foto_seco', label: 'Foto do fundo da embarcação no seco *', hint: 'Foto obrigatória do fundo e quilha antes/depois', accept: IMG, required: true },
+    { key: 'fotos_pintura', label: 'Fotos adicionais do serviço', hint: 'Até 6 fotos', accept: IMG, multiple: true, max: 6 },
+  ],
+}
+
+// ── INTERIOR, CABINES & CONFORTO ────────────────────────────────────
+const FICHA_INTERIOR: ServicoConfig = {
+  ctaNovo: 'Registrar Manutenção Interna / Conforto',
+  fields: [
+    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Higienização de estofados e revisão do ar condicionado', required: true, full: true },
+    { key: 'status', label: 'Status de conservação interna', type: 'select', options: ['Excelente', 'Bom / Operacional', 'Atenção (Pontos de mofo/desgaste)', 'Crítico'], required: true },
+    { key: 'responsavel', label: 'Responsável pelo serviço', type: 'text', placeholder: 'Nome do técnico ou marinheiro', required: true },
+
+    { key: 'data', label: 'Data do serviço', type: 'date', required: true },
+    { key: 'ar_condicionado_limpeza', label: 'Higienização dos aparelhos de Ar Condicionado', type: 'select', options: ['Sim, filtros e bandejas limpos', 'Não realizado', 'N/A'], required: true },
+    { key: 'ar_condicionado_carga', label: 'Carga de Gás e Climatização', type: 'select', options: ['Operando excelente (Gelando)', 'Fraco / Necessita carga', 'N/A'], required: true },
+
+    { key: 'dessalinizador_producao', label: 'Vazão do Dessalinizador', type: 'number', placeholder: 'Capacidade real', suffix: 'L/h' },
+    { key: 'dessalinizador_horas', label: 'Horômetro do Dessalinizador', type: 'number', placeholder: 'Horas de uso', suffix: 'h' },
+
+    { key: 'sistema_esgoto_bombas', label: 'Sistemas de Sanitário e Esgoto de Cabine', type: 'select', options: ['Todas as bombas e trituradores OK', 'Alguma bomba com falha', 'Avaria no vaso/sistema', 'N/A'], required: true },
+    { key: 'estofados_telas', label: 'Estado das Madeiras e Estofados internos', type: 'select', options: ['Perfeito estado (Sem avarias/mofo)', 'Desgaste natural de uso', 'Recomenda-se reforma/revestimento'], required: true },
+
+    { key: 'valor', label: 'Custo do serviço', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações de cabines, banheiros e cozinha de bordo', type: 'textarea', placeholder: 'Descreva a umidade interna, testes de fluxo do ar condicionado, limpeza das caixas de esgoto...', full: true },
+  ],
+  uploads: [
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'foto_interior', label: 'Foto geral das cabines / salão *', hint: 'Comprovação da organização e higiene', accept: IMG, required: true },
+    { key: 'foto_maquinas_conforto', label: 'Foto do ar condicionado / dessalinizador', hint: 'Mostrando os equipamentos vistoriados', accept: IMG },
+  ],
+}
+
 // ── ABAS TÉCNICAS ───────────────────────────────────────────────────
 // Todas as abas técnicas usam a MESMA ficha (idênticas à manutenção).
 // Diário de Bordo usa a ficha de operação (FICHA_OPERACAO).
 // Fotos e Documentação são tratadas à parte (UploadSecao), por isso
 // não entram aqui.
 export const SERVICOS: Record<string, ServicoConfig> = {
-  manutencao: FICHA_PADRAO,
+  manutencao: FICHA_MANUTENCAO,
   operacao: FICHA_OPERACAO,
-  seguro: FICHA_PADRAO,
-  motor: FICHA_PADRAO,
-  velame: FICHA_PADRAO,   // veleiro (substitui "motor")
-  eletrica: FICHA_PADRAO,
-  seguranca: FICHA_PADRAO,
-  pintura: FICHA_PADRAO,
-  interior: FICHA_PADRAO,
+  seguro: FICHA_SEGURO,
+  motor: FICHA_MOTOR,
+  casco: FICHA_CASCO,
+  velame: FICHA_VELAME,   // veleiro (substitui "motor")
+  eletrica: FICHA_ELETRICA,
+  seguranca: FICHA_SEGURANCA,
+  drenagem: FICHA_DRENAGEM,
+  pintura: FICHA_PINTURA,
+  interior: FICHA_INTERIOR,
   dossie: FICHA_PADRAO,
 }
 
 export function temFichaRica(categoriaKey: string): boolean {
   return Boolean(SERVICOS[categoriaKey])
 }
+

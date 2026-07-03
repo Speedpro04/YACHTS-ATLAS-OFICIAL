@@ -157,14 +157,21 @@ export default function Documentos() {
                   <CheckCircle size={14} className="text-[#c5a059]" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">Bloqueio de Armazenamento WORM</span>
                </div>
+               <div className="flex items-center gap-3 text-white/40">
+                  <CheckCircle size={14} className="text-[#c5a059]" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest" title="Não confunda com a geração em PDF. Uploads aqui são ilimitados.">Uploads Ilimitados de Documentos</span>
+               </div>
             </div>
           </div>
 
           <div className="bg-[#c5a059]/5 border border-[#c5a059]/10 p-8 rounded-sm">
              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] mb-4">Integridade do Cofre</h4>
-             <p className="text-white/60 text-xs leading-relaxed italic">
+             <p className="text-white/60 text-xs leading-relaxed italic mb-4">
                "Todo documento depositado no cofre do Yachts Atlas é automaticamente hasheado e travado.
                Isso garante um histórico digital à prova de adulteração para seus ativos de alto padrão."
+             </p>
+             <p className="text-[#c5a059]/80 text-[10px] font-bold uppercase tracking-widest border-t border-[#c5a059]/20 pt-4">
+               Nota: O depósito de arquivos neste cofre é ilimitado. O limite de 4 requisições anuais se aplica apenas à geração do relatório Dossiê em PDF.
              </p>
           </div>
         </div>

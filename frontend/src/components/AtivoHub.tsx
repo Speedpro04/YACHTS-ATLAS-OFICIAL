@@ -5,7 +5,8 @@ import {
   ArrowLeft, Ship, FileText, Wrench, Zap, Cpu, Shield, Paintbrush, Armchair,
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
   Award, ChevronRight, X, Download, Upload, Lock,
-  Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor
+  Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor,
+  Droplets
 } from 'lucide-react'
 import FichaServicoForm from './FichaServicoForm'
 import CoberturaFotos from './CoberturaFotos'
@@ -29,8 +30,10 @@ function categorias(tipo: Ativo['tipo']): Categoria[] {
     { key: 'seguro', titulo: 'Seguro', subtitulo: 'Apólice & Cobertura', icon: ShieldCheck },
     { key: 'manutencao', titulo: 'Manutenção', subtitulo: 'Serviços & Revisões', icon: Wrench, healthKey: 'manutencao' },
     { key: 'operacao', titulo: 'Diário de Bordo', subtitulo: 'Operação & Idas ao Mar', icon: Anchor },
+    { key: 'drenagem', titulo: 'Drenagem / Porão', subtitulo: 'Bombas & Alarmes', icon: Droplets, healthKey: 'drenagem' },
     { key: 'fotos', titulo: 'Fotos', subtitulo: 'Registro Visual', icon: Camera },
     { key: 'motor', titulo: 'Motor', subtitulo: 'Propulsão & Mecânica', icon: Zap, healthKey: 'motor' },
+    { key: 'casco', titulo: 'Casco', subtitulo: 'Estrutura & Integridade', icon: Waves, healthKey: 'casco' },
     { key: 'eletrica', titulo: 'Elétrica', subtitulo: 'Eletrônica & Navegação', icon: Cpu, healthKey: 'eletrica' },
     { key: 'seguranca', titulo: 'Segurança', subtitulo: 'Salvatagem & Proteção', icon: Shield, healthKey: 'seguranca' },
     { key: 'pintura', titulo: 'Pintura', subtitulo: 'Estética & Superfície', icon: Paintbrush, healthKey: 'pintura' },
@@ -253,6 +256,8 @@ export default function AtivoHub({ ativo, onBack }: Props) {
         <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} />
       ) : secao.key === 'documentacao' ? (
         <UploadSecao categoria={secao} ativo={ativo} onBack={() => setSecao(null)} />
+      ) : secao.key === 'dossie' ? (
+        <DossieGeradorView ativo={ativo} onBack={() => setSecao(null)} />
       ) : (
         <SecaoDetalhe categoria={secao} ativo={ativo} onBack={() => setSecao(null)} />
       )}
@@ -266,6 +271,146 @@ export default function AtivoHub({ ativo, onBack }: Props) {
           onSaved={carregarContagem}
         />
       )}
+    </div>
+  )
+}
+
+/* ===== Gerador de Dossiê - Controle de 4/Ano + Design Premium ===== */
+function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [limite, setLimite] = useState<{ allowed: boolean; remaining: number; resetDate?: Date }>({ allowed: true, remaining: 4 })
+
+  const verificarLimite = () => {
+    const key = `dossie_generations_${ativo.id}`
+    const historyRaw = localStorage.getItem(key)
+    const history: number[] = historyRaw ? JSON.parse(historyRaw) : []
+    const now = Date.now()
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000
+    const validHistory = history.filter(ts => now - ts < oneYearMs)
+
+    if (validHistory.length !== history.length) {
+      localStorage.setItem(key, JSON.stringify(validHistory))
+    }
+
+    if (validHistory.length < 4) {
+      setLimite({ allowed: true, remaining: 4 - validHistory.length })
+    } else {
+      const oldestTs = Math.min(...validHistory)
+      setLimite({ allowed: false, remaining: 0, resetDate: new Date(oldestTs + oneYearMs) })
+    }
+  }
+
+  useEffect(() => {
+    verificarLimite()
+  }, [ativo.id])
+
+  const registrarGeracao = () => {
+    const key = `dossie_generations_${ativo.id}`
+    const historyRaw = localStorage.getItem(key)
+    const history: number[] = historyRaw ? JSON.parse(historyRaw) : []
+    history.push(Date.now())
+    localStorage.setItem(key, JSON.stringify(history))
+    verificarLimite()
+  }
+
+  const gerarPdf = async () => {
+    if (!limite.allowed) return
+    setLoading(true)
+    try {
+      const url = await api.dossie.pdfUrl(ativo.id)
+      registrarGeracao()
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `dossie_${ativo.marca.toLowerCase()}_${ativo.modelo.toLowerCase()}_${ativo.id.slice(0, 8)}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (err: any) {
+      alert('Erro ao gerar dossiê: ' + (err?.message || err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+      <div className="flex items-center gap-4">
+        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center border border-white/10 rounded-sm text-white/40 hover:text-[#c5a059] hover:border-[#c5a059]/40 transition-all">
+          <ArrowLeft size={16} />
+        </button>
+        <h2 className="text-xl font-serif font-bold text-white tracking-tight flex items-center gap-3">
+          <FileCheck size={20} className="text-[#c5a059]" /> Gerar Dossiê de Custódia
+          <span className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] hidden sm:inline">· Integridade Certificada</span>
+        </h2>
+      </div>
+
+      <div className="bg-[#021431] border border-[#c5a059]/20 rounded-sm p-8 space-y-6">
+        <div className="space-y-2">
+          <h3 className="text-lg font-serif font-bold text-white">Relatório de Custódia Digital & Conformidade</h3>
+          <p className="text-white/60 text-sm leading-relaxed">
+            O Dossiê da embarcação compila todas as informações técnicas inseridas no painel técnico, diário de bordo e documentos. O documento gerado possui hash criptográfico SHA-256 e selo de conformidade com a LESTA e as normas da Marinha do Brasil (NORMAM).
+          </p>
+        </div>
+
+        {/* Quadro de Saldo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/5">
+          <div className="bg-[#010c20]/50 border border-white/5 rounded-sm p-4 text-center">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/40">Limite por Ativo</p>
+            <p className="text-2xl font-serif font-bold text-white mt-1">4 / Ano</p>
+          </div>
+          <div className="bg-[#010c20]/50 border border-white/5 rounded-sm p-4 text-center">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/40">Saldo Disponível</p>
+            <p className={`text-2xl font-serif font-bold mt-1 ${limite.remaining > 0 ? 'text-[#c5a059]' : 'text-rose-400'}`}>
+              {limite.remaining} dossiês
+            </p>
+          </div>
+          <div className="bg-[#010c20]/50 border border-white/5 rounded-sm p-4 text-center">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/40">Renovação de Limite</p>
+            <p className="text-xs font-bold text-white mt-2">
+              {limite.resetDate ? limite.resetDate.toLocaleDateString('pt-BR') : 'Sem restrições'}
+            </p>
+          </div>
+        </div>
+
+        {/* Estado da Geração */}
+        {limite.allowed ? (
+          <div className="flex flex-col items-center justify-center p-6 bg-white/[0.01] border border-dashed border-white/10 rounded-sm">
+            {loading ? (
+              <div className="text-center space-y-4">
+                <div className="animate-spin w-10 h-10 border-2 border-[#c5a059] border-t-transparent rounded-full mx-auto" />
+                <p className="text-[10px] font-black text-[#c5a059] uppercase tracking-[0.2em]">Compilando registros e assinaturas digitais...</p>
+                <p className="text-white/30 text-[9px] uppercase tracking-widest">Isso pode levar alguns instantes para consolidar fotos e vídeos.</p>
+              </div>
+            ) : (
+              <div className="text-center space-y-4 w-full">
+                <FileCheck size={48} className="mx-auto text-white/10" />
+                <button
+                  onClick={gerarPdf}
+                  className="mx-auto flex items-center gap-3 bg-gradient-to-r from-[#c5a059] to-[#b38f4d] hover:from-[#d4b36d] hover:to-[#c5a059] text-[#010c20] px-8 py-4 rounded-sm text-xs font-black uppercase tracking-[0.25em] transition-all shadow-xl hover:scale-[1.02]"
+                >
+                  <Download size={16} /> Emitir Dossiê Criptografado
+                </button>
+                <p className="text-[9px] text-white/20 uppercase tracking-widest">
+                  O download do arquivo PDF iniciará automaticamente
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-amber-500/10 border border-[#c5a059]/40 rounded-sm p-6 text-center space-y-3">
+            <AlertTriangle className="mx-auto text-[#c5a059]" size={32} />
+            <h3 className="text-white text-base font-bold font-serif">Limite Anual Atingido</h3>
+            <p className="text-white/60 text-xs max-w-sm mx-auto">
+              Esta embarcação atingiu o limite de 4 dossiês gerados por ano para evitar descontrole de versões.
+            </p>
+            {limite.resetDate && (
+              <p className="text-[#c5a059] text-xs font-black uppercase tracking-wider mt-2">
+                Próxima emissão disponível em: {limite.resetDate.toLocaleDateString('pt-BR')}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -577,23 +722,43 @@ function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativ
 
               {/* Evidências seladas (SHA-256) */}
               {Array.isArray(r.dados?.evidencias) && r.dados.evidencias.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-3 items-end">
                   {r.dados.evidencias.map((ev: any, i: number) => {
                     const isImg = /\.(png|jpe?g|webp)$/i.test(ev.nome || ev.url || '')
-                    return isImg ? (
-                      <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" title={`${ev.slot} · SHA-256 ${ev.hash?.slice(0, 12)}…`}
-                        className="group relative w-14 h-14 rounded-sm overflow-hidden border border-white/10 hover:border-[#c5a059]/50 transition-all">
-                        <img src={ev.url} alt={ev.slot} className="w-full h-full object-cover" loading="lazy" />
-                        <span className="absolute bottom-0 inset-x-0 bg-[#010c20]/80 text-[#c5a059] text-[6px] font-black uppercase tracking-wider text-center py-0.5">
-                          {ev.slot === 'peca_nova' ? 'nova' : ev.slot === 'peca_velha' ? 'velha' : 'foto'}
-                        </span>
-                      </a>
-                    ) : (
-                      <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" title={`SHA-256 ${ev.hash?.slice(0, 16)}…`}
-                        className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-2.5 py-1.5 rounded-sm hover:bg-[#c5a059]/20 transition-all">
-                        <FileText size={11} /> {ev.slot === 'nota_fiscal' ? 'Nota fiscal' : 'Doc'} <Lock size={9} />
-                      </a>
-                    )
+                    const isVid = /\.(mp4|mov|qt|webm)$/i.test(ev.nome || ev.url || '')
+                    
+                    if (isImg) {
+                      return (
+                        <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" title={`${ev.slot} · SHA-256 ${ev.hash?.slice(0, 12)}…`}
+                          className="group relative w-14 h-14 rounded-sm overflow-hidden border border-white/10 hover:border-[#c5a059]/50 transition-all shrink-0">
+                          <img src={ev.url} alt={ev.slot} className="w-full h-full object-cover" loading="lazy" />
+                          <span className="absolute bottom-0 inset-x-0 bg-[#010c20]/80 text-[#c5a059] text-[6px] font-black uppercase tracking-wider text-center py-0.5">
+                            {ev.slot === 'peca_nova' ? 'nova' : ev.slot === 'peca_velha' ? 'velha' : 'foto'}
+                          </span>
+                        </a>
+                      )
+                    } else if (isVid) {
+                      return (
+                        <div key={i} className="flex flex-col gap-1 shrink-0">
+                          <video 
+                            src={ev.url} 
+                            controls 
+                            preload="metadata"
+                            className="w-48 h-28 rounded-sm border border-white/10 hover:border-[#c5a059]/50 bg-black outline-none" 
+                          />
+                          <span className="text-[7px] text-[#c5a059] font-black uppercase tracking-widest text-center" title={`${ev.slot} · SHA-256: ${ev.hash}`}>
+                            🎥 {ev.slot}
+                          </span>
+                        </div>
+                      )
+                    } else {
+                      return (
+                        <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" title={`SHA-256 ${ev.hash?.slice(0, 16)}…`}
+                          className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-2.5 py-1.5 rounded-sm hover:bg-[#c5a059]/20 transition-all shrink-0">
+                          <FileText size={11} /> {ev.slot === 'nota_fiscal' ? 'Nota fiscal' : 'Doc'} <Lock size={9} />
+                        </a>
+                      )
+                    }
                   })}
                 </div>
               )}

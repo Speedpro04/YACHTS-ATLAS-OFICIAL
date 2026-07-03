@@ -1,6 +1,8 @@
 # PRD — Yachts Atlas
 
-> Atualizado em 2026-06-30.
+> Atualizado em 2026-07-02 (Melhorias completas do Painel Técnico e Dossiê - REV-01 implementadas).
+> Todas as abas operacionais (Manutenção, Motor, Casco, Elétrica, Velame, Segurança, Drenagem, Pintura, Interior, Seguro) agora possuem vistorias especializadas ricas em conformidade.
+> Ver detalhes das especificações em [PAINEL-TÉCNICO-MELHORIAS-REV-01.md](file:///c:/YACTHS-ATLAS-OFICIAL/PAINEL-T%C3%89CNICO-MELHORIAS-REV-01.md)
 
 ## Project Overview
 **Yachts Atlas** é uma plataforma de **custódia digital e conformidade** de ativos náuticos de alto valor. Cada embarcação ganha um **Dossiê** — registro selado e **imutável** de histórico técnico, operação, documentação e fotos — entregue **pela marina** ao proprietário/comprador/seguradora.

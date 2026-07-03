@@ -1,0 +1,85 @@
+Boa, Henrique. Analisando as 3 imagens: hoje as três abas (Motor, Seguro, e a genérica) usam o mesmo template de "Ficha de Serviço" — campos genéricos tipo "empresa/prestador", "houve troca de peça". Isso é um problema para um produto high-ticket: cada categoria tem informação técnica própria que precisa ser capturada, senão o dossiê fica raso e não justifica os $200-600.
+Aqui vai o que cada aba deveria ter, pensando em rastreabilidade, due diligence de compra/seguro, e Risk Score:
+Motor · Propulsão & Mecânica
+Identificação (crítico p/ cadeia de propriedade)
+
+Fabricante (Volvo Penta, Yamaha, Mercury, MAN, Cummins, Yanmar, Caterpillar...)
+Modelo / linha
+Número de série do motor (gravado no bloco — obrigatório, é o que amarra o motor ao ativo)
+Ano de fabricação do motor (pode ser diferente do casco, em caso de repower)
+Quantidade de motores (single/twin/triple — comum em lancha) e posição (BB/BE/centro)
+
+Especificações técnicas
+
+Tipo (diesel, gasolina, elétrico, híbrido)
+Ciclo (2 tempos / 4 tempos — essencial p/ jet ski)
+Potência (HP/CV)
+Sistema de transmissão/drive: inboard eixo, sterndrive, pod drive (IPS/Zeus), jet drive, outboard
+Sistema de arrefecimento: circuito fechado (água doce) ou aberto (água do mar)
+Tipo de combustível e capacidade do tanque
+
+Manutenção e vida útil
+
+Horímetro atual (por motor, não genérico)
+Última troca de óleo + horímetro no momento
+Última revisão geral / overhaul (data + horímetro)
+Concessionária/oficina autorizada responsável
+Garantia de fábrica — vigente até
+Contrato de manutenção programada (sim/não)
+
+Diagnóstico técnico (seu diferencial NDT entra aqui)
+
+Compressão por cilindro
+Estado de correias, mangueiras, coxins de motor
+Laudo de análise de óleo (se houver)
+Laudo de vibração/termografia (anexo)
+Estado do sistema de exaustão
+
+Hélice/Jato
+
+Tipo, passo, material (bronze/aço inox/composite)
+Estado visual (cavitação, amassados)
+
+Evidências obrigatórias
+
+Foto do número de série gravado
+Foto da sala de máquinas
+Foto do horímetro no momento da vistoria
+
+Seguro · Apólice & Cobertura
+Apólice
+
+Seguradora
+Número da apólice
+Corretora responsável (nome + CNPJ)
+Vigência (início/fim)
+Renovação automática (sim/não)
+
+Cobertura
+
+Tipo (Casco, RC, Total/Compreensiva)
+Valor segurado (Valor em Risco)
+Franquia (% e valor mínimo)
+Área de navegação coberta (costeira, oceânica, fluvial, internacional) — isso é crítico, muita apólice cai por operar fora da área contratada
+Cobertura de equipamentos anexos (tender, jet ski auxiliar, eletrônica embarcada)
+Assistência 24h incluída (sim/não)
+
+Financeiro/Jurídico
+
+Alienação fiduciária / beneficiário (se financiado)
+Status de pagamento do prêmio
+Histórico de sinistros (data, tipo, valor pago, franquia aplicada)
+
+Compliance
+
+Vistoria prévia da seguradora (laudo anexo — costuma ser pré-requisito para embarcações maiores)
+Cláusulas de exclusão relevantes (ex: motor sem manutenção documentada anula cobertura)
+Apólice em PDF anexada com hash SHA-256 (mantém o padrão de verificação que vocês já usam)
+
+
+Sobre estrutura de banco: dado que cada categoria tem campos muito diferentes entre si (Motor tem horímetro/compressão, Seguro tem apólice/franquia, Casco vai ter espessura de laminado/PT, etc.), eu recomendaria não forçar tudo numa tabela service_records genérica. Duas opções:
+
+Tabela genérica + JSONB (category_data jsonb) — mais rápido de iterar, mas perde tipagem forte e fica difícil de indexar/filtrar por campo específico.
+Uma tabela por categoria (motor_records, insurance_records, hull_records...) — mais trabalho de schema agora, mas dá tipagem, constraints e queries limpas — essencial se o Risk Score vai puxar campos específicos tipo "horímetro > X sem overhaul" como regra de negócio.
+
+Pra um produto high-ticket com Risk Score automatizado, eu iria de opção 2. Quer que eu monte o schema Supabase (motor_records e insurance_records, seguindo o padrão que vocês já usam com vessel_dossier_photos) ou prefere primeiro fechar os campos das outras abas (Casco, Elétrica, Documentação) antes de mexer no banco?
