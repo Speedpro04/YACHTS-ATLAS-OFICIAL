@@ -1,7 +1,8 @@
 # PRD — Yachts Atlas
 
-> Atualizado em 2026-07-02 (Melhorias completas do Painel Técnico e Dossiê - REV-01 implementadas).
-> Todas as abas operacionais (Manutenção, Motor, Casco, Elétrica, Velame, Segurança, Drenagem, Pintura, Interior, Seguro) agora possuem vistorias especializadas ricas em conformidade.
+> Atualizado em 2026-07-04 (Inteligência de Risco em Manutenção e Elétrica implementadas — REV-02).
+> Todas as abas operacionais possuem vistorias especializadas ricas em conformidade.
+> **Novo:** Abas Manutenção e Elétrica com classificação Preditiva/Corretiva, sistemas náuticos afetados e alertas automáticos de recorrência no Dosiê PDF.
 > Ver detalhes das especificações em [PAINEL-TÉCNICO-MELHORIAS-REV-01.md](file:///c:/YACTHS-ATLAS-OFICIAL/PAINEL-T%C3%89CNICO-MELHORIAS-REV-01.md)
 
 ## Project Overview
@@ -31,8 +32,8 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 
 ## Key Features
 1. **Dossiê de Custódia (PDF)**: gerado a partir do **painel técnico real** (`registros` + `documentos`), espelhando as categorias do painel — "nenhuma seção vazia". Layout **premium/institucional**: capa, **Marina Custodiante** (nome, CNPJ, responsável, endereço), preâmbulo legal, **Quadro de Conformidade Regulatória** (NORMAM), seções técnicas, avaliação de mercado, registro fotográfico, **Termo de Custódia e Integridade**. Header/rodapé com logo dourada + CNPJ + protocolo. *(Kit de dossiê-modelo fictício mantido em `dossie-exemplo/`, fora do versionamento.)*
-2. **Painel Técnico**: fichas seladas (logbook) por categoria — manutenção, motor, elétrica, segurança, pintura, interior, seguro — todas no mesmo molde rico, com upload de evidências (SHA-256). **Destaque: Manutenção classificada por Natureza (Preditiva vs Corretiva) e Sistema Náutico Afetado, gerando um dashboard de confiabilidade e alertas automáticos de recorrência no Dossiê.**
-3. **Diário de Bordo (Operação)**: registro rigoroso de cada **ida ao mar** — condutor + habilitação/CHA, manuseio, lançamento, horímetros saída/retorno (tempo de uso), reboque, estado/avaria — com evidências seladas. Flui para o dossiê. *(Pensado para seguradoras, cruzando com os alertas de preventiva/corretiva do painel técnico.)*
+2. **Painel Técnico**: fichas seladas (logbook) por categoria — manutenção, motor, elétrica, segurança, pintura, interior, seguro — todas no mesmo molde rico, com upload de evidências (SHA-256). **Destaque: Manutenção e Elétrica classificadas por Natureza (Preditiva vs Corretiva) e Sistema Náutico Afetado, gerando dashboard de confiabilidade e alertas automáticos de recorrência no Dosiê. Aba Elétrica com cobertura total de instrumentação: VHF DSC (NORMAM-02), EPIRB com validade e cadastro ANATEL, AIS Classe B, GPS/Ploter, Sonda, Piloto Automático, Radar e Luzes de Navegação (RIPEAM/COLREGS 1972).**
+3. **Diário de Bordo (Operação)**: registro rigoroso de cada **ida ao mar** — condutor + habilitação/CHA, manuseio, lançamento, horímetros saída/retorno (tempo de uso), reboque, estado/avaria — com evidências seladas. Flui para o dosiê. *(Pensado para seguradoras, cruzando com os alertas de preventiva/corretiva do painel técnico.)*
 4. **Imutabilidade real** (`registros`): cada registro recebe **hash SHA-256 no insert** (trigger) e o banco **bloqueia qualquer UPDATE** (append-only / anti-adulteração) — vale até para a `service_role`. *DELETE segue permitido por causa do cascade de exclusão de ativo (soft-delete pendente para imutabilidade total).*
 5. **Cofre de Documentos**: Supabase Storage, SHA-256 por arquivo, **descrição do que é cada documento** no upload.
 6. **Cobertura Fotográfica**: até **430 fotos por embarcação** (400 cobertura + 30 vitrine), geolocalizadas no upload.

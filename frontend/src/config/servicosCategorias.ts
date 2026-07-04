@@ -429,33 +429,109 @@ const FICHA_CASCO: ServicoConfig = {
 const FICHA_ELETRICA: ServicoConfig = {
   ctaNovo: 'Registrar Manutenção Elétrica / Eletrônica',
   fields: [
-    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Troca do banco de baterias de serviço', required: true, full: true },
-    { key: 'tipo', label: 'Tipo', type: 'select', options: ['Preventiva', 'Corretiva', 'Melhoria', 'Vistoria'], required: true },
-    { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
+    // ── IDENTIFICAÇÃO DO SERVIÇO ──────────────────────────────────────
+    { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Substituição do banco de baterias de serviço e calibração do VHF DSC', required: true, full: true },
+    { key: 'natureza_manutencao', label: 'Natureza da Manutenção', type: 'select', options: [
+      'Preditiva / Preventiva (Programada)',
+      'Corretiva (Reparo / Falha)'
+    ], required: true },
+    { key: 'sistema_afetado', label: 'Sistema Elétrico / Eletrônico Afetado (Norma Náutica)', type: 'select', options: [
+      'Banco de Baterias (Serviço / Partida / Casa)',
+      'Alternadores e Sistema de Carregamento',
+      'Painel Elétrico Principal e Disjuntores',
+      'Sistema de Distribuição CC (12V / 24V)',
+      'Sistema de Distribuição CA (110V / 220V / Shore Power)',
+      'Gerador de Bordo',
+      'VHF / Rádio DSC (NORMAM — Canal 16)',
+      'Sistema AIS (Identificação Automática)',
+      'GPS / Ploter / Sonda / Ecobatímetro',
+      'EPIRB / PLB (Radiobaliza — ANATEL)',
+      'Piloto Automático',
+      'Radar de Navegação',
+      'Iluminação de Navegação (Lanternas RIPEAM/COLREGS)',
+      'Sistema de Monitoramento e Instrumentação',
+      'Aterramento e Proteção Galvânica',
+      'Geral / Outro'
+    ], required: true },
+    { key: 'status', label: 'Status após o serviço', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
 
-    { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Eletricista ou técnico de eletrônica', required: true },
-    { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Empresa instaladora ou marina' },
+    { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Eletricista náutico ou técnico de eletrônica', required: true },
+    { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Empresa instaladora, revendedor autorizado ou marina' },
     { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
-
     { key: 'data', label: 'Data do serviço', type: 'date', required: true },
     { key: 'horimetro', label: 'Horímetro do motor na inspeção', type: 'number', placeholder: 'Horímetro', required: true, suffix: 'h' },
-    
-    { key: 'baterias_tensao', label: 'Tensão do banco de baterias', type: 'number', placeholder: 'Ex: 12.6 ou 24.4', suffix: 'V' },
-    { key: 'baterias_estado', label: 'Estado das Baterias', type: 'select', options: ['Excelente (Saudável)', 'Operacional', 'Atenção (Necessita Carga)', 'Crítico (Substituir)'], required: true },
 
-    { key: 'gerador_modelo', label: 'Modelo do Gerador de Bordo', type: 'text', placeholder: 'Ex: Kohler 9EFKOZD / Onan 11.5kW' },
-    { key: 'gerador_horimetro', label: 'Horímetro do Gerador', type: 'number', placeholder: 'Horas de funcionamento do gerador', suffix: 'h' },
+    // ── ELÉTRICA DE POTÊNCIA ──────────────────────────────────────────
+    { key: 'baterias_tipo', label: 'Tipo das Baterias de Serviço', type: 'select', options: ['Chumbo-Ácido (Inundada)', 'AGM (Absorvida)', 'Gel', 'Lítio (LiFePO4)', 'N/A'] },
+    { key: 'baterias_tensao', label: 'Tensão medida no banco de baterias', type: 'number', placeholder: 'Ex: 12.6 ou 25.0', suffix: 'V' },
+    { key: 'baterias_capacidade', label: 'Capacidade total do banco', type: 'number', placeholder: 'Ex: 400', suffix: 'Ah' },
+    { key: 'baterias_estado', label: 'Estado das Baterias (Laudo de Carga)', type: 'select', options: [
+      'Excelente — acima de 80% da capacidade nominal',
+      'Bom — 60 a 80% da capacidade',
+      'Atenção — 40 a 60% (próximo da troca)',
+      'Crítico — abaixo de 40% (substituir imediatamente)'
+    ], required: true },
+    { key: 'alternador_status', label: 'Status do Alternador Principal', type: 'select', options: ['Carregando corretamente', 'Abaixo da tensão ideal', 'Sem carga (defeituoso)', 'N/A'] },
+    { key: 'carregador_bordo', label: 'Carregador de Bateria de Bordo (Shore Power)', type: 'select', options: ['Operacional (Verificado)', 'Com avaria', 'Não instalado', 'N/A'] },
 
-    { key: 'equipamentos_navegacao', label: 'Equipamentos de Navegação e Eletrônicos', type: 'select', options: ['Todos Operacionais', 'Alguns com Avaria (Operacional)', 'Falha Crítica (Não utilizar)', 'Sem Eletrônicos instalados'], required: true },
-    { key: 'isolamento_galvanico', label: 'Isolamento Galvânico / Fuga de Corrente', type: 'select', options: ['Testado (Sem fuga detectada)', 'Alerta (Pequena fuga / zincos desgastando rápido)', 'Crítico (Fuga de corrente detectada)', 'Não testado'], required: true },
+    { key: 'gerador_modelo', label: 'Modelo do Gerador de Bordo', type: 'text', placeholder: 'Ex: Kohler 9EFKOZD / Onan 11.5kW / Yanmar 6kW' },
+    { key: 'gerador_horimetro', label: 'Horímetro do Gerador de Bordo', type: 'number', placeholder: 'Horas de uso do gerador', suffix: 'h' },
+    { key: 'gerador_status', label: 'Status do Gerador', type: 'select', options: ['Operacional (Testado em carga)', 'Com avaria', 'Não instalado', 'N/A'] },
 
-    { key: 'valor', label: 'Custo da manutenção', type: 'number', placeholder: '0,00', suffix: 'R$' },
-    { key: 'observacao', label: 'Observações técnicas do sistema elétrico', type: 'textarea', placeholder: 'Descreva a carga das baterias, estado dos inversores/carregadores de bateria, painel 12V/110V/220V...', full: true },
+    { key: 'painel_disjuntores', label: 'Painel Elétrico e Disjuntores', type: 'select', options: ['Todos os disjuntores operacionais', 'Disjuntor(es) com defeito / trocado(s)', 'Curto ou fiação com dano identificado', 'Substituição do painel realizada'], required: true },
+    { key: 'isolamento_galvanico', label: 'Isolamento Galvânico / Teste de Fuga de Corrente', type: 'select', options: [
+      'Testado — Sem fuga de corrente detectada',
+      'Alerta — Pequena fuga (zincos desgastando rápido)',
+      'Crítico — Fuga de corrente detectada (Risco galvânico)',
+      'Não testado nesta manutenção'
+    ], required: true },
+
+    // ── INSTRUMENTAÇÃO E ELETRÔNICOS DE NAVEGAÇÃO (NORMAM) ───────────
+    // VHF DSC — Obrigatório por NORMAM-02/DPC em embarcações de esporte e recreio
+    { key: 'vhf_dsc_marca', label: 'Marca / Modelo do VHF DSC (Obrigatório — NORMAM-02)', type: 'text', placeholder: 'Ex: ICOM IC-M506 / Standard Horizon GX2200' },
+    { key: 'vhf_dsc_mmsi', label: 'MMSI do VHF DSC (Cadastrado Anatel / GMDSS)', type: 'text', placeholder: 'Número MMSI de 9 dígitos (Ex: 710XXXXXX)' },
+    { key: 'vhf_dsc_canal16', label: 'Canal 16 monitorado e operacional? (Obrigatório por lei)', type: 'select', options: ['Sim — Canal 16 monitorado e testado', 'Não (Em reparo)', 'VHF sem DSC instalado'], required: true },
+    { key: 'vhf_dsc_status', label: 'Status do VHF DSC', type: 'select', options: ['Operacional (Testado)', 'Com avaria', 'Substituído nesta O.S.', 'N/A'] },
+
+    // EPIRB — Radiobaliza (Portaria ANATEL + NORMAM)
+    { key: 'epirb_instalada', label: 'EPIRB ou PLB instalada a bordo?', type: 'select', options: ['Sim', 'Não'], required: true },
+    { key: 'epirb_marca', label: 'Marca / Modelo da EPIRB', type: 'text', placeholder: 'Ex: McMurdo Smartfind E8 / Kannad SafePro 406', showIf: { key: 'epirb_instalada', equals: 'Sim' } },
+    { key: 'epirb_numero_serie', label: 'Número de Série da EPIRB', type: 'text', placeholder: 'Número de série (constante na etiqueta)', showIf: { key: 'epirb_instalada', equals: 'Sim' } },
+    { key: 'epirb_validade_bateria', label: 'Validade da Bateria / Próxima Manutenção', type: 'date', showIf: { key: 'epirb_instalada', equals: 'Sim' } },
+    { key: 'epirb_anatel', label: 'EPIRB cadastrada na ANATEL (Obrigatório)', type: 'select', options: ['Sim — Cadastro ANATEL vigente', 'Não — Pendente de cadastro (Irregular)', 'Em processo de cadastro'], showIf: { key: 'epirb_instalada', equals: 'Sim' } },
+
+    // AIS — Sistema de Identificação Automática
+    { key: 'ais_instalado', label: 'Sistema AIS instalado?', type: 'select', options: ['Sim — Classe B (Recreio)', 'Sim — Classe A (Comercial)', 'Não instalado'], required: true },
+    { key: 'ais_mmsi', label: 'MMSI do AIS', type: 'text', placeholder: 'Número MMSI de 9 dígitos', showIf: { key: 'ais_instalado', equals: 'Sim — Classe B (Recreio)' } },
+    { key: 'ais_status', label: 'Status do AIS', type: 'select', options: ['Transmitindo e visível no tráfego', 'Com avaria', 'Substituído nesta O.S.'], showIf: { key: 'ais_instalado', equals: 'Sim — Classe B (Recreio)' } },
+
+    // GPS / Ploter / Sonda
+    { key: 'gps_ploter_marca', label: 'Marca / Modelo do GPS / Ploter', type: 'text', placeholder: 'Ex: Garmin GPSMAP 8616 / Raymarine Axiom Pro' },
+    { key: 'gps_ploter_status', label: 'Status do GPS / Ploter', type: 'select', options: ['Operacional — Cartas atualizadas', 'Operacional — Cartas desatualizadas', 'Com avaria', 'N/A'] },
+    { key: 'sonda_ecobatimetro', label: 'Status da Sonda / Ecobatímetro', type: 'select', options: ['Operacional (Leitura de fundo precisa)', 'Com avaria', 'Não instalado'] },
+    { key: 'piloto_automatico', label: 'Status do Piloto Automático', type: 'select', options: ['Operacional (Testado em manobra)', 'Com avaria', 'Não instalado'] },
+    { key: 'radar_status', label: 'Status do Radar de Navegação', type: 'select', options: ['Operacional (Testado)', 'Com avaria', 'Não instalado'] },
+
+    // Luzes de Navegação — RIPEAM/COLREGS (Regulamento Internacional para Evitar Abalroamentos no Mar)
+    { key: 'luzes_navegacao', label: 'Luzes de Navegação (RIPEAM/COLREGS 1972)', type: 'select', options: [
+      'Todas conformes — Mastro, Bordo, Popa e Âncora operacionais',
+      'Avaria em lanterna de mastro',
+      'Avaria em lanterna de bordo (BB/BE)',
+      'Avaria em lanterna de popa',
+      'Avaria em lanterna de âncora',
+      'Múltiplas lanternas com defeito — Não navegável à noite'
+    ], required: true },
+
+    // ── VALOR E OBSERVAÇÃO ────────────────────────────────────────────
+    { key: 'valor', label: 'Custo total da manutenção / instalação', type: 'number', placeholder: '0,00', suffix: 'R$' },
+    { key: 'observacao', label: 'Observações técnicas detalhadas', type: 'textarea', placeholder: 'Descreva o estado do painel 12V/24V/110V/220V, carregadores, inversores, blindagem de cabos, testes de resistência de isolamento (Megôhmetro), condição das conexões...', full: true },
   ],
   uploads: [
-    { key: 'nota_fiscal', label: 'Nota fiscal do serviço', hint: 'PDF ou imagem', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
-    { key: 'foto_painel', label: 'Foto do painel elétrico principal *', hint: 'Foto nítida dos disjuntores e barramento', accept: IMG, required: true },
-    { key: 'laudo_eletrico', label: 'Laudo ou Relatório Técnico (PDF)', hint: 'Laudo de inspeção ou teste de baterias', accept: DOC },
+    { key: 'nota_fiscal', label: 'Nota fiscal / Ordem de Serviço', hint: 'PDF ou imagem', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
+    { key: 'foto_painel', label: 'Foto do Painel Elétrico Principal *', hint: 'Foto nítida dos disjuntores, barramento e etiquetagem', accept: IMG, required: true },
+    { key: 'foto_baterias', label: 'Foto do Banco de Baterias', hint: 'Foto mostrando as baterias e conexões', accept: IMG },
+    { key: 'foto_epirb', label: 'Foto da EPIRB (com validade visível)', hint: 'Comprova validade da radiobaliza — obrigatório para dossiê com seguradora', accept: IMG },
+    { key: 'laudo_eletrico', label: 'Laudo Técnico ou Relatório de Inspeção (PDF)', hint: 'Laudo de isolamento, teste de baterias ou vistoria elétrica', accept: DOC },
   ],
 }
 

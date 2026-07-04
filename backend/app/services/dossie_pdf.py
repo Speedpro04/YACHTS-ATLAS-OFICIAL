@@ -22,10 +22,22 @@ WHITE_DIM = colors.HexColor("#9aa0aa")
 BORDER = colors.HexColor("#1a2740")
 
 _ROTULO_EVID = {
-    "nota_fiscal": "Nota fiscal",
+    "nota_fiscal": "Nota fiscal / Ordem de Serviço",
     "peca_nova": "Foto da peça nova",
     "peca_velha": "Foto da peça velha",
     "fotos_servico": "Foto do serviço",
+    # Elétrica / Eletrônica
+    "foto_painel": "Painel Elétrico Principal",
+    "foto_baterias": "Banco de Baterias",
+    "foto_epirb": "EPIRB — Radiobaliza (validade)",
+    "laudo_eletrico": "Laudo Técnico Elétrico",
+    # Casco
+    "foto_fundo_externo": "Fundo Externo / Casco no Seco",
+    "video_estrutura_interna": "Vídeo — Estrutura Interna (Porão/Cavernas)",
+    "video_sala_maquinas": "Vídeo — Sala de Máquinas",
+    "video_quilha_externa": "Vídeo — Quilha e Leme no Seco",
+    # Manutenção
+    "laudo_tecnico": "Laudo Técnico",
 }
 
 # Títulos náuticos das categorias ricas do dossiê (dossieCategorias.ts)
@@ -231,27 +243,71 @@ def gerar_pdf_dossie(dados: dict) -> bytes:
         categorias_tratadas.add(sec.get("categoria"))
         story.append(_section_title(f"{n:02d} — {sec.get('titulo') or 'Registros Técnicos'}"))
         
-        if sec.get("categoria") == "manutencao":
+        categoria_atual = sec.get("categoria", "")
+        if categoria_atual in ("manutencao", "eletrica"):
+            label_cat = "Manutenção" if categoria_atual == "manutencao" else "Elétrica / Eletrônica"
             total_m = len(fichas)
-            preditivas = sum(1 for f in fichas if f.get("campos", {}).get("natureza_manutencao") and "Preditiva" in f.get("campos", {}).get("natureza_manutencao", ""))
-            corretivas = total_m - preditivas
+            preditivas = sum(
+                1 for f in fichas
+                if "Preditiva" in (f.get("campos") or {}).get("natureza_manutencao", "")
+            )
             pct_pred = round((preditivas / total_m) * 100) if total_m > 0 else 0
-            
-            story.append(Paragraph(f"<b>Indicador de Saúde da Manutenção:</b> {pct_pred}% Preventiva Programada / {100-pct_pred}% Corretiva", S["body"]))
-            
-            # Verificação de Recorrência
-            sistemas_corretivos = {}
+            pct_corr = 100 - pct_pred
+
+            # ── Indicador de Saúde ────────────────────────────────────
+            cor_ind = colors.HexColor("#2ecc71") if pct_pred >= 70 else (
+                      colors.HexColor("#f39c12") if pct_pred >= 40 else
+                      colors.HexColor("#ff5555"))
+            story.append(Paragraph(
+                f"<b>Indicador de Saúde — {label_cat}:</b>  "
+                f"{pct_pred}% Preventiva / Programada  ·  {pct_corr}% Corretiva  "
+                f"({total_m} registro(s) selado(s) com SHA-256)",
+                ParagraphStyle("HealthInd", parent=S["body"], textColor=cor_ind)
+            ))
+
+            # ── Alertas de Recorrência por Sistema ───────────────────
+            sistemas_corretivos: dict = {}
             for f in fichas:
                 cmps = f.get("campos") or {}
-                nat = cmps.get("natureza_manutencao", "")
+                nat  = cmps.get("natureza_manutencao", "")
                 sist = cmps.get("sistema_afetado")
                 if "Corretiva" in nat and sist:
                     sistemas_corretivos[sist] = sistemas_corretivos.get(sist, 0) + 1
-            
+
+            ALERTA = ParagraphStyle("Alerta", parent=S["body"],
+                                    textColor=colors.HexColor("#ff5555"))
             for sist, count in sistemas_corretivos.items():
                 if count > 1:
-                    story.append(Paragraph(f"<b>Atenção — Histórico Recorrente de Corretiva:</b> O sistema <i>{sist}</i> apresentou {count} manutenções corretivas. Recomenda-se auditoria detalhada do componente.", ParagraphStyle("Warning", parent=S["body"], textColor=colors.HexColor("#ff5555"))))
-            
+                    story.append(Paragraph(
+                        f"<b>⚠ Atenção — Recorrência Corretiva:</b> O sistema "
+                        f"<i>{sist}</i> registrou {count} falhas corretivas. "
+                        "Recomenda-se auditoria técnica detalhada deste componente.",
+                        ALERTA
+                    ))
+
+            # ── Conformidade NORMAM para aba Elétrica ─────────────────
+            if categoria_atual == "eletrica":
+                for f in fichas:
+                    cmps = f.get("campos") or {}
+                    # Alerta EPIRB sem cadastro ANATEL
+                    if cmps.get("epirb_instalada") == "Sim" and \
+                       "Pendente" in (cmps.get("epirb_anatel") or ""):
+                        story.append(Paragraph(
+                            "<b>⚠ NORMAM / ANATEL:</b> EPIRB instalada, mas <b>cadastro ANATEL pendente</b>. "
+                            "Embarcação em situação irregular — regularize antes da próxima saída ao mar.",
+                            ALERTA
+                        ))
+                        break
+                    # Alerta VHF Canal 16
+                    canal16 = cmps.get("vhf_dsc_canal16") or ""
+                    if "Não" in canal16:
+                        story.append(Paragraph(
+                            "<b>⚠ NORMAM-02/DPC:</b> Canal 16 VHF DSC não monitorado. "
+                            "Monitoramento obrigatório por lei durante toda a navegação.",
+                            ALERTA
+                        ))
+                        break
+
             story.append(Spacer(1, 12))
 
         for m in fichas:
