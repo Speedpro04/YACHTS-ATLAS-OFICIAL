@@ -149,6 +149,7 @@ def _render_ficha(story, m: dict):
     else:
         ficha = _info_table([
             ("Data", m.get("data")), ("Tipo", m.get("tipo")),
+            ("Natureza", c.get("natureza_manutencao")), ("Sistema Afetado", c.get("sistema_afetado")),
             ("Responsável", m.get("resp")), ("Prestador", m.get("prestador")),
             ("CNPJ", m.get("cnpj")), ("Local", m.get("local")),
             ("Horímetro (motor)", f"{m.get('horimetro')} h" if m.get("horimetro") else None),
@@ -229,6 +230,30 @@ def gerar_pdf_dossie(dados: dict) -> bytes:
             continue
         categorias_tratadas.add(sec.get("categoria"))
         story.append(_section_title(f"{n:02d} — {sec.get('titulo') or 'Registros Técnicos'}"))
+        
+        if sec.get("categoria") == "manutencao":
+            total_m = len(fichas)
+            preditivas = sum(1 for f in fichas if f.get("campos", {}).get("natureza_manutencao") and "Preditiva" in f.get("campos", {}).get("natureza_manutencao", ""))
+            corretivas = total_m - preditivas
+            pct_pred = round((preditivas / total_m) * 100) if total_m > 0 else 0
+            
+            story.append(Paragraph(f"<b>Indicador de Saúde da Manutenção:</b> {pct_pred}% Preventiva Programada / {100-pct_pred}% Corretiva", S["body"]))
+            
+            # Verificação de Recorrência
+            sistemas_corretivos = {}
+            for f in fichas:
+                cmps = f.get("campos") or {}
+                nat = cmps.get("natureza_manutencao", "")
+                sist = cmps.get("sistema_afetado")
+                if "Corretiva" in nat and sist:
+                    sistemas_corretivos[sist] = sistemas_corretivos.get(sist, 0) + 1
+            
+            for sist, count in sistemas_corretivos.items():
+                if count > 1:
+                    story.append(Paragraph(f"<b>Atenção — Histórico Recorrente de Corretiva:</b> O sistema <i>{sist}</i> apresentou {count} manutenções corretivas. Recomenda-se auditoria detalhada do componente.", ParagraphStyle("Warning", parent=S["body"], textColor=colors.HexColor("#ff5555"))))
+            
+            story.append(Spacer(1, 12))
+
         for m in fichas:
             _render_ficha(story, m)
         n += 1

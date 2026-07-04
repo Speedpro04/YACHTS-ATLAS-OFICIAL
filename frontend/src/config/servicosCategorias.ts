@@ -103,16 +103,26 @@ const FICHA_MANUTENCAO: ServicoConfig = {
   ctaNovo: 'Registrar Manutenção / Troca de Consumíveis',
   fields: [
     { key: 'servico', label: 'Serviço executado', type: 'text', placeholder: 'Ex: Troca de óleo e filtros do motor BB', required: true, full: true },
-    { key: 'tipo_servico', label: 'Tipo de Serviço', type: 'select', options: [
+    { key: 'natureza_manutencao', label: 'Natureza da Manutenção', type: 'select', options: ['Preditiva / Preventiva (Programada)', 'Corretiva (Reparo / Falha)'], required: true },
+    { key: 'sistema_afetado', label: 'Sistema Afetado (Norma Náutica)', type: 'select', options: [
+      'Propulsão e Linha de Eixo',
+      'Geração e Distribuição de Energia (Elétrica/Gerador)',
+      'Casco, Estrutura e Apêndices',
+      'Faina de Porão (Bombas / Hidráulica)',
+      'Salvatagem e Equipamentos de Segurança',
+      'Refrigeração e Climatização',
+      'Eletrônicos e Navegação',
+      'Geral / Outro'
+    ], required: true },
+    { key: 'tipo_servico', label: 'Ação Técnica / Tipo', type: 'select', options: [
       'Troca de Óleo e Filtros',
       'Troca de Filtros (sem óleo)',
       'Troca de Impeller (Bomba de Água do Mar)',
       'Troca de Zincos Anódicos',
       'Troca de Fluido de Arrefecimento',
       'Revisão Geral / Overhaul',
-      'Preventiva Programada',
-      'Corretiva',
-      'Emergencial',
+      'Substituição de Componente',
+      'Limpeza / Descarbonização',
       'Outro'
     ], required: true },
     { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
