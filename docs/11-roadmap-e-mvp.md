@@ -82,6 +82,18 @@ O MVP deve ter o suficientes para:
 | AI suggestions | Recomendações |
 | Marketplace | Integração futura |
 
+### 2.4 V4: Expansão Internacional (3 Versões)
+
+Multi-região desde a arquitetura — mesmo DNA (custódia selada + dossiê imutável), 3 sistemas independentes. Portas de entrada já no header (`Latan-Atlas · USA-Atlas · Europa-Atlas`).
+
+| Versão | Mercado | Idioma | Subdomínio | Banco | Conformidade | Repositório |
+|---|---|---|---|---|---|---|
+| **Latan-Atlas** | América Latina | Espanhol (LatAm) | próprio | novo | normas por país | separado |
+| **USA-Atlas** | EUA | Inglês americano | próprio | novo | USCG / ABYC / NMMA | separado |
+| **Europa-Atlas** | Europa | Inglês britânico | próprio | novo | RCD (2013/53/UE) / ISO | separado |
+
+**Faseamento:** (1) deploy/validação da versão BR; (2) cada versão em repositório separado, banco Supabase próprio e subdomínio dedicado; (3) tradução do RAG/normas + conformidade regional; (4) ligar cada botão do header ao seu subdomínio. Ver PRD → *Expansão Internacional (3 Versões)*.
+
 ---
 
 ## 3. Cronograma Visual
