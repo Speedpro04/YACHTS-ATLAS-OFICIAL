@@ -43,9 +43,11 @@ CATEGORIAS_TECNICAS: list[tuple[str, str]] = [
     ("operacao", "Diário de Bordo — Operações & Idas ao Mar"),
     ("motor", "Motorização & Propulsão"),
     ("velame", "Mastro, Rigging & Velame"),
+    ("casco", "Casco & Integridade Estrutural"),
+    ("drenagem", "Drenagem, Porão & Esgotamento"),
     ("eletrica", "Sistema Elétrico & Eletrônica de Navegação"),
     ("seguranca", "Segurança & Salvatagem"),
-    ("pintura", "Casco, Pintura & Acabamento"),
+    ("pintura", "Pintura & Acabamento"),
     ("interior", "Interior & Acomodações"),
     ("seguro", "Seguro & Cobertura"),
 ]

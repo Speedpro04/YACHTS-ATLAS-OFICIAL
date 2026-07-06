@@ -18,36 +18,37 @@ from typing import Any, Optional
 from app.core.supabase import get_supabase_admin
 
 
-# Categorias-núcleo (espelham registros_checklists.CategoriaChecklist)
+# Taxonomia REAL do painel (servicosCategorias.ts / AtivoHub.categorias()).
+# A `categoria` do registro JÁ É a chave de saúde (balde) — fonte única.
+# Manter SEMPRE em concordância com o painel e o dossiê
+# (dossie_data.CATEGORIAS_TECNICAS).
 CORE_CATEGORIAS = [
-    "documentacao_legal",
-    "motor_propulsao",
-    "manutencao_mecanica",
-    "eletrica_eletronica",
-    "seguranca_salvatagem",
-    "integridade_estrutural",
-    "pintura_acabamento",
-    "rastreabilidade_servicos",
-    "interior_acomodacoes",
-    "navegabilidade",
+    "documentacao",
+    "manutencao",
+    "motor",          # veleiro grava "velame" (normalizado via CAT_ALIAS)
+    "eletrica",
+    "seguranca",
+    "casco",
+    "drenagem",
+    "pintura",
+    "interior",
+    "seguro",
 ]
 
-# Mapeia categoria do registro -> "balde" de saúde do painel visual
-CAT_TO_HEALTH = {
-    "documentacao_legal": "documentacao",
-    "navegabilidade": "documentacao",
-    "motor_propulsao": "motor",
-    "manutencao_mecanica": "manutencao",
-    "rastreabilidade_servicos": "manutencao",
-    "integridade_estrutural": "manutencao",
-    "eletrica_eletronica": "eletrica",
-    "seguranca_salvatagem": "seguranca",
-    "pintura_acabamento": "pintura",
-    "interior_acomodacoes": "interior",
-}
+# Chaves alternativas que caem no mesmo balde (ex.: veleiro).
+CAT_ALIAS = {"velame": "motor"}
 
-HEALTH_BUCKETS = ["documentacao", "manutencao", "motor", "eletrica",
-                  "seguranca", "pintura", "interior", "dossie"]
+# Baldes de saúde consumidos pelo painel (AssetHealthDashboard + dots do AtivoHub).
+HEALTH_BUCKETS = ["documentacao", "manutencao", "motor", "casco", "drenagem",
+                  "eletrica", "seguranca", "pintura", "interior", "dossie"]
+
+
+def _balde(categoria: Optional[str]) -> Optional[str]:
+    """Categoria do registro -> balde de saúde (identidade + aliases)."""
+    if not categoria:
+        return None
+    cat = CAT_ALIAS.get(categoria, categoria)
+    return cat if cat in HEALTH_BUCKETS else None
 
 STATUS_OK = {"registrado", "concluido"}
 STATUS_ALERTA = {"atencao", "pendente"}
@@ -65,7 +66,7 @@ def _health_map(registros: list[dict], score: int, docs_verificados: int) -> dic
     """Status (ok/warning/critical/na/info) por categoria do painel."""
     por_balde: dict[str, list[str]] = {b: [] for b in HEALTH_BUCKETS}
     for r in registros:
-        balde = CAT_TO_HEALTH.get(r.get("categoria"))
+        balde = _balde(r.get("categoria"))
         if balde:
             por_balde[balde].append(r.get("status") or "registrado")
 
@@ -99,13 +100,16 @@ def calcular_saude_ativo(ativo_id: str, persistir: bool = True) -> dict[str, Any
         or []
     )
 
-    cats_presentes = {r.get("categoria") for r in registros if r.get("categoria")}
+    cats_presentes = {
+        CAT_ALIAS.get(r.get("categoria"), r.get("categoria"))
+        for r in registros if r.get("categoria")
+    }
 
     # 50% — abrangência
     abrangencia = len([c for c in CORE_CATEGORIAS if c in cats_presentes]) / len(CORE_CATEGORIAS)
 
     # 25% — profundidade de manutenção (registros de motor/mecânica/serviços)
-    manut_cats = {"motor_propulsao", "manutencao_mecanica", "rastreabilidade_servicos"}
+    manut_cats = {"manutencao", "motor", "velame"}
     manut_count = len([r for r in registros if r.get("categoria") in manut_cats])
     profundidade = min(1.0, manut_count / 6.0)
 
@@ -117,7 +121,7 @@ def calcular_saude_ativo(ativo_id: str, persistir: bool = True) -> dict[str, Any
     docs_score = volume_docs * (0.5 + 0.5 * taxa_verif)  # volume conta mesmo sem verificação
 
     # 10% — integridade estrutural (laudo de casco/estrutura presente)
-    estrutural = 1.0 if "integridade_estrutural" in cats_presentes else 0.0
+    estrutural = 1.0 if "casco" in cats_presentes else 0.0
 
     score_frac = (
         0.50 * abrangencia
