@@ -36,7 +36,7 @@ const FAQS = [
   },
   {
     q: 'Sou uma marina. Como funciona a parceria?',
-    a: 'A marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Solicite o credenciamento pelo programa de Marina Parceira.',
+    a: 'A marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
   },
 ]
 
@@ -467,6 +467,18 @@ export default function LandingPage() {
                 <p className="text-white/70 text-sm leading-relaxed">
                   Parceiros fundadores aprovados recebem condicao comercial dedicada:
                   receita de dossies em modelo de retencao integral por 18 meses, conforme contrato.
+                </p>
+              </div>
+
+              <div className="mt-4 p-6 border border-white/10 bg-white/[0.02] rounded-sm">
+                <p className="text-white text-[10px] font-black uppercase tracking-[0.25em] mb-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] inline-block"></span>
+                  Dossiês Inclusos por Embarcação
+                </p>
+                <p className="text-white/60 text-sm leading-relaxed">
+                  Cada embarcação registrada na rede Atlas conta com{' '}
+                  <span className="text-[#c5a059] font-semibold">4 dossiês por ano</span>, inclusos na parceria — emitidos conforme demanda do proprietário. Dossiês adicionais além do quarto estão disponíveis por{' '}
+                  <span className="text-white/80 font-semibold">US$ 150 por dossiê</span>.
                 </p>
               </div>
 
