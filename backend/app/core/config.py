@@ -126,7 +126,9 @@ class Settings(BaseSettings):
         return _parse_allowed_origins(self.ALLOWED_ORIGINS or None)
 
     class Config:
-        env_file = ".env"
+        # Caminho absoluto (backend/.env) — independe do diretório de trabalho
+        # do processo que sobe o uvicorn (ex.: rodar a partir da raiz do repo).
+        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
         case_sensitive = True
         extra = "ignore"
 

@@ -86,16 +86,23 @@ const DOSSIE_EXTRA_ICONS: Record<string, typeof Ship> = {
 interface Props {
   ativo: Ativo
   onBack: () => void
+  /** Portal do Proprietário: mesmo painel da marina, mas 100% visualização — zero preenchimento. */
+  readOnly?: boolean
+  /** Esconde o banner interno (usado quando a página já tem seu próprio cabeçalho, ex. Portal do Proprietário). */
+  hideHeader?: boolean
 }
 
-export default function AtivoHub({ ativo, onBack }: Props) {
+export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader = false }: Props) {
   const [secao, setSecao] = useState<Categoria | null>(null)
   const [dossieAberta, setDossieAberta] = useState<DossieCat | null>(null)
   const [contagem, setContagem] = useState<Record<string, number>>({})
-  const cats = categorias(ativo.tipo)
+  // Somente leitura (Portal do Proprietário): sem card de Dossiê (emissão é ação
+  // exclusiva da marina) e sem a seção "Dossiê Completo & Laudos" (só tem formulário
+  // de criação, nenhuma visualização de registros existentes).
+  const cats = categorias(ativo.tipo).filter((c) => !readOnly || c.key !== 'dossie')
   const classif = CLASSIF[ativo.classificacao] || CLASSIF.bronze
   const comprimento = ativo.comprimento_pes || 0
-  const dossieExtra = DOSSIE_CATS.filter((c) => DOSSIE_EXTRA_IDS.includes(c.id) && comprimento >= c.porteMinimoPes)
+  const dossieExtra = readOnly ? [] : DOSSIE_CATS.filter((c) => DOSSIE_EXTRA_IDS.includes(c.id) && comprimento >= c.porteMinimoPes)
 
   // Contagem real de registros por categoria (dá vida aos cards)
   const carregarContagem = async () => {
@@ -118,6 +125,7 @@ export default function AtivoHub({ ativo, onBack }: Props) {
   return (
     <div className="animate-in fade-in slide-in-from-right-6 duration-500 space-y-8">
       {/* ===== BLOCO DE CIMA — Dados da embarcação ===== */}
+      {!hideHeader && (
       <div className="relative rounded-sm overflow-hidden border border-white/10">
         <div className="absolute inset-0">
           <img src="/boat-picture-light.jpg" alt="" className="w-full h-full object-cover opacity-25" />
@@ -159,6 +167,7 @@ export default function AtivoHub({ ativo, onBack }: Props) {
           </div>
         </div>
       </div>
+      )}
 
       {/* ===== BLOCO DE BAIXO — Painel Técnico (cards) ===== */}
       {!secao ? (
@@ -253,13 +262,13 @@ export default function AtivoHub({ ativo, onBack }: Props) {
           )}
         </div>
       ) : secao.key === 'fotos' ? (
-        <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} />
+        <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
       ) : secao.key === 'documentacao' ? (
-        <UploadSecao categoria={secao} ativo={ativo} onBack={() => setSecao(null)} />
+        <UploadSecao categoria={secao} ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
       ) : secao.key === 'dossie' ? (
         <DossieGeradorView ativo={ativo} onBack={() => setSecao(null)} />
       ) : (
-        <SecaoDetalhe categoria={secao} ativo={ativo} onBack={() => setSecao(null)} />
+        <SecaoDetalhe categoria={secao} ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
       )}
 
       {dossieAberta && (
@@ -416,7 +425,7 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
 }
 
 /* ===== Documentação — UPLOAD real (Supabase Storage), cofre de documentos ===== */
-function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo: Ativo; onBack: () => void }) {
+function UploadSecao({ categoria, ativo, onBack, readOnly = false }: { categoria: Categoria; ativo: Ativo; onBack: () => void; readOnly?: boolean }) {
   const Icon = categoria.icon
   const [docs, setDocs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -470,7 +479,8 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
         </h2>
       </div>
 
-      {/* Descrição do que está sendo catalogado (opcional, salva com o arquivo) */}
+      {/* Descrição do que está sendo catalogado (opcional, salva com o arquivo) — some no modo visualização */}
+      {!readOnly && (
       <div className="space-y-1.5">
         <label className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40">O que é este documento?</label>
         <input
@@ -482,7 +492,9 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
         />
         <p className="text-[9px] text-white/25 uppercase tracking-widest">Salva junto com o(s) arquivo(s) que você enviar a seguir.</p>
       </div>
+      )}
 
+      {!readOnly && (
       <label className={`block border border-dashed rounded-sm p-10 text-center transition-all ${
         uploading ? 'border-[#c5a059]/40 bg-[#c5a059]/5 pointer-events-none cursor-default'
         : 'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'}`}>
@@ -500,6 +512,7 @@ function UploadSecao({ categoria, ativo, onBack }: { categoria: Categoria; ativo
           </>
         )}
       </label>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12"><div className="animate-spin w-8 h-8 border-2 border-[#c5a059] border-t-transparent rounded-full" /></div>
@@ -542,7 +555,7 @@ const STATUS_COR: Record<string, string> = {
   atencao: 'text-rose-400 border-rose-400/30 bg-rose-400/10',
 }
 
-function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativo: Ativo; onBack: () => void }) {
+function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categoria: Categoria; ativo: Ativo; onBack: () => void; readOnly?: boolean }) {
   const Icon = categoria.icon
   const isManut = categoria.key === 'manutencao'
   const cfg = SERVICOS[categoria.key]
@@ -613,13 +626,15 @@ function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativ
             <span className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] hidden sm:inline">· {categoria.subtitulo}</span>
           </h2>
         </div>
+        {!readOnly && (
         <button onClick={() => setShowForm((s) => !s)} className="flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-6 py-3 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] transition-all">
           {showForm ? <X size={15} /> : <Plus size={15} />}
           {showForm ? 'Fechar' : isManut ? 'Nova Ordem de Serviço' : 'Adicionar Registro'}
         </button>
+        )}
       </div>
 
-      {showForm && cfg && (
+      {!readOnly && showForm && cfg && (
         <FichaServicoForm
           categoriaKey={categoria.key}
           categoriaTitulo={categoria.titulo}
@@ -630,7 +645,7 @@ function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativ
         />
       )}
 
-      {showForm && !cfg && (
+      {!readOnly && showForm && !cfg && (
         <form onSubmit={salvar} className="bg-[#021431] border border-white/10 rounded-sm p-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -686,7 +701,9 @@ function SecaoDetalhe({ categoria, ativo, onBack }: { categoria: Categoria; ativ
         <div className="flex flex-col items-center justify-center text-center py-16 bg-white/[0.01] border border-dashed border-white/10 rounded-sm">
           <Icon size={40} strokeWidth={1} className="text-white/10 mb-4" />
           <p className="text-white/50 text-sm font-bold uppercase tracking-[0.2em]">Nada registrado ainda</p>
-          <p className="text-white/25 text-xs mt-2">Clique em "{isManut ? 'Nova Ordem de Serviço' : 'Adicionar Registro'}" para criar o primeiro.</p>
+          {!readOnly && (
+            <p className="text-white/25 text-xs mt-2">Clique em "{isManut ? 'Nova Ordem de Serviço' : 'Adicionar Registro'}" para criar o primeiro.</p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

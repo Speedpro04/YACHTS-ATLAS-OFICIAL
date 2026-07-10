@@ -7,7 +7,7 @@ import { obterGeo } from '../utils/geo'
 
 /* Cobertura fotográfica do dossiê — galeria organizada por categoria.
    Barra geral (total/400) + barra por categoria (count/mínimo). */
-export default function CoberturaFotos({ ativo, onBack }: { ativo: Ativo; onBack: () => void }) {
+export default function CoberturaFotos({ ativo, onBack, readOnly = false }: { ativo: Ativo; onBack: () => void; readOnly?: boolean }) {
   const [fotos, setFotos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploadingCat, setUploadingCat] = useState<string | null>(null)
@@ -136,6 +136,7 @@ export default function CoberturaFotos({ ativo, onBack }: { ativo: Ativo; onBack
                       />
                     </div>
                   </div>
+                  {!readOnly && (
                   <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.15em] border transition-all ${
                     lotado ? 'border-white/10 text-white/20 cursor-not-allowed' :
                     subindo ? 'border-[#c5a059]/40 bg-[#c5a059]/5 text-[#c5a059] cursor-default' :
@@ -145,6 +146,7 @@ export default function CoberturaFotos({ ativo, onBack }: { ativo: Ativo; onBack
                     {subindo ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                     {subindo ? 'Enviando' : 'Adicionar'}
                   </label>
+                  )}
                 </div>
 
                 {arr.length > 0 && (

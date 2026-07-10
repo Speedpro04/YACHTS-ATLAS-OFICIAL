@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Mail, Lock, KeyRound, ArrowLeft, ArrowRight, Shield, Sparkles, Loader2 } from 'lucide-react'
+import { Mail, Lock, KeyRound, ArrowLeft, ArrowRight, Shield, Sparkles, Loader2, Eye, EyeOff } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../services/api'
 
@@ -15,6 +15,8 @@ export default function LoginProprietario() {
   const [erro, setErro] = useState('')
   const [foco, setFoco] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [verSenha, setVerSenha] = useState(false)
+  const [verPalavra, setVerPalavra] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -65,12 +67,24 @@ export default function LoginProprietario() {
     setEtapa('credenciais')
   }
 
-  const inputClass = (campo: string) =>
-    `w-full bg-white/5 border rounded-sm py-5 pl-12 pr-4 text-white outline-none transition-all duration-300 placeholder:text-white/10 text-sm ${
+  const inputClass = (campo: string, comOlho = false) =>
+    `w-full bg-white/5 border rounded-sm py-5 pl-12 ${comOlho ? 'pr-12' : 'pr-4'} text-white outline-none transition-all duration-300 placeholder:text-white/10 text-sm ${
       foco === campo
         ? 'border-[#c5a059] bg-white/[0.08] shadow-[0_0_20px_rgba(197,160,89,0.1)]'
         : 'border-white/10 hover:border-white/20'
     }`
+
+  const botaoOlho = (visivel: boolean, onToggle: () => void) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      tabIndex={-1}
+      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-[#c5a059] transition-colors"
+      aria-label={visivel ? 'Ocultar senha' : 'Mostrar senha'}
+    >
+      {visivel ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  )
 
   return (
     <div className={`min-h-screen bg-[#010c20] flex flex-col md:flex-row font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
@@ -155,7 +169,8 @@ export default function LoginProprietario() {
               <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Senha</label>
               <div className="relative">
                 <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${foco === 'senha' ? 'text-[#c5a059]' : 'text-white/20'}`} size={18} />
-                <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} onFocus={() => setFoco('senha')} onBlur={() => setFoco(null)} className={inputClass('senha')} placeholder="••••••••" required />
+                <input type={verSenha ? 'text' : 'password'} value={senha} onChange={(e) => setSenha(e.target.value)} onFocus={() => setFoco('senha')} onBlur={() => setFoco(null)} className={inputClass('senha', true)} placeholder="••••••••" required />
+                {botaoOlho(verSenha, () => setVerSenha((v) => !v))}
               </div>
             </div>
             <button type="submit" disabled={loading} className={`w-full py-5 mt-4 rounded-sm text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${loading ? 'bg-[#c5a059]/50 cursor-not-allowed' : 'bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] hover:-translate-y-0.5'}`}>
@@ -171,7 +186,8 @@ export default function LoginProprietario() {
               <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Palavra Secreta</label>
               <div className="relative">
                 <KeyRound className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${foco === 'palavra' ? 'text-[#c5a059]' : 'text-white/20'}`} size={18} />
-                <input type="password" value={palavra} onChange={(e) => setPalavra(e.target.value)} onFocus={() => setFoco('palavra')} onBlur={() => setFoco(null)} className={inputClass('palavra')} placeholder="sua palavra secreta" required autoFocus />
+                <input type={verPalavra ? 'text' : 'password'} value={palavra} onChange={(e) => setPalavra(e.target.value)} onFocus={() => setFoco('palavra')} onBlur={() => setFoco(null)} className={inputClass('palavra', true)} placeholder="sua palavra secreta" required autoFocus />
+                {botaoOlho(verPalavra, () => setVerPalavra((v) => !v))}
               </div>
             </div>
             <button type="submit" disabled={loading} className={`w-full py-5 mt-4 rounded-sm text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${loading ? 'bg-[#c5a059]/50 cursor-not-allowed' : 'bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] hover:-translate-y-0.5'}`}>
