@@ -51,19 +51,29 @@ export default function PortalProprietario() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#010c20] to-[#021431] font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] animate-in fade-in duration-1000">
 
-      {/* Premium Header */}
+      {/* Premium Header — responsivo (celular do proprietário até desktop) */}
       <div className="border-b border-white/10 bg-[#010c20]/90 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <img src="/logo-transparent.png" alt="Yachts Atlas" className="h-[220px]" />
-            <div className="hidden md:flex items-center gap-3 pl-6 border-l border-white/10">
-              <Shield size={16} className="text-[#c5a059]" />
-              <span className="text-[16px] font-black uppercase tracking-[0.3em] text-white/40">Portal do Proprietário</span>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5 flex items-center justify-between gap-3">
+          {/* Logo (deslocada 15px para a esquerda no desktop) */}
+          <img
+            src="/logo-transparent.png"
+            alt="Yachts Atlas"
+            className="h-14 sm:h-20 md:h-[220px] w-auto object-contain flex-shrink-0 md:-ml-[27px]"
+          />
+
+          {/* Título — o TEXTO fica no centro exato do header; o escudo pende à esquerda sem deslocar o texto */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="relative flex items-center justify-center">
+              <Shield size={16} className="text-[#c5a059] hidden sm:block absolute right-full mr-3" />
+              <span className="text-[9px] sm:text-[13px] md:text-[16px] font-black uppercase tracking-normal sm:tracking-[0.3em] text-white/40 whitespace-nowrap">
+                Portal do Proprietário
+              </span>
             </div>
           </div>
+
           <button
             onClick={() => navigate('/acesso-proprietario')}
-            className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-white transition-colors"
+            className="text-[12px] font-black uppercase tracking-widest text-white/30 hover:text-white transition-colors flex-shrink-0 whitespace-nowrap"
           >
             Sair do Cofre
           </button>

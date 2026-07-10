@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 // Portas de entrada dos 3 mercados internacionais (futuros subdomínios + banco + idioma).
 // Fonte única — usada no menu desktop e no menu mobile.
 const REGIOES = [
-  { label: 'Latan-Atlas', regiao: 'latam' },
+  { label: 'Latam-Atlas', regiao: 'latam' },
   { label: 'USA-Atlas', regiao: 'usa' },
   { label: 'Europa-Atlas', regiao: 'europa' },
 ] as const
