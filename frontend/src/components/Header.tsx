@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next'
 // Portas de entrada dos 3 mercados internacionais (futuros subdomínios + banco + idioma).
 // Fonte única — usada no menu desktop e no menu mobile.
 const REGIOES = [
-  { label: 'Latam-Atlas', regiao: 'latam' },
-  { label: 'USA-Atlas', regiao: 'usa' },
-  { label: 'Europa-Atlas', regiao: 'europa' },
+  { label: 'Latam-Atlas', regiao: 'latam', href: 'https://latam.yachtsatlas.online' },
+  { label: 'US-Atlas', regiao: 'usa', href: 'https://us.yachtsatlas.online/' },
+  { label: 'EU-Atlas', regiao: 'europa', href: 'https://eu.yachtsatlas.online/' },
 ] as const
 
 export default function Header() {
@@ -64,14 +64,16 @@ export default function Header() {
           {/* Portas de entrada dos 3 mercados internacionais (futuros subdomínios/locales) */}
           <div className="flex items-center gap-4 mt-[10px]">
             {REGIOES.map((b) => (
-              <button
+              <a
                 key={b.regiao}
-                type="button"
+                href={b.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 data-regiao={b.regiao}
                 className="h-[24px] px-5 flex items-center justify-center rounded-[2px] bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition-all shadow-sm shadow-[#c5a059]/20"
               >
                 {b.label}
-              </button>
+              </a>
             ))}
           </div>
         </nav>
@@ -96,14 +98,16 @@ export default function Header() {
            {/* Portas de entrada dos 3 mercados — visíveis também no mobile */}
            <div className="flex flex-wrap justify-center gap-2 pb-5 border-b border-white/5">
              {REGIOES.map((b) => (
-               <button
+               <a
                  key={b.regiao}
-                 type="button"
+                 href={b.href}
+                 target="_blank"
+                 rel="noopener noreferrer"
                  data-regiao={b.regiao}
                  className="px-4 py-2 rounded-[2px] bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] text-[11px] font-black uppercase tracking-[0.15em] transition-all"
                >
                  {b.label}
-               </button>
+               </a>
              ))}
            </div>
            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-white font-bold uppercase tracking-[0.2em] text-xs">{t('common.menu_home')}</Link>
