@@ -1,4 +1,4 @@
-import { Ship, Anchor, Globe, Users, Star, ArrowRight } from 'lucide-react'
+import { Ship, Anchor, Globe, Star, ArrowRight } from 'lucide-react'
 import Header from '../components/Header'
 import { Link } from 'react-router-dom'
 
@@ -78,10 +78,10 @@ export default function Frota() {
             {/* Stats Bar */}
             <div className="grid md:grid-cols-4 gap-8 py-20 border-y border-white/5 mb-32 bg-white/[0.01]">
                {[
-                 { icon: Ship, label: 'Ativos Geridos', value: '450+' },
-                 { icon: Globe, label: 'Países Atendidos', value: '12' },
-                 { icon: Anchor, label: 'Marinas Parceiras', value: '85' },
-                 { icon: Users, label: 'Proprietários UHNW', value: '320' }
+                 { icon: Globe, label: 'Cobertura em todo o Brasil', value: 'Nacional' },
+                 { icon: Star, label: 'Auditoria Digital', value: '100%' },
+                 { icon: Anchor, label: 'Registros Imutáveis', value: 'SHA-256' },
+                 { icon: Ship, label: 'Monitoramento de Custódia', value: '24/7' }
                ].map((stat, i) => (
                  <div key={i} className="text-center group">
                     <stat.icon size={32} className="mx-auto text-[#c5a059]/40 mb-6 group-hover:text-[#c5a059] transition-all" strokeWidth={1} />
