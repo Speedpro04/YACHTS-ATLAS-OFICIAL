@@ -13,7 +13,9 @@ import {
   Building,
   ArrowRight,
   Loader2,
-  Lock
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import Header from '../components/Header'
 import { api } from '../services/api'
@@ -25,6 +27,8 @@ export default function RegistroMarina() {
   const [success, setSuccess] = useState(false)
   const [freeMode, setFreeMode] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -276,31 +280,51 @@ export default function RegistroMarina() {
                         <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
                           <Lock size={14} /> Senha de acesso
                         </label>
-                        <input
-                          type="password"
-                          name="password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          required
-                          minLength={6}
-                          placeholder="Mínimo 6 caracteres"
-                          className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            minLength={6}
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full bg-white/5 border-b border-white/10 px-0 py-4 pr-10 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 text-white/30 hover:text-gold-500 transition-colors"
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-4 group">
                         <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
                           <Lock size={14} /> Confirmar senha
                         </label>
-                        <input
-                          type="password"
-                          name="passwordConfirm"
-                          value={formData.passwordConfirm}
-                          onChange={handleChange}
-                          required
-                          minLength={6}
-                          placeholder="Repita a senha"
-                          className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPasswordConfirm ? 'text' : 'password'}
+                            name="passwordConfirm"
+                            value={formData.passwordConfirm}
+                            onChange={handleChange}
+                            required
+                            minLength={6}
+                            placeholder="Repita a senha"
+                            className="w-full bg-white/5 border-b border-white/10 px-0 py-4 pr-10 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswordConfirm((v) => !v)}
+                            aria-label={showPasswordConfirm ? 'Ocultar senha' : 'Mostrar senha'}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 text-white/30 hover:text-gold-500 transition-colors"
+                          >
+                            {showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
