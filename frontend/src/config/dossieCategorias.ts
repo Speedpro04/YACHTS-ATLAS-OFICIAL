@@ -202,6 +202,25 @@ export const CATEGORIAS: Categoria[] = [
       { key: 'horimetro', label: 'Horímetro na ocasião', type: 'number' },
     ],
   },
+  {
+    id: 'operacao',
+    grupo: 'tecnico',
+    label: 'Diário de Bordo',
+    descricao: 'Operações e idas ao mar — condutor, horímetros e ocorrências.',
+    icon: 'Sailboat',
+    dossieSecao: '07.1 — Diário de Bordo (Operações & Idas ao Mar)',
+    porteMinimoPes: 0,
+    multiplo: true,
+    uploads: true,
+    campos: [
+      { key: 'data', label: 'Data', type: 'date' },
+      { key: 'finalidade', label: 'Finalidade', type: 'text', placeholder: 'Lazer, traslado, teste de mar' },
+      { key: 'condutor', label: 'Condutor', type: 'text' },
+      { key: 'local', label: 'Local / Rota', type: 'text' },
+      { key: 'horimetro_saida', label: 'Horímetro na Saída', type: 'number' },
+      { key: 'horimetro_retorno', label: 'Horímetro no Retorno', type: 'number' },
+    ],
+  },
 
   // ── LAUDOS DE TERCEIROS (custódia) ────────────────────────────
   {
