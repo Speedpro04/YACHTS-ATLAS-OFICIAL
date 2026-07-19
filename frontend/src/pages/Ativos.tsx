@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { api } from '../services/api'
 import { Ativo } from '../types'
-import { Ship, Plus, Trash2, Anchor, Filter, Search, ChevronRight, X, Upload, Camera, Check, Loader2, Lock } from 'lucide-react'
+import { Ship, Plus, Archive, Anchor, Filter, Search, ChevronRight, X, Upload, Camera, Check, Loader2, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import AtivoHub from '../components/AtivoHub'
@@ -156,15 +156,23 @@ export default function Ativos() {
 
   const concluirGaleria = () => { setNovoAtivo(null); setGaleria({}) }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta embarcação?')) {
-      try {
-        await api.ativos.delete(id)
-        loadAtivos()
-      } catch (err) {
-        console.error('Erro ao excluir:', err)
-        alert('Não foi possível excluir. Verifique a conexão com o servidor.')
-      }
+  /**
+   * Arquiva a embarcação. NÃO exclui: os registros selados são a cadeia de
+   * custódia e permanecem íntegros — é isso que dá valor ao dossiê.
+   */
+  const handleArquivar = async (id: string) => {
+    const ok = confirm(
+      'Arquivar esta embarcação?\n\n' +
+      'Ela sai da operação, mas o histórico selado é preservado — registros ' +
+      'da cadeia de custódia não podem ser excluídos.'
+    )
+    if (!ok) return
+    try {
+      await api.ativos.arquivar(id)
+      loadAtivos()
+    } catch (err) {
+      console.error('Erro ao arquivar:', err)
+      alert('Não foi possível arquivar. Verifique a conexão com o servidor.')
     }
   }
 
@@ -486,10 +494,12 @@ export default function Ativos() {
                               <ChevronRight size={20} />
                            </button>
                            <button
-                             onClick={() => handleDelete(ativo.id)}
-                             className="w-10 h-10 flex items-center justify-center border border-white/5 text-white/10 hover:text-red-400/50 hover:border-red-400/20 rounded-sm transition-all"
+                             onClick={() => handleArquivar(ativo.id)}
+                             title="Arquivar embarcação (o histórico selado é preservado)"
+                             aria-label="Arquivar embarcação"
+                             className="w-10 h-10 flex items-center justify-center border border-white/5 text-white/10 hover:text-amber-400/60 hover:border-amber-400/25 rounded-sm transition-all"
                            >
-                             <Trash2 size={18} />
+                             <Archive size={18} />
                            </button>
                         </div>
                       </td>

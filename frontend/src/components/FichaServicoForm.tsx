@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, Upload, Lock, ShieldCheck, AlertCircle, Trash2 } from 'lucide-react'
 import { supabase, api } from '../services/api'
+import ConfirmarSelo from './ConfirmarSelo'
 import type { ServicoConfig, ServicoField, ServicoUploadSlot } from '../config/servicosCategorias'
 
 interface SealedFile { slot: string; nome: string; url: string; hash: string; tamanho: number }
@@ -28,6 +29,7 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
   const [enviando, setEnviando] = useState(false)
   const [erros, setErros] = useState<string[]>([])
   const [enviadoPor, setEnviadoPor] = useState<string>('')
+  const [confirmando, setConfirmando] = useState(false)
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   // "Quem enviou" — capturado automaticamente da sessão (imutável)
@@ -103,10 +105,15 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
     return e
   }
 
-  const selar = async () => {
+  /** Valida e abre a confirmação. Selar de verdade só em `selar()`. */
+  const pedirConfirmacao = () => {
     const e = validar()
     setErros(e)
     if (e.length) return
+    setConfirmando(true)
+  }
+
+  const selar = async () => {
     setEnviando(true)
     try {
       const statusEnum = STATUS_ENUM[campos.status] || 'registrado'
@@ -123,8 +130,10 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
         },
         status: statusEnum as any,
       })
+      setConfirmando(false)
       onSaved()
     } catch (err: any) {
+      setConfirmando(false)
       alert('Não foi possível selar o registro: ' + (err?.message || err))
     } finally {
       setEnviando(false)
@@ -176,7 +185,7 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
 
   return (
     <form
-      onSubmit={(e) => { e.preventDefault(); selar() }}
+      onSubmit={(e) => { e.preventDefault(); pedirConfirmacao() }}
       className="bg-[#021431] border border-[#c5a059]/20 rounded-sm p-6 space-y-8 animate-in slide-in-from-top-2 duration-300"
     >
       {/* Selo de custódia */}
@@ -258,6 +267,16 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
           Selar Registro
         </button>
       </div>
+
+      {confirmando && (
+        <ConfirmarSelo
+          titulo={(campos.servico || campos.titulo || categoriaTitulo).slice(0, 120)}
+          categoria={categoriaTitulo}
+          enviando={enviando}
+          onConfirmar={selar}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
     </form>
   )
 }

@@ -17,6 +17,19 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 
 export const API_URL = '/api/v1'
 
+/** Situação derivada de um registro selado (view vw_registros_situacao). */
+export type SituacaoRegistro = 'vigente' | 'retificado' | 'retificador'
+
+export interface RegistroPayload {
+  ativo_id: string
+  categoria: string
+  titulo?: string
+  observacao?: string
+  dados?: Record<string, unknown>
+  checklist?: unknown[]
+  status?: 'registrado' | 'pendente' | 'atencao' | 'concluido'
+}
+
 export class ApiError extends Error {
   status: number
   details: unknown
@@ -152,23 +165,44 @@ export const api = {
       }),
   },
   registros: {
+    /** Registros SELADOS, já com a situação derivada (vigente/retificado/retificador). */
     list: (ativoId: string) => apiRequest(`/registros/${ativoId}`),
-    create: (data: {
-      ativo_id: string
-      categoria: string
-      titulo?: string
-      observacao?: string
-      dados?: Record<string, unknown>
-      checklist?: unknown[]
-      status?: 'registrado' | 'pendente' | 'atencao' | 'concluido'
-    }) => apiRequest('/registros/', { method: 'POST', body: JSON.stringify(data) }),
+    /** Sela direto. IRREVERSÍVEL — não pode ser editado nem excluído depois. */
+    create: (data: RegistroPayload) =>
+      apiRequest('/registros/', { method: 'POST', body: JSON.stringify(data) }),
     stats: (ativoId: string) => apiRequest(`/registros/stats/${ativoId}`),
+    /**
+     * Corrige um registro já selado. Não apaga nem altera o original: cria um
+     * novo apontando pra ele. Os dois aparecem no dossiê, com o motivo à vista.
+     */
+    retificar: (data: RegistroPayload & { retifica_id: string; motivo_retificacao: string }) =>
+      apiRequest('/registros/retificar', { method: 'POST', body: JSON.stringify(data) }),
+    /** Rascunhos: editáveis e descartáveis. Não entram no dossiê. */
+    rascunho: {
+      list: (ativoId: string) => apiRequest(`/registros/rascunho/${ativoId}`),
+      create: (data: RegistroPayload) =>
+        apiRequest('/registros/rascunho', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: Partial<RegistroPayload>) =>
+        apiRequest(`/registros/rascunho/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      descartar: (id: string) =>
+        apiRequest(`/registros/rascunho/${id}`, { method: 'DELETE' }),
+      /** Sela o rascunho. A partir daqui não há volta. */
+      selar: (id: string) =>
+        apiRequest(`/registros/rascunho/${id}/selar`, { method: 'POST' }),
+    },
   },
   ativos: {
     list: () => apiRequest('/ativos'),
     create: (data: any) => apiRequest('/ativos', { method: 'POST', body: JSON.stringify(data) }),
     get: (id: string) => apiRequest(`/ativos/${id}`),
-    delete: (id: string) => apiRequest(`/ativos/${id}`, { method: 'DELETE' }),
+    /**
+     * Arquiva o ativo — NÃO apaga. Um ativo com registros selados não pode ser
+     * excluído: a cadeia de custódia é o produto.
+     */
+    arquivar: (id: string, motivo?: string) =>
+      apiRequest(`/ativos/${id}${motivo ? `?motivo=${encodeURIComponent(motivo)}` : ''}`, {
+        method: 'DELETE',
+      }),
   },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),

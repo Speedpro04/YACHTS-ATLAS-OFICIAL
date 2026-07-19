@@ -5,6 +5,7 @@ import {
   Waves, AlertTriangle, Sailboat, Armchair, TrendingUp, ShieldCheck, Globe, Lock,
 } from 'lucide-react'
 import { supabase, api } from '../services/api'
+import ConfirmarSelo from './ConfirmarSelo'
 import type { Categoria, CategoriaField } from '../config/dossieCategorias'
 
 // Mapa nome (config) -> ícone lucide
@@ -29,6 +30,7 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
   const [arquivos, setArquivos] = useState<{ nome: string; url: string; hash: string; tamanho: number }[]>([])
   const [enviando, setEnviando] = useState(false)
   const [subindo, setSubindo] = useState(false)
+  const [confirmando, setConfirmando] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const setCampo = (key: string, value: string) =>
@@ -68,11 +70,15 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
     }
   }
 
+  const tituloRegistro = () =>
+    (campos.nome || campos.titulo || campos.servico || campos.evento || categoria.label)
+      .toString()
+      .slice(0, 120)
+
   const handleSalvar = async () => {
     setEnviando(true)
     try {
-      const titulo =
-        (campos.nome || campos.titulo || campos.servico || campos.evento || categoria.label).toString().slice(0, 120)
+      const titulo = tituloRegistro()
       await api.registros.create({
         ativo_id: ativoId,
         categoria: categoria.id,
@@ -242,7 +248,7 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
             Cancelar
           </button>
           <button
-            onClick={handleSalvar}
+            onClick={() => setConfirmando(true)}
             disabled={enviando}
             className="px-10 py-4 bg-gradient-to-r from-[#c5a059] to-[#b38f4d] hover:from-[#d4b36d] hover:to-[#c5a059] text-[#010c20] font-black text-[10px] uppercase tracking-[0.3em] rounded-sm transition-all disabled:opacity-50 flex items-center gap-3"
           >
@@ -251,6 +257,16 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
           </button>
         </div>
       </div>
+
+      {confirmando && (
+        <ConfirmarSelo
+          titulo={tituloRegistro()}
+          categoria={categoria.label}
+          enviando={enviando}
+          onConfirmar={() => { setConfirmando(false); handleSalvar() }}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
     </div>
   )
 }

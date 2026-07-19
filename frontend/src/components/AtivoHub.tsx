@@ -708,10 +708,21 @@ function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categori
       ) : (
         <div className="space-y-3">
           {registros.map((r) => (
-            <div key={r.id} className="bg-[#021431] border border-white/5 rounded-sm p-5 hover:border-[#c5a059]/20 transition-all">
+            <div
+              key={r.id}
+              className={`rounded-sm p-5 transition-all border ${
+                r.situacao === 'retificado'
+                  ? 'bg-[#021431]/50 border-amber-500/25 opacity-70'
+                  : r.situacao === 'retificador'
+                  ? 'bg-[#021431] border-blue-500/25'
+                  : 'bg-[#021431] border-white/5 hover:border-[#c5a059]/20'
+              }`}
+            >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-white font-bold text-sm">{r.titulo || '(sem título)'}</p>
+                  <p className={`font-bold text-sm ${r.situacao === 'retificado' ? 'text-white/60 line-through decoration-amber-500/50' : 'text-white'}`}>
+                    {r.titulo || '(sem título)'}
+                  </p>
                   {(r.dados?.responsavel || r.dados?.data_servico || r.dados?.local || r.dados?.custo) && (
                     <p className="text-white/45 text-[11px] mt-1">
                       {r.dados?.responsavel ? `Por ${r.dados.responsavel}` : ''}
@@ -722,10 +733,37 @@ function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categori
                     </p>
                   )}
                   {r.observacao && <p className="text-white/40 text-xs mt-2 leading-relaxed">{r.observacao}</p>}
+
+                  {/* Cadeia de retificação — o erro e a correção ficam os dois à vista */}
+                  {r.situacao === 'retificado' && (
+                    <p className="mt-2 text-[11px] leading-relaxed text-amber-300/80 bg-amber-500/[0.07] border-l-2 border-amber-500 rounded-sm px-3 py-2">
+                      <strong className="uppercase tracking-wider text-[9px]">Retificado posteriormente.</strong>{' '}
+                      {r.retificado_motivo}{' '}
+                      <span className="text-white/35">Este registro permanece selado e íntegro.</span>
+                    </p>
+                  )}
+                  {r.situacao === 'retificador' && r.motivo_retificacao && (
+                    <p className="mt-2 text-[11px] leading-relaxed text-blue-300/80 bg-blue-500/[0.07] border-l-2 border-blue-500 rounded-sm px-3 py-2">
+                      <strong className="uppercase tracking-wider text-[9px]">Corrige um registro anterior.</strong>{' '}
+                      {r.motivo_retificacao}
+                    </p>
+                  )}
                 </div>
-                <span className={`flex-shrink-0 px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.15em] border ${STATUS_COR[r.status] || STATUS_COR.registrado}`}>
-                  {r.status}
-                </span>
+                <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+                  <span className={`px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.15em] border ${STATUS_COR[r.status] || STATUS_COR.registrado}`}>
+                    {r.status}
+                  </span>
+                  {r.situacao === 'retificado' && (
+                    <span className="px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.15em] border text-amber-500 border-amber-500/25 bg-amber-500/5">
+                      Retificado
+                    </span>
+                  )}
+                  {r.situacao === 'retificador' && (
+                    <span className="px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.15em] border text-blue-400 border-blue-500/25 bg-blue-500/5">
+                      Retificação
+                    </span>
+                  )}
+                </div>
               </div>
               {/* Métricas-chave da ficha rica */}
               {(r.dados?.horimetro || r.dados?.valor || r.dados?.tipo || r.dados?.peca_descricao) && (
