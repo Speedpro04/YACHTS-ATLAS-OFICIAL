@@ -72,6 +72,125 @@ def _por_categoria(registros: list[dict], categoria: str) -> list[dict]:
     return [r for r in registros if r.get("categoria") == categoria]
 
 
+def _num(v: Any) -> Optional[float]:
+    """Converte valor em pt-BR ('18.500,00') ou en ('18500.00') para float."""
+    if v in (None, "", "None"):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    s = str(v).strip()
+    for lixo in ("R$", "r$", " ", "h", "H"):
+        s = s.replace(lixo, "")
+    if "," in s and "." in s:          # 18.500,00 -> 18500.00
+        s = s.replace(".", "").replace(",", ".")
+    elif "," in s:                      # 380,00 -> 380.00
+        s = s.replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _brl(v: float) -> str:
+    """Formata em Real, abreviando a partir de mil para caber no tile."""
+    if v >= 1_000_000:
+        return f"R$ {v / 1_000_000:.1f} mi".replace(".", ",")
+    if v >= 1_000:
+        return f"R$ {v / 1_000:.1f} mil".replace(".", ",")
+    return f"R$ {v:,.0f}".replace(",", ".")
+
+
+# Espelha as 8 categorias do AssetHealthDashboard (painel técnico).
+SAUDE_CATEGORIAS: list[tuple[str, str]] = [
+    ("documentacao", "Documentação"), ("manutencao", "Manutenção"),
+    ("motor", "Motor"), ("eletrica", "Elétrica"),
+    ("seguranca", "Segurança"), ("pintura", "Pintura"),
+    ("interior", "Interior"), ("dossie", "Dossiê"),
+]
+
+
+def _saude_por_categoria(registros: list[dict]) -> list[tuple[str, str]]:
+    """Status por categoria, com a MESMA semântica do painel.
+
+    Sem registro na categoria => 'na' (não avaliado). Nunca inventa 'ok'.
+    """
+    out = []
+    for cat, label in SAUDE_CATEGORIAS:
+        regs = _por_categoria(registros, cat)
+        if not regs:
+            out.append((label, "na"))
+            continue
+        status = {r.get("status") for r in regs}
+        if "atencao" in status:
+            st = "crit" if any(
+                (r.get("dados") or {}).get("epirb_anatel", "").startswith("Pend")
+                for r in regs
+            ) else "warn"
+        elif "pendente" in status:
+            st = "warn"
+        else:
+            st = "ok"
+        out.append((label, st))
+    return out
+
+
+def _prontidao(saude: list[tuple[str, str]]) -> Optional[int]:
+    """Índice de segurança — mesma fórmula do painel (ok=100, warn=50, crit=0).
+
+    Categorias sem dado saem da média, como no painel. Retorna None se não há
+    nada avaliado: melhor não exibir indicador do que exibir um inventado.
+    """
+    pontos, total = 0, 0
+    for _, st in saude:
+        if st == "na":
+            continue
+        total += 1
+        pontos += 100 if st == "ok" else (50 if st == "warn" else 0)
+    return round(pontos / total) if total else None
+
+
+def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str, Any]:
+    """KPIs do sumário — TODOS derivados do banco. Campo sem dado vira None
+    e o tile correspondente não é renderizado."""
+    investido = sum(
+        v for v in (_num((r.get("dados") or {}).get("valor")) for r in registros)
+        if v is not None
+    )
+    horimetros = [
+        v for v in (_num((r.get("dados") or {}).get("horimetro")) for r in registros)
+        if v is not None
+    ]
+    datas = sorted(r.get("created_at") for r in registros if r.get("created_at"))
+    meses = None
+    if datas:
+        from datetime import datetime, timezone as _tz
+        try:
+            ini = datetime.fromisoformat(str(datas[0]).replace("Z", "+00:00"))
+            delta = datetime.now(_tz.utc) - ini
+            meses = max(1, round(delta.days / 30.44))
+        except (ValueError, TypeError):
+            meses = None
+
+    com_hash = sum(1 for r in registros if r.get("hash_sha256"))
+    pendencias = sum(1 for r in registros if r.get("status") in ("pendente", "atencao"))
+
+    return {
+        "investido": _brl(investido) if investido > 0 else None,
+        "registros": len(registros) or None,
+        "imagens": len(documentos) or None,
+        "meses_custodia": meses,
+        "horimetro": f"{max(horimetros):.0f} h" if horimetros else None,
+        "pendencias": pendencias,
+        "integridade": (
+            f"{round(com_hash / len(registros) * 100)}%" if registros else None
+        ),
+        # ISO -> DD/MM/AAAA
+        "custodia_desde": (
+            "/".join(reversed(str(datas[0])[:10].split("-"))) if datas else None
+        ),
+    }
+
+
 def _ficha_rica(r: dict) -> dict[str, Any]:
     """Extrai a ficha de serviço completa (logbook) de um registro — mesma
     estrutura para TODAS as categorias técnicas (alinhado ao painel)."""
@@ -165,7 +284,10 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         "fabricante": ativo.get("marca"),
         "modelo": ativo.get("modelo"),
         "ano": ativo.get("ano_fabricacao"),
-        "comprimento": f"{comprimento} pés" if comprimento else None,
+        # 32.0 -> "32 pés"; 32.5 -> "32,5 pés"
+        "comprimento": (
+            f"{float(comprimento):g} pés".replace(".", ",") if comprimento else None
+        ),
         "registro": ativo.get("rgp") or ativo.get("nome_reg"),
         "vin": ativo.get("vin"),
     }
@@ -206,9 +328,41 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
     # Resumo fotográfico (galeria selada por categoria, até MAX_FOTOS).
     fotografico = _resumo_fotografico(documentos)
 
+    # Custodiante: ativo.usuario_id -> profiles (nome, empresa, contato).
+    # Só entra no dossiê o que estiver preenchido — nada é inventado.
+    custodiante = None
+    dono_id = ativo.get("usuario_id")
+    if dono_id:
+        prof_res = (
+            supabase.table("profiles")
+            .select("nome, company_name, company_type, telefone, whatsapp, email, verified")
+            .eq("id", dono_id).execute()
+        )
+        if prof_res.data:
+            p = prof_res.data[0]
+            contato = " · ".join(x for x in [
+                p.get("telefone") or p.get("whatsapp"), p.get("email")
+            ] if x)
+            custodiante = {
+                "empresa": p.get("company_name"),
+                "responsavel": p.get("nome"),
+                "contato": contato or None,
+                "verificado": bool(p.get("verified")),
+            }
+            if not any(v for k, v in custodiante.items() if k != "verificado"):
+                custodiante = None
+
+    # Sumário executivo + saúde — tudo derivado dos registros reais.
+    saude = _saude_por_categoria(registros)
+
     return {
         "ativo_id": ativo_id,
         "comprimento_pes": comprimento,
+        "classificacao": (ativo.get("classificacao") or "").upper() or None,
+        "custodiante": custodiante,
+        "resumo": _resumo_executivo(registros, documentos),
+        "saude": saude,
+        "prontidao": _prontidao(saude),
         "identificacao": identificacao,
         "proprietarios": proprietarios,
         "documentacao": documentacao,
