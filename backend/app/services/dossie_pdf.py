@@ -6,6 +6,11 @@ Consome o pacote de montar_dados_dossie() (dossie_data.py).
 """
 from io import BytesIO
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+# Data de emissão no fuso do Brasil. Com utcnow() o dossiê gerado das 21h à
+# meia-noite (BRT) saía com a data do dia seguinte.
+TZ_BR = ZoneInfo("America/Sao_Paulo")
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -81,6 +86,21 @@ def _bg(canvas, doc):
     canvas.restoreState()
 
 
+def _natureza(ficha: dict) -> str | None:
+    """Natureza da manutenção: 'programada', 'corretiva' ou None (não classificada).
+
+    O dado aparece em dois lugares conforme a origem do formulário:
+    `campos.natureza_manutencao` (ficha técnica) ou `tipo` (ficha simples).
+    """
+    c = ficha.get("campos") or {}
+    txt = f"{c.get('natureza_manutencao') or ''} {ficha.get('tipo') or ''}".lower()
+    if "corretiv" in txt:
+        return "corretiva"
+    if "preventiv" in txt or "preditiv" in txt or "programad" in txt:
+        return "programada"
+    return None
+
+
 def _section_title(num_txt):
     return Paragraph(num_txt, S["section"])
 
@@ -127,10 +147,29 @@ def _data_table(header, linhas, col_widths):
 def _render_ficha(story, m: dict):
     """Renderiza uma ficha de serviço rica (logbook) com evidências seladas.
     Mesmo layout para TODAS as categorias técnicas (alinhado ao painel)."""
+    situacao = m.get("situacao") or "vigente"
+
     cab = f"<b>{m.get('servico') or 'Serviço'}</b>"
     if m.get("status"):
         cab += f"  ·  {m.get('status')}"
+    if situacao == "retificado":
+        cab += '  ·  <font color="#f59e0b"><b>RETIFICADO</b></font>'
+    elif situacao == "retificador":
+        cab += '  ·  <font color="#3b82f6"><b>RETIFICAÇÃO</b></font>'
     story.append(Paragraph(cab, S["value"]))
+
+    # A correção fica à vista — é isso que dá credibilidade ao registro selado.
+    if situacao == "retificado" and m.get("retificado_motivo"):
+        story.append(Paragraph(
+            f'<font color="#f59e0b"><b>Retificado posteriormente.</b></font> '
+            f'Motivo: {m["retificado_motivo"]} '
+            f'<i>O registro original permanece selado e é exibido acima, íntegro.</i>',
+            S["small"]))
+    elif situacao == "retificador" and m.get("motivo_retificacao"):
+        story.append(Paragraph(
+            f'<font color="#3b82f6"><b>Corrige um registro anterior.</b></font> '
+            f'Motivo: {m["motivo_retificacao"]}',
+            S["small"]))
 
     # Diário de Bordo (operação): tem campos próprios, que chegam no passthrough `campos`.
     c = m.get("campos") or {}
@@ -246,24 +285,48 @@ def gerar_pdf_dossie(dados: dict) -> bytes:
         categoria_atual = sec.get("categoria", "")
         if categoria_atual in ("manutencao", "eletrica"):
             label_cat = "Manutenção" if categoria_atual == "manutencao" else "Elétrica / Eletrônica"
-            total_m = len(fichas)
-            preditivas = sum(
-                1 for f in fichas
-                if "Preditiva" in (f.get("campos") or {}).get("natureza_manutencao", "")
-            )
-            pct_pred = round((preditivas / total_m) * 100) if total_m > 0 else 0
-            pct_corr = 100 - pct_pred
+            # Métricas só sobre o que vale hoje: um registro retificado foi
+            # substituído pela correção — contar os dois inflaria o total.
+            vigentes = [f for f in fichas if (f.get("situacao") or "vigente") != "retificado"]
+            total_m = len(vigentes)
+            retificados = len(fichas) - total_m
 
-            # ── Indicador de Saúde ────────────────────────────────────
-            cor_ind = colors.HexColor("#2ecc71") if pct_pred >= 70 else (
-                      colors.HexColor("#f39c12") if pct_pred >= 40 else
-                      colors.HexColor("#ff5555"))
-            story.append(Paragraph(
-                f"<b>Indicador de Saúde — {label_cat}:</b>  "
-                f"{pct_pred}% Preventiva / Programada  ·  {pct_corr}% Corretiva  "
-                f"({total_m} registro(s) selado(s) com SHA-256)",
-                ParagraphStyle("HealthInd", parent=S["body"], textColor=cor_ind)
-            ))
+            programadas = corretivas = 0
+            for f in vigentes:
+                nat = _natureza(f)
+                if nat == "programada":
+                    programadas += 1
+                elif nat == "corretiva":
+                    corretivas += 1
+            classificados = programadas + corretivas
+
+            # ── Indicador de Saúde (cores do painel técnico) ──────────
+            if classificados == 0:
+                # Sem classificação não se afirma nada: dizer "100% corretiva"
+                # quando o campo está vazio é acusar o dono de negligência.
+                story.append(Paragraph(
+                    f"<b>Indicador de Saúde — {label_cat}:</b>  natureza não classificada "
+                    f"em {total_m} registro(s). Classifique os serviços como preventivo, "
+                    f"preditivo ou corretivo para habilitar este indicador.",
+                    ParagraphStyle("HealthInd", parent=S["body"],
+                                   textColor=colors.HexColor("#71717a"))
+                ))
+            else:
+                pct_prog = round((programadas / classificados) * 100)
+                pct_corr = 100 - pct_prog
+                cor_ind = colors.HexColor("#10b981") if pct_prog >= 70 else (
+                          colors.HexColor("#f59e0b") if pct_prog >= 40 else
+                          colors.HexColor("#f43f5e"))
+                txt_ind = (
+                    f"<b>Indicador de Saúde — {label_cat}:</b>  "
+                    f"{pct_prog}% Preventiva / Programada  ·  {pct_corr}% Corretiva  "
+                    f"({classificados} de {total_m} registro(s) classificado(s), "
+                    f"selado(s) com SHA-256"
+                )
+                txt_ind += f" · {retificados} retificado(s))" if retificados else ")"
+                story.append(Paragraph(
+                    txt_ind, ParagraphStyle("HealthInd", parent=S["body"], textColor=cor_ind)
+                ))
 
             # ── Alertas de Recorrência por Sistema ───────────────────
             sistemas_corretivos: dict = {}
@@ -373,7 +436,7 @@ def gerar_pdf_dossie(dados: dict) -> bytes:
 
     # Assinatura
     story.append(Spacer(1, 16))
-    emitido = datetime.utcnow().strftime("%d/%m/%Y")
+    emitido = datetime.now(TZ_BR).strftime("%d/%m/%Y")
     story.append(Paragraph("— CERTIFICAÇÃO E CUSTÓDIA DIGITAL", S["section"]))
     story.append(Paragraph(
         "Documento gerado pela plataforma Atlas Yachts a partir dos registros custodiados. "

@@ -1,3 +1,28 @@
+-- ############################################################
+-- ##  ATENÇÃO — ARQUIVO OBSOLETO. NÃO EXECUTE.              ##
+-- ############################################################
+--
+-- Este script NUNCA foi aplicado por inteiro e NÃO reflete o banco.
+-- Verificado em 19/07/2026 contra produção (owzelkiyorumnlaycral):
+--
+--   1. NÃO RODA: `CREATE TABLE ... public.registro pecas_trocadas` tem um
+--      espaço no lugar do underscore (erro de sintaxe), e a função criada
+--      chama-se `validate_registro_imutability()` enquanto a trigger invoca
+--      `validate_registro_imutabilidade()` — nome divergente.
+--
+--   2. CONTRADIZ O MODELO ATUAL: define `imutavel_apos = criado_em + 24h` e
+--      permite UPDATE livre nas primeiras 24 horas. O modelo em vigor é
+--      append-only ABSOLUTO — sem janela de carência. Se alguém corrigir os
+--      erros de sintaxe e rodar isto, REABRE a imutabilidade.
+--
+--   3. TABELAS INEXISTENTES: registro_evidencias, registro_pecas_trocadas,
+--      registro_checklists, registros_audit_log e registro_alertas não
+--      existem no banco. A tabela `registros` real tem 12 colunas, não ~30.
+--
+-- A fonte da verdade é: migration_imutabilidade_rascunho_retificacao.sql
+-- Mantido no repo apenas como registro histórico.
+-- ############################################################
+
 -- YACHTS ATLAS - COFRE DIGITAL DE REGISTROS DE EMBARCAÇÕES
 -- Sistema de arquivamento imutável de histórico de embarcações
 -- Foco: Transparência total para o proprietário do ativo

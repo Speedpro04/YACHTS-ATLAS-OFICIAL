@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.models import AtivoCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter()
@@ -133,17 +134,45 @@ async def get_ativo(ativo_id: str, user_id: str = Depends(get_current_user_id)):
 
 
 @router.delete("/{ativo_id}")
-async def delete_ativo(ativo_id: str, user_id: str = Depends(get_current_user_id)):
+async def arquivar_ativo(
+    ativo_id: str,
+    motivo: str | None = None,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Arquiva o ativo. NÃO exclui.
+
+    Um ativo com registros selados não pode ser apagado: a cadeia de custódia
+    é o produto. Arquivar tira o ativo da operação e preserva o histórico.
+    """
     supabase = get_supabase_admin()
-    response = supabase.table("ativos").select("id, usuario_id").eq("id", ativo_id).execute()
+    response = supabase.table("ativos").select("id, usuario_id, arquivado_em").eq("id", ativo_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Ativo not found")
     ativo = response.data[0]
     role = _role(supabase, user_id)
     if role != "admin" and str(ativo.get("usuario_id")) != str(user_id):
-        raise HTTPException(status_code=403, detail="Not authorized to delete this asset")
-    supabase.table("ativos").delete().eq("id", ativo_id).execute()
-    return {"message": "Ativo deleted"}
+        raise HTTPException(status_code=403, detail="Not authorized to archive this asset")
+    if ativo.get("arquivado_em"):
+        raise HTTPException(status_code=409, detail="Ativo já está arquivado")
+
+    # arquivado_por é uuid; o acesso de manutenção usa o literal "maintenance-admin"
+    try:
+        arquivado_por = str(uuid.UUID(str(user_id)))
+    except (ValueError, AttributeError, TypeError):
+        arquivado_por = None
+        motivo = f"[{user_id}] {motivo or 'arquivado via acesso de manutenção'}"
+
+    supabase.table("ativos").update({
+        "arquivado_em": datetime.now(timezone.utc).isoformat(),
+        "arquivado_por": arquivado_por,
+        "arquivado_motivo": motivo,
+    }).eq("id", ativo_id).execute()
+
+    return {
+        "message": "Ativo arquivado",
+        "ativo_id": ativo_id,
+        "historico_preservado": True,
+    }
 
 
 @router.get("/{ativo_id}/progresso")

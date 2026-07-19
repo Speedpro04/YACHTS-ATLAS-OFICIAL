@@ -100,6 +100,11 @@ def _ficha_rica(r: dict) -> dict[str, Any]:
             for e in evidencias if isinstance(e, dict)
         ],
         "status": "OK" if r.get("status") in ("registrado", "concluido") else (r.get("status") or "—"),
+        # Cadeia de retificação — o dossiê mostra o erro E a correção.
+        "situacao": r.get("situacao") or "vigente",
+        "retificado_motivo": r.get("retificado_motivo"),
+        "retificado_em": r.get("retificado_em"),
+        "motivo_retificacao": r.get("motivo_retificacao"),
         # Passthrough completo dos campos da ficha (ex.: Diário de Bordo: condutor,
         # habilitação, horímetros, reboque, avarias) para o dossiê não perder nada.
         "campos": d,
@@ -138,8 +143,12 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         raise ValueError("Ativo não encontrado")
     ativo = ativo_res.data[0]
 
+    # Lê a VIEW, não a tabela: traz a situação derivada (vigente / retificado /
+    # retificador). Sem isso uma retificação entraria no dossiê como registro
+    # comum e o original continuaria parecendo válido.
     registros = (
-        supabase.table("registros").select("*").eq("ativo_id", ativo_id).order("created_at").execute().data
+        supabase.table("vw_registros_situacao").select("*")
+        .eq("ativo_id", ativo_id).order("created_at").execute().data
         or []
     )
     documentos = (
