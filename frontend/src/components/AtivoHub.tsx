@@ -6,10 +6,11 @@ import {
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
   Award, ChevronRight, X, Download, Upload, Lock,
   Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor,
-  Droplets
+  Droplets, PenLine
 } from 'lucide-react'
 import FichaServicoForm from './FichaServicoForm'
 import CoberturaFotos from './CoberturaFotos'
+import RetificarRegistro from './RetificarRegistro'
 import CategoriaForm from './CategoriaForm'
 import { SERVICOS } from '../config/servicosCategorias'
 import { CATEGORIAS as DOSSIE_CATS, type Categoria as DossieCat } from '../config/dossieCategorias'
@@ -563,6 +564,8 @@ function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categori
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Registro selecionado para retificação (null = painel fechado)
+  const [retificando, setRetificando] = useState<any | null>(null)
   const agora = new Date()
   const hojeLocal = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   const formVazio = { titulo: '', responsavel: '', data: hojeLocal, hora: agora.toTimeString().slice(0, 5), local: '', custo: '', observacao: '', status: 'registrado' }
@@ -642,6 +645,15 @@ function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categori
           config={cfg}
           onSaved={() => { setShowForm(false); carregar() }}
           onCancel={() => setShowForm(false)}
+        />
+      )}
+
+      {retificando && (
+        <RetificarRegistro
+          registro={retificando}
+          ativoId={ativo.id}
+          onPronto={() => { setRetificando(null); carregar() }}
+          onCancelar={() => setRetificando(null)}
         />
       )}
 
@@ -762,6 +774,18 @@ function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categori
                     <span className="px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.15em] border text-blue-400 border-blue-500/25 bg-blue-500/5">
                       Retificação
                     </span>
+                  )}
+                  {/* Só o registro vigente pode ser retificado: o já retificado
+                      tem sucessor, e o banco recusa retificar o mesmo alvo 2×. */}
+                  {!readOnly && r.situacao !== 'retificado' && (
+                    <button
+                      onClick={() => setRetificando(r)}
+                      title="Corrigir este registro — o original permanece no histórico"
+                      className="mt-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.15em]
+                                 text-white/30 hover:text-blue-300 transition-colors"
+                    >
+                      <PenLine size={11} /> Retificar
+                    </button>
                   )}
                 </div>
               </div>
