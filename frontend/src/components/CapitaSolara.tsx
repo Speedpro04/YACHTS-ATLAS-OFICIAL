@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Anchor, Send, X, Loader2, Sparkles } from 'lucide-react'
+import { Anchor, Send, X, Loader2, Sparkles, Eraser } from 'lucide-react'
 import { api } from '../services/api'
 
 interface ChatMsg {
@@ -37,6 +37,19 @@ export default function CapitaSolara() {
     if (aberto) endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [msgs, enviando, aberto])
 
+  /**
+   * Limpa a conversa e começa uma sessão nova.
+   *
+   * Troca o session_id junto: o backend usa esse id para manter o contexto do
+   * diálogo, então limpar só a tela deixaria a Solara ainda respondendo com
+   * base no que foi dito antes.
+   */
+  const limpar = () => {
+    sessionStorage.removeItem('capita_solara_session')
+    setMsgs([SAUDACAO])
+    setInput('')
+  }
+
   const enviar = async () => {
     const texto = input.trim()
     if (!texto || enviando) return
@@ -46,7 +59,10 @@ export default function CapitaSolara() {
     try {
       const r = await api.chatbot.ask(texto, sessionId())
       setMsgs((m) => [...m, { role: 'assistant', content: r?.answer || '—', sources: r?.sources }])
-    } catch {
+    } catch (err) {
+      // Registra a causa: engolir o erro deixava a falha indistinguível de
+      // backend fora do ar, rede caída ou resposta inválida.
+      console.error('[Capitã Solara] falha ao consultar:', err)
       setMsgs((m) => [
         ...m,
         { role: 'assistant', content: 'Não consegui responder agora. Tente novamente em instantes.' },
@@ -111,13 +127,25 @@ export default function CapitaSolara() {
                 <p className="text-[8px] text-[#c5a059] uppercase tracking-[0.25em] font-black">Assistente de Normas · Online</p>
               </div>
             </div>
-            <button
-              onClick={() => setAberto(false)}
-              aria-label="Fechar"
-              className="text-white/40 hover:text-white transition-all"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={limpar}
+                disabled={msgs.length <= 1 || enviando}
+                aria-label="Limpar conversa"
+                title="Limpar conversa"
+                className="p-1.5 text-white/40 hover:text-[#c5a059] transition-all
+                           disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:text-white/40"
+              >
+                <Eraser size={17} />
+              </button>
+              <button
+                onClick={() => setAberto(false)}
+                aria-label="Fechar"
+                className="p-1.5 text-white/40 hover:text-white transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Mensagens */}
