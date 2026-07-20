@@ -152,10 +152,11 @@ def _prontidao(saude: list[tuple[str, str]]) -> Optional[int]:
 def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str, Any]:
     """KPIs do sumário — TODOS derivados do banco. Campo sem dado vira None
     e o tile correspondente não é renderizado."""
-    investido = sum(
-        v for v in (_num((r.get("dados") or {}).get("valor")) for r in registros)
-        if v is not None
-    )
+    def _valor(r):
+        d = r.get("dados") or {}
+        return _num(d.get("valor")) or _num(d.get("custo"))
+
+    investido = sum(v for v in (_valor(r) for r in registros) if v is not None)
     horimetros = [
         v for v in (_num((r.get("dados") or {}).get("horimetro")) for r in registros)
         if v is not None
@@ -197,7 +198,10 @@ def _ficha_rica(r: dict) -> dict[str, Any]:
     d = r.get("dados") or {}
     evidencias = d.get("evidencias") or []
     return {
-        "data": d.get("data"),
+        # Dois formulários, dois nomes: a ficha técnica grava `data`
+        # (servicosCategorias.ts) e o form rápido do painel grava `data_servico`
+        # (AtivoHub.tsx). Ler só um zerava a data de tudo que vem do form rápido.
+        "data": d.get("data") or d.get("data_servico"),
         "servico": d.get("servico") or r.get("titulo"),
         "tipo": d.get("tipo"),
         "resp": d.get("responsavel"),
@@ -207,7 +211,8 @@ def _ficha_rica(r: dict) -> dict[str, Any]:
         "horimetro": d.get("horimetro"),
         "horas_trabalhadas": d.get("horas_trabalhadas"),
         "proxima_revisao": d.get("proxima_revisao"),
-        "valor": d.get("valor"),
+        # Idem para dinheiro: ficha técnica grava `valor`, form rápido grava `custo`.
+        "valor": d.get("valor") or d.get("custo"),
         "peca": d.get("peca_descricao"),
         "peca_serie": d.get("peca_serie"),
         "peca_part_number": d.get("peca_part_number"),

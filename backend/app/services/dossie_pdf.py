@@ -1071,7 +1071,10 @@ def _montar(dados: dict, indice):
     # ── Linha do tempo da custódia ──
     eventos = []
     for reg in (dados.get("registros") or []):
-        d = (reg.get("dados") or {}).get("data") or str(reg.get("created_at") or "")[:10]
+        dd = reg.get("dados") or {}
+        # `data` (ficha técnica) ou `data_servico` (form rápido do painel).
+        # created_at é só fallback — é a data do cadastro, não a do serviço.
+        d = dd.get("data") or dd.get("data_servico") or str(reg.get("created_at") or "")[:10]
         if not d:
             continue
         # ISO (2024-03-12) -> 03/2024
