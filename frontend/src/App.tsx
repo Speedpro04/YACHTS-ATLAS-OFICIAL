@@ -26,6 +26,7 @@ import NormasTecnicas from './pages/NormasTecnicas'
 import SeoMeta from './components/SeoMeta'
 import TermosFundadores from './pages/TermosFundadores'
 import Privacidade from './pages/Privacidade'
+import Verificacao from './pages/Verificacao'
 
 function App() {
   return (
@@ -46,6 +47,8 @@ function App() {
         <Route path="/solicitar-dossie" element={<SolicitarDossie />} />
         <Route path="/termos-fundadores" element={<TermosFundadores />} />
         <Route path="/privacidade" element={<Privacidade />} />
+        {/* Pública, sem login: destino do QR impresso no dossiê. */}
+        <Route path="/verificar/:protocolo" element={<Verificacao />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route element={<PrivateRoute />}>
           <Route path="/app" element={<Layout />}>

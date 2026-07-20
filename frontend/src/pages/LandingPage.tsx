@@ -553,6 +553,10 @@ export default function LandingPage() {
           <p className="text-[8px] text-white/10 uppercase tracking-widest">
             © {new Date().getFullYear()} Yachts Atlas. {t('lp.footer_copy')}
           </p>
+          {/* Mesma identificação jurídica que sai no rodapé do dossiê. */}
+          <p className="text-[8px] text-white/15 uppercase tracking-[0.3em] mt-3">
+            AXOS HUB · CNPJ 26.998.571/0001-50
+          </p>
           <p className="text-[8px] text-white/15 uppercase tracking-[0.3em] mt-4">
             Desenvolvido pela{' '}
             <a

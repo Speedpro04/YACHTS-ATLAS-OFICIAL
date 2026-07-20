@@ -2,7 +2,7 @@
 Yachts Atlas — API v1 Router
 """
 from fastapi import APIRouter
-from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros, chatbot, normas
+from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros, chatbot, normas, verificacao
 
 router = APIRouter()
 
@@ -22,3 +22,5 @@ router.include_router(owner.router, prefix="/owner", tags=["owner"])
 router.include_router(parceiros.router, prefix="/parceiros", tags=["parceiros"])
 router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 router.include_router(normas.router, prefix="/normas", tags=["normas"])
+# Público (sem auth): destino do QR impresso no dossiê.
+router.include_router(verificacao.router, prefix="/verificar", tags=["verificacao"])

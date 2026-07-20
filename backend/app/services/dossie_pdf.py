@@ -1132,7 +1132,14 @@ def _montar(dados: dict, indice):
     ], cols=3))
     story.append(sp(8))
 
-    verify_url = f"https://app.yachtsatlas.online/verificar/{protocolo}"
+    # A assinatura impede enumeração: o protocolo é previsível, então sem `s`
+    # a verificação não responde. Só confere quem tem este PDF em mãos.
+    from app.api.v1.verificacao import assinar
+    _s = assinar(protocolo, emitido)
+    verify_url = (
+        f"https://yachtsatlas.online/verificar/{protocolo}"
+        f"?s={_s}&e={emitido.replace('/', '-')}"
+    )
     story.append(_section_title("Verificação de Autenticidade"))
     try:
         qr_img = _qr(verify_url, 40)
@@ -1142,14 +1149,24 @@ def _montar(dados: dict, indice):
         qr_img,
         [Paragraph("COMO VERIFICAR ESTE DOCUMENTO", S["h2"]),
          Spacer(1, 5),
-         Paragraph("1. Aponte a câmera para o QR ao lado, ou acesse o endereço abaixo.<br/>"
-                   "2. Informe o protocolo do dossiê.<br/>"
-                   "3. O sistema recalcula os hashes e confirma se a cadeia está íntegra.",
-                   S["body"]),
+         Paragraph("1. Aponte a câmera para o QR ao lado — ou acesse o endereço "
+                   "abaixo e informe o protocolo e o código.<br/>"
+                   "2. A plataforma recalcula os hashes dos registros selados.<br/>"
+                   "3. A resposta confirma a autenticidade deste documento e a "
+                   "integridade da cadeia de custódia.", S["body"]),
          Spacer(1, 6),
-         Paragraph(track("ENDEREÇO DE VERIFICAÇÃO"), S["label"]),
-         Paragraph(verify_url, ParagraphStyle("vu", fontName="Courier", fontSize=7,
-                                              textColor=GOLD_LIGHT, leading=11)),
+         Paragraph(track("ENDEREÇO"), S["label"]),
+         Paragraph("yachtsatlas.online/verificar",
+                   ParagraphStyle("vu", fontName="Courier", fontSize=7.5,
+                                  textColor=GOLD_LIGHT, leading=11)),
+         Spacer(1, 4),
+         Paragraph(track("CÓDIGO DE VERIFICAÇÃO"), S["label"]),
+         Paragraph(_s.upper(), ParagraphStyle("vc", fontName="Courier", fontSize=9,
+                                              textColor=GOLD_LIGHT, leading=12)),
+         Spacer(1, 3),
+         Paragraph("O código é exclusivo deste documento. Sem ele, a consulta "
+                   "não retorna dados — nem o conteúdo do dossiê é exposto "
+                   "publicamente.", S["small"]),
          ],
     ]], colWidths=[46 * mm, 130 * mm])
     bloco.setStyle(TableStyle([
