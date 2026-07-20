@@ -54,13 +54,24 @@ def _anexar_total_fotos(supabase, ativos: list[dict]) -> None:
 
 
 @router.get("")
-async def list_ativos(user_id: str = Depends(get_current_user_id)):
+async def list_ativos(
+    incluir_arquivados: bool = False,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Lista os ativos em operação.
+
+    Arquivado sai da lista por padrão — mas continua no banco com todo o
+    histórico selado, e volta com `?incluir_arquivados=true`. Arquivar é o
+    substituto da exclusão: registro selado não pode ser apagado.
+    """
     supabase = get_supabase_admin()
     role = _role(supabase, user_id)
-    if role == "admin":
-        response = supabase.table("ativos").select("*").order("created_at", desc=True).execute()
-    else:
-        response = supabase.table("ativos").select("*").eq("usuario_id", user_id).order("created_at", desc=True).execute()
+    q = supabase.table("ativos").select("*")
+    if role != "admin":
+        q = q.eq("usuario_id", user_id)
+    if not incluir_arquivados:
+        q = q.is_("arquivado_em", "null")
+    response = q.order("created_at", desc=True).execute()
     ativos = [_enrich(a) for a in (response.data or [])]
     _anexar_total_fotos(supabase, ativos)
     return ativos
