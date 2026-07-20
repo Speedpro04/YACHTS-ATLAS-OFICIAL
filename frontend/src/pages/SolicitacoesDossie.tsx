@@ -247,7 +247,7 @@ export default function SolicitacoesDossie() {
                         <Ship size={24} />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-white font-serif font-bold text-lg truncate">{a.marca} {a.modelo}</h3>
+                        <h3 className="text-white font-serif font-bold text-lg truncate">{a.nome_reg || `${a.marca} ${a.modelo}`}</h3>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[9px] font-black uppercase tracking-widest text-white/40">
                           <span>{a.tipo}</span>
                           <span>•</span>

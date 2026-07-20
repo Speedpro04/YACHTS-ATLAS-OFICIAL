@@ -112,7 +112,7 @@ export default function PortalProprietario() {
                   Ativo Certificado
                 </span>
               </div>
-              <h2 className="text-3xl font-serif font-bold text-white tracking-tight">{ativo.marca} {ativo.modelo}</h2>
+              <h2 className="text-3xl font-serif font-bold text-white tracking-tight">{ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}</h2>
               <div className="flex items-center gap-4 mt-2 text-[10px] text-white/50 uppercase tracking-widest font-black">
                 <span>{ativo.comprimento_pes} Pés</span>
                 <span className="w-1 h-1 rounded-full bg-white/20"></span>

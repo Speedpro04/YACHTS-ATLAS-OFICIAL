@@ -142,7 +142,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
                 <Ship size={34} strokeWidth={1} />
               </div>
               <div>
-                <h1 className="text-3xl font-serif font-bold text-white tracking-tight">{ativo.marca} {ativo.modelo}</h1>
+                <h1 className="text-3xl font-serif font-bold text-white tracking-tight">{ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}</h1>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40">
                   <span className="capitalize">{ativo.tipo.replace('_', ' ')}</span>
                   <span className="text-[#c5a059]">•</span>

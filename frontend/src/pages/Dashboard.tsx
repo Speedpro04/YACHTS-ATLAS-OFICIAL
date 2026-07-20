@@ -331,7 +331,7 @@ export default function Dashboard() {
 
                    <div className="absolute bottom-6 left-8 z-20">
                       <h3 className="text-2xl font-serif font-bold text-white tracking-tight group-hover:text-[#c5a059] transition-all">
-                        {ativo.marca} {ativo.modelo}
+                        {ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}
                       </h3>
                       <p className="text-[10px] text-white/30 uppercase tracking-[0.4em] font-black mt-2">
                         {ativo.ano_fabricacao} <span className="mx-2 text-[#c5a059]">•</span> {ativo.tipo}

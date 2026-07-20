@@ -443,7 +443,17 @@ export default function Ativos() {
                             <Ship size={32} strokeWidth={1} />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-white font-serif font-bold text-xl tracking-tight group-hover:text-[#c5a059] transition-all duration-500">{ativo.marca} {ativo.modelo}</div>
+                            {/* O nome batizado manda. O painel mostrava só
+                                marca+modelo, então a embarcação tinha um nome
+                                no dossiê e outro aqui. */}
+                            <div className="text-white font-serif font-bold text-xl tracking-tight group-hover:text-[#c5a059] transition-all duration-500">
+                              {ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}
+                            </div>
+                            {ativo.nome_reg && (
+                              <div className="text-white/35 text-[11px] mt-0.5">
+                                {ativo.marca} {ativo.modelo}
+                              </div>
+                            )}
                             <div className="text-[9px] text-white/20 font-black uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
                                <span className="w-1.5 h-1.5 rounded-full bg-white/5 group-hover:bg-[#c5a059] transition-colors"></span>
                                ID: #{String(ativo.id).slice(0, 8).toUpperCase()}

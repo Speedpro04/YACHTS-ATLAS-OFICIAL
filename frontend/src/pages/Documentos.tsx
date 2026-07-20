@@ -108,7 +108,7 @@ export default function Documentos() {
            >
              {ativos.map((ativo) => (
                <option key={ativo.id} value={ativo.id} className="bg-[#0a1326]">
-                 {ativo.marca} {ativo.modelo}
+                 {ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}
                </option>
              ))}
            </select>

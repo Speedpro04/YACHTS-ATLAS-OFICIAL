@@ -35,6 +35,9 @@ export interface Ativo {
   owner_id?: string;
   proprietario_nome?: string;
   tipo: 'iate' | 'lancha' | 'veleiro' | 'jetski' | 'barco_pesca';
+  /** Nome batizado da embarcação. É como ela é chamada no dossiê — tem
+   *  precedência sobre marca/modelo na exibição. */
+  nome_reg?: string;
   marca: string;
   modelo: string;
   ano_fabricacao: number;
