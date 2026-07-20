@@ -1,0 +1,48 @@
+-- ============================================================
+-- Yachts Atlas — LGPD: direito de eliminação sobre registro imutável
+--
+-- STATUS: JÁ APLICADO em produção (owzelkiyorumnlaycral) em 20/07/2026,
+--         migrações `lgpd_direito_eliminacao` e `lgpd_recalcula_hash_na_redacao`.
+--         Aqui para ficar reproduzível nas versões LATAM / USA / EU.
+--         (Fora do Brasil o equivalente muda: GDPR na UE, CCPA nos EUA —
+--          o mecanismo serve, a fundamentação legal precisa ser revista.)
+--
+-- O PROBLEMA
+--   `registros` é append-only: UPDATE e DELETE recusados, inclusive para
+--   service_role. É o que sustenta a promessa de custódia. Mas o diário de
+--   bordo guarda nome do condutor, habilitação e número do CHA — dado pessoal
+--   de gente identificável. Quando o titular exerce o direito de eliminação
+--   (Art. 18, VI), "é imutável, não posso" não se sustenta perante a ANPD.
+--
+-- A SAÍDA
+--   Não afrouxar a imutabilidade: abrir UMA porta estreita, auditada e
+--   autovalidada — `fn_lgpd_redigir()`. Ela só apaga campos de lista fechada,
+--   exige vínculo com a solicitação do titular, preserva o hash original e
+--   marca o registro. A própria trigger recusa usar esse caminho para outra
+--   coisa: testado que ligar a flag de sessão por fora NÃO libera edição de
+--   conteúdo técnico.
+--
+-- HONESTIDADE
+--   O hash muda — tem de mudar, o conteúdo mudou. Mas o original fica em
+--   `hash_pre_redacao`, e o dossiê declara "dado pessoal removido a pedido do
+--   titular". Apagar em silêncio seria adulterar o histórico, o oposto do que
+--   o produto promete.
+--
+-- Ver o SQL exato nas migrações aplicadas via Supabase (supabase/migrations)
+-- ou reconstitua a partir de:
+--   fn_lgpd_campos_pessoais()  — lista fechada de campos redigíveis
+--   lgpd_solicitacoes          — trilha dos pedidos do titular
+--   registros.redigido_em / redigido_campos / lgpd_solicitacao / hash_pre_redacao
+--   fn_registros_imutavel()    — exceção validada campo a campo
+--   fn_lgpd_redigir()          — única porta de entrada
+--   vw_registros_situacao      — passa a expor tem_redacao_lgpd
+--
+-- VALIDAÇÃO (rodada com rollback proposital, sem alterar dado):
+--   OK: update normal bloqueado
+--   OK: ligar a flag por fora não libera conteúdo técnico
+--   OK: recusa redigir campo técnico (horimetro_saida)
+--   OK: redação legítima remove condutor + cha_numero
+--   OK: hash recalculado e original preservado
+--   OK: campo técnico intacto após a redação
+--   OK: recusa redação dupla no mesmo registro
+-- ============================================================

@@ -666,6 +666,22 @@ def _ficha_card(m: dict):
             f'<font color="#3b82f6"><b>Corrige um registro anterior.</b></font> '
             f'Motivo: {m["motivo_retificacao"]}', S["small"]))
 
+    # Redação LGPD — declarada, nunca silenciosa. O registro técnico permanece
+    # íntegro; só o dado pessoal foi removido por direito do titular.
+    if m.get("redacao_lgpd"):
+        campos = ", ".join(
+            str(c).replace("_", " ") for c in (m.get("redigido_campos") or [])
+        )
+        quando = str(m.get("redigido_em") or "")[:10]
+        quando = "/".join(reversed(quando.split("-"))) if quando else ""
+        inner.append(Spacer(1, 3))
+        inner.append(Paragraph(
+            f'<font color="#71717a"><b>Dado pessoal removido a pedido do titular</b></font> '
+            f'(LGPD art. 18, VI){f" em {quando}" if quando else ""}'
+            f'{f": {campos}" if campos else ""}. '
+            f'<i>O registro técnico permanece íntegro e o hash foi recalculado; '
+            f'o selo original está preservado para auditoria.</i>', S["small"]))
+
     for ev in (m.get("evidencias") or []):
         rotulo = _ROTULO_EVID.get(ev.get("slot"), ev.get("slot") or "Evidência")
         h = (ev.get("hash") or "")[:16]

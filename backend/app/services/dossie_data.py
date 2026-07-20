@@ -226,6 +226,11 @@ def _ficha_rica(r: dict) -> dict[str, Any]:
         "status": "OK" if r.get("status") in ("registrado", "concluido") else (r.get("status") or "—"),
         # Cadeia de retificação — o dossiê mostra o erro E a correção.
         "situacao": r.get("situacao") or "vigente",
+        # Redação LGPD: o campo pessoal foi apagado por direito do titular.
+        # O dossiê declara isso — omitir em silêncio seria adulterar o histórico.
+        "redacao_lgpd": bool(r.get("tem_redacao_lgpd")),
+        "redigido_campos": r.get("redigido_campos") or [],
+        "redigido_em": r.get("redigido_em"),
         "retificado_motivo": r.get("retificado_motivo"),
         "retificado_em": r.get("retificado_em"),
         "motivo_retificacao": r.get("motivo_retificacao"),
