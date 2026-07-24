@@ -3,6 +3,8 @@ Allow: /
 Disallow: /app
 Disallow: /login
 Disallow: /portal-proprietario
+Disallow: /acesso-proprietario
+Disallow: /redefinir-senha
 Disallow: /success
 
 Sitemap: https://yachtsatlas.online/sitemap.xml

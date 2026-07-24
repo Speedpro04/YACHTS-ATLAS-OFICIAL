@@ -1,69 +1,34 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import seoData from '../seo/seo-data.json'
 
-const BASE_URL = 'https://yachtsatlas.online'
-
-type SeoConfig = {
-  title: string
-  description: string
-  keywords: string
+type SeoEntry = {
+  title?: string
+  description?: string
+  keywords?: string
+  ogDescription?: string
+  index?: boolean
 }
 
-const DEFAULT_SEO: SeoConfig = {
-  title: 'Yachts Atlas | Dossiê Digital e Custódia de Ativos Náuticos',
-  description:
-    'Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam seu patrimônio marítimo.',
-  keywords:
-    'dossiê náutico, custódia digital de iates, registro digital de embarcação, avaliação de iate, compliance náutico, due diligence marítima, marina parceira, certificação de embarcação',
+type SeoData = {
+  baseUrl: string
+  ogImage: string
+  imageAlt: string
+  default: Required<Pick<SeoEntry, 'title' | 'description' | 'keywords'>> & { ogDescription?: string }
+  pages: Record<string, SeoEntry>
 }
 
-const SEO_BY_PATH: Record<string, SeoConfig> = {
-  '/': DEFAULT_SEO,
-  '/sobre': {
-    title: 'Sobre Nós — Autoridade Técnica em Inspeção Náutica | Yachts Atlas',
-    description:
-      'A casa técnica da náutica. Custódia e dossiê construídos sobre ensaio não destrutivo por ultrassom (NDT) e controle de qualidade industrial — do casco ao motor ao acabamento.',
-    keywords:
-      'sobre yachts atlas, inspeção náutica, ensaio não destrutivo, ultrassom NDT, autoridade técnica náutica, custódia de iates',
-  },
-  '/frota': {
-    title: 'Gestão de Frota Náutica para Marinas | Yachts Atlas',
-    description:
-      'Gerencie ativos náuticos com histórico técnico, documentação certificada e visão operacional centralizada para marinas, estaleiros e gestores de frota.',
-    keywords:
-      'gestão de frota náutica, software para marina, controle de embarcações, gestão de ativos náuticos',
-  },
-  '/seguranca': {
-    title: 'Segurança e Integridade Documental Náutica | Yachts Atlas',
-    description:
-      'Camada de segurança, rastreabilidade e validação de integridade SHA-256 para documentos e registros marítimos críticos.',
-    keywords:
-      'segurança náutica digital, integridade documental, rastreabilidade marítima, hash SHA-256, compliance náutico',
-  },
-  '/registro-marina': {
-    title: 'Seja uma Marina Parceira Fundadora | Yachts Atlas',
-    description:
-      'Cadastre sua marina na rede Yachts Atlas e ative onboarding, receita de dossiês e gestão de clientes com condições fundadoras exclusivas.',
-    keywords: 'registro de marina, marina parceira, onboarding de marina, rede náutica, programa fundador',
-  },
-  '/marina-parceira': {
-    title: 'Programa Marina Parceira — Receita de Dossiês | Yachts Atlas',
-    description:
-      'Conheça os benefícios comerciais do programa fundador: receita de dossiês, indicação rentável e condições exclusivas para marinas aprovadas.',
-    keywords: 'marina parceira, programa de parceria, split de receita, ecossistema náutico, programa fundador',
-  },
-  '/acesso-proprietario': {
-    title: 'Portal do Proprietário de Iate | Yachts Atlas',
-    description:
-      'Área segura para proprietários acessarem histórico, dossiê certificado e documentação da embarcação com autenticação 2FA.',
-    keywords: 'portal do proprietário, dossiê da embarcação, acesso náutico seguro, cofre digital de iate',
-  },
-  '/termos-fundadores': {
-    title: 'Termos do Programa Fundador | Yachts Atlas',
-    description:
-      'Condições comerciais de referência para marinas aprovadas no ciclo fundador da rede Yachts Atlas.',
-    keywords: 'termos programa fundador, condições marina parceira, contrato fundador yachts atlas',
-  },
+const { baseUrl, ogImage, imageAlt, default: DEFAULT_SEO, pages } = seoData as SeoData
+
+// Rotas de autenticação/privadas que nunca devem ser indexadas.
+function isPrivateRoute(pathname: string): boolean {
+  return (
+    pathname.startsWith('/app') ||
+    pathname.startsWith('/success') ||
+    pathname === '/login' ||
+    pathname === '/portal-proprietario' ||
+    pathname === '/redefinir-senha'
+  )
 }
 
 function setMetaByName(name: string, content: string): void {
@@ -100,31 +65,29 @@ export default function SeoMeta() {
   const location = useLocation()
 
   useEffect(() => {
-    const seo = SEO_BY_PATH[location.pathname] ?? DEFAULT_SEO
-    const canonicalUrl = `${BASE_URL}${location.pathname}`
-    const ogImage = `${BASE_URL}/logo-with-bg-light.jpg`
-    const imageAlt = 'Yachts Atlas — Custódia digital de ativos náuticos'
+    const page = pages[location.pathname] ?? {}
+    const title = page.title ?? DEFAULT_SEO.title
+    const description = page.description ?? DEFAULT_SEO.description
+    const keywords = page.keywords ?? DEFAULT_SEO.keywords
+    const ogDescription = page.ogDescription ?? page.description ?? DEFAULT_SEO.ogDescription ?? description
+    const canonicalUrl = `${baseUrl}${location.pathname}`
 
-    // Private/auth routes must not be indexed by search engines
-    const isPrivate =
-      location.pathname.startsWith('/app') ||
-      location.pathname === '/login' ||
-      location.pathname === '/portal-proprietario' ||
-      location.pathname.startsWith('/success')
+    // noindex para rotas privadas ou marcadas explicitamente com index:false
+    const noindex = isPrivateRoute(location.pathname) || page.index === false
 
-    document.title = seo.title
+    document.title = title
     setCanonical(canonicalUrl)
-    setMetaByName('description', seo.description)
-    setMetaByName('keywords', seo.keywords)
+    setMetaByName('description', description)
+    setMetaByName('keywords', keywords)
     setMetaByName(
       'robots',
-      isPrivate ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1'
+      noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1'
     )
 
     setMetaByProperty('og:type', 'website')
     setMetaByProperty('og:site_name', 'Yachts Atlas')
-    setMetaByProperty('og:title', seo.title)
-    setMetaByProperty('og:description', seo.description)
+    setMetaByProperty('og:title', title)
+    setMetaByProperty('og:description', ogDescription)
     setMetaByProperty('og:url', canonicalUrl)
     setMetaByProperty('og:image', ogImage)
     setMetaByProperty('og:image:width', '1200')
@@ -133,8 +96,8 @@ export default function SeoMeta() {
     setMetaByProperty('og:locale', 'pt_BR')
 
     setMetaByName('twitter:card', 'summary_large_image')
-    setMetaByName('twitter:title', seo.title)
-    setMetaByName('twitter:description', seo.description)
+    setMetaByName('twitter:title', title)
+    setMetaByName('twitter:description', ogDescription)
     setMetaByName('twitter:image', ogImage)
     setMetaByName('twitter:image:alt', imageAlt)
   }, [location.pathname])
