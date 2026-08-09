@@ -60,6 +60,38 @@ def _oferta_marina(supabase) -> dict:
     }
 
 
+def _criar_acesso_marina_paga(supabase, data, oferta: dict) -> None:
+    """
+    Cria o login da marina paga com a senha que ela acabou de escolher.
+
+    Antes o fluxo pago retornava direto para o Stripe e a senha do formulario
+    era descartada: a marina pagava e ficava sem acesso nenhum. Fica marcada
+    como pagamento pendente ate o webhook do Stripe confirmar. Best-effort —
+    falhar aqui nao pode impedir a marina de pagar.
+    """
+    try:
+        supabase.auth.admin.create_user({
+            "email": data.email,
+            "password": data.password,
+            "email_confirm": True,
+            "user_metadata": {
+                "nome": data.name,
+                "telefone": data.phone,
+                "marina": data.name,
+                "programa": "marina_paga",
+                "oferta": oferta.get("oferta"),
+                "preco_mensal": oferta.get("preco_mensal"),
+                "pagamento": "pendente",
+            },
+        })
+    except Exception as e:
+        # Conta ja existe = nova tentativa de checkout; a senha antiga continua
+        # valendo e ela so faz login. Qualquer outro erro fica no log.
+        texto = str(e).lower()
+        if "already" not in texto and "registered" not in texto:
+            logger.error(f"Falha ao criar acesso da marina paga {data.email}: {e}")
+
+
 class LeadParceiroCreate(BaseModel):
     categoria: str
     empresa: str
@@ -220,7 +252,9 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
     #    oficial (US$ 250) depois. O link fixo no frontend cobrava US$ 250 de
     #    todo mundo e ainda apontava para a conta Stripe antiga (CPF).
     if status == "nao_autorizado":
-        return {"modo": "pago", **_oferta_marina(supabase)}
+        oferta = _oferta_marina(supabase)
+        _criar_acesso_marina_paga(supabase, data, oferta)
+        return {"modo": "pago", **oferta}
 
     # 3) Vaga grátis: cria/garante o login com a senha escolhida pela marina
     try:

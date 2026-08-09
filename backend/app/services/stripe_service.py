@@ -373,6 +373,36 @@ class StripeService:
             logger.error(f"Error handling webhook event: {str(e)}")
             raise Exception(f"Failed to handle webhook event: {str(e)}")
     
+    @staticmethod
+    def _email_do_checkout(session: stripe.checkout.Session, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
+        """E-mail do cliente, venha ele de onde vier no checkout."""
+        detalhes = getattr(session, "customer_details", None)
+        email = None
+        if detalhes:
+            email = detalhes.get("email") if isinstance(detalhes, dict) else getattr(detalhes, "email", None)
+        return email or (metadata or {}).get("email") or getattr(session, "customer_email", None)
+
+    @staticmethod
+    def _marcar_pagamento_confirmado(user_id: str) -> None:
+        """
+        Vira o acesso de 'pagamento pendente' para 'pago'.
+
+        A conta nasce pendente no cadastro (leads._criar_acesso_marina_paga).
+        Le o metadata atual antes de gravar porque o update do Auth troca o
+        objeto inteiro — escrever so a chave apagaria nome, telefone e marina.
+        """
+        try:
+            from app.core.supabase import get_supabase_admin
+            admin = get_supabase_admin().auth.admin
+            atual = admin.get_user_by_id(user_id)
+            usuario = getattr(atual, "user", None) or atual
+            meta = dict(getattr(usuario, "user_metadata", None) or {})
+            meta["pagamento"] = "pago"
+            admin.update_user_by_id(user_id, {"user_metadata": meta})
+            logger.info(f"Pagamento confirmado no acesso do usuario {user_id}")
+        except Exception as e:
+            logger.error(f"Falha ao confirmar pagamento do usuario {user_id}: {e}")
+
     def _handle_checkout_completed(self, session: stripe.checkout.Session) -> Dict[str, Any]:
         """Handle checkout session completed"""
         metadata = session.metadata
@@ -380,11 +410,27 @@ class StripeService:
         plan_type = metadata.get('plan_type')
         payment_type = metadata.get('payment_type', 'subscription')
 
+        # Payment Link nao carrega user_id no metadata. Como payments.usuario_id
+        # e NOT NULL, sem resolver pelo e-mail o pagamento da marina simplesmente
+        # nao era gravado: o insert estourava e sobrava so a linha de log.
+        cliente_email = self._email_do_checkout(session, metadata)
+        if not user_id and cliente_email:
+            from app.core.supabase import buscar_usuario_por_email
+            encontrado = buscar_usuario_por_email(cliente_email)
+            user_id = getattr(encontrado, "id", None) if encontrado is not None else None
+            if not user_id:
+                logger.warning(
+                    f"Checkout {session.id}: nenhum usuario com o e-mail {cliente_email} — "
+                    "pagamento ficara sem vinculo"
+                )
+
         logger.info(f"Checkout completed for user {user_id}, plan {plan_type}")
 
         # Persiste o pagamento — é isso que libera o dossiê e dá rastreio financeiro
         try:
             from app.core.supabase import get_supabase_admin
+            if not user_id:
+                raise ValueError("checkout sem usuario vinculado (usuario_id e NOT NULL)")
             get_supabase_admin().table("payments").insert({
                 "usuario_id": user_id,
                 "stripe_checkout_session_id": session.id,
@@ -402,19 +448,18 @@ class StripeService:
         except Exception as e:
             logger.error(f"Falha ao persistir pagamento do checkout {session.id}: {e}")
 
+        # Libera o acesso que foi criado pendente no cadastro.
+        if user_id and payment_type != "dossier":
+            self._marcar_pagamento_confirmado(user_id)
+
         # E-mail de boas-vindas da MARCA (best-effort, nunca derruba o webhook).
         # O recibo financeiro fica a cargo da processadora; este é o "obrigado"
         # do Yachts Atlas no exato momento da liberação do acesso.
         if payment_type != "dossier":
             try:
                 from app.services.email_service import send_welcome_email
-                to_email = None
-                details = getattr(session, "customer_details", None)
-                if details:
-                    to_email = details.get("email") if isinstance(details, dict) else getattr(details, "email", None)
-                to_email = to_email or metadata.get("email") or getattr(session, "customer_email", None)
                 nome = metadata.get("marina_nome") or metadata.get("nome")
-                send_welcome_email(to_email, nome=nome)
+                send_welcome_email(cliente_email, nome=nome)
             except Exception as e:
                 logger.error(f"Falha ao enviar e-mail de boas-vindas ({session.id}): {e}")
 
@@ -424,11 +469,7 @@ class StripeService:
         if (metadata or {}).get("programa") == "marina_fundadora":
             try:
                 from app.core.supabase import get_supabase_admin
-                details = getattr(session, "customer_details", None)
-                marina_email = None
-                if details:
-                    marina_email = details.get("email") if isinstance(details, dict) else getattr(details, "email", None)
-                marina_email = marina_email or metadata.get("email") or getattr(session, "customer_email", None)
+                marina_email = cliente_email
                 if marina_email:
                     _res = get_supabase_admin().rpc("cadastrar_marina_fundadora", {
                         "p_email": marina_email,
