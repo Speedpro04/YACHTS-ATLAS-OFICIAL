@@ -505,9 +505,32 @@ class StripeService:
             "subscription_id": subscription.id
         }
     
+    @staticmethod
+    def _extract_subscription_id(invoice: stripe.Invoice) -> Optional[str]:
+        """
+        Le o id da assinatura da invoice em qualquer versao da API.
+
+        Ate 2025-03-31.basil a Stripe expunha `invoice.subscription`. Depois
+        disso o campo saiu e virou `invoice.parent.subscription_details.subscription`.
+        A conta nova ja nasce numa versao recente, entao aceitamos os dois
+        formatos — senao a renovacao mensal quebra silenciosamente.
+        """
+        def _as_id(value):
+            if not value:
+                return None
+            return value if isinstance(value, str) else getattr(value, "id", None)
+
+        legado = _as_id(getattr(invoice, "subscription", None))
+        if legado:
+            return legado
+
+        parent = getattr(invoice, "parent", None)
+        detalhes = getattr(parent, "subscription_details", None) if parent else None
+        return _as_id(getattr(detalhes, "subscription", None) if detalhes else None)
+
     def _handle_invoice_paid(self, invoice: stripe.Invoice) -> Dict[str, Any]:
         """Handle invoice paid"""
-        subscription_id = invoice.subscription
+        subscription_id = self._extract_subscription_id(invoice)
         customer_id = invoice.customer
         amount_paid = invoice.amount_paid / 100  # Convert from cents
         
@@ -523,7 +546,7 @@ class StripeService:
     
     def _handle_invoice_payment_failed(self, invoice: stripe.Invoice) -> Dict[str, Any]:
         """Handle invoice payment failed"""
-        subscription_id = invoice.subscription
+        subscription_id = self._extract_subscription_id(invoice)
         customer_id = invoice.customer
         
         logger.warning(f"Invoice payment failed for subscription {subscription_id}")
