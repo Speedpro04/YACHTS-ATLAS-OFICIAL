@@ -132,11 +132,17 @@ export const api = {
     parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>
       apiRequest('/leads/parceiro', { method: 'POST', body: JSON.stringify(data) }),
     // Cadastro da marina: retorna { modo: 'gratis' | 'pago' }. 'gratis' = vaga
-    // fundadora pré-autorizada (6 meses, sem checkout); 'pago' = segue p/ Stripe.
+    // fundadora pré-autorizada (6 meses, sem checkout); 'pago' = segue p/ Stripe,
+    // e aí o backend manda em checkout_url qual oferta abrir — fundadora
+    // (USD 200, 20 vagas) enquanto houver vaga, oficial (USD 250) depois.
     registrarMarina: (data: {
       name: string; email: string; password: string;
       cnpj?: string; phone?: string; city?: string; state?: string; website?: string
-    }): Promise<{ modo: 'gratis' | 'pago'; marina?: string; billing_starts_at?: string; slot_number?: number }> =>
+    }): Promise<{
+      modo: 'gratis' | 'pago'; marina?: string; billing_starts_at?: string; slot_number?: number
+      oferta?: 'fundadora' | 'oficial'; preco_mensal?: number
+      vagas_restantes?: number; checkout_url?: string
+    }> =>
       apiRequest('/leads/marina/registrar', { method: 'POST', body: JSON.stringify(data) }),
   },
   parceiros: {

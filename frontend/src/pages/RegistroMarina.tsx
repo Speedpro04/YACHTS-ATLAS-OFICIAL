@@ -76,7 +76,9 @@ export default function RegistroMarina() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const STRIPE_MARINA_LINK = 'https://buy.stripe.com/aFaeVcdvgezGgqCeDg9IQ05'
+  // Fallback quando o cadastro falha antes de o backend dizer a oferta.
+  // Usa o preço oficial: prometer US$ 200 sem confirmar vaga fundadora vira estorno.
+  const STRIPE_MARINA_LINK = 'https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,8 +112,9 @@ export default function RegistroMarina() {
         setSuccess(true)
         return
       }
-      // Demais marinas seguem para o pagamento de USD 250/mês.
-      window.location.href = STRIPE_MARINA_LINK
+      // Checkout escolhido pelo backend: fundadora (USD 200) enquanto houver
+      // uma das 20 vagas, oficial (USD 250) depois.
+      window.location.href = res.checkout_url || STRIPE_MARINA_LINK
     } catch {
       // Em caso de falha, não trava a marina: segue para o fluxo pago.
       window.location.href = STRIPE_MARINA_LINK

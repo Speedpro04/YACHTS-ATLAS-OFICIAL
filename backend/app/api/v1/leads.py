@@ -1,6 +1,9 @@
 """
 Yachts Atlas — Leads (marinas e parceiros)
 """
+import logging
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -8,7 +11,53 @@ from app.schemas.models import LeadMarinaCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import require_platform_admin
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# Oferta da marina paga: 20 vagas fundadoras a US$ 200/mes, depois US$ 250.
+# Os links ficam em env para trocar de conta Stripe sem rebuild do frontend.
+VAGAS_FUNDADORAS = 20
+LINK_MARINA_FUNDADORA = os.getenv(
+    "STRIPE_LINK_MARINA_FUNDADORA",
+    "https://buy.stripe.com/28EeVdb9jf6c8cx7QA1wY00",
+)
+LINK_MARINA_OFICIAL = os.getenv(
+    "STRIPE_LINK_MARINA_OFICIAL",
+    "https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01",
+)
+
+
+def _oferta_marina(supabase) -> dict:
+    """
+    Escolhe o checkout da marina paga: fundadora (US$ 200) ou oficial (US$ 250).
+
+    Mandar todo mundo para o link de US$ 200 cobraria preco de fundadora de
+    quem ja nao tem vaga — a RPC cadastrar_marina_fundadora devolveria modo
+    'tradicional' e sobraria um estorno. A contagem exige service role porque
+    marinas_fundadoras tem RLS sem politica publica.
+    """
+    try:
+        res = (
+            supabase.table("marinas_fundadoras")
+            .select("id", count="exact")
+            .eq("status", "ativo")
+            .execute()
+        )
+        restantes = max(0, VAGAS_FUNDADORAS - (res.count or 0))
+    except Exception as e:
+        # Nao trava a venda: a tabela comeca vazia, entao no lancamento o risco
+        # de vaga esgotada e baixo. Para o contrario, troque para restantes = 0.
+        logger.error(f"Falha ao contar vagas fundadoras, assumindo vaga livre: {e}")
+        restantes = VAGAS_FUNDADORAS
+
+    fundadora = restantes > 0
+    return {
+        "oferta": "fundadora" if fundadora else "oficial",
+        "preco_mensal": 200 if fundadora else 250,
+        "vagas_restantes": restantes,
+        "checkout_url": LINK_MARINA_FUNDADORA if fundadora else LINK_MARINA_OFICIAL,
+    }
 
 
 class LeadParceiroCreate(BaseModel):
@@ -166,9 +215,12 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
 
     status = result.get("status")
 
-    # 2) Não pré-autorizada -> fluxo pago (sem criar conta aqui)
+    # 2) Não pré-autorizada -> fluxo pago (sem criar conta aqui).
+    #    O checkout vem do backend: fundadora (US$ 200) enquanto houver vaga,
+    #    oficial (US$ 250) depois. O link fixo no frontend cobrava US$ 250 de
+    #    todo mundo e ainda apontava para a conta Stripe antiga (CPF).
     if status == "nao_autorizado":
-        return {"modo": "pago"}
+        return {"modo": "pago", **_oferta_marina(supabase)}
 
     # 3) Vaga grátis: cria/garante o login com a senha escolhida pela marina
     try:
