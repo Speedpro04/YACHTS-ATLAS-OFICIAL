@@ -32,6 +32,12 @@ def _parse_allowed_origins(raw: str | None) -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
+# Estados do programa fundador — 4 vagas em cada um. Fora daqui, a marina
+# segue para a oferta oficial. Constante de módulo de propósito: campo lista
+# em BaseSettings quebra ao ser lido do ambiente (ver ALLOWED_ORIGINS abaixo).
+LAUNCH_STATES: tuple[str, ...] = ("SC", "SP", "RJ", "ES", "BA")
+
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Yachts Atlas"
     VERSION: str = "0.1.0"
@@ -114,7 +120,8 @@ class Settings(BaseSettings):
     #   • 20 marinas de lançamento   → $200/mês  (link de pagamento de $200)
     #   • até 120 marinas restantes  → $250/mês  (link de pagamento de $250)
     # Total: 140 marinas. Sem outros valores.
-    LAUNCH_SLOTS: int = 20             # marinas de lançamento a $200
+    LAUNCH_SLOTS: int = 20             # marinas de lançamento a $200 (= 5 UFs x 4)
+    LAUNCH_SLOTS_PER_STATE: int = 4    # 4 fundadoras por estado (ver LAUNCH_STATES)
     LAUNCH_PRICE_MONTHLY: int = 200    # preço das 20 de lançamento
     TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
     TRADITIONAL_PRICE_MONTHLY: int = 250

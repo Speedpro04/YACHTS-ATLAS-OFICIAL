@@ -10,14 +10,19 @@ from typing import Optional
 from app.schemas.models import LeadMarinaCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import require_platform_admin
+from app.core.config import settings, LAUNCH_STATES
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Oferta da marina paga: 20 vagas fundadoras a US$ 200/mes, depois US$ 250.
+# Oferta da marina paga: 4 vagas fundadoras POR ESTADO a US$ 200/mes
+# (SC/SP/RJ/ES/BA = 20 no total), depois US$ 250.
 # Os links ficam em env para trocar de conta Stripe sem rebuild do frontend.
-VAGAS_FUNDADORAS = 20
+# Quantidade e precos vem do config para nao existirem dois numeros de
+# lancamento diferentes no mesmo sistema.
+VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
+MINUTOS_DE_RESERVA = 60
 LINK_MARINA_FUNDADORA = os.getenv(
     "STRIPE_LINK_MARINA_FUNDADORA",
     "https://buy.stripe.com/28EeVdb9jf6c8cx7QA1wY00",
@@ -28,34 +33,48 @@ LINK_MARINA_OFICIAL = os.getenv(
 )
 
 
-def _oferta_marina(supabase) -> dict:
+def _oferta_marina(supabase, data) -> dict:
     """
-    Escolhe o checkout da marina paga: fundadora (US$ 200) ou oficial (US$ 250).
+    Escolhe o checkout da marina paga e JA RESERVA a vaga fundadora.
 
-    Mandar todo mundo para o link de US$ 200 cobraria preco de fundadora de
-    quem ja nao tem vaga — a RPC cadastrar_marina_fundadora devolveria modo
-    'tradicional' e sobraria um estorno. A contagem exige service role porque
-    marinas_fundadoras tem RLS sem politica publica.
+    Sao 4 vagas por ESTADO (SC/SP/RJ/ES/BA). Marina de qualquer outro estado
+    vai direto para a oferta oficial de US$ 250 — antes o estado era coletado
+    no formulario e descartado, entao 20 marinas de um mesmo estado podiam
+    tomar todas as vagas e zerar os outros quatro.
+
+    A vaga e reservada aqui, e nao so no pagamento: entre preencher o
+    formulario e pagar havia uma janela em que todas viam "tem vaga" e recebiam
+    o link de US$ 200, dando para ter mais gente paga a preco de fundadora do
+    que vaga para honrar. A reserva vence sozinha em MINUTOS_DE_RESERVA.
+
+    Exige service role: marinas_fundadoras tem RLS sem politica publica.
     """
     try:
-        res = (
-            supabase.table("marinas_fundadoras")
-            .select("id", count="exact")
-            .eq("status", "ativo")
-            .execute()
-        )
-        restantes = max(0, VAGAS_FUNDADORAS - (res.count or 0))
+        res = supabase.rpc("reservar_vaga_fundadora", {
+            "p_email": data.email,
+            "p_uf": data.state or "",
+            "p_marina_nome": data.name,
+            "p_responsavel": data.name,
+            "p_telefone": data.phone,
+            "p_minutos": MINUTOS_DE_RESERVA,
+        }).execute()
+        reserva = res.data if isinstance(res.data, dict) else {}
     except Exception as e:
-        # Nao trava a venda: a tabela comeca vazia, entao no lancamento o risco
-        # de vaga esgotada e baixo. Para o contrario, troque para restantes = 0.
-        logger.error(f"Falha ao contar vagas fundadoras, assumindo vaga livre: {e}")
-        restantes = VAGAS_FUNDADORAS
+        # Sem reserva confirmada, manda para o oficial. Cobrar US$ 250 de quem
+        # merecia US$ 200 se conserta devolvendo a diferenca; cobrar US$ 200 de
+        # quem nao tem vaga cria uma obrigacao impossivel — nao existe 5a vaga
+        # em estado nenhum.
+        logger.error(f"Falha ao reservar vaga fundadora para {data.email}: {e}")
+        reserva = {}
 
-    fundadora = restantes > 0
+    fundadora = reserva.get("modo") == "fundadora"
     return {
         "oferta": "fundadora" if fundadora else "oficial",
-        "preco_mensal": 200 if fundadora else 250,
-        "vagas_restantes": restantes,
+        "preco_mensal": (settings.LAUNCH_PRICE_MONTHLY if fundadora
+                         else settings.TRADITIONAL_PRICE_MONTHLY),
+        "uf": reserva.get("uf") or (data.state or "").strip().upper() or None,
+        "vagas_restantes": reserva.get("vagas_restantes"),
+        "motivo": reserva.get("motivo"),
         "checkout_url": LINK_MARINA_FUNDADORA if fundadora else LINK_MARINA_OFICIAL,
     }
 
@@ -81,6 +100,7 @@ def _criar_acesso_marina_paga(supabase, data, oferta: dict) -> None:
                 "programa": "marina_paga",
                 "oferta": oferta.get("oferta"),
                 "preco_mensal": oferta.get("preco_mensal"),
+                "uf": oferta.get("uf"),
                 "pagamento": "pendente",
             },
         })
@@ -125,6 +145,26 @@ class MarinaRegistroPublico(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     website: Optional[str] = None
+
+
+@router.get("/marina/vagas")
+async def vagas_fundadoras():
+    """Vagas fundadoras restantes, por estado e no total.
+
+    Serve a página de LANÇAMENTO. A página oficial anuncia só a mensalidade
+    de US$ 250 e não consome isto.
+
+    Conta como ocupada tanto a vaga paga quanto a reservada dentro do prazo —
+    é o mesmo número que decide o preço no cadastro, para a página nunca
+    prometer uma vaga que o checkout vai negar.
+    """
+    try:
+        resumo = get_supabase_admin().rpc("vagas_fundadoras_resumo", {}).execute()
+        dados = resumo.data if isinstance(resumo.data, dict) else {}
+        return {"estados": list(LAUNCH_STATES), **dados}
+    except Exception as e:
+        logger.error(f"Falha ao ler vagas fundadoras: {e}")
+        raise HTTPException(status_code=500, detail="Falha ao ler vagas fundadoras")
 
 
 @router.post("/marina")
@@ -252,7 +292,7 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
     #    oficial (US$ 250) depois. O link fixo no frontend cobrava US$ 250 de
     #    todo mundo e ainda apontava para a conta Stripe antiga (CPF).
     if status == "nao_autorizado":
-        oferta = _oferta_marina(supabase)
+        oferta = _oferta_marina(supabase, data)
         _criar_acesso_marina_paga(supabase, data, oferta)
         return {"modo": "pago", **oferta}
 
