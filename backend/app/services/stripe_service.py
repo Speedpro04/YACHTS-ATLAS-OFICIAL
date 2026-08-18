@@ -41,7 +41,9 @@ class StripeService:
             "features": ["1 asset", "Basic tracking", "Community support"]
         },
         PlanType.MARINA: {
-            "monthly": 250,
+            # Preco oficial da recorrencia (as 20 fundadoras pagam
+            # settings.LAUNCH_PRICE_MONTHLY, decidido em leads._oferta_marina).
+            "monthly": settings.TRADITIONAL_PRICE_MONTHLY,
             "name": "Marina Standard",
             "features": ["Unlimited assets", "Fleet management", "Priority support", "API access", "Real-time monitoring", "Audit reports", "White-label ready"]
         },
@@ -264,6 +266,11 @@ class StripeService:
             logger.error(f"Error creating dossier checkout session: {str(e)}")
             raise Exception(f"Failed to create dossier checkout session: {str(e)}")
     
+    @staticmethod
+    def _lookup_key(amount: int, currency: str, recurring: bool) -> str:
+        """Chave estavel do preco — e por ela que reencontramos o price ja criado."""
+        return f"ya_{'rec' if recurring else 'once'}_{currency.lower()}_{amount}"
+
     def _get_or_create_price(
         self,
         amount: int,
@@ -272,20 +279,19 @@ class StripeService:
         product_name: str
     ) -> str:
         """
-        Get existing price or create new one
+        Reaproveita o price existente ou cria um novo.
+
+        A busca e por lookup_key porque `Price.list` NAO aceita filtro de valor:
+        mandar `amount=` devolve 400 "Received unknown parameter: amount" e
+        derrubava todo checkout criado pela API. O lookup_key e unico na conta,
+        entao tambem impede criar um produto novo a cada chamada.
         """
+        lookup_key = self._lookup_key(amount, currency, recurring)
         try:
-            # Search for existing price
-            prices = stripe.Price.list(
-                amount=amount,
-                currency=currency,
-                type='recurring' if recurring else 'one_time',
-                limit=1
-            )
-            
-            if prices.data:
-                return prices.data[0].id
-            
+            existentes = stripe.Price.list(lookup_keys=[lookup_key], active=True, limit=1)
+            if existentes.data:
+                return existentes.data[0].id
+
             # Create new product
             product = stripe.Product.create(
                 name=product_name,
@@ -297,6 +303,7 @@ class StripeService:
                 'product': product.id,
                 'unit_amount': amount,
                 'currency': currency,
+                'lookup_key': lookup_key,
             }
             
             if recurring:
@@ -307,7 +314,7 @@ class StripeService:
             
             price = stripe.Price.create(**price_data)
             
-            logger.info(f"Created new price {price.id} for {product_name}")
+            logger.info(f"Created new price {price.id} ({lookup_key}) for {product_name}")
             return price.id
             
         except stripe.error.StripeError as e:
@@ -374,6 +381,19 @@ class StripeService:
             raise Exception(f"Failed to handle webhook event: {str(e)}")
     
     @staticmethod
+    def _e_duplicata(erro: Exception) -> bool:
+        """
+        Colisao de chave unica no Postgres (SQLSTATE 23505).
+
+        O postgrest devolve o codigo tanto num atributo `code` quanto no texto
+        do erro, dependendo da versao do cliente — por isso olhamos os dois.
+        """
+        if getattr(erro, "code", None) == "23505":
+            return True
+        texto = str(erro).lower()
+        return "23505" in texto or "duplicate key" in texto
+
+    @staticmethod
     def _email_do_checkout(session: stripe.checkout.Session, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
         """E-mail do cliente, venha ele de onde vier no checkout."""
         detalhes = getattr(session, "customer_details", None)
@@ -413,6 +433,15 @@ class StripeService:
         # Payment Link nao carrega user_id no metadata. Como payments.usuario_id
         # e NOT NULL, sem resolver pelo e-mail o pagamento da marina simplesmente
         # nao era gravado: o insert estourava e sobrava so a linha de log.
+        # Assinatura (marina) x pagamento avulso (dossie). O dossie e vendido
+        # por Payment Link proprio, sem metadata, e a faixa de 36-45 pes custa
+        # os mesmos US$ 200 da marina fundadora — sem esta distincao a compra de
+        # um dossie ocuparia vaga fundadora e liberaria acesso de marina.
+        e_assinatura = (
+            getattr(session, "mode", None) == "subscription"
+            or bool(getattr(session, "subscription", None))
+        )
+
         cliente_email = self._email_do_checkout(session, metadata)
         if not user_id and cliente_email:
             from app.core.supabase import buscar_usuario_por_email
@@ -446,16 +475,26 @@ class StripeService:
                 "metadata": dict(metadata) if metadata else {},
             }).execute()
         except Exception as e:
+            # stripe_checkout_session_id e UNIQUE: colisao significa que o
+            # Stripe reentregou o mesmo evento. Sair aqui evita reenviar o
+            # e-mail de boas-vindas e reprocessar a vaga fundadora a cada retry.
+            if self._e_duplicata(e):
+                logger.info(f"Checkout {session.id} ja processado — reentrega ignorada")
+                return {
+                    "status": "duplicate",
+                    "user_id": user_id,
+                    "session_id": session.id,
+                }
             logger.error(f"Falha ao persistir pagamento do checkout {session.id}: {e}")
 
         # Libera o acesso que foi criado pendente no cadastro.
-        if user_id and payment_type != "dossier":
+        if user_id and payment_type != "dossier" and e_assinatura:
             self._marcar_pagamento_confirmado(user_id)
 
         # E-mail de boas-vindas da MARCA (best-effort, nunca derruba o webhook).
         # O recibo financeiro fica a cargo da processadora; este é o "obrigado"
         # do Yachts Atlas no exato momento da liberação do acesso.
-        if payment_type != "dossier":
+        if payment_type != "dossier" and e_assinatura:
             try:
                 from app.services.email_service import send_welcome_email
                 nome = metadata.get("marina_nome") or metadata.get("nome")
@@ -465,8 +504,21 @@ class StripeService:
 
         # Programa Marinas Fundadoras: cadastra/ocupa a vaga automaticamente,
         # keyado pelo e-mail do cliente. Best-effort — nunca derruba o webhook.
-        # Requer metadata.programa == 'marina_fundadora' no Payment Link/checkout.
-        if (metadata or {}).get("programa") == "marina_fundadora":
+        #
+        # O metadata `programa` so chega se o Payment Link tiver sido configurado
+        # com ele no painel do Stripe. Faltando ele, a vaga nunca era ocupada,
+        # marinas_fundadoras ficava em zero e _oferta_marina continuaria
+        # mandando TODA marina seguinte para o link de US$ 200 — as 20 vagas
+        # nunca esgotavam. Por isso o valor pago tambem vale como prova: uma
+        # assinatura de US$ 200/mes e, por definicao, preco de fundadora.
+        valor_pago = (session.amount_total or 0) / 100
+        e_fundadora = (
+            (metadata or {}).get("programa") == "marina_fundadora"
+            or (e_assinatura
+                and payment_type != "dossier"
+                and valor_pago == float(settings.LAUNCH_PRICE_MONTHLY))
+        )
+        if e_fundadora:
             try:
                 from app.core.supabase import get_supabase_admin
                 marina_email = cliente_email
@@ -569,14 +621,75 @@ class StripeService:
         detalhes = getattr(parent, "subscription_details", None) if parent else None
         return _as_id(getattr(detalhes, "subscription", None) if detalhes else None)
 
+    def _registrar_renovacao(
+        self,
+        invoice: stripe.Invoice,
+        subscription_id: str,
+        amount_paid: float
+    ) -> None:
+        """
+        Grava a renovacao mensal em payments.
+
+        A recorrencia e o produto: sem isto o banco so conhece o primeiro mes de
+        cada marina e nao da para saber quem esta adimplente. A invoice nao
+        carrega o id do Supabase, entao o usuario vem da linha do checkout
+        original da mesma assinatura.
+        """
+        try:
+            from app.core.supabase import get_supabase_admin
+            admin = get_supabase_admin()
+            origem = (
+                admin.table("payments")
+                .select("usuario_id, plan_type, payment_type")
+                .eq("stripe_subscription_id", subscription_id)
+                .order("created_at", desc=False)
+                .limit(1)
+                .execute()
+            )
+            base = (origem.data or [{}])[0]
+            usuario_id = base.get("usuario_id")
+            if not usuario_id:
+                logger.warning(
+                    f"Renovacao da assinatura {subscription_id} sem checkout de "
+                    "origem — nao foi gravada"
+                )
+                return
+
+            admin.table("payments").insert({
+                "usuario_id": usuario_id,
+                "stripe_invoice_id": invoice.id,
+                "stripe_subscription_id": subscription_id,
+                "amount": amount_paid,
+                "currency": invoice.currency,
+                "status": "completed",
+                "payment_type": base.get("payment_type") or "subscription",
+                "plan_type": base.get("plan_type"),
+                "metadata": {"billing_reason": getattr(invoice, "billing_reason", None)},
+            }).execute()
+            logger.info(f"Renovacao registrada: assinatura {subscription_id}, ${amount_paid}")
+        except Exception as e:
+            if self._e_duplicata(e):
+                logger.info(f"Renovacao da invoice {invoice.id} ja registrada")
+            else:
+                logger.error(
+                    f"Falha ao registrar renovacao da assinatura {subscription_id}: {e}"
+                )
+
     def _handle_invoice_paid(self, invoice: stripe.Invoice) -> Dict[str, Any]:
         """Handle invoice paid"""
         subscription_id = self._extract_subscription_id(invoice)
         customer_id = invoice.customer
         amount_paid = invoice.amount_paid / 100  # Convert from cents
-        
+        billing_reason = getattr(invoice, "billing_reason", None)
+
         logger.info(f"Invoice paid for subscription {subscription_id}, amount ${amount_paid}")
-        
+
+        # 'subscription_create' e a primeira fatura, que ja entrou em payments
+        # pelo checkout.session.completed — gravar de novo contaria o mesmo
+        # dinheiro duas vezes. So as renovacoes passam daqui.
+        if subscription_id and billing_reason != "subscription_create":
+            self._registrar_renovacao(invoice, subscription_id, amount_paid)
+
         return {
             "status": "paid",
             "subscription_id": subscription_id,
@@ -591,6 +704,17 @@ class StripeService:
         customer_id = invoice.customer
         
         logger.warning(f"Invoice payment failed for subscription {subscription_id}")
+
+        # Recorrencia falhando em silencio = marina perdida sem ninguem saber.
+        try:
+            from app.services.notify_service import send_telegram
+            send_telegram(
+                "<b>Falha no pagamento ⚠️</b>\n"
+                f"Assinatura {subscription_id} — tentativa {invoice.attempt_count}.\n"
+                f"Cliente Stripe: {customer_id}"
+            )
+        except Exception as e:
+            logger.error(f"Falha ao avisar sobre pagamento recusado: {e}")
         
         return {
             "status": "failed",
@@ -624,10 +748,16 @@ class StripeService:
     def cancel_subscription(self, subscription_id: str, at_period_end: bool = True) -> Dict[str, Any]:
         """Cancel subscription"""
         try:
-            subscription = stripe.Subscription.delete(
-                subscription_id,
-                at_period_end=at_period_end
-            )
+            # `Subscription.delete` nao aceita at_period_end — a API responde
+            # "Received unknown parameter". Cancelar no fim do ciclo e um
+            # update (cancel_at_period_end); delete e o cancelamento imediato.
+            if at_period_end:
+                subscription = stripe.Subscription.modify(
+                    subscription_id,
+                    cancel_at_period_end=True
+                )
+            else:
+                subscription = stripe.Subscription.delete(subscription_id)
             
             logger.info(f"Subscription {subscription_id} cancelled")
             
@@ -635,7 +765,8 @@ class StripeService:
                 "status": "cancelled",
                 "subscription_id": subscription_id,
                 "cancel_at_period_end": at_period_end,
-                "canceled_at": subscription.canceled_at
+                "canceled_at": getattr(subscription, "canceled_at", None),
+                "cancel_at": getattr(subscription, "cancel_at", None)
             }
             
         except stripe.error.StripeError as e:
@@ -645,8 +776,9 @@ class StripeService:
     def get_pricing_plans(self) -> Dict[str, Any]:
         """
         Planos ativos na plataforma. Modelo atual: uma única recorrência B2B
-        de $250/mês (Marina). O dossiê não é vendido pela plataforma — vai
-        direto marina <-> dono — então não aparece aqui.
+        de $250/mês (Marina), com as 20 primeiras marinas a $200/mês. O dossiê
+        não é vendido pela plataforma — vai direto marina <-> dono — então não
+        aparece aqui.
         """
         marina = self.PRICING[PlanType.MARINA]
         return {
