@@ -2,7 +2,11 @@
   background: #010c20;
   color: #F0EDE6;
   font-family: 'Montserrat', sans-serif;
-  padding: 100px 60px;
+  /* Conteúdo delimitado em 1140px, como o resto do site. O padding lateral
+     cresce sozinho em telas largas para centralizar a coluna, e nunca fica
+     menor que os 60px originais em telas médias. Feito no padding, e não num
+     wrapper, para não mexer nas margens que cada bloco já tem. */
+  padding: 100px max(60px, calc((100% - 1140px) / 2));
   position: relative;
   overflow: hidden;
 }

@@ -131,6 +131,15 @@ export const api = {
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   },
   leads: {
+    // Vagas fundadoras reais (20 no total, 4 por estado). Conta como ocupada
+    // tanto a paga quanto a reservada dentro do prazo — é o mesmo número que
+    // decide o preço no cadastro, então a página nunca promete uma vaga que o
+    // checkout vai negar.
+    vagasFundadoras: (): Promise<{
+      total: number; ocupadas: number; restantes: number; vagas_por_estado: number
+      estados: string[]
+      por_estado: Record<string, { total: number; ocupadas: number; restantes: number }>
+    }> => apiRequest('/leads/marina/vagas'),
     marina: (data: { marina: string; name: string; email: string; fleet: string; source?: string }) =>
       apiRequest('/leads/marina', { method: 'POST', body: JSON.stringify(data) }),
     parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>

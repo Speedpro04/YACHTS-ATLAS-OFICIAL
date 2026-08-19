@@ -2,6 +2,7 @@
 Yachts Atlas — Leads (marinas e parceiros)
 """
 import logging
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -21,7 +22,7 @@ router = APIRouter()
 # Quantidade e precos vem do config para nao existirem dois numeros de
 # lancamento diferentes no mesmo sistema.
 VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
-MINUTOS_DE_RESERVA = 60
+MINUTOS_DE_RESERVA = settings.MINUTOS_DE_RESERVA_VAGA
 # Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
 # links para mandar a marina bloqueada ao checkout do preço que ela contratou.
 LINK_MARINA_FUNDADORA = settings.STRIPE_LINK_MARINA_FUNDADORA
@@ -63,6 +64,17 @@ def _oferta_marina(supabase, data) -> dict:
         reserva = {}
 
     fundadora = reserva.get("modo") == "fundadora"
+
+    # Hora em que a vaga volta para a fila, para a tela mostrar o prazo exato
+    # ("reservada até 14h32") em vez de um "3 horas" que a marina precisa
+    # cronometrar sozinha. Só existe quando há reserva: quem já está ativa não
+    # tem prazo correndo contra ela.
+    expira_em = None
+    if fundadora and reserva.get("status") != "ja_ativa":
+        expira_em = (
+            datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_DE_RESERVA)
+        ).isoformat()
+
     return {
         "oferta": "fundadora" if fundadora else "oficial",
         "preco_mensal": (settings.LAUNCH_PRICE_MONTHLY if fundadora
@@ -71,6 +83,8 @@ def _oferta_marina(supabase, data) -> dict:
         "vagas_restantes": reserva.get("vagas_restantes"),
         "motivo": reserva.get("motivo"),
         "checkout_url": LINK_MARINA_FUNDADORA if fundadora else LINK_MARINA_OFICIAL,
+        "reserva_minutos": MINUTOS_DE_RESERVA if expira_em else None,
+        "reserva_expira_em": expira_em,
     }
 
 

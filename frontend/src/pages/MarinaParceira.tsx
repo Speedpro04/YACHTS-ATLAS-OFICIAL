@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './MarinaParceira.module.css';
 import Header from '../components/Header';
 import { api } from '../services/api';
@@ -46,9 +46,24 @@ export default function MarinaParceira() {
     }
   };
 
-  const TOTAL_SPOTS = 120;
-  const TAKEN_SPOTS = 12;
-  const fillPercent = Math.round((TAKEN_SPOTS / TOTAL_SPOTS) * 100);
+  // Contador real das 20 vagas fundadoras. Era `TAKEN_SPOTS = 12` chumbado no
+  // código, contra um total de 120 — número inventado, e ainda por cima
+  // contradizendo o próprio título da página. Se a leitura falhar, o bloco
+  // some: melhor não mostrar contador nenhum do que mostrar um número errado
+  // sobre escassez.
+  const [vagas, setVagas] = useState<{ total: number; ocupadas: number } | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    api.leads.vagasFundadoras()
+      .then((d) => { if (ativo) setVagas({ total: d.total, ocupadas: d.ocupadas }); })
+      .catch(() => { if (ativo) setVagas(null); });
+    return () => { ativo = false; };
+  }, []);
+
+  const fillPercent = vagas && vagas.total
+    ? Math.round((vagas.ocupadas / vagas.total) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#010c20]">
@@ -57,7 +72,7 @@ export default function MarinaParceira() {
         <section className={styles.section}>
           <div className={styles.bgGlow} aria-hidden="true" />
 
-          <span className={styles.eyebrow}>3 Vagas Fundadoras</span>
+          <span className={styles.eyebrow}>20 Vagas Fundadoras</span>
 
           <h2 className={styles.headline}>
             Sua marina.<br />
@@ -69,11 +84,14 @@ export default function MarinaParceira() {
             exclusivos que não estarão disponíveis para novos parceiros após o encerramento desta fase.
           </p>
 
-          <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#C9A84C]/80 text-center">
+          {/* Alinhados à esquerda como o resto da coluna. Estavam centralizados
+              no meio de uma seção sem largura máxima, e por isso flutuavam
+              soltos, descolados do título e do texto. */}
+          <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#C9A84C]/80">
             Oferta oficial: USD 250/mês • Meta pública: 120 vagas
           </p>
 
-          <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl mx-auto">
+          <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl">
             <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
               Clausula Comercial de Dossies
             </p>
@@ -83,14 +101,16 @@ export default function MarinaParceira() {
             </p>
           </div>
 
-          <div className={styles.spotsRow}>
-            <div className={styles.spotsBar}>
-              <div className={styles.spotsFill} style={{ width: `${fillPercent}%` }} />
+          {vagas && (
+            <div className={styles.spotsRow}>
+              <div className={styles.spotsBar}>
+                <div className={styles.spotsFill} style={{ width: `${fillPercent}%` }} />
+              </div>
+              <span className={styles.spotsText}>
+                <strong>{vagas.ocupadas}</strong> de {vagas.total} vagas ocupadas
+              </span>
             </div>
-            <span className={styles.spotsText}>
-              <strong>{TAKEN_SPOTS}</strong> de {TOTAL_SPOTS} vagas ocupadas
-            </span>
-          </div>
+          )}
 
           <div className={styles.pillars}>
             {[

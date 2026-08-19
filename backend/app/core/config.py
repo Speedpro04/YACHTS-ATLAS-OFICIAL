@@ -143,6 +143,16 @@ class Settings(BaseSettings):
     TRADITIONAL_PRICE_MONTHLY: int = 250
     LAUNCH_DOSSIER_BONUS_MONTHS: int = 18
 
+    # Quanto tempo a vaga fundadora fica presa no nome da marina entre o
+    # cadastro e o pagamento. Eram 60 min, suficiente enquanto o cadastro caía
+    # direto no checkout; com o vídeo de apresentação no meio, quem sai para
+    # pensar e volta perderia a vaga e pagaria $250 achando que pagaria $200.
+    #
+    # Três horas, e não um dia: com 4 vagas por estado, curioso segurando vaga
+    # bloqueia comprador real. O prazo é dito à marina no cadastro — prazo que
+    # o cliente não conhece é armadilha.
+    MINUTOS_DE_RESERVA_VAGA: int = 180
+
     # O preço de fundadora vale 12 meses. No 13º a assinatura passa a $250 —
     # correção monetária combinada na venda, não é surpresa para a marina.
     # Quem executa é a própria Stripe (subscription schedule anexado no
