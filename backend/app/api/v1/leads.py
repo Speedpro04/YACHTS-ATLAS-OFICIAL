@@ -23,10 +23,31 @@ router = APIRouter()
 # lancamento diferentes no mesmo sistema.
 VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
 MINUTOS_DE_RESERVA = settings.MINUTOS_DE_RESERVA_VAGA
+
+# Origens que vendem a vaga fundadora de US$ 200. Só a campanha de lançamento
+# entra aqui — o site oficial trabalha a tabela de US$ 250. Qualquer valor fora
+# desta lista (inclusive vazio) cai na oferta oficial: preferir cobrar a mais de
+# quem merecia menos, que se conserta devolvendo a diferença, a queimar uma das
+# 20 vagas com quem nunca viu a campanha, que não se conserta.
+ORIGENS_DE_LANCAMENTO = frozenset({"lancamento", "lançamento", "lp-fundadoras", "lp-lancamento"})
 # Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
 # links para mandar a marina bloqueada ao checkout do preço que ela contratou.
 LINK_MARINA_FUNDADORA = settings.STRIPE_LINK_MARINA_FUNDADORA
 LINK_MARINA_OFICIAL = settings.STRIPE_LINK_MARINA_OFICIAL
+
+
+def _oferta_oficial() -> dict:
+    """Oferta do site oficial: US$ 250/mês, sem vaga fundadora envolvida."""
+    return {
+        "oferta": "oficial",
+        "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
+        "uf": None,
+        "vagas_restantes": None,
+        "motivo": "fora_da_campanha_de_lancamento",
+        "checkout_url": LINK_MARINA_OFICIAL,
+        "reserva_minutos": None,
+        "reserva_expira_em": None,
+    }
 
 
 def _oferta_marina(supabase, data) -> dict:
@@ -45,6 +66,13 @@ def _oferta_marina(supabase, data) -> dict:
 
     Exige service role: marinas_fundadoras tem RLS sem politica publica.
     """
+    # O preco de fundadora pertence a CAMPANHA de lancamento, nao ao estado da
+    # marina. Quem chega pelo site oficial paga a tabela oficial, mesmo estando
+    # em SC/SP/RJ/ES/BA e mesmo havendo vaga livre — senao as 20 vagas somem
+    # para quem nunca viu a campanha, e a exclusividade da LP nao vale nada.
+    if (getattr(data, "origem", None) or "").strip().lower() not in ORIGENS_DE_LANCAMENTO:
+        return _oferta_oficial()
+
     try:
         res = supabase.rpc("reservar_vaga_fundadora", {
             "p_email": data.email,
@@ -154,6 +182,11 @@ class MarinaRegistroPublico(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     website: Optional[str] = None
+    # De onde veio o cadastro. O preço de fundadora é da CAMPANHA de lançamento,
+    # não do estado da marina: sem isto, qualquer um que se cadastrasse pelo site
+    # oficial levava US$ 200 e consumia uma das 20 vagas sem nunca ter visto a
+    # campanha. Ausente ou desconhecido = site oficial = US$ 250.
+    origem: Optional[str] = None
 
 
 @router.get("/marina/vagas")

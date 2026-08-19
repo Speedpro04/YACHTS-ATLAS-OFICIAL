@@ -43,11 +43,16 @@ class _SupabaseFalso:
 
 
 def _cadastro(state):
+    # origem de Lançamento: a vaga fundadora só é oferecida a quem vem da
+    # campanha. Estes testes cobrem a regra de ESTADO, então partem de um
+    # cadastro que já passou pelo filtro de origem — a separação entre
+    # Lançamento e Oficial tem testes próprios em test_oferta_por_origem.py.
     return types.SimpleNamespace(
         email="marina@exemplo.com",
         name="Marina Teste",
         phone="47999999999",
         state=state,
+        origem="lancamento",
     )
 
 
