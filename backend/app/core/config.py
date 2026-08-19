@@ -50,7 +50,21 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
     SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
+    # LEGADO — não usar para assinar nada. Este valor está publicado no
+    # histórico do Git (commit 15ac4be) e nunca foi rotacionado. Ficou aqui só
+    # para não quebrar deploy que ainda o define; nenhum código o consome.
     SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
+
+    # Segredo do crachá do login de manutenção. Dedicado de propósito: o
+    # SUPABASE_JWT_SECRET assinava isto e, vazado, permitia forjar
+    # {"sub": "maintenance-admin"} e virar platform_admin sem senha.
+    # Sem valor default — faltando, o login por usuário/senha desliga em vez de
+    # assinar com segredo fraco. O MAINTENANCE_MASTER_TOKEN não passa por aqui.
+    MAINTENANCE_JWT_SECRET: str = os.getenv("MAINTENANCE_JWT_SECRET", "")
+
+    # Segredo da assinatura do QR de verificação do dossiê. Mesma história.
+    # ATENÇÃO: trocar invalida os QR já emitidos. Versione em vez de trocar.
+    VERIFICACAO_SECRET: str = os.getenv("VERIFICACAO_SECRET", "")
 
     # Redis — cache de velocidade. Secret só em variável de ambiente (repo público).
     # Se vazio ou indisponível, o app funciona normalmente (cache é opcional).
@@ -103,9 +117,11 @@ class Settings(BaseSettings):
     EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
     EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "465"))
 
-    # Telegram — aviso de novo pedido de dossiê no celular do fundador
-    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
+    # Avisos operacionais para o fundador (pagamento recusado, vaga fundadora
+    # paga sem vaga, resumo da cobrança, novo pedido de dossiê). Dois canais e
+    # só dois — WhatsApp e e-mail. Ver notify_service.notificar_fundador.
+    ALERTA_WHATSAPP: str = os.getenv("ALERTA_WHATSAPP", "")
+    ALERTA_EMAIL: str = os.getenv("ALERTA_EMAIL", "")
 
     # Referral Program — real limit is 30 (frontend displays 14 for scarcity)
     # Modelo definitivo: marina que indica fica com 100% dos dossiês por 18 meses.
@@ -126,6 +142,39 @@ class Settings(BaseSettings):
     TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
     TRADITIONAL_PRICE_MONTHLY: int = 250
     LAUNCH_DOSSIER_BONUS_MONTHS: int = 18
+
+    # O preço de fundadora vale 12 meses. No 13º a assinatura passa a $250 —
+    # correção monetária combinada na venda, não é surpresa para a marina.
+    # Quem executa é a própria Stripe (subscription schedule anexado no
+    # pagamento), então não depende de rotina nossa rodando um ano depois.
+    LAUNCH_PRICE_MONTHS: int = 12
+
+    # Links de pagamento. Ficam em env para trocar de conta Stripe sem rebuild,
+    # e aqui no config para não existirem dois links do mesmo preço no sistema.
+    STRIPE_LINK_MARINA_FUNDADORA: str = os.getenv(
+        "STRIPE_LINK_MARINA_FUNDADORA",
+        "https://buy.stripe.com/28EeVdb9jf6c8cx7QA1wY00",
+    )
+    STRIPE_LINK_MARINA_OFICIAL: str = os.getenv(
+        "STRIPE_LINK_MARINA_OFICIAL",
+        "https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01",
+    )
+
+    # Inadimplência: 20 dias após a primeira cobrança recusada o acesso é
+    # cortado. Pagou, volta sozinho — ver app/core/acesso.py.
+    DIAS_ATE_CORTE_INADIMPLENCIA: int = 20
+
+    # WhatsApp. O provedor é trocável (Evolution hoje; Z-API ou a Cloud API da
+    # Meta depois) — quem envia não é escolhido pelo código que pede o envio.
+    # Vazio = canal desligado: o aviso sai só por e-mail, sem quebrar nada.
+    WHATSAPP_PROVIDER: str = os.getenv("WHATSAPP_PROVIDER", "")
+    EVOLUTION_BASE_URL: str = os.getenv("EVOLUTION_BASE_URL", "")
+    EVOLUTION_API_KEY: str = os.getenv("EVOLUTION_API_KEY", "")
+    EVOLUTION_INSTANCE: str = os.getenv("EVOLUTION_INSTANCE", "")
+    # DDI usado quando a marina digita o telefone sem ele. As 20 fundadoras são
+    # todas brasileiras (SC/SP/RJ/ES/BA); as versões LATAM/USA/EURO rodam em
+    # instalações separadas, com o DDI delas.
+    DDI_PADRAO: str = os.getenv("DDI_PADRAO", "55")
 
     @property
     def cors_origins(self) -> list[str]:

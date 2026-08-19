@@ -5,6 +5,7 @@ from fastapi import APIRouter, Header, HTTPException, Depends, Request
 from app.schemas.models import UsuarioCreate, UsuarioResponse, MaintenanceLoginRequest, LoginRequest
 from app.core.supabase import get_supabase_admin
 from app.core.security import hash_password, verify_password, create_access_token
+from app.core.acesso import avaliar_acesso
 from app.core.config import settings
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
@@ -23,6 +24,15 @@ async def maintenance_login(data: MaintenanceLoginRequest, request: Request):
 
     if not settings.MAINTENANCE_USERNAME or not settings.MAINTENANCE_PASSWORD:
         raise HTTPException(status_code=503, detail="Maintenance credentials not configured")
+
+    # Sem o segredo dedicado nao ha como assinar o cracha. Avisa claro em vez de
+    # estourar 500 — e lembra do caminho que continua aberto.
+    if not settings.MAINTENANCE_JWT_SECRET:
+        raise HTTPException(
+            status_code=503,
+            detail="MAINTENANCE_JWT_SECRET nao configurado: login de manutencao "
+                   "indisponivel. Use o master token.",
+        )
 
     if data.username != settings.MAINTENANCE_USERNAME or data.password != settings.MAINTENANCE_PASSWORD:
         audit_service.log_login(
@@ -156,6 +166,21 @@ async def login(data: LoginRequest, request: Request):
         })
         
         if response.session:
+            # Senha certa, mas o acesso depende do pagamento. Devolver o motivo
+            # aqui (e não um 401 genérico) é o que faz a marina ir pagar em vez
+            # de ligar achando que perdeu a senha.
+            bloqueio = avaliar_acesso(getattr(response.user, "user_metadata", None))
+            if bloqueio:
+                audit_service.log_login(
+                    user_id=response.user.id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    success=False,
+                    error_message=f"acesso bloqueado: {bloqueio.motivo}",
+                    location=location
+                )
+                raise HTTPException(status_code=402, detail=bloqueio.as_dict())
+
             # Log successful login
             audit_service.log_login(
                 user_id=response.user.id,
@@ -164,7 +189,7 @@ async def login(data: LoginRequest, request: Request):
                 success=True,
                 location=location
             )
-            
+
             return {
                 "access_token": response.session.access_token,
                 "refresh_token": response.session.refresh_token,
@@ -268,7 +293,13 @@ async def get_me(request: Request, authorization: str = Header(None)):
     
     try:
         user = supabase.auth.get_user(token)
-        
+
+        # /me é o que o frontend chama para montar a sessão. Sem o porteiro
+        # aqui, a marina cortada continuaria vendo o painel carregar.
+        bloqueio = avaliar_acesso(getattr(user.user, "user_metadata", None) if user.user else None)
+        if bloqueio:
+            raise HTTPException(status_code=402, detail=bloqueio.as_dict())
+
         # Log user info access
         audit_service.create_audit_log(
             action=AuditAction.ASSET_VIEW,  # Using existing action for now
@@ -285,7 +316,11 @@ async def get_me(request: Request, authorization: str = Header(None)):
         )
         
         return user.user
-        
+
+    except HTTPException:
+        # O 402 do porteiro precisa chegar ao frontend com o motivo do bloqueio;
+        # cair no handler abaixo o transformaria num 401 sem explicação.
+        raise
     except Exception as e:
         # Log error
         audit_service.create_audit_log(

@@ -60,3 +60,22 @@ Além da inteligência Preditiva/Corretiva (herdada da Manutenção), a aba Elé
 1. **⚠ NORMAM/ANATEL:** Se EPIRB instalada sem cadastro ANATEL — aviso vermelho no PDF.
 2. **⚠ NORMAM-02/DPC:** Se VHF Canal 16 não monitorado — aviso vermelho no PDF.
 3. **Indicador de Saúde Colorido:** Verde (≥70% preventiva), Laranja (40-69%), Vermelho (<40%).
+
+---
+
+## 4. Estratégia de Onboarding VIP & Apresentação do Painel (Vídeo Screencast + Supabase)
+**Data da Decisão:** 13/08/2026
+
+### O Problema
+No mercado náutico de alto padrão, proprietários de marinas e armadores não compram soluções "às cegas". Apresentações estáticas ou e-mails genéricos pós-cadastro possuem baixa taxa de conversão. É necessário mostrar o produto "rodando" para gerar confiança imediata.
+
+### A Solução Comercial & Tecnológica
+1. **Vídeo de Demonstração (Screencast / Walkthrough):**
+   - Gravação de tela (estilo Loom ou OBS) conduzida pelo próprio fundador.
+   - O formato permite mostrar na prática a navegação no **Painel Técnico** (Motor, Elétrica, Documentação, etc.), demonstrando a facilidade de uso, as métricas de frota (Compliance) e a geração do Relatório Executivo PDF em tempo real.
+   - Esse formato gera extrema autenticidade e prova social do software funcionando.
+2. **Hospedagem e Restrição de Segurança no Supabase:**
+   - O arquivo de vídeo é mantido em um Bucket Privado no Supabase Storage (`marina-exclusive-videos`).
+   - A visualização é restrita através de **Signed URLs** com expiração curta (ex: 15 min) e validação de regras de acesso (RLS / Usuários autenticados no Onboarding), impedindo o vazamento ou download desautorizado do conteúdo.
+3. **Fluxo de Onboarding VIP (Gatilho Pós-Pré-Cadastro):**
+   - Logo após o preenchimento do pré-cadastro da marina (página de sucesso / onboarding), o proprietário é direcionado automaticamente para a página VIP com o player de vídeo incorporado, gerando impacto e autoridade imediata antes do contato comercial.

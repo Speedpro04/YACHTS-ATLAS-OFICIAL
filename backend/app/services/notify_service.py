@@ -1,74 +1,68 @@
 """
-Yachts Atlas — Notificações no celular (Telegram)
+Yachts Atlas — Avisos operacionais para o fundador.
 
-Aviso instantâneo para o fundador via bot do Telegram. Usa apenas a stdlib
-(urllib) — sem dependência nova. É best-effort: nunca quebra o fluxo principal.
+É por aqui que o sistema chama a atenção de um humano: pagamento recusado,
+alguém pagou preço de fundadora sem vaga para honrar, resumo diário da
+cobrança, novo pedido de dossiê.
 
-Configuração (variáveis de ambiente):
-  TELEGRAM_BOT_TOKEN  -> token do bot criado no @BotFather
-  TELEGRAM_CHAT_ID    -> id do chat (descoberto via /telegram/chat-id após
-                          você mandar uma mensagem para o bot)
+Dois canais, e só dois: **WhatsApp e e-mail**. Envia pelos que estiverem
+configurados — não é redundância à toa: o aviso de que uma marina parou de
+pagar não pode depender de um único canal estar de pé naquele dia.
+
+Best-effort por definição. Falhar em avisar nunca pode derrubar o fluxo que
+gerou o aviso — o pagamento já aconteceu, o pedido já entrou.
+
+Configuração:
+    ALERTA_WHATSAPP  -> seu número, com ou sem DDI (ex.: 48991234567)
+    ALERTA_EMAIL     -> seu e-mail; se vazio, cai no EMAIL_SENDER
 """
-import json
 import logging
-import urllib.parse
-import urllib.request
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-_API = "https://api.telegram.org/bot{token}/{method}"
+
+def _destino_email() -> str | None:
+    return settings.ALERTA_EMAIL or settings.EMAIL_SENDER or None
 
 
-def _call(method: str, params: dict) -> dict | None:
-    """Chamada simples à Bot API do Telegram. Retorna o JSON ou None."""
-    token = settings.TELEGRAM_BOT_TOKEN
-    if not token:
-        return None
-    try:
-        url = _API.format(token=token, method=method)
-        data = urllib.parse.urlencode(params).encode()
-        req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode())
-    except Exception as e:
-        logger.error(f"Telegram {method} falhou: {e}")
-        return None
-
-
-def send_telegram(text: str) -> bool:
-    """Envia uma mensagem ao chat configurado. Retorna True se enviada."""
-    chat_id = settings.TELEGRAM_CHAT_ID
-    if not settings.TELEGRAM_BOT_TOKEN or not chat_id:
-        logger.info("Telegram não configurado (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID).")
-        return False
-    result = _call("sendMessage", {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": "true",
-    })
-    return bool(result and result.get("ok"))
-
-
-def descobrir_chats() -> list[dict]:
+def notificar_fundador(titulo: str, corpo: str) -> bool:
     """
-    Lista os chats que já falaram com o bot (via getUpdates). Use para achar
-    seu chat_id: mande qualquer mensagem ao bot e chame esta função.
+    Manda um aviso pelos canais configurados. True se ao menos um saiu.
+
+    `titulo` e `corpo` vêm em texto puro: cada canal aplica a formatação dele
+    (negrito com asteriscos no WhatsApp, HTML no e-mail). Foi o que permitiu
+    trocar de canal sem reescrever mensagem nenhuma.
     """
-    result = _call("getUpdates", {})
-    if not result or not result.get("ok"):
-        return []
-    chats: dict[str, dict] = {}
-    for upd in result.get("result", []):
-        msg = upd.get("message") or upd.get("edited_message") or {}
-        chat = msg.get("chat")
-        if chat and "id" in chat:
-            chats[str(chat["id"])] = {
-                "chat_id": chat["id"],
-                "nome": (f"{chat.get('first_name', '')} {chat.get('last_name', '')}".strip()
-                         or chat.get("title") or chat.get("username")),
-                "tipo": chat.get("type"),
-            }
-    return list(chats.values())
+    entregou = False
+
+    if settings.ALERTA_WHATSAPP:
+        try:
+            from app.services.whatsapp_service import enviar_whatsapp
+            entregou = enviar_whatsapp(
+                settings.ALERTA_WHATSAPP, f"*{titulo}*\n\n{corpo}"
+            ) or entregou
+        except Exception as e:
+            logger.error(f"Falha ao avisar o fundador por WhatsApp: {e}")
+
+    destino = _destino_email()
+    if destino:
+        try:
+            from app.services.email_service import send_email
+            html = (
+                '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;'
+                f'color:#1a1a1a"><p><strong>{titulo}</strong></p>'
+                + "".join(f"<p>{linha}</p>" for linha in corpo.split("\n") if linha.strip())
+                + "</div>"
+            )
+            entregou = bool(send_email(destino, titulo, html, corpo)) or entregou
+        except Exception as e:
+            logger.error(f"Falha ao avisar o fundador por e-mail: {e}")
+
+    if not entregou:
+        # O aviso morreu aqui. Fica no log com o texto inteiro para não se
+        # perder de vez — é a última rede antes do silêncio total.
+        logger.warning(f"Aviso do fundador não entregue por nenhum canal: {titulo} | {corpo}")
+
+    return entregou

@@ -19,7 +19,7 @@ import sys
 from datetime import datetime
 
 from app.core.supabase import get_supabase_admin
-from app.services.notify_service import send_telegram
+from app.services.notify_service import notificar_fundador
 
 
 def main() -> None:
@@ -39,10 +39,10 @@ def main() -> None:
                 f"(prazo: {str(v.get('billing_starts_at'))[:10]})"
                 for v in vencidas
             )
-            send_telegram(
-                "<b>Vagas Fundadoras — período gratuito encerrado</b>\n"
+            notificar_fundador(
+                "Vagas Fundadoras — período gratuito encerrado",
                 f"{total} marina(s) entraram em cobrança (USD 250/mês) e tiveram o "
-                f"acesso travado até regularização:\n{linhas}"
+                f"acesso travado até regularização:\n{linhas}",
             )
 
     except Exception as e:

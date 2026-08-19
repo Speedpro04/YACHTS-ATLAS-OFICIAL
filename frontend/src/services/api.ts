@@ -124,6 +124,10 @@ export const api = {
       apiRequest('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     signup: (data: { email: string; password: string; nome: string }) =>
       apiRequest('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
+    // Sessão do Supabase é criada no navegador, mas quem decide se a conta pode
+    // USAR o sistema é o backend: responde 402 com o motivo quando o pagamento
+    // está pendente ou em atraso. Ver PrivateRoute e app/core/acesso.py.
+    me: () => apiRequest('/auth/me'),
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   },
   leads: {

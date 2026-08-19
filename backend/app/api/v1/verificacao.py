@@ -19,6 +19,7 @@ DUAS REGRAS DE SEGURANÇA QUE MOLDAM ESTE MÓDULO:
    promete.
 """
 import hashlib
+import logging
 import hmac
 import os
 
@@ -30,18 +31,21 @@ router = APIRouter()
 
 # Segredo da assinatura.
 #
-# Ordem: variável dedicada -> JWT secret do Supabase -> literal de dev.
-# Cair no SUPABASE_JWT_SECRET é proposital: ele já existe em produção, então a
-# verificação funciona no deploy sem configuração nova — e sem o risco de
-# alguém esquecer a variável e o sistema assinar com o segredo de dev.
+# Já caiu no SUPABASE_JWT_SECRET quando a variável dedicada faltava. Aquele
+# valor está publicado no histórico do Git, então quem o tivesse forjava o
+# código de verificação de qualquer dossiê. O encadeamento foi removido: ou a
+# variável dedicada existe, ou fica o literal de dev — que nunca deve chegar a
+# produção e por isso grita no log.
 #
 # ATENÇÃO: trocar este segredo invalida os QR de todos os dossiês já emitidos.
 # Se um dia for necessário rotacionar, versione a assinatura em vez de trocar.
-_SEGREDO = (
-    os.getenv("VERIFICACAO_SECRET")
-    or os.getenv("SUPABASE_JWT_SECRET")
-    or "yachts-atlas-verificacao-dev"
-)
+_SEGREDO = os.getenv("VERIFICACAO_SECRET") or "yachts-atlas-verificacao-dev"
+
+if not os.getenv("VERIFICACAO_SECRET"):
+    logging.getLogger(__name__).warning(
+        "VERIFICACAO_SECRET nao configurado — assinatura do QR usando segredo "
+        "de desenvolvimento. NAO usar assim em producao."
+    )
 
 TAM_ASSINATURA = 12
 

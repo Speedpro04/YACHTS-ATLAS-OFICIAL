@@ -2,7 +2,6 @@
 Yachts Atlas — Leads (marinas e parceiros)
 """
 import logging
-import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -23,14 +22,10 @@ router = APIRouter()
 # lancamento diferentes no mesmo sistema.
 VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
 MINUTOS_DE_RESERVA = 60
-LINK_MARINA_FUNDADORA = os.getenv(
-    "STRIPE_LINK_MARINA_FUNDADORA",
-    "https://buy.stripe.com/28EeVdb9jf6c8cx7QA1wY00",
-)
-LINK_MARINA_OFICIAL = os.getenv(
-    "STRIPE_LINK_MARINA_OFICIAL",
-    "https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01",
-)
+# Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
+# links para mandar a marina bloqueada ao checkout do preço que ela contratou.
+LINK_MARINA_FUNDADORA = settings.STRIPE_LINK_MARINA_FUNDADORA
+LINK_MARINA_OFICIAL = settings.STRIPE_LINK_MARINA_OFICIAL
 
 
 def _oferta_marina(supabase, data) -> dict:
@@ -331,11 +326,11 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
 
     # 5) Avisa o fundador (best-effort)
     try:
-        from app.services.notify_service import send_telegram
-        send_telegram(
-            "<b>Vaga Fundadora ativada 🎁</b>\n"
+        from app.services.notify_service import notificar_fundador
+        notificar_fundador(
+            "Vaga Fundadora ativada",
             f"{data.name} ({data.email}) acabou de se cadastrar no passe grátis.\n"
-            f"6 meses começam agora — cobrança em {str(result.get('billing_starts_at'))[:10]}."
+            f"6 meses começam agora — cobrança em {str(result.get('billing_starts_at'))[:10]}.",
         )
     except Exception:
         pass

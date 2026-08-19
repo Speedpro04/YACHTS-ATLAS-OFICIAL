@@ -4,7 +4,7 @@ Complete payment processing with Stripe
 """
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 import stripe
@@ -321,6 +321,91 @@ class StripeService:
             logger.error(f"Stripe error creating price: {str(e)}")
             raise Exception(f"Failed to create price: {str(e)}")
     
+    @staticmethod
+    def _avisar_pagamento_sem_vaga(email: Optional[str], motivo: Optional[str], checkout_id: str) -> None:
+        """Alguém pagou o preço de fundadora sem ter vaga — decisão é humana."""
+        try:
+            from app.services.notify_service import notificar_fundador
+            notificar_fundador(
+                f"Pagou ${settings.LAUNCH_PRICE_MONTHLY} sem vaga fundadora",
+                f"{email or 'sem e-mail'} — motivo: {motivo or 'desconhecido'}.\n"
+                f"Checkout {checkout_id}.\n"
+                f"A assinatura está ativa a ${settings.LAUNCH_PRICE_MONTHLY}/mês. "
+                f"Decida: honrar como fundadora, migrar para "
+                f"${settings.TRADITIONAL_PRICE_MONTHLY} ou reembolsar.",
+            )
+        except Exception as e:
+            logger.error(f"Falha ao avisar sobre pagamento sem vaga ({checkout_id}): {e}")
+
+    @staticmethod
+    def _id_do_preco(item: Any) -> Optional[str]:
+        """O preço de um item de fase vem como id ou como objeto, conforme a versão."""
+        preco = item.get("price") if isinstance(item, dict) else getattr(item, "price", None)
+        if isinstance(preco, str):
+            return preco
+        if isinstance(preco, dict):
+            return preco.get("id")
+        return getattr(preco, "id", None)
+
+    def _agendar_correcao_do_13o_mes(self, subscription_id: str) -> None:
+        """
+        Deixa agendado na Stripe: 12 meses a $200, depois $250.
+
+        Combinado na venda — a fundadora paga o preço de lançamento por um ano
+        e entra na tabela oficial no 13º mês. Quem executa é a própria Stripe,
+        na data de CADA marina: quem assinou em outubro vira em outubro, quem
+        assinou em dezembro vira em dezembro. Não existe rotina nossa para
+        rodar — nem para alguém esquecer de rodar — um ano depois.
+
+        Best-effort: o pagamento já aconteceu, e falhar aqui não pode derrubar
+        o webhook. Se falhar, o Telegram avisa para ser feito no painel.
+        """
+        try:
+            preco_oficial = self._get_or_create_price(
+                amount=settings.TRADITIONAL_PRICE_MONTHLY * 100,
+                currency="usd",
+                recurring=True,
+                product_name=self.PRICING[PlanType.MARINA]["name"],
+            )
+
+            # O cronograma nasce da assinatura que já existe, então a primeira
+            # fase precisa repetir os itens que ela já tem — é o que ancora a
+            # troca no aniversário certo em vez de recomeçar o ciclo hoje.
+            agenda = stripe.SubscriptionSchedule.create(from_subscription=subscription_id)
+            itens_atuais = [
+                {"price": self._id_do_preco(item), "quantity": item.get("quantity", 1) or 1}
+                for item in agenda.phases[0]["items"]
+            ]
+            if not all(item["price"] for item in itens_atuais):
+                raise ValueError("não consegui ler o preço atual da assinatura")
+
+            stripe.SubscriptionSchedule.modify(
+                agenda.id,
+                end_behavior="release",
+                phases=[
+                    {"items": itens_atuais, "iterations": settings.LAUNCH_PRICE_MONTHS},
+                    {"items": [{"price": preco_oficial, "quantity": 1}]},
+                ],
+            )
+            logger.info(
+                f"Correção do 13º mês agendada para {subscription_id}: "
+                f"{settings.LAUNCH_PRICE_MONTHS} meses a ${settings.LAUNCH_PRICE_MONTHLY}, "
+                f"depois ${settings.TRADITIONAL_PRICE_MONTHLY}"
+            )
+        except Exception as e:
+            logger.error(f"Falha ao agendar o 13º mês de {subscription_id}: {e}")
+            try:
+                from app.services.notify_service import notificar_fundador
+                notificar_fundador(
+                    "Reajuste do 13º mês não agendado",
+                    f"Assinatura {subscription_id} ficou sem o cronograma de "
+                    f"${settings.LAUNCH_PRICE_MONTHLY} → ${settings.TRADITIONAL_PRICE_MONTHLY}.\n"
+                    "Agende na mão no painel da Stripe, senão ela paga o preço "
+                    "de fundadora para sempre.",
+                )
+            except Exception:
+                pass
+
     def verify_webhook_signature(
         self,
         payload: bytes,
@@ -403,13 +488,21 @@ class StripeService:
         return email or (metadata or {}).get("email") or getattr(session, "customer_email", None)
 
     @staticmethod
-    def _marcar_pagamento_confirmado(user_id: str) -> None:
+    def _atualizar_metadata(
+        user_id: str,
+        mudancas: Dict[str, Any],
+        preservar: tuple = (),
+    ) -> None:
         """
-        Vira o acesso de 'pagamento pendente' para 'pago'.
+        Escreve chaves no user_metadata sem perder o que ja estava la.
 
-        A conta nasce pendente no cadastro (leads._criar_acesso_marina_paga).
-        Le o metadata atual antes de gravar porque o update do Auth troca o
-        objeto inteiro — escrever so a chave apagaria nome, telefone e marina.
+        O update do Auth TROCA o objeto inteiro — gravar so a chave nova
+        apagaria nome, telefone e marina. Por isso le antes e mescla.
+
+        Valor None apaga a chave. Chave listada em `preservar` so e escrita se
+        ainda nao existir: e assim que `inadimplente_desde` guarda a data da
+        PRIMEIRA cobranca recusada, e nao a da ultima — o Stripe tenta varias
+        vezes, e a cada tentativa o prazo de 20 dias voltaria para o zero.
         """
         try:
             from app.core.supabase import get_supabase_admin
@@ -417,11 +510,62 @@ class StripeService:
             atual = admin.get_user_by_id(user_id)
             usuario = getattr(atual, "user", None) or atual
             meta = dict(getattr(usuario, "user_metadata", None) or {})
-            meta["pagamento"] = "pago"
+            for chave, valor in mudancas.items():
+                if chave in preservar and meta.get(chave):
+                    continue
+                if valor is None:
+                    meta.pop(chave, None)
+                else:
+                    meta[chave] = valor
             admin.update_user_by_id(user_id, {"user_metadata": meta})
-            logger.info(f"Pagamento confirmado no acesso do usuario {user_id}")
         except Exception as e:
-            logger.error(f"Falha ao confirmar pagamento do usuario {user_id}: {e}")
+            logger.error(f"Falha ao atualizar acesso do usuario {user_id}: {e}")
+
+    @classmethod
+    def _marcar_pagamento_confirmado(cls, user_id: str) -> None:
+        """
+        Libera o acesso: 'pendente' vira 'pago' e a inadimplencia e zerada.
+
+        A conta nasce pendente no cadastro (leads._criar_acesso_marina_paga).
+        Limpar `inadimplente_desde` aqui e o que faz o religamento ser
+        automatico — a marina que estava cortada volta a usar o sistema na
+        requisicao seguinte ao pagamento, sem ninguem mexer em nada.
+        """
+        cls._atualizar_metadata(user_id, {
+            "pagamento": "pago",
+            "inadimplente_desde": None,
+            "fatura_url": None,
+            # Zera a régua: se a marina atrasar de novo daqui a seis meses, o
+            # ciclo de avisos recomeça do dia 0 em vez de ficar mudo por já ter
+            # "avisado tudo" na vez anterior.
+            "avisos_cobranca": None,
+        })
+        logger.info(f"Pagamento confirmado no acesso do usuario {user_id}")
+
+    @staticmethod
+    def _usuario_da_assinatura(subscription_id: str) -> Optional[str]:
+        """
+        Descobre de quem e a assinatura pelo checkout que a originou.
+
+        Eventos de fatura e de assinatura nao carregam o id do Supabase — so
+        o checkout inicial carrega. E por ele que se chega no dono para cortar
+        ou religar o acesso.
+        """
+        try:
+            from app.core.supabase import get_supabase_admin
+            origem = (
+                get_supabase_admin()
+                .table("payments")
+                .select("usuario_id")
+                .eq("stripe_subscription_id", subscription_id)
+                .order("created_at", desc=False)
+                .limit(1)
+                .execute()
+            )
+            return (origem.data or [{}])[0].get("usuario_id")
+        except Exception as e:
+            logger.error(f"Falha ao achar o dono da assinatura {subscription_id}: {e}")
+            return None
 
     def _handle_checkout_completed(self, session: stripe.checkout.Session) -> Dict[str, Any]:
         """Handle checkout session completed"""
@@ -535,6 +679,18 @@ class StripeService:
                     # (tradicional = as 20 vagas fundadoras esgotaram; marina segue no fluxo padrao)
                     _r = _res.data if isinstance(_res.data, dict) else {}
                     logger.info(f"Cadastro marina {marina_email}: modo={_r.get('modo')} slot={_r.get('slot')} (checkout {session.id})")
+
+                    if _r.get("modo") == "tradicional":
+                        # Pagou $200 e nao ha vaga para honrar. O link de $200 e
+                        # uma URL publica e estatica: quem tiver ela na mao paga
+                        # esse valor mesmo depois das 20 esgotarem. Isso nao pode
+                        # passar despercebido — e uma assinatura recorrente a
+                        # menos $50/mes para sempre.
+                        self._avisar_pagamento_sem_vaga(
+                            marina_email, _r.get("motivo"), session.id
+                        )
+                    elif getattr(session, "subscription", None):
+                        self._agendar_correcao_do_13o_mes(session.subscription)
                 else:
                     logger.warning(f"Checkout fundadora {session.id} sem e-mail — cadastro nao realizado")
             except Exception as e:
@@ -567,14 +723,39 @@ class StripeService:
             "status": subscription.status
         }
     
+    # Situacoes em que a Stripe considera a assinatura encerrada. O corte por
+    # atraso e nosso (20 dias, ver acesso.py); estas aqui sao terminais — nao
+    # existe mais cobranca automatica para religar sozinha.
+    STATUS_ENCERRADOS = ("canceled", "unpaid", "incomplete_expired")
+
+    def _bloquear_por_assinatura_encerrada(self, subscription_id: str, motivo: str) -> None:
+        """Tira o acesso de quem nao tem mais assinatura ativa."""
+        usuario_id = self._usuario_da_assinatura(subscription_id)
+        if not usuario_id:
+            logger.warning(
+                f"Assinatura {subscription_id} encerrada ({motivo}), mas sem "
+                "checkout de origem — nenhum acesso foi revogado"
+            )
+            return
+        self._atualizar_metadata(usuario_id, {"pagamento": "cancelado"})
+        logger.info(f"Acesso revogado ({motivo}): assinatura {subscription_id}")
+
     def _handle_subscription_updated(self, subscription: stripe.Subscription) -> Dict[str, Any]:
         """Handle subscription updated"""
         metadata = subscription.metadata
         user_id = metadata.get('user_id')
         plan_type = metadata.get('plan_type')
-        
+
         logger.info(f"Subscription updated for user {user_id}, plan {plan_type}, status {subscription.status}")
-        
+
+        # Só reage ao que encerra a assinatura. O religamento fica por conta do
+        # invoice.paid — este evento dispara a cada mudancinha da assinatura, e
+        # reescrever o acesso em todas elas seria ruído e risco à toa.
+        if subscription.status in self.STATUS_ENCERRADOS:
+            self._bloquear_por_assinatura_encerrada(
+                subscription.id, f"status={subscription.status}"
+            )
+
         return {
             "status": "updated",
             "user_id": user_id,
@@ -590,7 +771,11 @@ class StripeService:
         plan_type = metadata.get('plan_type')
         
         logger.info(f"Subscription deleted for user {user_id}, plan {plan_type}")
-        
+
+        # Cancelamento voluntario chega aqui so no fim do periodo ja pago — ate
+        # la a marina continua usando o que comprou, como tem que ser.
+        self._bloquear_por_assinatura_encerrada(subscription.id, "assinatura cancelada")
+
         return {
             "status": "cancelled",
             "user_id": user_id,
@@ -690,6 +875,12 @@ class StripeService:
         if subscription_id and billing_reason != "subscription_create":
             self._registrar_renovacao(invoice, subscription_id, amount_paid)
 
+            # Pagou, volta a funcionar — sem ninguem apertar nada. Se a marina
+            # estava cortada, o acesso volta na proxima requisicao dela.
+            usuario_id = self._usuario_da_assinatura(subscription_id)
+            if usuario_id:
+                self._marcar_pagamento_confirmado(usuario_id)
+
         return {
             "status": "paid",
             "subscription_id": subscription_id,
@@ -702,20 +893,45 @@ class StripeService:
         """Handle invoice payment failed"""
         subscription_id = self._extract_subscription_id(invoice)
         customer_id = invoice.customer
-        
+
         logger.warning(f"Invoice payment failed for subscription {subscription_id}")
+
+        # Comeca a contar os 20 dias. `preservar` garante que a data seja a da
+        # PRIMEIRA recusa: o Stripe tenta de novo varias vezes, e sem isso cada
+        # tentativa empurraria o corte para frente e ele nunca aconteceria.
+        # A marina segue usando o sistema durante o prazo — quem corta e o
+        # porteiro (app/core/acesso.py), ao ver a data ficar velha demais.
+        usuario_id = self._usuario_da_assinatura(subscription_id) if subscription_id else None
+        if usuario_id:
+            self._atualizar_metadata(
+                usuario_id,
+                {
+                    "inadimplente_desde": datetime.now(timezone.utc).isoformat(),
+                    "fatura_url": getattr(invoice, "hosted_invoice_url", None),
+                },
+                preservar=("inadimplente_desde",),
+            )
+            # Aviso do dia 0 sai agora, não na madrugada seguinte: quanto antes
+            # a marina souber do cartão recusado, mais barato é resolver.
+            try:
+                from app.services.cobranca_service import avisar_primeira_recusa
+                avisar_primeira_recusa(usuario_id)
+            except Exception as e:
+                logger.error(f"Falha ao avisar da primeira recusa ({usuario_id}): {e}")
 
         # Recorrencia falhando em silencio = marina perdida sem ninguem saber.
         try:
-            from app.services.notify_service import send_telegram
-            send_telegram(
-                "<b>Falha no pagamento ⚠️</b>\n"
+            from app.services.notify_service import notificar_fundador
+            notificar_fundador(
+                "Falha no pagamento",
                 f"Assinatura {subscription_id} — tentativa {invoice.attempt_count}.\n"
-                f"Cliente Stripe: {customer_id}"
+                f"Cliente Stripe: {customer_id}\n"
+                f"Acesso é cortado após {settings.DIAS_ATE_CORTE_INADIMPLENCIA} "
+                "dias da primeira recusa.",
             )
         except Exception as e:
             logger.error(f"Falha ao avisar sobre pagamento recusado: {e}")
-        
+
         return {
             "status": "failed",
             "subscription_id": subscription_id,

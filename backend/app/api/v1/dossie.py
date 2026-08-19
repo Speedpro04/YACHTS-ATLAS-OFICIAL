@@ -23,7 +23,7 @@ from app.core.authz import get_ativo_autorizado
 from app.services.dossie_data import montar_dados_dossie
 from app.services.dossie_pdf import gerar_pdf_dossie
 from app.services.alert_service import send_email_alert
-from app.services.notify_service import send_telegram, descobrir_chats
+from app.services.notify_service import notificar_fundador
 
 router = APIRouter()
 
@@ -136,16 +136,16 @@ async def solicitar_dossie(data: DossieSolicitacao):
     except Exception:
         pass
 
-    # Ping instantâneo no celular do fundador (Telegram, best-effort)
+    # Ping instantâneo no celular do fundador (WhatsApp/e-mail, best-effort)
     try:
-        send_telegram(
-            "🚤 <b>Novo pedido de dossiê</b>\n"
-            f"👤 {data.solicitante_nome}\n"
-            f"✉️ {data.solicitante_email}\n"
-            f"📞 {data.solicitante_telefone or '-'}\n"
-            f"🎯 Finalidade: {finalidade}\n"
-            f"🛥️ Ativo: {data.ativo_id or '-'}\n"
-            f"⚓ Marina: {data.marina_nome or '-'}"
+        notificar_fundador(
+            "Novo pedido de dossiê",
+            f"Nome: {data.solicitante_nome}\n"
+            f"E-mail: {data.solicitante_email}\n"
+            f"Telefone: {data.solicitante_telefone or '-'}\n"
+            f"Finalidade: {finalidade}\n"
+            f"Ativo: {data.ativo_id or '-'}\n"
+            f"Marina: {data.marina_nome or '-'}",
         )
     except Exception:
         pass
@@ -249,37 +249,28 @@ async def recusar_solicitacao(
 
 
 # ----------------------------------------------------------------------------
-# 2d) Setup do aviso no celular (Telegram)
+# 2d) Teste do canal de avisos (WhatsApp e e-mail)
 # ----------------------------------------------------------------------------
 
-@router.get("/telegram/chat-id")
-async def telegram_chat_id(user: dict = Depends(get_current_user)):
+@router.post("/avisos/teste")
+async def testar_aviso(user: dict = Depends(get_current_user)):
     """
-    Descobre o chat_id para configurar o aviso. Passo a passo:
-      1) crie um bot no @BotFather e defina TELEGRAM_BOT_TOKEN;
-      2) abra o seu bot no Telegram e mande qualquer mensagem (ex: /start);
-      3) chame este endpoint — ele devolve o chat_id;
-      4) coloque o valor em TELEGRAM_CHAT_ID e faça o deploy.
+    Confirma que os avisos operacionais chegam.
+
+    Vale a pena rodar depois de mexer nas variáveis: descobrir que o canal
+    está errado no dia em que uma marina para de pagar é caro demais.
+
+    Configuração: ALERTA_WHATSAPP (seu número) e ALERTA_EMAIL (seu e-mail).
     """
-    if not settings.TELEGRAM_BOT_TOKEN:
-        raise HTTPException(status_code=400, detail="Defina TELEGRAM_BOT_TOKEN primeiro.")
-    chats = descobrir_chats()
-    if not chats:
-        raise HTTPException(
-            status_code=404,
-            detail="Nenhuma conversa encontrada. Mande uma mensagem ao seu bot e tente de novo.",
-        )
-    return {"chats": chats}
-
-
-@router.post("/telegram/teste")
-async def telegram_teste(user: dict = Depends(get_current_user)):
-    """Envia uma mensagem de teste para confirmar que o aviso chega no celular."""
-    ok = send_telegram("✅ Yachts Atlas — teste de aviso. Se você recebeu isto, está tudo certo.")
+    ok = notificar_fundador(
+        "Teste de aviso",
+        "Se você recebeu isto, o canal de avisos do Yachts Atlas está funcionando.",
+    )
     if not ok:
         raise HTTPException(
             status_code=400,
-            detail="Falhou. Verifique TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID.",
+            detail="Nenhum canal entregou. Verifique ALERTA_WHATSAPP, ALERTA_EMAIL, "
+                   "EMAIL_PASSWORD e a configuração da Evolution.",
         )
     return {"status": "enviado"}
 
