@@ -111,11 +111,23 @@ class Settings(BaseSettings):
     # URL pública do site (usada em e-mails de liberação de dossiê)
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://yachtsatlas.online")
 
-    # Email Configuration for Alerts
-    EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "yachtsatlas@gmail.com")
+    # E-mail. A caixa real fica na Hostinger, no proprio dominio: e ela que
+    # autentica no SMTP e recebe as respostas. Sair de um @gmail.com para
+    # caixa corporativa de marina e caminho curto para o spam — o dominio
+    # proprio tem SPF e DKIM, e cobranca que cai no spam e dinheiro que nao
+    # entra.
+    EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "contato@yachtsatlas.online")
     EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
-    EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
+    EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.hostinger.com")
     EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "465"))
+
+    # Alias que assina as cobrancas. Entrega na mesma caixa do EMAIL_SENDER e
+    # nao tem senha propria — quem faz login continua sendo a caixa real.
+    # Serve para a marina reconhecer o assunto pelo remetente, e para voce
+    # filtrar resposta de cobranca sem precisar de uma segunda conta.
+    EMAIL_REMETENTE_COBRANCA: str = os.getenv(
+        "EMAIL_REMETENTE_COBRANCA", "cobranca@yachtsatlas.online"
+    )
 
     # Avisos operacionais para o fundador (pagamento recusado, vaga fundadora
     # paga sem vaga, resumo da cobrança, novo pedido de dossiê). Dois canais e

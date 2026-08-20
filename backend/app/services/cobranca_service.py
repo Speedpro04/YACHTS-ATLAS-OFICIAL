@@ -130,7 +130,12 @@ def avisar(user_id: str, metadata: dict, marco: int) -> bool:
     if email:
         try:
             from app.services.email_service import send_email
-            send_email(email, assunto, _html(corpo), corpo)
+            # Assina como cobranca@ — a marina reconhece o assunto antes de
+            # abrir, e a resposta dela cai etiquetada na mesma caixa.
+            send_email(
+                email, assunto, _html(corpo), corpo,
+                remetente=settings.EMAIL_REMETENTE_COBRANCA,
+            )
         except Exception as e:
             logger.error(f"Falha no e-mail de cobrança (marco {marco}) para {email}: {e}")
 

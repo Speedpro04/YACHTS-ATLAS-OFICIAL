@@ -28,8 +28,21 @@ logger = logging.getLogger(__name__)
 REMETENTE_NOME = "Yachts Atlas"
 
 
-def send_email(to_email: str, subject: str, html: str, text: str | None = None) -> bool:
-    """Envia um e-mail HTML. Best-effort: retorna False em vez de levantar erro."""
+def send_email(
+    to_email: str,
+    subject: str,
+    html: str,
+    text: str | None = None,
+    remetente: str | None = None,
+) -> bool:
+    """
+    Envia um e-mail HTML. Best-effort: retorna False em vez de levantar erro.
+
+    `remetente` permite assinar como um alias do domínio — cobranca@ ou
+    suporte@ — sem deixar de autenticar na caixa real. Alias nao tem senha
+    propria: quem faz login continua sendo EMAIL_SENDER, e so o cabecalho
+    From muda. Ausente, assina com a propria caixa.
+    """
     if not settings.EMAIL_SENDER or not settings.EMAIL_PASSWORD:
         logger.info("E-mail não configurado (EMAIL_SENDER/EMAIL_PASSWORD) — pulando envio.")
         return False
@@ -39,7 +52,10 @@ def send_email(to_email: str, subject: str, html: str, text: str | None = None) 
 
     try:
         msg = EmailMessage()
-        msg["From"] = formataddr((REMETENTE_NOME, settings.EMAIL_SENDER))
+        msg["From"] = formataddr((REMETENTE_NOME, remetente or settings.EMAIL_SENDER))
+        # Resposta da marina volta para a caixa real, mesmo quando o From e um
+        # alias — e no alias que ela clica em "responder".
+        msg["Reply-To"] = settings.EMAIL_SENDER
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.set_content(text or "Bem-vindo ao Yachts Atlas. Acesse: " + settings.FRONTEND_URL)

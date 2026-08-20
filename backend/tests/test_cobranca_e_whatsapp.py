@@ -169,7 +169,8 @@ def envio_falso(monkeypatch):
 
     monkeypatch.setattr(
         "app.services.email_service.send_email",
-        lambda to, subject, html, text=None: registro["emails"].append((to, subject)) or True,
+        lambda to, subject, html, text=None, remetente=None:
+            registro["emails"].append((to, subject, remetente)) or True,
     )
     monkeypatch.setattr(
         "app.services.whatsapp_service.enviar_whatsapp",
@@ -196,6 +197,9 @@ def test_aviso_sai_pelos_dois_canais_e_fica_registrado(envio_falso):
     assert avisar("user-1", _marina_devendo(), 0) is True
 
     assert envio_falso["emails"] and envio_falso["whatsapps"]
+    # Cobranca assina como o alias, para a marina reconhecer o assunto antes
+    # de abrir — e a resposta dela chegar etiquetada na mesma caixa.
+    assert envio_falso["emails"][0][2] == settings.EMAIL_REMETENTE_COBRANCA
     assert envio_falso["metadata"] == [{cobranca_service.CHAVE_AVISOS: [0]}]
 
 
@@ -242,7 +246,7 @@ def test_aviso_do_fundador_sai_pelos_dois_canais(envio_falso, monkeypatch):
     assert notificar_fundador("Falha no pagamento", "Assinatura sub_123.") is True
 
     assert envio_falso["whatsapps"][0][0] == "48991234567"
-    assert envio_falso["emails"][0] == ("fundador@exemplo.com", "Falha no pagamento")
+    assert envio_falso["emails"][0][:2] == ("fundador@exemplo.com", "Falha no pagamento")
 
 
 def test_sem_canal_configurado_o_aviso_nao_derruba_o_fluxo(monkeypatch):
