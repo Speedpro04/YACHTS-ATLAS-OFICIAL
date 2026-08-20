@@ -54,7 +54,8 @@ CATEGORIAS_TECNICAS: list[tuple[str, str]] = [
 
 # Rótulos náuticos da galeria fotográfica (espelha GALERIA_CATS no front).
 GALERIA_LABELS: dict[str, str] = {
-    "casco_exterior": "Casco / Exterior",
+    "embarcacao": "Fotos da Embarcação",
+    "casco_exterior": "Integridade do Casco",
     "motor": "Motor / Propulsão",
     "pintura": "Pintura",
     "interior": "Interior",
@@ -65,7 +66,7 @@ GALERIA_LABELS: dict[str, str] = {
     "fotos": "Registro Geral",
 }
 
-MAX_FOTOS = 400  # capacidade fotográfica por embarcação (espelha o front)
+MAX_FOTOS = 430  # capacidade fotográfica por embarcação (espelha o front)
 
 
 def _por_categoria(registros: list[dict], categoria: str) -> list[dict]:
@@ -248,7 +249,7 @@ def _resumo_fotografico(documentos: list[dict]) -> dict[str, Any]:
     for doc in documentos:
         if doc.get("tipo") != "foto":
             continue
-        # Vitrine = fotos de apresentação (interior/exterior), separadas do pool de 400
+        # Vitrine = fotos de apresentação (interior/exterior), separadas do pool de 430
         if doc.get("categoria") == "vitrine":
             continue
         total += 1

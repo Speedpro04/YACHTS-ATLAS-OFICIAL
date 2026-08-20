@@ -36,7 +36,7 @@ def _anexar_total_fotos(supabase, ativos: list[dict]) -> None:
     contagem: dict[str, int] = {}
     if ids:
         try:
-            # Exclui a vitrine (fotos de apresentação, separadas do pool de 400)
+            # Exclui a vitrine (fotos de apresentação, separadas do pool de 430)
             res = (
                 supabase.table("documentos")
                 .select("ativo_id")

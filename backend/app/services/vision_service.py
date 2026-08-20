@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Chaves válidas (espelha GALERIA_CATS no frontend)
 CATEGORIAS = {
-    "casco_exterior", "motor", "pintura", "interior",
+    "embarcacao", "casco_exterior", "motor", "pintura", "interior",
     "eletronica", "notas_fiscais", "antes_depois", "outros",
 }
 

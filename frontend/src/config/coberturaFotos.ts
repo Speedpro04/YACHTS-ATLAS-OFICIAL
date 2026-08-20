@@ -10,7 +10,7 @@
  * área no valor do ativo (ponderado).
  */
 
-export const MAX_FOTOS = 400
+export const MAX_FOTOS = 430
 
 /** Limiar de "cobertura premium" — argumento comercial (negociação/seguradora). */
 export const COBERTURA_PREMIUM = 80
@@ -23,7 +23,11 @@ export interface CoberturaCat {
 }
 
 export const COBERTURA_CATS: CoberturaCat[] = [
-  { key: 'casco_exterior', label: 'Casco / Exterior', minimo: 80 },
+  // Primeira da lista de propósito: é o barco inteiro, antes dos detalhes.
+  // Perfil, lateral, popa e proa — o que o comprador olha primeiro, e o que
+  // não cabia em "Casco / Exterior", que trata da integridade do casco.
+  { key: 'embarcacao', label: 'Fotos da Embarcação', minimo: 30 },
+  { key: 'casco_exterior', label: 'Integridade do Casco', minimo: 80 },
   { key: 'motor', label: 'Motor / Propulsão', minimo: 70 },
   { key: 'interior', label: 'Interior', minimo: 60 },
   { key: 'pintura', label: 'Pintura', minimo: 40 },

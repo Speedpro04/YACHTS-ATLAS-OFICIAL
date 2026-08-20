@@ -10,11 +10,34 @@ from app.services.vision_service import classificar_foto, CATEGORIAS as GALERIA_
 from app.services.s3_service import get_s3_service
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
+import re
+import unicodedata
 import uuid
 from datetime import datetime
 
 router = APIRouter()
 audit_service = AuditService()
+
+
+def _nome_seguro(nome: str | None) -> str:
+    """
+    Nome de arquivo aceitável como chave no Supabase Storage.
+
+    O storage recusa chave com acento ou espaço e devolve 400 — e o frontend
+    mostrava "servidor acordando, tente novamente", mandando a marina insistir
+    para sempre num arquivo que nunca ia subir. Foto chamada
+    "iate 38 pés.jfif" e nome de embarcação com acento sao a regra no Brasil,
+    nao a excecao.
+
+    Sanitiza SO a chave do storage. O nome original continua sendo gravado em
+    documentos.nome_arquivo — e ele que a marina ve na tela.
+    """
+    base = unicodedata.normalize("NFKD", nome or "arquivo")
+    base = base.encode("ascii", "ignore").decode("ascii")      # tira acento
+    base = re.sub(r"[^A-Za-z0-9._-]+", "-", base).strip("-.")   # espaço e o resto
+    base = re.sub(r"-{2,}", "-", base)
+    # Nome inteiro em caracteres proibidos (ex.: "日本語.jpg") vira vazio.
+    return (base or "arquivo")[:120]
 
 
 class ClassificarFotoBody(BaseModel):
@@ -160,7 +183,7 @@ async def upload_documento(
         file_hash = s3_service.calculate_hash(contents)
         
         doc_id = str(uuid.uuid4())
-        s3_key = f"ativos/{ativo_id}/docs/{doc_id}_{file.filename}"
+        s3_key = f"ativos/{ativo_id}/docs/{doc_id}_{_nome_seguro(file.filename)}"
         
         # Upload to Storage
         upload_result = s3_service.upload_with_worm(

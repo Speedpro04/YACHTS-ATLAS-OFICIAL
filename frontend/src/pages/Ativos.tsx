@@ -9,7 +9,8 @@ import { obterGeo } from '../utils/geo'
 
 // Categorias da galeria fotográfica da embarcação (organizada + sai no dossiê)
 const GALERIA_CATS: { key: string; label: string }[] = [
-  { key: 'casco_exterior', label: 'Casco / Exterior' },
+  { key: 'embarcacao', label: 'Fotos da Embarcação' },
+  { key: 'casco_exterior', label: 'Integridade do Casco' },
   { key: 'motor', label: 'Motor / Propulsão' },
   { key: 'pintura', label: 'Pintura' },
   { key: 'interior', label: 'Interior' },
@@ -38,8 +39,8 @@ export default function Ativos() {
     proprietario_email: '',
     proprietario_telefone: '',
   })
-  // Galeria inicial organizada por categoria (até 400 fotos por embarcação)
-  const MAX_FOTOS = 400
+  // Galeria inicial organizada por categoria (até 430 fotos por embarcação)
+  const MAX_FOTOS = 430
   const [novoAtivo, setNovoAtivo] = useState<Ativo | null>(null)
   const [galeria, setGaleria] = useState<Record<string, any[]>>({})
   const [catAtiva, setCatAtiva] = useState<string>(GALERIA_CATS[0].key)
@@ -96,7 +97,7 @@ export default function Ativos() {
     try {
       const created = await api.ativos.create(formData)
       // Fotos de apresentação (vitrine) — enviadas com categoria 'vitrine',
-      // separadas da galeria documental de 400.
+      // separadas da galeria documental de 430.
       if (created?.id && vitrineFiles.length) {
         const geo = await obterGeo() // GPS do dispositivo (com permissão); null se negado
         for (const file of vitrineFiles) {
@@ -328,7 +329,7 @@ export default function Ativos() {
         </div>
       )}
 
-      {/* Galeria organizada por categoria — até 400 fotos, sai no dossiê */}
+      {/* Galeria organizada por categoria — até 430 fotos, sai no dossiê */}
       {novoAtivo && (() => {
         const cheio = totalFotos >= MAX_FOTOS
         const fotosCat = galeria[catAtiva] || []
