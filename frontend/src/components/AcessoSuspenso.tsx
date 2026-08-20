@@ -25,9 +25,18 @@ const TITULOS: Record<string, string> = {
   assinatura_cancelada: 'Assinatura encerrada',
 }
 
+// O botão diz o que a pessoa vai fazer, e isso muda com o motivo: quem
+// cancelou não tem nada a regularizar — vai assinar de novo.
+const ACOES: Record<string, string> = {
+  pagamento_pendente: 'Concluir pagamento',
+  inadimplente: 'Regularizar pagamento',
+  assinatura_cancelada: 'Assinar novamente',
+}
+
 export default function AcessoSuspenso({ bloqueio }: { bloqueio: Bloqueio }) {
   const { signOut } = useAuth()
   const titulo = TITULOS[bloqueio.motivo] ?? 'Acesso indisponível'
+  const acao = ACOES[bloqueio.motivo] ?? 'Regularizar pagamento'
 
   return (
     <div className="min-h-screen bg-[#010c20] flex items-center justify-center px-6 font-['Inter']">
@@ -58,7 +67,7 @@ export default function AcessoSuspenso({ bloqueio }: { bloqueio: Bloqueio }) {
               rel="noopener noreferrer"
               className="w-full bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] py-4 rounded-sm text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5"
             >
-              Regularizar pagamento
+              {acao}
               <ArrowRight size={15} />
             </a>
           )}
