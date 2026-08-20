@@ -215,6 +215,13 @@ export const api = {
     create: (data: any) => apiRequest('/ativos', { method: 'POST', body: JSON.stringify(data) }),
     get: (id: string) => apiRequest(`/ativos/${id}`),
     /**
+     * Define ou troca o dono da embarcação. É o que dá ao armador acesso ao
+     * Portal do Proprietário: ele entra digitando este e-mail e vê só o barco
+     * dele. E-mail vazio desfaz o vínculo — barco vendido.
+     */
+    definirProprietario: (id: string, dados: { proprietario_email?: string | null; proprietario_telefone?: string | null }) =>
+      apiRequest(`/ativos/${id}/proprietario`, { method: 'PATCH', body: JSON.stringify(dados) }),
+    /**
      * Arquiva o ativo — NÃO apaga. Um ativo com registros selados não pode ser
      * excluído: a cadeia de custódia é o produto.
      */

@@ -4,6 +4,8 @@ Alinhado ao schema REAL do banco (legado): ativos.usuario_id + ativos.compriment
 Usa a chave de serviço (o backend já autentica o usuário via get_current_user_id).
 """
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 from app.schemas.models import AtivoCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
@@ -119,6 +121,17 @@ async def create_ativo(ativo: AtivoCreate, user_id: str = Depends(get_current_us
     if mat:
         data["material_casco"] = mat.value if hasattr(mat, "value") else mat
 
+    # E-mail do dono, em minúsculas: é a chave de acesso dele ao Portal do
+    # Proprietário, e ninguém digita e-mail com a mesma caixa duas vezes.
+    # Guardar como veio faria o armador não achar o próprio barco por causa
+    # de uma maiúscula.
+    dono = (getattr(ativo, "proprietario_email", None) or "").strip().lower()
+    if dono:
+        data["proprietario_email"] = dono
+    zap = (getattr(ativo, "proprietario_telefone", None) or "").strip()
+    if zap:
+        data["proprietario_telefone"] = zap
+
     try:
         response = supabase.table("ativos").insert(data).execute()
     except Exception as e:
@@ -183,6 +196,58 @@ async def arquivar_ativo(
         "message": "Ativo arquivado",
         "ativo_id": ativo_id,
         "historico_preservado": True,
+    }
+
+
+class ProprietarioDoAtivo(BaseModel):
+    """Contato do dono. E-mail vazio desfaz o vínculo — barco vendido."""
+    proprietario_email: Optional[EmailStr] = None
+    proprietario_telefone: Optional[str] = None
+
+
+@router.patch("/{ativo_id}/proprietario")
+async def definir_proprietario(
+    ativo_id: str,
+    data: ProprietarioDoAtivo,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Define quem é o dono da embarcação, pelo e-mail.
+
+    É o que dá ao armador acesso ao Portal do Proprietário: ele entra
+    digitando este e-mail, recebe um código de uso único e enxerga só os
+    barcos marcados com ele. A marina não escolhe senha nenhuma para o dono —
+    apenas afirma de quem é o barco, que é a única coisa que só ela sabe.
+
+    Endpoint próprio, e não um update genérico de ativo, porque isto muda
+    QUEM VÊ o histórico. Merece uma porta identificável no log de auditoria.
+
+    Barco vendido: a marina troca o e-mail. O dono antigo perde o acesso na
+    hora e o histórico não se mexe — registro selado não se apaga.
+    """
+    supabase = get_supabase_admin()
+    achado = supabase.table("ativos").select("id, usuario_id").eq("id", ativo_id).execute()
+    if not achado.data:
+        raise HTTPException(status_code=404, detail="Ativo not found")
+
+    role = _role(supabase, user_id)
+    if role != "admin" and str(achado.data[0].get("usuario_id")) != str(user_id):
+        raise HTTPException(status_code=403, detail="Not authorized for this asset")
+
+    email = (data.proprietario_email or "").strip().lower() or None
+    telefone = (data.proprietario_telefone or "").strip() or None
+    # Sem e-mail não há dono: o telefone sozinho não abre porta nenhuma, e
+    # deixá-lo para trás guardaria o contato de quem já vendeu o barco.
+    supabase.table("ativos").update({
+        "proprietario_email": email,
+        "proprietario_telefone": telefone if email else None,
+    }).eq("id", ativo_id).execute()
+
+    return {
+        "ativo_id": ativo_id,
+        "proprietario_email": email,
+        "proprietario_telefone": telefone if email else None,
+        "message": "Proprietário definido" if email else "Vínculo do proprietário removido",
     }
 
 

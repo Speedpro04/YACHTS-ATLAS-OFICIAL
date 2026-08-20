@@ -32,6 +32,11 @@ export default function Ativos() {
     modelo: '',
     comprimento_pes: 0,
     ano_fabricacao: new Date().getFullYear(),
+    // Contato do dono: é a chave de acesso dele ao Portal do Proprietário.
+    // Ele entra digitando o e-mail, recebe um código e vê só o barco dele —
+    // nunca a conta da marina, nunca a frota dos outros clientes.
+    proprietario_email: '',
+    proprietario_telefone: '',
   })
   // Galeria inicial organizada por categoria (até 400 fotos por embarcação)
   const MAX_FOTOS = 400
@@ -102,7 +107,11 @@ export default function Ativos() {
       }
       setVitrineFiles([])
       setShowForm(false)
-      setFormData({ tipo: 'iate', marca: '', modelo: '', comprimento_pes: 0, ano_fabricacao: new Date().getFullYear() })
+      setFormData({
+        tipo: 'iate', marca: '', modelo: '', comprimento_pes: 0,
+        ano_fabricacao: new Date().getFullYear(),
+        proprietario_email: '', proprietario_telefone: '',
+      })
       loadAtivos()
       // Etapa de fotos: galeria inicial organizada da embarcação recém-criada
       if (created?.id) {
@@ -225,7 +234,9 @@ export default function Ativos() {
                 { label: 'Fabricante / Marca', key: 'marca', type: 'text', placeholder: 'Azimut, Sunseeker...' },
                 { label: 'Modelo', key: 'modelo', type: 'text', placeholder: 'Flybridge 78...' },
                 { label: t('common.length_feet'), key: 'comprimento_pes', type: 'number', min: 0, max: 500, placeholder: 'Ex: 45' },
-                { label: 'Ano de Fabricação', key: 'ano_fabricacao', type: 'number', min: 1900, max: new Date().getFullYear() }
+                { label: 'Ano de Fabricação', key: 'ano_fabricacao', type: 'number', min: 1900, max: new Date().getFullYear() },
+                { label: 'E-mail do Proprietário', key: 'proprietario_email', type: 'email', placeholder: 'dono@email.com' },
+                { label: 'WhatsApp do Proprietário', key: 'proprietario_telefone', type: 'text', placeholder: '(12) 99999-9999' }
               ].map((field) => (
                 <div key={field.key} className="space-y-3 group">
                   <label className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-black group-focus-within:text-[#c5a059] transition-colors">{field.label}</label>

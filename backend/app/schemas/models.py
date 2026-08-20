@@ -132,6 +132,15 @@ class AtivoBase(BaseModel):
     comprimento_pes: Optional[float] = None
     comprimento_metres: Optional[float] = None
     status: str = "ativo"
+    # E-mail do dono da embarcação. É por ele que o armador entra no Portal do
+    # Proprietário: digita o e-mail, recebe um código e vê só o que é dele.
+    # Sem isto, dar acesso ao dono só seria possível emprestando a conta da
+    # marina — e aí ele veria a frota inteira, de todos os clientes dela.
+    proprietario_email: Optional[EmailStr] = None
+    # WhatsApp do dono. Opcional: sem ele, o código de acesso vai só por
+    # e-mail. Com ele, sai pelos dois canais — e para armador brasileiro o
+    # WhatsApp costuma chegar antes.
+    proprietario_telefone: Optional[str] = None
 
 
 class AtivoCreate(AtivoBase):
