@@ -50,6 +50,36 @@ export default function Ativos() {
   const MAX_VITRINE = 30
   const [vitrineFiles, setVitrineFiles] = useState<File[]>([])
   const [salvando, setSalvando] = useState(false)
+  const [conviteCopiado, setConviteCopiado] = useState(false)
+
+  /**
+   * Texto pronto para a marina mandar ao dono do barco.
+   *
+   * O primeiro contato é dela, não do sistema: o Seu Roberto confia na marina
+   * onde deixa o barco, não numa plataforma que nunca ouviu falar. Mensagem
+   * fria de número desconhecido falando do barco dele parece golpe — e aí ele
+   * bloqueia o número, que é o mesmo usado depois para cobrança.
+   *
+   * Texto igual para todas as marinas: se cada uma explicar do seu jeito, o
+   * cliente recebe versões diferentes da mesma coisa.
+   */
+  const copiarConvite = async () => {
+    const barco = [formData.marca, formData.modelo].filter(Boolean).join(' ').trim()
+    const texto =
+      `Registramos todo o histórico de manutenção ${barco ? `do seu ${barco}` : 'do seu barco'} ` +
+      `num cofre digital — cada serviço fica selado e não pode ser alterado, nem por nós.
+
+` +
+      `Para acompanhar, entre em yachtsatlas.online/acesso-proprietario com o e-mail que você me passou. ` +
+      `Chega um código na hora, sem senha para criar.`
+    try {
+      await navigator.clipboard.writeText(texto)
+      setConviteCopiado(true)
+      setTimeout(() => setConviteCopiado(false), 2500)
+    } catch {
+      window.prompt('Copie a mensagem para enviar ao proprietário:', texto)
+    }
+  }
   const vitrinePreviews = useMemo(() => vitrineFiles.map((f) => URL.createObjectURL(f)), [vitrineFiles])
   useEffect(() => () => { vitrinePreviews.forEach((u) => URL.revokeObjectURL(u)) }, [vitrinePreviews])
 
@@ -236,8 +266,8 @@ export default function Ativos() {
                 { label: 'Modelo', key: 'modelo', type: 'text', placeholder: 'Flybridge 78...' },
                 { label: t('common.length_feet'), key: 'comprimento_pes', type: 'number', min: 0, max: 500, placeholder: 'Ex: 45' },
                 { label: 'Ano de Fabricação', key: 'ano_fabricacao', type: 'number', min: 1900, max: new Date().getFullYear() },
-                { label: 'E-mail do Proprietário', key: 'proprietario_email', type: 'email', placeholder: 'dono@email.com' },
-                { label: 'WhatsApp do Proprietário', key: 'proprietario_telefone', type: 'text', placeholder: '(12) 99999-9999' }
+                { label: 'E-mail do Proprietário', key: 'proprietario_email', type: 'email', placeholder: 'dono@email.com', opcional: true },
+                { label: 'WhatsApp do Proprietário', key: 'proprietario_telefone', type: 'text', placeholder: '(12) 99999-9999', opcional: true }
               ].map((field) => (
                 <div key={field.key} className="space-y-3 group">
                   <label className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-black group-focus-within:text-[#c5a059] transition-colors">{field.label}</label>
@@ -260,12 +290,39 @@ export default function Ativos() {
                       placeholder={field.placeholder}
                       min={field.min}
                       max={field.max}
-                      required
+                      required={!(field as { opcional?: boolean }).opcional}
                     />
                   )}
                 </div>
               ))}
             </div>
+
+            {/* A dúvida da marina nasce aqui: ela vê o campo do proprietário e
+                não sabe para que serve. A explicação fica no mesmo lugar da
+                pergunta — e o botão entrega o texto pronto, para todas as
+                marinas explicarem igual ao cliente delas. */}
+            <div className="border border-[#c5a059]/20 bg-[#c5a059]/[0.04] rounded-sm p-5 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+              <div className="max-w-2xl">
+                <p className="text-[10px] uppercase tracking-[0.25em] text-[#c5a059] font-black mb-2">
+                  Acesso do proprietário
+                </p>
+                <p className="text-white/50 text-[12px] leading-relaxed">
+                  Com o e-mail preenchido, o dono acompanha o dossiê deste barco pelo Portal do
+                  Proprietário — ele digita o e-mail e recebe um código, sem senha para criar.
+                  <span className="text-white/70"> Ele apenas lê: não altera registros, não envia fotos
+                  e não vê as outras embarcações da sua marina.</span> Preencher é opcional, e você pode
+                  fazer isso depois.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => copiarConvite()}
+                className="shrink-0 border border-[#c5a059]/40 text-[#c5a059] hover:bg-[#c5a059] hover:text-[#010c20] px-5 py-3 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+              >
+                {conviteCopiado ? 'Copiado ✓' : 'Copiar mensagem para o cliente'}
+              </button>
+            </div>
+
             {/* Fotos de apresentação (vitrine) — interior e exterior, separadas das 400 */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between gap-4 flex-wrap">
