@@ -130,6 +130,15 @@ export const api = {
     me: () => apiRequest('/auth/me'),
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   },
+  owner: {
+    /**
+     * Manda ao armador o código de acesso ao portal, por e-mail e WhatsApp.
+     * Responde 200 mesmo para e-mail desconhecido — dizer "não existe"
+     * entregaria de graça quem é dono de barco na plataforma.
+     */
+    codigo: (email: string) =>
+      apiRequest('/owner/codigo', { method: 'POST', body: JSON.stringify({ email }) }),
+  },
   leads: {
     // Vagas fundadoras reais (20 no total, 4 por estado). Conta como ocupada
     // tanto a paga quanto a reservada dentro do prazo — é o mesmo número que

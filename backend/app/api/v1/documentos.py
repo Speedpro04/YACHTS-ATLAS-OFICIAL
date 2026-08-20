@@ -95,7 +95,7 @@ async def list_documentos(
     
     try:
         # Check authorization (tolerante aos dois schemas)
-        get_ativo_autorizado(ativo_id, user_id)
+        get_ativo_autorizado(ativo_id, user_id, incluir_proprietario=True)
 
         response = supabase.table("documentos").select("*").eq("ativo_id", ativo_id).execute()
         
@@ -323,7 +323,7 @@ async def get_documento(doc_id: str, user_id: str = Depends(get_current_user_id)
         ativo_id = doc["ativo_id"]
         
         # Authorization check (tolerante aos dois schemas)
-        get_ativo_autorizado(ativo_id, user_id)
+        get_ativo_autorizado(ativo_id, user_id, incluir_proprietario=True)
 
         # Dynamically set nome_arquivo
         parts = doc.get("storage_path", "").split("/")
@@ -404,7 +404,7 @@ async def download_documento(doc_id: str, user_id: str = Depends(get_current_use
         ativo_id = doc["ativo_id"]
         
         # Check permissions (tolerante aos dois schemas)
-        get_ativo_autorizado(ativo_id, user_id)
+        get_ativo_autorizado(ativo_id, user_id, incluir_proprietario=True)
 
         # Generate URL
         url = s3_service.get_presigned_url(doc["storage_path"])

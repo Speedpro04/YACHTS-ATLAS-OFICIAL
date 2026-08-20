@@ -9,6 +9,7 @@ from typing import Optional
 from app.schemas.models import AtivoCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
+from app.core.authz import email_do_usuario
 from datetime import datetime, timezone
 import uuid
 
@@ -70,7 +71,19 @@ async def list_ativos(
     role = _role(supabase, user_id)
     q = supabase.table("ativos").select("*")
     if role != "admin":
-        q = q.eq("usuario_id", user_id)
+        # Dois caminhos para o mesmo barco, e nunca pela mesma porta:
+        #   • a MARINA é `usuario_id` — opera, edita e sela;
+        #   • o ARMADOR é `proprietario_email` — só lê.
+        #
+        # Sem o segundo, dar acesso ao dono exigiria emprestar a conta da
+        # marina — e aí ele enxergaria a frota inteira, de todos os clientes
+        # dela. A leitura-apenas do armador é garantida nos outros endpoints,
+        # que continuam exigindo `usuario_id` (ver core/authz.py).
+        email = email_do_usuario(user_id)
+        if email:
+            q = q.or_(f"usuario_id.eq.{user_id},proprietario_email.eq.{email}")
+        else:
+            q = q.eq("usuario_id", user_id)
     if not incluir_arquivados:
         q = q.is_("arquivado_em", "null")
     response = q.order("created_at", desc=True).execute()
@@ -151,7 +164,10 @@ async def get_ativo(ativo_id: str, user_id: str = Depends(get_current_user_id)):
     ativo = response.data[0]
     role = _role(supabase, user_id)
     if role != "admin" and str(ativo.get("usuario_id")) != str(user_id):
-        raise HTTPException(status_code=403, detail="Not authorized for this asset")
+        # Armador do próprio barco também abre a ficha — só não mexe nela.
+        dono = (ativo.get("proprietario_email") or "").strip().lower()
+        if not dono or dono != email_do_usuario(user_id):
+            raise HTTPException(status_code=403, detail="Not authorized for this asset")
     ativo = _enrich(ativo)
     _anexar_total_fotos(supabase, [ativo])
     return ativo

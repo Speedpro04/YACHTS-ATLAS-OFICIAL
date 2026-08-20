@@ -1,55 +1,53 @@
 import { useState, useEffect } from 'react'
-import { Mail, Lock, KeyRound, ArrowLeft, ArrowRight, Shield, Sparkles, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Mail, KeyRound, ArrowLeft, ArrowRight, Shield, Sparkles, Loader2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../services/api'
+import { api, supabase } from '../services/api'
 
-type Etapa = 'credenciais' | 'palavra-secreta'
+type Etapa = 'email' | 'codigo'
 
 export default function LoginProprietario() {
   const navigate = useNavigate()
-  const [etapa, setEtapa] = useState<Etapa>('credenciais')
+  const [etapa, setEtapa] = useState<Etapa>('email')
   const [email, setEmail] = useState('')
-  const [senha, setSenha] = useState('')
-  const [palavra, setPalavra] = useState('')
+  const [codigo, setCodigo] = useState('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [foco, setFoco] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [verSenha, setVerSenha] = useState(false)
-  const [verPalavra, setVerPalavra] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Etapa 1: e-mail + senha (Supabase Auth)
-  const handleCredenciais = async (e: React.FormEvent) => {
+  // Etapa 1: o armador digita o e-mail. O código sai por e-mail E WhatsApp.
+  // Ele nunca cria senha — não há nada para esquecer, e o segredo passa a ser
+  // a caixa dele, que é a única coisa que só ele tem.
+  const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErro('')
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
-      if (error) {
-        setErro('E-mail ou senha incorretos.')
-        return
-      }
-      setEtapa('palavra-secreta')
+      await api.owner.codigo(email.trim())
+      setEtapa('codigo')
     } catch {
-      setErro('Não foi possível conectar. Tente novamente.')
+      setErro('Não foi possível enviar o código. Tente novamente.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Etapa 2: palavra secreta (verificada server-side pela Edge Function)
-  const handlePalavraSecreta = async (e: React.FormEvent) => {
+  // Etapa 2: o código é validado pelo próprio Supabase — a segurança continua
+  // sendo dele; a gente só escolheu o carteiro.
+  const handleCodigo = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErro('')
     try {
-      const { data, error } = await supabase.functions.invoke('verify-owner-secret', {
-        body: { secret_word: palavra },
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: codigo.trim(),
+        type: 'email',
       })
-      if (error || !data?.valid) {
-        setErro('Palavra secreta incorreta.')
+      if (error) {
+        setErro('Código inválido ou expirado. Peça um novo.')
         return
       }
       navigate('/portal-proprietario')
@@ -60,11 +58,10 @@ export default function LoginProprietario() {
     }
   }
 
-  const voltarCredenciais = async () => {
-    await supabase.auth.signOut()
-    setPalavra('')
+  const voltarParaEmail = () => {
+    setCodigo('')
     setErro('')
-    setEtapa('credenciais')
+    setEtapa('email')
   }
 
   const inputClass = (campo: string, comOlho = false) =>
@@ -74,17 +71,6 @@ export default function LoginProprietario() {
         : 'border-white/10 hover:border-white/20'
     }`
 
-  const botaoOlho = (visivel: boolean, onToggle: () => void) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      tabIndex={-1}
-      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-[#c5a059] transition-colors"
-      aria-label={visivel ? 'Ocultar senha' : 'Mostrar senha'}
-    >
-      {visivel ? <EyeOff size={18} /> : <Eye size={18} />}
-    </button>
-  )
 
   return (
     <div className={`min-h-screen bg-[#010c20] flex flex-col md:flex-row font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
@@ -137,14 +123,14 @@ export default function LoginProprietario() {
         {/* Indicador de etapa */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-4">
-            <span className={`h-1 flex-1 rounded-full transition-all ${etapa === 'credenciais' ? 'bg-[#c5a059]' : 'bg-[#c5a059]/40'}`}></span>
-            <span className={`h-1 flex-1 rounded-full transition-all ${etapa === 'palavra-secreta' ? 'bg-[#c5a059]' : 'bg-white/10'}`}></span>
+            <span className={`h-1 flex-1 rounded-full transition-all ${etapa === 'email' ? 'bg-[#c5a059]' : 'bg-[#c5a059]/40'}`}></span>
+            <span className={`h-1 flex-1 rounded-full transition-all ${etapa === 'codigo' ? 'bg-[#c5a059]' : 'bg-white/10'}`}></span>
           </div>
           <h3 className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">
-            {etapa === 'credenciais' ? 'Etapa 1 de 2 — Identificação' : 'Etapa 2 de 2 — Palavra Secreta'}
+            {etapa === 'email' ? 'Etapa 1 de 2 — Seu e-mail' : 'Etapa 2 de 2 — Código de acesso'}
           </h3>
           <h4 className="text-3xl font-serif font-bold text-white tracking-tight mt-2">
-            {etapa === 'credenciais' ? 'Acesso ao Cofre' : 'Confirme sua identidade'}
+            {etapa === 'email' ? 'Acesso ao Cofre' : 'Confirme sua identidade'}
           </h4>
         </div>
 
@@ -156,45 +142,48 @@ export default function LoginProprietario() {
           </div>
         )}
 
-        {etapa === 'credenciais' ? (
-          <form onSubmit={handleCredenciais} className="space-y-6">
+        {etapa === 'email' ? (
+          <form onSubmit={handleEmail} className="space-y-6">
+            <p className="text-white/40 text-sm font-light leading-relaxed -mt-4 mb-2">
+              Informe o e-mail cadastrado pela sua marina. Enviamos um código de acesso
+              por e-mail e WhatsApp — sem senha para criar nem lembrar.
+            </p>
             <div className="space-y-2 group">
               <label className="text-[10px] font-black uppercase tracking-widest text-white/40">E-mail</label>
               <div className="relative">
                 <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${foco === 'email' ? 'text-[#c5a059]' : 'text-white/20'}`} size={18} />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setFoco('email')} onBlur={() => setFoco(null)} className={inputClass('email')} placeholder="seu@email.com" required />
-              </div>
-            </div>
-            <div className="space-y-2 group">
-              <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Senha</label>
-              <div className="relative">
-                <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${foco === 'senha' ? 'text-[#c5a059]' : 'text-white/20'}`} size={18} />
-                <input type={verSenha ? 'text' : 'password'} value={senha} onChange={(e) => setSenha(e.target.value)} onFocus={() => setFoco('senha')} onBlur={() => setFoco(null)} className={inputClass('senha', true)} placeholder="••••••••" required />
-                {botaoOlho(verSenha, () => setVerSenha((v) => !v))}
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setFoco('email')} onBlur={() => setFoco(null)} className={inputClass('email')} placeholder="seu@email.com" required autoFocus />
               </div>
             </div>
             <button type="submit" disabled={loading} className={`w-full py-5 mt-4 rounded-sm text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${loading ? 'bg-[#c5a059]/50 cursor-not-allowed' : 'bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] hover:-translate-y-0.5'}`}>
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Verificando...</> : <>Continuar <ArrowRight size={16} /></>}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Enviando...</> : <>Receber Código <ArrowRight size={16} /></>}
             </button>
           </form>
         ) : (
-          <form onSubmit={handlePalavraSecreta} className="space-y-6">
+          <form onSubmit={handleCodigo} className="space-y-6">
             <p className="text-white/40 text-sm font-light leading-relaxed -mt-4 mb-2">
-              Por segurança, informe a palavra secreta cadastrada para acessar o seu ativo.
+              Enviamos um código para <span className="text-[#c5a059]">{email}</span> e para o
+              seu WhatsApp. Ele vale por poucos minutos.
             </p>
             <div className="space-y-2 group">
-              <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Palavra Secreta</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Código de Acesso</label>
               <div className="relative">
-                <KeyRound className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${foco === 'palavra' ? 'text-[#c5a059]' : 'text-white/20'}`} size={18} />
-                <input type={verPalavra ? 'text' : 'password'} value={palavra} onChange={(e) => setPalavra(e.target.value)} onFocus={() => setFoco('palavra')} onBlur={() => setFoco(null)} className={inputClass('palavra', true)} placeholder="sua palavra secreta" required autoFocus />
-                {botaoOlho(verPalavra, () => setVerPalavra((v) => !v))}
+                <KeyRound className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${foco === 'codigo' ? 'text-[#c5a059]' : 'text-white/20'}`} size={18} />
+                <input
+                  type="text" inputMode="numeric" autoComplete="one-time-code"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+                  onFocus={() => setFoco('codigo')} onBlur={() => setFoco(null)}
+                  className={`${inputClass('codigo')} tracking-[0.5em] text-center text-lg`}
+                  placeholder="000000" required autoFocus
+                />
               </div>
             </div>
             <button type="submit" disabled={loading} className={`w-full py-5 mt-4 rounded-sm text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${loading ? 'bg-[#c5a059]/50 cursor-not-allowed' : 'bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] hover:-translate-y-0.5'}`}>
               {loading ? <><Loader2 size={16} className="animate-spin" /> Abrindo cofre...</> : <>Acessar Meu Ativo <ArrowRight size={16} /></>}
             </button>
-            <button type="button" onClick={voltarCredenciais} className="w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-[#c5a059] transition-colors">
-              ← Usar outra conta
+            <button type="button" onClick={voltarParaEmail} className="w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-[#c5a059] transition-colors">
+              ← Usar outro e-mail
             </button>
           </form>
         )}
