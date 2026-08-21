@@ -21,9 +21,10 @@ function sessionId(): string {
 const SAUDACAO: ChatMsg = {
   role: 'assistant',
   content:
-    'Olá, sou a Capitã Solara ⚓ — sua assistente de normas náuticas do Yachts Atlas. ' +
-    'Pergunte sobre NORMAM, ABNT ou ISO e eu respondo na hora, sempre citando a fonte. ' +
-    'Trabalho só com normas verificadas — nada de achismo.',
+    'Olá, sou a Capitã Solara ⚓ — sua assistente aqui no Yachts Atlas. ' +
+    'Pergunte sobre normas (NORMAM, ABNT, ISO) e eu respondo citando a fonte, ' +
+    'ou sobre como usar o sistema — onde cadastrar, onde subir foto, como gerar o dossiê. ' +
+    'Trabalho só com o que está verificado — nada de achismo.',
 }
 
 export default function CapitaSolara() {
@@ -97,6 +98,8 @@ export default function CapitaSolara() {
           <span className="text-left">
             <span className="block text-[11px] font-black uppercase tracking-[0.15em] leading-none">Capitã Solara</span>
             <span className="block text-[8px] font-bold uppercase tracking-[0.2em] opacity-70 mt-0.5">Normas · IA</span>
+            {/* A marina não descobre o que a Solara sabe fazer se ninguém contar. */}
+            <span className="block text-[8px] font-bold uppercase tracking-[0.2em] opacity-70">Suporte · IA</span>
           </span>
         </button>
       )}
@@ -193,7 +196,7 @@ export default function CapitaSolara() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && enviar()}
-                placeholder="Pergunte à Capitã sobre uma norma…"
+                placeholder="Pergunte sobre uma norma ou sobre o sistema…"
                 className="flex-1 bg-white/[0.03] border border-white/10 rounded-full px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#c5a059]/40 transition-all"
               />
               <button

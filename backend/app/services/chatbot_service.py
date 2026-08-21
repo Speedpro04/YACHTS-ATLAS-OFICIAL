@@ -289,6 +289,33 @@ def _fallback_from_norms(norms: list[dict], limit: int = 2) -> str:
     )
 
 
+def _registrar_pergunta(
+    pergunta: str, dominio: str, respondida: bool,
+    motivo: str = "", session_id: str = "",
+) -> None:
+    """
+    Guarda o que perguntaram. Best-effort: falhar aqui não pode calar a Solara.
+
+    Não é métrica de atendimento — é pesquisa de produto. Pergunta que se
+    repete vinte vezes não é caso de suporte, é tela que precisa mudar. E o
+    sinal mais valioso é a que ela NÃO soube responder: ou falta documentação,
+    ou o produto não faz algo que a marina esperava que fizesse.
+
+    Guarda só a pergunta, nunca a resposta nem quem perguntou. O que interessa
+    é o padrão, não o indivíduo.
+    """
+    try:
+        get_supabase_admin().table("solara_perguntas").insert({
+            "pergunta": (pergunta or "")[:2000],
+            "dominio": dominio,
+            "respondida": respondida,
+            "motivo": motivo or None,
+            "session_id": session_id or None,
+        }).execute()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Não foi possível registrar a pergunta: %s", e)
+
+
 def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
     """Processa uma pergunta com todas as camadas de guard rail."""
     # 1) Guard rail de ENTRADA
@@ -310,9 +337,18 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
         return {"answer": guard.WELCOME, "blocked": False, "reason": "greeting", "sources": []}
 
     # 3) Recuperação + guard rail de ESCOPO
+    #
+    # Duas portas, e só duas: norma relevante encontrada, OU dúvida sobre como
+    # usar o sistema (que não casa com norma nenhuma e seria recusada aqui,
+    # apesar de a Solara saber respondê-la). Quem não passa por nenhuma das
+    # duas continua recebendo a recusa honesta de sempre.
     norms = retrieve(clean_msg)
     top = norms[0]["_score"] if norms else None
-    if not guard.is_answerable(top, settings.CHATBOT_MIN_RELEVANCE):
+    sobre_produto = guard.parece_duvida_de_produto(clean_msg)
+    if not guard.is_answerable(top, settings.CHATBOT_MIN_RELEVANCE) and not sobre_produto:
+        # Registrado justamente por ter falhado: é aqui que aparece o que a
+        # marina precisa e a Solara ainda não sabe.
+        _registrar_pergunta(clean_msg, "norma", False, "sem_fonte", session_id)
         return {"answer": guard.REFUSAL_NO_NORM, "blocked": True, "reason": "no_relevant_norm", "sources": []}
 
     client = _get_openai()
@@ -327,10 +363,20 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
     messages = [{"role": "system", "content": guard.SYSTEM_PROMPT}]
     messages += history
     contexto = _build_context(norms)
-    messages.append({
-        "role": "user",
-        "content": f"CONTEXTO DE NORMAS (use apenas isto):\n\n{contexto}\n\nPERGUNTA: {clean_msg}",
-    })
+    if contexto.strip():
+        pedido = f"CONTEXTO DE NORMAS (use apenas isto):\n\n{contexto}\n\nPERGUNTA: {clean_msg}"
+    else:
+        # Dúvida de produto sem norma casada. Dizer "contexto vazio" convidaria
+        # o modelo a preencher a lacuna de cabeça — que é exatamente o que não
+        # pode acontecer. Aqui a fonte é o conhecimento do produto, e só ele.
+        pedido = (
+            "Nenhuma norma casou com esta pergunta — ela é sobre COMO USAR o "
+            "Yachts Atlas. Responda usando apenas o CONHECIMENTO DO PRODUTO "
+            "que está no seu prompt. Se o caminho pedido não estiver lá, diga "
+            "que não tem essa informação em vez de supor.\n\n"
+            f"PERGUNTA: {clean_msg}"
+        )
+    messages.append({"role": "user", "content": pedido})
 
     reason = "ok"
     raw = ""
@@ -357,12 +403,22 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
     answer = guard.scrub_output(raw)
 
     # CONTINGÊNCIA: se o modelo falhou ou veio vazio, a Capitã NÃO fica muda.
-    # Servimos o conteúdo da norma recuperada direto da fonte. Ela só fica
-    # indisponível de verdade se nem isso houver (não deveria, pois já passou
-    # pelo guard rail de escopo com norma relevante).
+    # Servimos o conteúdo da norma recuperada direto da fonte.
+    #
+    # Em dúvida de produto não há norma para servir — e aqui NÃO se improvisa
+    # um caminho de tela. Melhor admitir a indisponibilidade do que mandar a
+    # marina clicar num menu inventado: ela procura, não acha, e conclui que o
+    # sistema está quebrado.
     if not answer.strip():
         reason = "model_degraded"
-        answer = guard.scrub_output(_fallback_from_norms(norms))
+        if norms:
+            answer = guard.scrub_output(_fallback_from_norms(norms))
+        else:
+            answer = (
+                "Desculpe, não consegui responder agora — o assistente está "
+                "momentaneamente indisponível. Tente de novo em instantes; se "
+                "persistir, fale com a equipe do Yachts Atlas."
+            )
 
     # Atualiza memória da conversa
     new_history = history + [
@@ -380,4 +436,12 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
             continue
         seen_src.add(n["codigo"])
         sources.append({"codigo": n["codigo"], "titulo": n.get("titulo"), "fonte_url": n.get("fonte_url")})
+
+    _registrar_pergunta(
+        clean_msg,
+        "produto" if sobre_produto else "norma",
+        respondida=(reason == "ok"),
+        motivo=reason if reason != "ok" else "",
+        session_id=session_id,
+    )
     return {"answer": answer, "blocked": False, "reason": reason, "sources": sources}

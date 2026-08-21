@@ -1,0 +1,158 @@
+{
+  "secoes_dossie": [
+    {
+      "id": "identificacao",
+      "label": "Identificação & Registro",
+      "descricao": "Dados de identidade e registro da embarcação."
+    },
+    {
+      "id": "proprietarios",
+      "label": "Histórico de Propriedade",
+      "descricao": "Cadeia de proprietários e transferências."
+    },
+    {
+      "id": "documentacao",
+      "label": "Documentação Legal & Fiscal",
+      "descricao": "Documentos legais e fiscais — guardados e certificados."
+    },
+    {
+      "id": "especificacoes",
+      "label": "Especificações Técnicas",
+      "descricao": "Casco, propulsão, capacidades e desempenho."
+    },
+    {
+      "id": "motorizacao",
+      "label": "Motorização",
+      "descricao": "Motores e geradores — o coração mecânico do ativo."
+    },
+    {
+      "id": "sistemas_auxiliares",
+      "label": "Sistemas Auxiliares",
+      "descricao": "Estabilizadores, thrusters, ar-condicionado, automação."
+    },
+    {
+      "id": "manutencao",
+      "label": "Histórico de Manutenção",
+      "descricao": "Serviços realizados ao longo do tempo, com comprovantes."
+    },
+    {
+      "id": "operacao",
+      "label": "Diário de Bordo",
+      "descricao": "Operações e idas ao mar — condutor, horímetros e ocorrências."
+    },
+    {
+      "id": "inspecao_tecnica",
+      "label": "Inspeção Técnica",
+      "descricao": "Laudo de inspeção emitido por terceiro — guardado e certificado."
+    },
+    {
+      "id": "auditoria_casco",
+      "label": "Auditoria de Casco (END/Ultrassom)",
+      "descricao": "Laudo de ensaio não destrutivo do casco — custodiado."
+    },
+    {
+      "id": "sinistros",
+      "label": "Sinistros & Reparos",
+      "descricao": "Histórico de ocorrências e reparos, com comprovação."
+    },
+    {
+      "id": "fotografico",
+      "label": "Registro Fotográfico",
+      "descricao": "Imagens do ativo — datadas, geolocalizadas e seladas (SHA-256)."
+    },
+    {
+      "id": "tripulacao",
+      "label": "Tripulação",
+      "descricao": "Tripulantes e certificações (STCW / MLC)."
+    },
+    {
+      "id": "tenders_toys",
+      "label": "Tenders & Toys",
+      "descricao": "Lanchas de apoio, jet skis e equipamentos de lazer."
+    },
+    {
+      "id": "areas",
+      "label": "Áreas & Acomodações",
+      "descricao": "Cabines, suítes e áreas premium."
+    },
+    {
+      "id": "avaliacao_mercado",
+      "label": "Avaliação de Mercado",
+      "descricao": "Laudo de avaliação de valor — custodiado."
+    },
+    {
+      "id": "relatorio_seguradora",
+      "label": "Relatório para Seguradora",
+      "descricao": "Dados consolidados para apólice de seguro."
+    },
+    {
+      "id": "compliance_imo",
+      "label": "Compliance Internacional (IMO)",
+      "descricao": "Certificados internacionais — guardados e certificados."
+    }
+  ],
+  "fotos": {
+    "categorias": [
+      {
+        "key": "embarcacao",
+        "label": "Fotos da Embarcação",
+        "minimo": 30
+      },
+      {
+        "key": "casco_exterior",
+        "label": "Integridade do Casco",
+        "minimo": 80
+      },
+      {
+        "key": "motor",
+        "label": "Motor / Propulsão",
+        "minimo": 70
+      },
+      {
+        "key": "interior",
+        "label": "Interior",
+        "minimo": 60
+      },
+      {
+        "key": "pintura",
+        "label": "Pintura",
+        "minimo": 40
+      },
+      {
+        "key": "eletronica",
+        "label": "Eletrônica / Navegação",
+        "minimo": 40
+      },
+      {
+        "key": "antes_depois",
+        "label": "Antes e Depois",
+        "minimo": 40
+      },
+      {
+        "key": "notas_fiscais",
+        "label": "Notas Fiscais",
+        "minimo": 40
+      },
+      {
+        "key": "outros",
+        "label": "Outros",
+        "minimo": 30
+      }
+    ],
+    "max_fotos": 430
+  },
+  "fichas_painel": [
+    "manutencao",
+    "operacao",
+    "seguro",
+    "motor",
+    "casco",
+    "velame",
+    "eletrica",
+    "seguranca",
+    "drenagem",
+    "pintura",
+    "interior",
+    "dossie"
+  ]
+}
