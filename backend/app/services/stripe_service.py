@@ -586,6 +586,17 @@ class StripeService:
             or bool(getattr(session, "subscription", None))
         )
 
+        # `client_reference_id` viaja no link que o backend entregou à marina e
+        # NÃO depende de qual e-mail ela usou para pagar. Vem antes do e-mail
+        # de propósito: a carteira Link da Stripe usa o endereço da carteira,
+        # que raramente é o mesmo do cadastro — e quando os dois divergiam, o
+        # pagamento ficava órfão e o acesso não era liberado. Ver
+        # `_link_com_identidade` em api/v1/leads.py.
+        if not user_id:
+            user_id = getattr(session, "client_reference_id", None) or None
+            if user_id:
+                logger.info(f"Checkout {session.id}: pagador identificado pelo link")
+
         cliente_email = self._email_do_checkout(session, metadata)
         if not user_id and cliente_email:
             from app.core.supabase import buscar_usuario_por_email

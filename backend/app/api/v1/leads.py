@@ -3,6 +3,7 @@ Yachts Atlas — Leads (marinas e parceiros)
 """
 import logging
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -116,17 +117,20 @@ def _oferta_marina(supabase, data) -> dict:
     }
 
 
-def _criar_acesso_marina_paga(supabase, data, oferta: dict) -> None:
+def _criar_acesso_marina_paga(supabase, data, oferta: dict) -> Optional[str]:
     """
-    Cria o login da marina paga com a senha que ela acabou de escolher.
+    Cria o login da marina paga e devolve o ID dela.
 
     Antes o fluxo pago retornava direto para o Stripe e a senha do formulario
     era descartada: a marina pagava e ficava sem acesso nenhum. Fica marcada
     como pagamento pendente ate o webhook do Stripe confirmar. Best-effort —
     falhar aqui nao pode impedir a marina de pagar.
+
+    O ID e devolvido porque ele precisa VIAJAR NO LINK de pagamento: e por ele
+    que o webhook reconhece quem pagou. Ver `_link_com_identidade`.
     """
     try:
-        supabase.auth.admin.create_user({
+        resposta = supabase.auth.admin.create_user({
             "email": data.email,
             "password": data.password,
             "email_confirm": True,
@@ -141,12 +145,53 @@ def _criar_acesso_marina_paga(supabase, data, oferta: dict) -> None:
                 "pagamento": "pendente",
             },
         })
+        usuario = getattr(resposta, "user", None) or resposta
+        return str(getattr(usuario, "id", "")) or None
     except Exception as e:
         # Conta ja existe = nova tentativa de checkout; a senha antiga continua
-        # valendo e ela so faz login. Qualquer outro erro fica no log.
+        # valendo e ela so faz login. Mas o ID dela ainda precisa ir no link,
+        # senao a segunda tentativa de pagamento fica orfa igual a primeira.
         texto = str(e).lower()
-        if "already" not in texto and "registered" not in texto:
-            logger.error(f"Falha ao criar acesso da marina paga {data.email}: {e}")
+        if "already" in texto or "registered" in texto:
+            try:
+                from app.core.supabase import buscar_usuario_por_email
+                achado = buscar_usuario_por_email(data.email)
+                return str(getattr(achado, "id", "")) or None if achado else None
+            except Exception:
+                return None
+        logger.error(f"Falha ao criar acesso da marina paga {data.email}: {e}")
+        return None
+
+
+def _link_com_identidade(base: str, user_id: Optional[str], email: Optional[str]) -> str:
+    """
+    Amarra QUEM esta pagando ao link de pagamento.
+
+    O bug que isto conserta e o mais caro que este sistema podia ter: a marina
+    pagava e continuava sem acesso.
+
+    O Payment Link e uma URL fixa e nao carrega metadata. Sem nada nela, o
+    webhook so tinha o e-mail do checkout para descobrir de quem era o
+    pagamento — e a carteira Link da Stripe usa o e-mail da CARTEIRA, que
+    raramente e o mesmo que a marina digitou no cadastro. Quando os dois nao
+    batiam, `user_id` ficava nulo: o pagamento nao era gravado em `payments` e
+    o acesso NAO era liberado. Aconteceu no teste com cartao real — a tabela
+    ficou vazia.
+
+    `client_reference_id` volta no evento do Stripe e nao depende de qual
+    e-mail ela usou para pagar. `prefilled_email` ainda ajuda: reduz a chance
+    de divergencia e poupa digitacao no celular.
+    """
+    if not base:
+        return base
+    params = {}
+    if user_id:
+        params["client_reference_id"] = user_id
+    if email:
+        params["prefilled_email"] = email
+    if not params:
+        return base
+    return f"{base}{'&' if '?' in base else '?'}{urlencode(params)}"
 
 
 class LeadParceiroCreate(BaseModel):
@@ -335,7 +380,12 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
     #    todo mundo e ainda apontava para a conta Stripe antiga (CPF).
     if status == "nao_autorizado":
         oferta = _oferta_marina(supabase, data)
-        _criar_acesso_marina_paga(supabase, data, oferta)
+        user_id = _criar_acesso_marina_paga(supabase, data, oferta)
+        # Sem a identidade no link, o webhook nao reconhece quem pagou e o
+        # acesso nao e liberado. Ver `_link_com_identidade`.
+        oferta["checkout_url"] = _link_com_identidade(
+            oferta.get("checkout_url"), user_id, data.email
+        )
         return {"modo": "pago", **oferta}
 
     # 3) Vaga grátis: cria/garante o login com a senha escolhida pela marina

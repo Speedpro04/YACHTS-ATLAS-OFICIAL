@@ -210,3 +210,38 @@ Agora observa o **id do usuário**, que é estável. Quem pode usar o Atlas não
 Efeito colateral aceito: corte por inadimplência no meio da sessão não aparece mais na hora — mas o porteiro do backend recusa cada requisição de qualquer forma, e a tela de regularização aparece na navegação seguinte. Piscar a cada troca de aba, todo dia, para toda marina, custa mais que isso.
 
 Na mesma linha, a conversa da Solara passou a sobreviver à navegação (`sessionStorage`): o `session_id` já ficava guardado, então o backend mantinha o contexto — mas a tela recomeçava do zero e quem estava no meio de uma dúvida perdia o fio.
+
+---
+
+## 12. Quem se cadastra e quem paga precisam ser a mesma pessoa
+**Data da Decisão:** 21/08/2026
+
+### O Problema (o mais caro que este sistema podia ter)
+**A marina pagava e continuava sem acesso.**
+
+O Payment Link é uma URL fixa e não carrega metadata. Sem identificação nela, o webhook só tinha o e-mail do checkout para descobrir de quem era o pagamento — e a **carteira Link da Stripe usa o e-mail da carteira**, que raramente é o mesmo que a marina digitou no cadastro.
+
+Quando os dois não batiam:
+- `user_id` ficava nulo;
+- o pagamento **não** era gravado em `payments`;
+- e `_marcar_pagamento_confirmado` **não** rodava — o acesso continuava `pendente`.
+
+Não é hipótese: aconteceu no teste com cartão real. A tabela `payments` estava **vazia** enquanto a cobrança tinha sido feita e a marina fundadora tinha sido cadastrada.
+
+### A Solução
+O backend passa a devolver o link **com a identidade colada**:
+
+```
+<payment-link>?client_reference_id=<user_id>&prefilled_email=<email>
+```
+
+`client_reference_id` volta no evento do Stripe e **não depende de qual e-mail ela usou para pagar**. O webhook lê ele **antes** de tentar pelo e-mail — as duas metades são necessárias: de nada adianta o link carregar o id se o webhook continuar procurando só pela carteira.
+
+`prefilled_email` ainda ajuda: reduz a divergência e poupa digitação no celular.
+
+Se a criação da conta falhar, o link sai sem o id e sobra o caminho antigo (casar por e-mail) — pior, mas melhor que impedir a marina de pagar.
+
+### Como isso passou despercebido
+O teste com cartão real **funcionou**: a marina fundadora foi cadastrada e o e-mail saiu. O que ninguém conferiu foi se a linha existia em `payments`. O sintoma só apareceria com a marina reclamando que pagou e não entra — depois do lançamento.
+
+Está no [CHECKLIST-SEMANAL.md](CHECKLIST-SEMANAL.md), item 1.2, exatamente por isso.
