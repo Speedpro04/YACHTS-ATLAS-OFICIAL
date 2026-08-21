@@ -70,6 +70,8 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 - [x] **REV-04 — Portal do Proprietário**: `proprietario_email`/`proprietario_telefone` no ativo, código por e-mail + WhatsApp, listagem restrita e leitura-apenas *(pendente do teste end-to-end do `verifyOtp`)*
 - [x] **REV-04 — Avisos por WhatsApp (Evolution) + e-mail**; Telegram removido; e-mail migrado para o domínio próprio com SPF/DKIM/DMARC
 - [x] **REV-04 — Contador de vagas fundadoras com dado real** na `/marina-parceira` (era `12` chumbado no código)
+- [x] **REV-04 — Régua de cobrança roda sozinha** (`services/agenda.py`, no startup do FastAPI): cron externo some em migração de servidor e ninguém percebe, porque não avisar é indistinguível de não haver devedor. O corte segue sendo do porteiro, na leitura
+- [x] **REV-04 — Stripe: assinatura vira "não paga", nunca cancelada** — cancelar quebraria o religamento automático; e-mails de cobrança da Stripe desligados (a régua própria é em português), aviso de cartão a vencer ligado
 - [x] **REV-04 — Identidade no link de pagamento** (`client_reference_id`): sem ela a marina pagava e **não recebia acesso**, porque a carteira Link da Stripe usa outro e-mail. Descoberto ao ver `payments` vazia depois de um pagamento real
 - [x] **REV-04 — Solara com suporte ao produto** + registro das perguntas (`solara_perguntas`); conhecimento gerado do código e guardado por teste
 - [x] **REV-04 — Tela para de piscar a cada troca de aba**: `PrivateRoute` passou a observar o id do usuário, não o objeto da sessão (o Supabase renova o token no foco); conversa da Solara sobrevive à navegação
@@ -83,7 +85,7 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
-3. **Configuração pendente do lançamento (BLOQUEIA O LANÇAMENTO)** — (a) `VERIFICACAO_SECRET` em produção **antes do primeiro dossiê** (trocar depois invalida todo QR já emitido); (b) Stripe configurado para a assinatura **não cancelar** ao fim das tentativas, senão "pagou e volta sozinho" não existe; (c) agendar `python -m app.services.cron_cobranca` 1x/dia.
+3. **`VERIFICACAO_SECRET` em produção (BLOQUEIA O LANÇAMENTO)** — sem ele o código cai no literal de desenvolvimento, que está no repositório público. **Verificado em 21/08: produção aceitou uma assinatura forjada com esse literal** — qualquer um pode fabricar um dossiê falso com QR que valida. Configurar **antes do primeiro dossiê**; trocar depois invalida todo QR já emitido.
 4. **Privacidade do bucket `media`** — hoje é público; mover documentos sensíveis p/ bucket privado + URL assinada (LGPD).
 5. **Soft-delete de ativo** — para imutabilidade **total** (hoje DELETE de ativo apaga registros em cascata).
 6. **`audit_logs`** — insert está falhando por RLS (`42501`); ajustar policy para a auditoria gravar de fato.

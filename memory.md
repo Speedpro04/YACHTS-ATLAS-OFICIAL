@@ -245,3 +245,40 @@ Se a criação da conta falhar, o link sai sem o id e sobra o caminho antigo (ca
 O teste com cartão real **funcionou**: a marina fundadora foi cadastrada e o e-mail saiu. O que ninguém conferiu foi se a linha existia em `payments`. O sintoma só apareceria com a marina reclamando que pagou e não entra — depois do lançamento.
 
 Está no [CHECKLIST-SEMANAL.md](CHECKLIST-SEMANAL.md), item 1.2, exatamente por isso.
+
+---
+
+## 13. A régua de cobrança roda dentro da aplicação, não num cron externo
+**Data da Decisão:** 21/08/2026
+
+### O Problema
+O caminho clássico seria agendar `python -m app.services.cron_cobranca` no servidor. Funciona — até o dia em que para de funcionar.
+
+**Cron externo é a coisa mais silenciosa que existe numa operação de uma pessoa só:** some numa migração de servidor, quebra quando o caminho do Python muda, para quando alguém recria o container. E ninguém percebe, porque **não avisar é indistinguível de "não havia ninguém devendo"**. O erro só aparece na conversa mais cara possível — a marina cortada dizendo que nunca foi avisada.
+
+### A Solução
+`app/services/agenda.py`, ligada no startup do FastAPI. Se o Atlas está no ar, a régua está rodando; se o Atlas caiu, já existe um problema maior e mais visível.
+
+**O que torna isso seguro é a régua já ser idempotente:** `marco_devido` consulta os avisos enviados, então rodar duas vezes no mesmo dia não duplica nada, e ficar dias parada não perde aviso (envia o marco vencido mais recente). O pior caso de uma reexecução é uma consulta a mais.
+
+Detalhes que importam:
+- **Marca no cache** (`cobranca:ultimo_dia_processado`) evita reprocessar a cada reinício — em dia de deploy seriam várias execuções seguidas.
+- **Sem cache disponível, ela RODA.** Repetir custa uma consulta; não rodar custa uma marina cortada sem aviso.
+- **`asyncio.to_thread`**: a régua faz I/O bloqueante (Supabase, SMTP, WhatsApp). No event loop, travaria as requisições das marinas enquanto varre a base.
+- **Nunca derruba a aplicação.** Quem paga continua usando o sistema mesmo se a cobrança falhar.
+
+### O que NÃO mudou
+O corte continua sendo do porteiro, na leitura (`core/acesso.py`). A agenda **só avisa** — pode falhar, atrasar ou ficar dias parada sem que ninguém seja cortado por engano nem deixe de ser cortado. Há teste que guarda essa fronteira: se alguém mover o corte para a agenda, a suíte quebra.
+
+---
+
+## 14. Stripe: assinatura não paga, nunca cancelada
+**Data da Decisão:** 21/08/2026
+
+A conta estava configurada para **cancelar a assinatura** quando todas as tentativas de cobrança falhassem. Isso quebraria o religamento automático que sustenta o modelo: assinatura cancelada não existe mais, então a marina regulariza e **não há o que cobrar** — o webhook nunca chega, o acesso não volta, e cada caso vira recadastro manual.
+
+Agora: **"marcar a assinatura como não paga"** + **"deixar a fatura vencida"**. A assinatura continua viva e cobrável; o corte é do porteiro aos 20 dias; o pagamento reativa sozinho.
+
+Junto:
+- **E-mails de cobrança da Stripe: desligados.** A régua própria é em português e com a marca do Atlas; os dois juntos fariam a marina receber duas cobranças diferentes pela mesma fatura.
+- **Aviso de cartão a vencer: ligado**, apontando para a página hospedada pela Stripe. Age ANTES da falha e não conflita com a régua — cartão vencido é das causas mais bobas de perder cliente que queria ficar. O link personalizado (`axoshub.com`) estava errado ali: o e-mail vai para quem precisa **atualizar o cartão**, e essa tela não existe no Atlas.

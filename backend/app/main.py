@@ -28,6 +28,27 @@ app.add_middleware(
 app.include_router(api_v1.router, prefix="/api/v1")
 
 
+@app.on_event("startup")
+async def _ligar_agenda() -> None:
+    """
+    A régua de cobrança roda dentro da aplicação, não num cron externo.
+
+    Cron externo some numa migração de servidor, quebra quando o caminho do
+    Python muda, para quando alguém recria o container — e ninguém percebe,
+    porque não avisar é indistinguível de "não havia ninguém devendo". O erro
+    aparece na conversa mais cara possível: a marina cortada dizendo que nunca
+    foi avisada. Ver app/services/agenda.py.
+    """
+    from app.services.agenda import iniciar
+    iniciar()
+
+
+@app.on_event("shutdown")
+async def _desligar_agenda() -> None:
+    from app.services.agenda import parar
+    parar()
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "version": settings.VERSION}
