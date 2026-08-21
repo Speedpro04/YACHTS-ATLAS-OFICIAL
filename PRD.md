@@ -70,6 +70,7 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 - [x] **REV-04 — Portal do Proprietário**: `proprietario_email`/`proprietario_telefone` no ativo, código por e-mail + WhatsApp, listagem restrita e leitura-apenas *(pendente do teste end-to-end do `verifyOtp`)*
 - [x] **REV-04 — Avisos por WhatsApp (Evolution) + e-mail**; Telegram removido; e-mail migrado para o domínio próprio com SPF/DKIM/DMARC
 - [x] **REV-04 — Contador de vagas fundadoras com dado real** na `/marina-parceira` (era `12` chumbado no código)
+- [x] **REV-04 — Indicação registrada no cadastro**: a página promete que quem indica participa dos dossiês da indicada, mas nada capturava o vínculo — e ele **só existe no momento do cadastro**. Texto cru sempre preservado; casamento automático por e-mail ou nome; liberação do bônus segue manual
 - [x] **REV-04 — Régua de cobrança roda sozinha** (`services/agenda.py`, no startup do FastAPI): cron externo some em migração de servidor e ninguém percebe, porque não avisar é indistinguível de não haver devedor. O corte segue sendo do porteiro, na leitura
 - [x] **REV-04 — Stripe: assinatura vira "não paga", nunca cancelada** — cancelar quebraria o religamento automático; e-mails de cobrança da Stripe desligados (a régua própria é em português), aviso de cartão a vencer ligado
 - [x] **REV-04 — Identidade no link de pagamento** (`client_reference_id`): sem ela a marina pagava e **não recebia acesso**, porque a carteira Link da Stripe usa outro e-mail. Descoberto ao ver `payments` vazia depois de um pagamento real

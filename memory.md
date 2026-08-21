@@ -282,3 +282,33 @@ Agora: **"marcar a assinatura como não paga"** + **"deixar a fatura vencida"**.
 Junto:
 - **E-mails de cobrança da Stripe: desligados.** A régua própria é em português e com a marca do Atlas; os dois juntos fariam a marina receber duas cobranças diferentes pela mesma fatura.
 - **Aviso de cartão a vencer: ligado**, apontando para a página hospedada pela Stripe. Age ANTES da falha e não conflita com a régua — cartão vencido é das causas mais bobas de perder cliente que queria ficar. O link personalizado (`axoshub.com`) estava errado ali: o e-mail vai para quem precisa **atualizar o cartão**, e essa tela não existe no Atlas.
+
+---
+
+## 15. Quem indicou quem só pode ser capturado no cadastro
+**Data da Decisão:** 21/08/2026
+
+### O Problema
+A página `/marina-parceira` promete há tempos: *"Marinas parceiras que indicam novos membros participam dos dossiês gerados pela indicada durante o período fundador."*
+
+E o banco tinha as colunas para isso — `indicacoes_feitas`, `indicada_por_slot`, `bonus_dossie_liberado`. Mas **nenhuma linha do backend escrevia nelas**, e o formulário de cadastro **nem perguntava quem indicou**.
+
+Promessa pública, motor de crescimento (20 → 40 marinas), e nada registrando.
+
+### Por que era urgente e não perfeccionismo
+**O vínculo só existe no momento do cadastro.** Depois ninguém lembra quem indicou quem — nem a fundadora, nem a indicada — e não há como reconstruir a partir do banco. Descoberto na véspera de gravar o vídeo que ia amplificar essa promessa.
+
+### A Solução
+Campo opcional no cadastro ("Alguma marina indicou o Yachts Atlas para você?") e `_registrar_indicacao` em `leads.py`, com duas camadas:
+
+1. **O texto cru sempre fica guardado** (`indicada_por_texto`), do jeito que ela digitou. A marina escreve o que lembra: um nome, um e-mail com typo, "falei com o João lá da náutica". Nada disso pode ser descartado por não casar com um registro.
+2. **Se casar** — por e-mail ou por nome — o vínculo vira `indicada_por_slot` e a contagem da indicante sobe.
+
+O que não casar, o fundador resolve à mão olhando o texto. Com 20 marinas é trabalho de minutos; perder o dado não tem conserto.
+
+**Nunca credita vínculo por adivinhação:** creditar a indicação errada é pior que não creditar — vira dinheiro para quem não trouxe ninguém, enquanto o certo continua sem receber. E ninguém indica a si mesma.
+
+**Best-effort:** falhar aqui não impede a marina de se cadastrar e pagar. O vínculo se resolve depois; a venda perdida, não.
+
+### O que ficou manual, de propósito
+A **liberação do bônus** (`bonus_dossie_liberado`) continua sendo decisão sua. Com 20 fundadoras e 1 indicação cada, controlar isso é trivial — e automatizar antes de ver o comportamento real seria construir no escuro.

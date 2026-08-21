@@ -160,6 +160,8 @@ export const api = {
     registrarMarina: (data: {
       name: string; email: string; password: string;
       cnpj?: string; phone?: string; city?: string; state?: string; website?: string
+      // Quem indicou: só dá para capturar no cadastro — depois ninguém lembra.
+      indicada_por?: string
     }): Promise<{
       modo: 'gratis' | 'pago'; marina?: string; billing_starts_at?: string; slot_number?: number
       oferta?: 'fundadora' | 'oficial'; preco_mensal?: number

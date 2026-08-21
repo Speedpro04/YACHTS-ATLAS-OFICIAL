@@ -44,7 +44,11 @@ export default function RegistroMarina() {
     neighborhood: '',
     city: '',
     state: '',
-    website: ''
+    website: '',
+    // Quem indicou. A página promete que a marina que indica participa dos
+    // dossiês da indicada — e esse vínculo só pode ser capturado aqui:
+    // depois ninguém lembra quem indicou quem.
+    indicada_por: ''
   })
 
   // Auto-fill address from CEP
@@ -104,6 +108,7 @@ export default function RegistroMarina() {
         city: formData.city,
         state: formData.state,
         website: formData.website,
+        indicada_por: formData.indicada_por,
       })
 
       if (res.modo === 'gratis') {
@@ -446,6 +451,27 @@ export default function RegistroMarina() {
                           maxLength={2}
                           className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5 uppercase"
                         />
+                      </div>
+
+                      {/* Quem indicou — opcional, e o único momento em que dá
+                          para capturar. Depois do cadastro ninguém lembra quem
+                          indicou quem, e é esse vínculo que garante o bônus da
+                          marina que trouxe a indicada. */}
+                      <div className="space-y-4 group md:col-span-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
+                          Alguma marina indicou o Yachts Atlas para você?
+                        </label>
+                        <input
+                          type="text"
+                          name="indicada_por"
+                          value={formData.indicada_por}
+                          onChange={handleChange}
+                          placeholder="Nome ou e-mail da marina que indicou (opcional)"
+                          className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
+                        />
+                        <p className="text-[11px] text-white/30 leading-relaxed">
+                          A marina que indica participa dos dossiês gerados por você durante o período fundador.
+                        </p>
                       </div>
                     </div>
                   </div>

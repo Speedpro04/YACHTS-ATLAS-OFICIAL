@@ -232,6 +232,96 @@ class MarinaRegistroPublico(BaseModel):
     # oficial levava US$ 200 e consumia uma das 20 vagas sem nunca ter visto a
     # campanha. Ausente ou desconhecido = site oficial = US$ 250.
     origem: Optional[str] = None
+    # Quem indicou esta marina — nome ou e-mail da fundadora, como ela lembrar.
+    # A pagina promete que quem indica participa dos dossies da indicada, e esse
+    # vinculo SO pode ser capturado aqui: depois ninguem lembra quem indicou
+    # quem, nem a fundadora nem a indicada. E o motor que leva de 20 para 40.
+    indicada_por: Optional[str] = None
+
+
+def _registrar_indicacao(supabase, data) -> None:
+    """
+    Grava quem indicou a marina que acabou de se cadastrar.
+
+    Duas coisas acontecem, e a primeira nunca falha:
+
+    1. o texto cru fica guardado como ela digitou. Marina escreve o que lembra
+       — "Marina do Porto", "falei com o Joao la da nautica", e-mail com typo —
+       e nada disso pode ser descartado por nao casar com um registro;
+    2. se der para casar com uma fundadora (por e-mail ou nome), o vinculo vira
+       `indicada_por_slot` e a contagem da indicante sobe.
+
+    O que nao casar, o fundador resolve a mao olhando o texto. Com 20 marinas
+    isso e trabalho de minutos; perder o dado nao tem conserto.
+
+    Best-effort por definicao: falhar aqui nao pode impedir a marina de se
+    cadastrar e pagar.
+    """
+    texto = (getattr(data, "indicada_por", None) or "").strip()
+    if not texto:
+        return
+
+    try:
+        minha = (
+            supabase.table("marinas_lancamento")
+            .select("slot")
+            .ilike("email", data.email)
+            .limit(1)
+            .execute()
+        )
+        if not minha.data:
+            logger.info(
+                f"Indicacao de {data.email} sem vaga de lancamento — texto nao gravado: {texto!r}"
+            )
+            return
+        meu_slot = minha.data[0]["slot"]
+
+        # 1) o texto cru, sempre
+        supabase.table("marinas_lancamento").update(
+            {"indicada_por_texto": texto}
+        ).eq("slot", meu_slot).execute()
+
+        # 2) tentativa de casar com uma fundadora
+        indicante = (
+            supabase.table("marinas_lancamento")
+            .select("slot, indicacoes_feitas")
+            .ilike("email", texto)
+            .neq("slot", meu_slot)
+            .limit(1)
+            .execute()
+        )
+        if not indicante.data:
+            indicante = (
+                supabase.table("marinas_lancamento")
+                .select("slot, indicacoes_feitas")
+                .ilike("marina_nome", f"%{texto}%")
+                .neq("slot", meu_slot)
+                .limit(1)
+                .execute()
+            )
+        if not indicante.data:
+            logger.info(
+                f"Indicacao de {data.email} guardada como texto (sem correspondencia): {texto!r}"
+            )
+            return
+
+        slot_indicante = indicante.data[0]["slot"]
+        feitas = (indicante.data[0].get("indicacoes_feitas") or 0) + 1
+
+        supabase.table("marinas_lancamento").update(
+            {"indicada_por_slot": slot_indicante}
+        ).eq("slot", meu_slot).execute()
+        supabase.table("marinas_lancamento").update(
+            {"indicacoes_feitas": feitas}
+        ).eq("slot", slot_indicante).execute()
+
+        logger.info(
+            f"Indicacao registrada: vaga {meu_slot} indicada pela vaga "
+            f"{slot_indicante} (total dela: {feitas})"
+        )
+    except Exception as e:
+        # O cadastro e o pagamento valem mais que o registro da indicacao.
+        logger.error(f"Falha ao registrar indicacao de {data.email}: {e}")
 
 
 @router.get("/marina/vagas")
@@ -386,6 +476,7 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
         oferta["checkout_url"] = _link_com_identidade(
             oferta.get("checkout_url"), user_id, data.email
         )
+        _registrar_indicacao(supabase, data)
         return {"modo": "pago", **oferta}
 
     # 3) Vaga grátis: cria/garante o login com a senha escolhida pela marina
