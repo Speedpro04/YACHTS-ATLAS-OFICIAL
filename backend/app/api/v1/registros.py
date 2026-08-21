@@ -14,6 +14,8 @@ original marcado como retificado, a correção logo abaixo.
 A situação (vigente / retificado / retificador) é DERIVADA em
 public.vw_registros_situacao — nunca gravada, porque gravar exigiria UPDATE.
 """
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user
@@ -21,6 +23,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Any
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Status válidos conforme o CHECK da tabela
 STATUS_VALIDOS = ["registrado", "pendente", "atencao", "concluido"]
@@ -62,6 +65,30 @@ class RetificacaoCreate(RegistroCreate):
     """Corrige um registro já selado. O original permanece intacto."""
     retifica_id: str
     motivo_retificacao: str = Field(min_length=MOTIVO_MIN)
+
+
+def _recalcular_saude(ativo_id: str) -> None:
+    """
+    Atualiza a nota do ativo depois de selar um registro.
+
+    A nota e calculada por `calcular_saude_ativo`, que persiste em
+    `ativos.progresso` e `ativos.classificacao` — mas so rodava quando alguem
+    chamava GET /ativos/{id}/progresso, e o frontend nunca chamava. Resultado:
+    a marina registrava 16 servicos e o selo continuava "Saude 0% - Bronze",
+    parado no valor do cadastro.
+
+    Isso destroi o incentivo que a nota existe para criar. Ela e o argumento de
+    que vale a pena alimentar o cofre: se nao se mexe quando a marina trabalha,
+    vira enfeite — e no dossie sai um numero que contradiz o proprio conteudo.
+
+    Best-effort: falhar aqui nao pode impedir o registro de ser selado. O
+    registro e o produto; a nota e derivada dele e pode ser recalculada depois.
+    """
+    try:
+        from app.services.asset_score_service import calcular_saude_ativo
+        calcular_saude_ativo(ativo_id, persistir=True)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Nao foi possivel recalcular a saude de %s: %s", ativo_id, e)
 
 
 def _owner_do_ativo(supabase, ativo_id: str) -> Optional[str]:
@@ -111,6 +138,7 @@ async def create_registro(data: RegistroCreate, token: dict = Depends(get_curren
             "resolve_id": data.resolve_id,
             "created_by": token.get("sub") if token else None,
         }).execute()
+        _recalcular_saude(data.ativo_id)
         return result.data[0] if result.data else {}
     except HTTPException:
         raise

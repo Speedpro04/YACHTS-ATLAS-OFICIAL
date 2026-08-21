@@ -370,3 +370,39 @@ Não é uma lista de registros soltos: é uma **linha do tempo com desfecho**, m
 Registros inseridos direto no banco (mais rápido que digitar 13 fichas), documentos enviados ao Storage com o mesmo caminho e a mesma sanitização de nome do endpoint da aplicação. **Ressalva conhecida:** por não passar pela tela, este preenchimento não testa o formulário — defeito de campo que não salva ou validação que trava não seria pego por aqui.
 
 Tudo marcado como fictício — prestador "Estaleiro Teste", CNPJ `00.000.000/0001-00`, nomes com "(ficticio)" — para ninguém confundir com dado real depois. **Serve também como ativo de demonstração** para o vídeo e para mostrar a marinas.
+
+---
+
+## 18. A nota do ativo não se mexia
+**Data da Decisão:** 21/08/2026
+
+### O Problema
+O Marlin Sea tinha **16 registros selados e 25 documentos**, e o painel mostrava **"Bronze · Saúde 0%"**. Descoberto pelo fundador olhando a tela.
+
+O cálculo funcionava — a mesma conta dava **87 (Ouro)**. O que não acontecia era a **atualização**: `calcular_saude_ativo` persiste em `ativos.progresso` e `ativos.classificacao`, mas só rodava em `GET /ativos/{id}/progresso`, e **o frontend nunca chamava esse endpoint**. O selo lia o valor gravado no cadastro e nunca mais tocado.
+
+### Por que era grave
+A nota existe para criar um incentivo: *vale a pena alimentar o cofre*. Se ela não se mexe quando a marina trabalha, **vira enfeite** — e no dossiê sairia um número contradizendo o próprio conteúdo do documento.
+
+Agora recalcula ao selar registro. Best-effort: falhar não pode impedir o selo. O registro é o produto; a nota é derivada e pode ser recalculada depois.
+
+### Como a nota funciona (para não reinventar depois)
+| Peso | Mede | Máximo em |
+|---|---|---|
+| 50% | abrangência | 1 registro em cada uma das 10 categorias-núcleo |
+| 25% | profundidade | 6+ registros de manutenção/motor |
+| 15% | documentos | 8+ documentos com integridade verificada |
+| 10% | estrutural | ter registro de casco |
+
+Bronze <50 · Prata 50–79 · Ouro 80+
+
+**Atenção:** documento é gravado com status **`verified`** (não "validado") — é esse valor que a taxa de verificação procura. Gravar diferente faz o documento valer metade dos pontos.
+
+### Duas ressalvas registradas, sem decisão ainda
+**A escala é generosa e pouco discriminante.** Preencher as 10 abas uma vez com 8 documentos já dá **83 → Ouro**. O Marlin Sea, com 18 meses de histórico, deu 87 — só 4 pontos acima do mínimo bem feito. Bronze só acontece com quem mal usou o sistema, então a classificação diferencia pouco numa negociação.
+
+**E a nota não mede saúde: mede volume de cadastro.** Em nenhum momento ela pergunta se está tudo bem. O Marlin Sea teve um rombo no casco e ficou interditado — nota 87, Ouro. O `_health_map` até olha status (aba com registro em "atenção" fica amarela), mas **o score ignora**: dá para ter duas abas amarelas e Ouro ao mesmo tempo.
+
+Um comprador lê "Ouro" e entende *"barco excelente"*, não *"dossiê completo"*.
+
+Caminhos possíveis, a decidir: **(A)** renomear para *Índice de Custódia* / *Completude do Dossiê* — honesto, e coerente com o PRD, que diz que o Yachts Atlas **não inspeciona a embarcação**; ou **(B)** fazer a nota penalizar registro em atenção, sinistro sem desfecho e documento vencido. A inclinação é (A): dar nota de saúde a um ativo que não se vistoriou é assumir responsabilidade que não é da plataforma.
