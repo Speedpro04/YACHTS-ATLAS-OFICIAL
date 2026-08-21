@@ -345,3 +345,28 @@ A ocorrência é lacrada quando aconteceu; o reparo, quando terminou. **É essa 
 
 ### O par de fotos é o coração da ficha
 As duas obrigatórias, cada uma no seu momento, com a instrução explícita de **guardar o ângulo**: a comparação — mesma proa, mesmo ponto de vista — é o que transforma "teve um sinistro" em "teve um sinistro e foi resolvido assim".
+
+---
+
+## 17. Marlin Sea Focus é o ativo de demonstração
+**Data:** 21/08/2026 · **Ativo:** `YA-IATE-2015-3A38`
+
+Iate 38 pés, 2015, preenchido com **dados fictícios** para gerar o primeiro dossiê completo de ponta a ponta — algo que nunca tinha sido feito (`dossie_saidas` estava zerada).
+
+**16 registros selados em 11 categorias**, cobrindo jan/2025 a jun/2026, e **25 documentos** no cofre (11 PDFs + fotos), todos com SHA-256.
+
+### A história que ele conta, e por que ela foi construída assim
+Não é uma lista de registros soltos: é uma **linha do tempo com desfecho**, montada para exercitar exatamente o que dá valor ao dossiê.
+
+- **2025** — manutenção preventiva regular (250h, ânodos), vistoria de fundo com estrutura íntegra, auditoria elétrica completa (VHF Canal 16, EPIRB com ANATEL, AIS, RIPEAM), salvatagem conforme NORMAM.
+- **14/03/2026** — impacto com objeto submerso: perfuração de 22 cm na proa. Capitania acionada, seguro comunicado, embarcação interditada. **Selado naquele dia, com status `atencao`** — sem saber ainda como terminaria.
+- **28/04/2026** — reparo estrutural: laminado com chanfro 12:1, 8 camadas em resina epóxi a vácuo, **espessura final de 20mm contra 19mm do original**. Aponta para a ocorrência via `resolve_id`.
+- **06/05/2026** — vistoria independente, contratada pelo proprietário, aprovando sem ressalva.
+- **19/06/2026** — revisão de 500h, de volta à operação.
+
+É a demonstração do argumento central: *"teve um rombo"* viraria problema; *"teve um rombo, e olha como foi resolvido"* vira **prova de cuidado**.
+
+### Como foi preenchido
+Registros inseridos direto no banco (mais rápido que digitar 13 fichas), documentos enviados ao Storage com o mesmo caminho e a mesma sanitização de nome do endpoint da aplicação. **Ressalva conhecida:** por não passar pela tela, este preenchimento não testa o formulário — defeito de campo que não salva ou validação que trava não seria pego por aqui.
+
+Tudo marcado como fictício — prestador "Estaleiro Teste", CNPJ `00.000.000/0001-00`, nomes com "(ficticio)" — para ninguém confundir com dado real depois. **Serve também como ativo de demonstração** para o vídeo e para mostrar a marinas.
