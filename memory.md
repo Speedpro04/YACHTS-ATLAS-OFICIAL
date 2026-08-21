@@ -165,3 +165,48 @@ Avisos nos dias **0, 7, 15, 19 e 20** desde a primeira recusa, por e-mail e What
 Envia-se o **marco vencido mais recente** que ainda não saiu: repetir a execução não duplica nada, e uma rotina parada três dias manda um aviso — não três de uma vez na caixa dela.
 
 O cron (`python -m app.services.cron_cobranca`) **só avisa**. O corte é do porteiro, na leitura — a rotina pode falhar, atrasar ou ficar dias sem rodar sem que ninguém seja cortado por engano nem deixe de ser cortado.
+
+---
+
+## 10. Capitã Solara também responde sobre o produto
+**Data da Decisão:** 21/08/2026
+
+### O Problema
+A Solara sabia normas — corpo grande, externo e estável, que vive no RAG. Mas a marina também pergunta *"onde coloco a foto do casco?"*, e isso o RAG não responde: é conhecimento **nosso**, pequeno e que muda toda semana.
+
+### Por que NO PROMPT, e não no RAG
+RAG existe para corpus grande demais para caber no contexto. O produto não é isso: são 18 categorias, 9 tipos de foto e meia dúzia de fluxos. Cabe inteiro no prompt — e ali está **sempre presente**, inclusive quando a pergunta mistura os dois mundos (*"preciso registrar a EPIRB, onde ponho isso no sistema?"*). Um roteador seria obrigado a escolher um lado e perderia metade da resposta; sem ele, a exigência vem da norma e o caminho vem do produto, numa resposta só.
+
+Mesma receita já usada no ATLAS-SHOP, onde todo o conhecimento da Vega chega pelo `system_prompt`.
+
+### Por que é GERADO do código, e não escrito à mão
+Norma envelhece devagar; produto muda toda semana — no mesmo dia, "Casco / Exterior" virou "Integridade do Casco" e nasceu "Fotos da Embarcação". Texto manual sobre telas que mudam vira mentira em duas semanas, **dita com convicção**, porque ninguém revisa o que a IA respondeu para uma marina.
+
+As listas saem de `dossieCategorias.ts` e `coberturaFotos.ts`. Escritos à mão só os FLUXOS ("como cadastrar", "como selar"), que são o desenho do produto e mudam devagar.
+
+Como a imagem de produção não leva o frontend, a extração roda no repositório e o resultado é commitado — e `test_solara_suporte.py` extrai de novo e compara. Mudou categoria e ninguém regenerou: **a suíte quebra antes do deploy**. Regenerar: `python -m app.services.conhecimento_produto`.
+
+### As três travas
+- **Não inventa tela.** Caminho fora do conhecimento → ela diz que não sabe. Mandar a marina clicar num menu inexistente é pior que não responder: ela procura, não acha e conclui que o sistema está quebrado.
+- **Não escancara o escopo.** A detecção exige forma de pergunta **E** palavra do produto. Só a palavra abriria para qualquer conversa que mencione barco; só o "como" abriria para o mundo inteiro. *"Como faço um bolo de cenoura?"* tem a forma e não passa.
+- **Degrada sem cair.** Sumindo o conhecimento gerado, ela segue atendendo normas. Perder o suporte de produto é um chamado; perder a Solara é o painel sem assistente.
+
+### Suporte humano continua sendo estratégia
+Com 20–40 marinas, **as perguntas de suporte são a pesquisa de produto**. A Solara responde o "ONDE" (factual, uma resposta certa, que depois da terceira vez não ensina mais nada); o fundador responde o "POR QUÊ" (*"isso não faz sentido"*, *"achei confuso"*) — que é o sinal que a percepção de usuário dele precisa receber.
+
+Por isso a tabela `solara_perguntas`: não é métrica de atendimento, é mapa do que está confuso. Pergunta que chega vinte vezes não é caso de suporte, é **tela que precisa mudar**. E `respondida = false` é o sinal mais valioso — ou falta documentação, ou o produto não faz algo que a marina esperava.
+
+**Cobrança não terá LLM.** São 1–2 casos por mês, e é o momento em que se descobre POR QUE a marina está saindo. Uma LLM resolveria o pagamento e perderia a informação.
+
+---
+
+## 11. Sessão renovada não pode derrubar a tela
+**Data da Decisão:** 21/08/2026
+
+O `PrivateRoute` observava o **objeto** da sessão (`useEffect(..., [session])`). O Supabase renova o token sempre que a aba volta ao foco e entrega um objeto novo — mesmo usuário, identidade diferente. Resultado: spinner de tela cheia e nova ida ao backend **a cada troca de aba**, como se a página recarregasse.
+
+Agora observa o **id do usuário**, que é estável. Quem pode usar o Atlas não muda porque um token foi renovado; muda quando troca o usuário.
+
+Efeito colateral aceito: corte por inadimplência no meio da sessão não aparece mais na hora — mas o porteiro do backend recusa cada requisição de qualquer forma, e a tela de regularização aparece na navegação seguinte. Piscar a cada troca de aba, todo dia, para toda marina, custa mais que isso.
+
+Na mesma linha, a conversa da Solara passou a sobreviver à navegação (`sessionStorage`): o `session_id` já ficava guardado, então o backend mantinha o contexto — mas a tela recomeçava do zero e quem estava no meio de uma dúvida perdia o fio.

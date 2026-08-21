@@ -27,9 +27,31 @@ const SAUDACAO: ChatMsg = {
     'Trabalho só com o que está verificado — nada de achismo.',
 }
 
+// A conversa sobrevive à navegação.
+//
+// O `session_id` já morava aqui, então o backend mantinha o contexto — mas a
+// tela recomeçava do zero a cada troca de página, e quem estava no meio de uma
+// dúvida perdia o fio. Guardar o que apareceu na tela junto com a sessão faz
+// as duas metades voltarem sincronizadas.
+//
+// sessionStorage, e não localStorage, de propósito: conversa pertence à aba.
+// Fechou a aba, acabou — ninguém quer reencontrar a dúvida de ontem aberta.
+const CHAVE_ABERTO = 'capita_solara_aberto'
+const CHAVE_MSGS = 'capita_solara_msgs'
+
+function _lerMsgs(): ChatMsg[] {
+  try {
+    const bruto = sessionStorage.getItem(CHAVE_MSGS)
+    const salvo = bruto ? JSON.parse(bruto) : null
+    return Array.isArray(salvo) && salvo.length ? salvo : [SAUDACAO]
+  } catch {
+    return [SAUDACAO]
+  }
+}
+
 export default function CapitaSolara() {
-  const [aberto, setAberto] = useState(false)
-  const [msgs, setMsgs] = useState<ChatMsg[]>([SAUDACAO])
+  const [aberto, setAberto] = useState(() => sessionStorage.getItem(CHAVE_ABERTO) === '1')
+  const [msgs, setMsgs] = useState<ChatMsg[]>(_lerMsgs)
   const [input, setInput] = useState('')
   const [enviando, setEnviando] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
@@ -37,6 +59,19 @@ export default function CapitaSolara() {
   useEffect(() => {
     if (aberto) endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [msgs, enviando, aberto])
+
+  // Persiste o que a tela mostra, para a próxima página reencontrar a conversa.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CHAVE_ABERTO, aberto ? '1' : '0')
+    } catch { /* aba anônima com storage bloqueado: só não lembra */ }
+  }, [aberto])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CHAVE_MSGS, JSON.stringify(msgs))
+    } catch { /* idem */ }
+  }, [msgs])
 
   /**
    * Limpa a conversa e começa uma sessão nova.
@@ -47,6 +82,7 @@ export default function CapitaSolara() {
    */
   const limpar = () => {
     sessionStorage.removeItem('capita_solara_session')
+    sessionStorage.removeItem(CHAVE_MSGS)
     setMsgs([SAUDACAO])
     setInput('')
   }
@@ -127,7 +163,7 @@ export default function CapitaSolara() {
                 <p className="text-white text-sm font-bold tracking-wide flex items-center gap-1.5">
                   Capitã Solara <Sparkles size={12} className="text-[#c5a059]" />
                 </p>
-                <p className="text-[8px] text-[#c5a059] uppercase tracking-[0.25em] font-black">Assistente de Normas · Online</p>
+                <p className="text-[8px] text-[#c5a059] uppercase tracking-[0.25em] font-black">Normas e Suporte · Online</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -209,7 +245,7 @@ export default function CapitaSolara() {
               </button>
             </div>
             <p className="text-[8px] text-white/20 uppercase tracking-[0.2em] font-black mt-2 text-center">
-              Só normas · não trata dados pessoais
+              Normas e suporte · não trata dados pessoais
             </p>
           </div>
         </div>

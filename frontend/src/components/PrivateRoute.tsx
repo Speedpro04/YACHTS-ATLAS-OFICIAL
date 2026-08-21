@@ -20,6 +20,17 @@ export default function PrivateRoute() {
   const [verificando, setVerificando] = useState(true)
   const [bloqueio, setBloqueio] = useState<Bloqueio | null>(null)
 
+  // Depende do ID do usuário, NÃO do objeto da sessão.
+  //
+  // O Supabase renova o token sempre que a aba volta ao foco, e entrega um
+  // objeto de sessão novo — mesmo usuário, identidade diferente. Observar o
+  // objeto fazia o efeito rodar de novo a cada troca de aba: spinner de tela
+  // cheia e nova ida ao backend, como se a página tivesse recarregado.
+  //
+  // Quem pode usar o Atlas não muda porque um token foi renovado. Muda quando
+  // troca o usuário — e é só isso que precisa ser observado.
+  const usuarioId = session?.user?.id ?? null
+
   useEffect(() => {
     if (!session) {
       setVerificando(false)
@@ -44,7 +55,8 @@ export default function PrivateRoute() {
       .finally(() => { if (ativo) setVerificando(false) })
 
     return () => { ativo = false }
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuarioId])
 
   if (loading || (session && verificando)) {
     return (

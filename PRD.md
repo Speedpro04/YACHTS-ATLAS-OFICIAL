@@ -42,7 +42,7 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 4. **Imutabilidade real** (`registros`): cada registro recebe **hash SHA-256 no insert** (trigger) e o banco **bloqueia qualquer UPDATE** (append-only / anti-adulteração) — vale até para a `service_role`. *DELETE segue permitido por causa do cascade de exclusão de ativo (soft-delete pendente para imutabilidade total).*
 5. **Cofre de Documentos**: Supabase Storage, SHA-256 por arquivo, **descrição do que é cada documento** no upload.
 6. **Cobertura Fotográfica**: até **430 fotos por embarcação** (400 cobertura + 30 vitrine), geolocalizadas no upload.
-7. **Capitã Solara (IA)**: assistente de normas náuticas via RAG (pgvector), tom técnico-profissional, com guard-rails anti-alucinação.
+7. **Capitã Solara (IA)**: assistente de **normas** (RAG/pgvector, citando a fonte) **e de suporte ao produto** — "onde cadastro?", "como gero o dossiê?". O conhecimento do produto vive no PROMPT, não no RAG (é pequeno e cabe inteiro), e é **gerado do código** (`conhecimento_produto.py`), com teste que quebra se alguém mudar uma categoria sem regenerar. Responde pergunta misturada inteira: a exigência vem da norma, o caminho vem do produto. Nunca descreve tela que não esteja no conhecimento. O que perguntam fica em `solara_perguntas` — mapa do que está confuso na interface, não métrica de atendimento.
 8. **Acesso pago**: `app/core/acesso.py` decide quem pode usar o sistema. **Fail-open** — barra só quem está explicitamente marcado; manutenção, admin e piloto gratuito passam direto. O corte por inadimplência é calculado **na leitura**, não por cron: não depende de rotina estar de pé, e o religamento é automático.
 9. **Régua de cobrança**: avisos nos dias 0, 7, 15, 19 e 20 por e-mail e WhatsApp, com registro do que já saiu — rodar duas vezes não duplica, e um dia sem rodar não perde aviso (`cron_cobranca`).
 10. **Portal do Proprietário**: o armador entra com o **próprio e-mail** e um código de uso único (e-mail + WhatsApp), sem senha para criar. Vê **somente os barcos com o e-mail dele** e **apenas lê** — não cadastra, não edita, não sela. O vínculo é `ativos.proprietario_email`, e a leitura-apenas é garantida por construção (`incluir_proprietario` em `core/authz.py`, que só endpoints de leitura passam).
@@ -70,6 +70,8 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 - [x] **REV-04 — Portal do Proprietário**: `proprietario_email`/`proprietario_telefone` no ativo, código por e-mail + WhatsApp, listagem restrita e leitura-apenas *(pendente do teste end-to-end do `verifyOtp`)*
 - [x] **REV-04 — Avisos por WhatsApp (Evolution) + e-mail**; Telegram removido; e-mail migrado para o domínio próprio com SPF/DKIM/DMARC
 - [x] **REV-04 — Contador de vagas fundadoras com dado real** na `/marina-parceira` (era `12` chumbado no código)
+- [x] **REV-04 — Solara com suporte ao produto** + registro das perguntas (`solara_perguntas`); conhecimento gerado do código e guardado por teste
+- [x] **REV-04 — Tela para de piscar a cada troca de aba**: `PrivateRoute` passou a observar o id do usuário, não o objeto da sessão (o Supabase renova o token no foco); conversa da Solara sobrevive à navegação
 - [x] **REV-04 — Upload com acento/espaço no nome**: a chave do storage é sanitizada (o nome original segue em `documentos.nome_arquivo`)
 
 ## Pendências / Próximos Passos
@@ -84,8 +86,9 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 9. **Traduzir os modelos de e-mail do Supabase** — ainda em inglês ("Reset Your Password"). Marca brasileira mandando e-mail em inglês com link de senha é padrão clássico de phishing, e pesou no spam junto com o DKIM que faltava.
 10. **Validar o `verifyOtp` do Portal do Proprietário** contra a Supabase real — é o único ponto do fluxo que não dá para testar sem conta de verdade.
 11. **Limite de 4 dossiês/ano existe só no frontend** — sem checagem no servidor. Vira regra de verdade quando o 5º dossiê passar a ser cobrado.
-12. **`alertas.py` órfão** — endpoints de alerta de vencimento sem ninguém chamando, protegidos por admin (cron externo não alcança), sem idempotência e enviando para e-mail fixo. Remover ou reescrever no padrão do `cron_cobranca`.
-13. **Marina não consegue cancelar sozinha** — não há botão no painel; hoje ela pede por e-mail/WhatsApp. Decisão consciente enquanto forem 20 marinas.
+12. **Suporte humano é estratégia enquanto forem 20–40 marinas** — a Solara responde o "onde"; o fundador responde o "por quê". Automatizar o resto cedo demais deixa surdo o sinal que corrige a interface. Revisar quando a mesma pergunta chegar 20 vezes ou a resposta demorar mais de um dia.
+13. **`alertas.py` órfão** — endpoints de alerta de vencimento sem ninguém chamando, protegidos por admin (cron externo não alcança), sem idempotência e enviando para e-mail fixo. Remover ou reescrever no padrão do `cron_cobranca`.
+14. **Marina não consegue cancelar sozinha** — não há botão no painel; hoje ela pede por e-mail/WhatsApp. Decisão consciente enquanto forem 20 marinas.
 
 ## Expansão Internacional (3 Versões)
 Estratégia multi-região pensada **desde a arquitetura**: o mesmo DNA (custódia selada + dossiê imutável + SHA-256) replicado em **3 sistemas independentes**, cada um com idioma, banco, subdomínio e conformidade regulatória próprios. As **portas de entrada** já vivem no header (botões dourados `Latan-Atlas · USA-Atlas · Europa-Atlas`), hoje como placeholders visuais a partir da constante `REGIOES` (`Header.tsx`).
