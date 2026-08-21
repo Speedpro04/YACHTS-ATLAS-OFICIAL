@@ -425,6 +425,142 @@ const FICHA_CASCO: ServicoConfig = {
   ]
 }
 
+// -- SINISTROS & REPAROS ---------------------------------------------
+//
+// A aba mais grave do sistema era a mais pobre: tinha quatro campos - data,
+// evento, reparo, valor - para o assunto que mais pesa numa negociacao e numa
+// apolice. E o tema aparecia espalhado em outros dois lugares (avaria no
+// Diario de Bordo, "historico de sinistros" como texto livre no Seguro), sem
+// nenhum deles ser o lugar de verdade.
+//
+// POR QUE AQUI, E NAO NA ABA DO CASCO
+// Sinistro raramente fica num sistema so. Encalhe atinge casco, helice, eixo e
+// leme; incendio na casa de maquinas atinge motor, eletrica e interior;
+// alagamento atinge tudo. Uma ficha presa ao casco resolveria justamente o
+// caso que, quando acontece de verdade, transborda dele. Por isso os sistemas
+// atingidos sao marcaveis em conjunto, e nao uma escolha unica.
+//
+// E POR QUE O CASCO CONTINUA SIMPLES
+// Vistoria de rotina e o uso normal daquela aba: osmose, gelcoat, cavernas,
+// espessura. Sem avaria, o gerente preenche a vistoria e pronto. Empurrar
+// campos de sinistro para la faria toda vistoria carregar o peso de um evento
+// que quase nunca aconteceu.
+//
+// POR QUE ANTES E DEPOIS
+// "Este barco teve um rombo no casco" derruba o valor. "Teve um rombo,
+// reparado pelo estaleiro X, com laminacao de Y, laudo anexado e vistoriado"
+// preserva - as vezes aumenta, porque prova que a estrutura foi auditada de
+// perto. O dossie nao vale por esconder sinistro: vale por provar que ele foi
+// resolvido direito. Sem o desfecho, ele so carrega a ma noticia.
+//
+// SAO DOIS REGISTROS SELADOS, nao um editado depois. A ocorrencia e lacrada
+// quando aconteceu; o reparo, quando terminou. Registro selado nao aceita
+// alteracao - e e essa trava que da forca ao "antes": ele foi selado quando
+// ninguem sabia ainda como ia terminar. O reparo aponta para a ocorrencia
+// pelo campo `resolve_id`.
+const SIN_OCORRENCIA = { key: 'momento', equals: 'Ocorrencia do sinistro' }
+const SIN_REPARO = { key: 'momento', equals: 'Reparo concluido' }
+const SIN_SEGURO = { key: 'seguro_acionado', equals: 'Sim' }
+
+const FICHA_SINISTRO: ServicoConfig = {
+  ctaNovo: 'Registrar Sinistro ou Reparo',
+  fields: [
+    { key: 'momento', label: 'O que voce esta registrando', type: 'select', options: [
+      'Ocorrencia do sinistro',
+      'Reparo concluido'
+    ], required: true, full: true },
+
+    // -- A OCORRENCIA -------------------------------------------------
+    { key: 'servico', label: 'Resumo do ocorrido', type: 'text', placeholder: 'Ex: Impacto com objeto submerso na proa, bombordo', required: true, full: true },
+    { key: 'tipo_sinistro', label: 'Tipo de sinistro', type: 'select', options: [
+      'Colisao com outra embarcacao',
+      'Impacto com objeto submerso',
+      'Encalhe',
+      'Choque com estrutura (pier, cais, boia)',
+      'Incendio ou principio de incendio',
+      'Alagamento / entrada de agua',
+      'Afundamento parcial ou total',
+      'Temporal / condicoes de mar',
+      'Vandalismo, furto ou roubo',
+      'Falha estrutural sem impacto',
+      'Falha mecanica com dano a outros sistemas',
+      'Outro'
+    ], required: true, showIf: SIN_OCORRENCIA },
+    { key: 'data', label: 'Data da ocorrencia', type: 'date', required: true },
+    { key: 'hora', label: 'Hora aproximada', type: 'time', showIf: SIN_OCORRENCIA },
+    { key: 'local_ocorrencia', label: 'Local da ocorrencia', type: 'text', placeholder: 'Ex: Canal de acesso, Baia de Ilhabela', full: true, showIf: SIN_OCORRENCIA },
+    { key: 'situacao_embarcacao', label: 'A embarcacao estava', type: 'select', options: [
+      'Navegando', 'Fundeada', 'Atracada', 'Em marina seca / no seco', 'Sendo rebocada', 'Em transporte terrestre'
+    ], showIf: SIN_OCORRENCIA },
+    { key: 'responsavel', label: 'Quem reportou / condutor no momento', type: 'text', placeholder: 'Nome de quem estava a bordo ou constatou', required: true },
+    { key: 'houve_vitimas', label: 'Houve feridos ou vitimas?', type: 'select', options: ['Nao', 'Sim - sem gravidade', 'Sim - com atendimento medico'], showIf: SIN_OCORRENCIA },
+    { key: 'autoridade_acionada', label: 'Autoridade maritima acionada?', type: 'select', options: ['Nao', 'Sim - Capitania dos Portos', 'Sim - Marinha / Salvamento', 'Sim - Bombeiros', 'Sim - Policia'], showIf: SIN_OCORRENCIA },
+    { key: 'numero_bo', label: 'Numero do B.O. / protocolo da autoridade', type: 'text', showIf: SIN_OCORRENCIA },
+
+    // -- SISTEMAS ATINGIDOS (marque todos) ----------------------------
+    // Caixas independentes, e nao uma escolha unica: sinistro de verdade
+    // transborda de um sistema so, e e essa lista que diz ao perito e ao
+    // comprador o tamanho real do evento.
+    { key: 'sis_casco', label: 'Atingiu: casco / estrutura', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_propulsao', label: 'Atingiu: motor / propulsao', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_governo', label: 'Atingiu: leme, eixo e governo', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_eletrica', label: 'Atingiu: eletrica', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_eletronica', label: 'Atingiu: eletronica / navegacao', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_interior', label: 'Atingiu: interior / acomodacoes', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_conves', label: 'Atingiu: conves e superestrutura', type: 'checkbox', showIf: SIN_OCORRENCIA },
+    { key: 'sis_auxiliares', label: 'Atingiu: sistemas auxiliares (bombas, gerador)', type: 'checkbox', showIf: SIN_OCORRENCIA },
+
+    { key: 'extensao_dano', label: 'Extensao do dano', type: 'select', options: [
+      'Cosmetico (sem comprometimento)',
+      'Atinge o laminado / estrutura superficial',
+      'Perfuracao ou dano estrutural localizado',
+      'Dano estrutural extenso',
+      'Perda total'
+    ], required: true, showIf: SIN_OCORRENCIA },
+    { key: 'embarcacao_navegavel', label: 'A embarcacao segue navegavel?', type: 'select', options: ['Sim', 'Sim, com restricao', 'Nao - parada ate reparo'], showIf: SIN_OCORRENCIA },
+    { key: 'valor', label: 'Estimativa inicial de prejuizo', type: 'number', placeholder: 'Quanto se espera gastar', suffix: 'R$', showIf: SIN_OCORRENCIA },
+
+    // -- SEGURO -------------------------------------------------------
+    { key: 'seguro_acionado', label: 'Seguro foi acionado?', type: 'select', options: ['Nao', 'Sim', 'Ainda em analise'], required: true, showIf: SIN_OCORRENCIA },
+    { key: 'seguradora', label: 'Seguradora', type: 'text', showIf: SIN_SEGURO },
+    { key: 'numero_sinistro', label: 'Numero do sinistro na seguradora', type: 'text', showIf: SIN_SEGURO },
+    { key: 'franquia_valor', label: 'Franquia aplicada', type: 'number', suffix: 'R$', showIf: SIN_SEGURO },
+
+    // -- O REPARO -----------------------------------------------------
+    { key: 'reparo_estaleiro', label: 'Estaleiro / oficina responsavel', type: 'text', placeholder: 'Quem executou o reparo', full: true, showIf: SIN_REPARO },
+    { key: 'reparo_cnpj', label: 'CNPJ do executante', type: 'text', placeholder: '00.000.000/0000-00', showIf: SIN_REPARO },
+    { key: 'reparo_inicio', label: 'Inicio do reparo', type: 'date', showIf: SIN_REPARO },
+    { key: 'reparo_conclusao', label: 'Conclusao do reparo', type: 'date', showIf: SIN_REPARO },
+    { key: 'reparo_descricao', label: 'O que foi feito', type: 'textarea', placeholder: 'Descreva a tecnica, as etapas e os materiais - ex.: enxerto de laminado, 6 camadas de manta 450 e tecido 600 em resina epoxi, refeito o gelcoat', full: true, required: true, showIf: SIN_REPARO },
+    { key: 'reparo_pecas', label: 'Pecas ou secoes substituidas', type: 'textarea', placeholder: 'Liste o que foi trocado, com part number quando houver', full: true, showIf: SIN_REPARO },
+    { key: 'reparo_valor_real', label: 'Custo real do reparo', type: 'number', placeholder: 'O que foi efetivamente gasto', suffix: 'R$', showIf: SIN_REPARO },
+    { key: 'reparo_coberto_seguro', label: 'Coberto pelo seguro?', type: 'select', options: ['Sim, integralmente', 'Sim, parcialmente', 'Nao - custeado pelo proprietario'], showIf: SIN_REPARO },
+    { key: 'reparo_aprovado_por', label: 'Vistoriado e aprovado por', type: 'text', placeholder: 'Engenheiro, perito ou inspetor que atestou o reparo', showIf: SIN_REPARO },
+    { key: 'status', label: 'Situacao final do ativo', type: 'select', options: [
+      'Totalmente reparado - sem ressalva',
+      'Reparado com ressalva tecnica',
+      'Reparo parcial - pendencias em aberto',
+      'Nao reparado'
+    ], required: true, showIf: SIN_REPARO },
+    { key: 'observacao', label: 'Observacoes', type: 'textarea', placeholder: 'Qualquer detalhe relevante para quem for avaliar este historico no futuro...', full: true }
+  ],
+  uploads: [
+    // O par de fotos e o coracao desta ficha. E a comparacao - mesma proa,
+    // mesmo angulo - que transforma "teve um sinistro" em "teve um sinistro e
+    // foi resolvido assim".
+    { key: 'foto_sinistro', label: 'Fotos do dano (ANTES) *', hint: 'De perto e de longe. GUARDE O ANGULO: a foto do depois precisa ser do mesmo ponto de vista.', accept: IMG, multiple: true, max: 20, requiredIf: { key: 'momento', equals: 'Ocorrencia do sinistro' }, showIf: SIN_OCORRENCIA },
+    { key: 'video_sinistro', label: 'Video do dano', hint: 'Video ate 3 min (max 150MB) percorrendo a area atingida', accept: VID, showIf: SIN_OCORRENCIA },
+    { key: 'bo_autoridade_pdf', label: 'B.O. ou registro da autoridade (PDF)', hint: 'Capitania, Marinha, Bombeiros ou Policia', accept: DOC, showIf: SIN_OCORRENCIA },
+    { key: 'aviso_sinistro_pdf', label: 'Aviso de sinistro a seguradora (PDF)', hint: 'Comprova a data em que a seguradora foi comunicada', accept: DOC, showIf: SIN_SEGURO },
+
+    { key: 'foto_reparo', label: 'Fotos do reparo concluido (DEPOIS) *', hint: 'Mesmo angulo das fotos do antes - e a comparacao que prova o reparo.', accept: IMG, multiple: true, max: 20, requiredIf: { key: 'momento', equals: 'Reparo concluido' }, showIf: SIN_REPARO },
+    { key: 'foto_reparo_processo', label: 'Fotos durante o reparo', hint: 'Area aberta, laminacao em andamento, camadas aplicadas - e o que prova COMO foi feito', accept: IMG, multiple: true, max: 30, showIf: SIN_REPARO },
+    { key: 'video_reparo', label: 'Video do reparo concluido', hint: 'Video ate 3 min (max 150MB)', accept: VID, showIf: SIN_REPARO },
+    { key: 'laudo_reparo_pdf', label: 'Laudo tecnico do reparo (PDF)', hint: 'Ultrassom, espessimetro ou parecer de engenheiro atestando a estrutura', accept: DOC, showIf: SIN_REPARO },
+    { key: 'nota_fiscal_reparo', label: 'Nota fiscal do reparo (PDF)', hint: 'Comprova quem executou e quanto custou', accept: DOC, showIf: SIN_REPARO }
+  ]
+}
+
 // ── SISTEMA ELÉTRICO & ELETRÔNICOS ──────────────────────────────────
 const FICHA_ELETRICA: ServicoConfig = {
   ctaNovo: 'Registrar Manutenção Elétrica / Eletrônica',
@@ -626,6 +762,7 @@ export const SERVICOS: Record<string, ServicoConfig> = {
   seguro: FICHA_SEGURO,
   motor: FICHA_MOTOR,
   casco: FICHA_CASCO,
+  sinistros: FICHA_SINISTRO,
   velame: FICHA_VELAME,   // veleiro (substitui "motor")
   eletrica: FICHA_ELETRICA,
   seguranca: FICHA_SEGURANCA,

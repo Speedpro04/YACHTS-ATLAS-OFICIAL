@@ -37,6 +37,17 @@ class RegistroCreate(BaseModel):
     dados: dict[str, Any] = {}
     checklist: list[Any] = []
     status: str = "registrado"
+    # Registro ao qual este dá DESFECHO — o reparo que fecha uma avaria.
+    #
+    # Não confundir com `retifica_id`: retificar é "eu estava errado";
+    # resolver é "aquilo aconteceu e acabou". Misturar os dois faria o dossiê
+    # mostrar uma avaria real como se fosse erro de digitação.
+    #
+    # Os dois registros seguem selados, cada um lacrado na sua data — a avaria
+    # quando apareceu, o reparo quando terminou. É essa cronologia que dá
+    # força ao documento: sem ela, "este barco teve um rombo" fica sem a
+    # segunda metade, que é "e foi reparado assim, por quem, com qual laudo".
+    resolve_id: Optional[str] = None
 
 
 class RascunhoUpdate(BaseModel):
@@ -97,6 +108,7 @@ async def create_registro(data: RegistroCreate, token: dict = Depends(get_curren
             "dados": data.dados,
             "checklist": data.checklist,
             "status": data.status,
+            "resolve_id": data.resolve_id,
             "created_by": token.get("sub") if token else None,
         }).execute()
         return result.data[0] if result.data else {}

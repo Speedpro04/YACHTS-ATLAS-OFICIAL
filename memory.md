@@ -312,3 +312,36 @@ O que não casar, o fundador resolve à mão olhando o texto. Com 20 marinas é 
 
 ### O que ficou manual, de propósito
 A **liberação do bônus** (`bonus_dossie_liberado`) continua sendo decisão sua. Com 20 fundadoras e 1 indicação cada, controlar isso é trivial — e automatizar antes de ver o comportamento real seria construir no escuro.
+
+---
+
+## 16. Sinistro tem ficha própria, com antes e depois
+**Data da Decisão:** 21/08/2026
+
+### O Problema
+A aba **mais grave** do sistema era a **mais pobre**: "Sinistros & Reparos" tinha quatro campos — data, evento, reparo, valor — para o assunto que mais pesa numa negociação e numa apólice. E o tema aparecia espalhado em outros dois lugares (avaria no Diário de Bordo, "histórico de sinistros" como texto livre no Seguro), sem nenhum deles ser o lugar de verdade.
+
+Pior: o registro capturava um **estado**, não um **evento com desfecho**. A marina registrava a avaria e, meses depois, outra vistoria "Excelente". Dois registros soltos, nada ligando um ao outro.
+
+### Por que isso é caro
+**"Este barco teve um rombo no casco" derruba o valor.**
+**"Teve um rombo, reparado pelo estaleiro X, com laminação de Y, laudo anexado e vistoriado" preserva** — às vezes aumenta, porque prova que a estrutura foi auditada de perto.
+
+O dossiê não vale por esconder sinistro. Vale por **provar que ele foi resolvido direito**. Sem o desfecho, ele só carrega a má notícia.
+
+### Por que na aba de Sinistros, e não na do Casco
+Primeiro tentativa foi dividir a ficha do Casco em avaria/reparo. **Estava errado**, e o fundador viu antes de commitar: *"pode ocorrer vários tipos de sinistros"*.
+
+Sinistro raramente fica num sistema só. Encalhe atinge casco, hélice, eixo e leme; incêndio na casa de máquinas atinge motor, elétrica e interior; alagamento atinge tudo. Uma ficha presa ao casco resolveria justamente o caso que, quando acontece de verdade, transborda dele.
+
+Por isso os **sistemas atingidos são caixas independentes**, não escolha única — é essa lista que diz ao perito e ao comprador o tamanho real do evento.
+
+E o **Casco continua simples**: vistoria de rotina é o uso normal daquela aba (osmose, gelcoat, cavernas, espessura). Sem avaria, o gerente preenche a vistoria e pronto. Empurrar campos de sinistro para lá faria toda vistoria carregar o peso de um evento que quase nunca aconteceu.
+
+### Dois registros selados, nunca um editado
+`resolve_id` liga o reparo à ocorrência. **Não é `retifica_id`**: retificar é "eu estava errado", resolver é "aquilo aconteceu e acabou". Misturar faria o dossiê mostrar um rombo real como se fosse erro de digitação.
+
+A ocorrência é lacrada quando aconteceu; o reparo, quando terminou. **É essa trava que dá força ao "antes"** — ele foi selado quando ninguém sabia ainda como ia terminar. Se a marina registrasse tudo depois do conserto, um comprador desconfiado diria: *"você escreveu isso já sabendo o desfecho"*.
+
+### O par de fotos é o coração da ficha
+As duas obrigatórias, cada uma no seu momento, com a instrução explícita de **guardar o ângulo**: a comparação — mesma proa, mesmo ponto de vista — é o que transforma "teve um sinistro" em "teve um sinistro e foi resolvido assim".
