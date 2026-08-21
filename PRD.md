@@ -74,6 +74,11 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 - [x] **REV-04 — Tela para de piscar a cada troca de aba**: `PrivateRoute` passou a observar o id do usuário, não o objeto da sessão (o Supabase renova o token no foco); conversa da Solara sobrevive à navegação
 - [x] **REV-04 — Upload com acento/espaço no nome**: a chave do storage é sanitizada (o nome original segue em `documentos.nome_arquivo`)
 
+## Manutenção Preditiva Semanal
+Rotina de verificação em [CHECKLIST-SEMANAL.md](CHECKLIST-SEMANAL.md), ordenada por criticidade — do que derruba o negócio ao que só previne problema futuro. Existe porque **o sistema falha em silêncio**: webhook que parou, e-mail que virou spam, WhatsApp que desconectou. Nada disso apita, e a marina só descobre quando já custou dinheiro ou confiança.
+
+Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consultas ao banco e aos logs são executadas e só o que estiver fora do normal é reportado. Itens marcados com 👤 dependem do fundador (EasyPanel, Stripe, celular).
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
