@@ -174,7 +174,7 @@
 }
 
 .formWrapper::before {
-  content: 'MARINA PARTNER';
+  content: 'INDICAR MARINA';
   position: absolute;
   top: -6px;
   left: 32px;
@@ -345,4 +345,24 @@
   letter-spacing: 0.05em;
   line-height: 1.7;
   margin: 0;
+}
+
+/* Voltar — caminho de retorno para a home. Discreto (branco esmaecido) para
+   não competir com o eyebrow dourado logo abaixo, e só acende no hover. */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.3s ease;
+}
+
+.backLink:hover {
+  color: #C9A84C;
 }

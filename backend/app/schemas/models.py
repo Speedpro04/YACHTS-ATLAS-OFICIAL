@@ -117,6 +117,8 @@ class LeadMarinaCreate(BaseModel):
     name: str
     email: EmailStr
     fleet: str
+    # WhatsApp da marina indicada: e por ele que a abordagem sai (Evolution API).
+    whatsapp: Optional[str] = None
     source: Optional[str] = None
 
 

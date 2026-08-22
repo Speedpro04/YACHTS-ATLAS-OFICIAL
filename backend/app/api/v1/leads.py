@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _so_digitos(valor: Optional[str]) -> str:
+    """Deixa so os digitos de um telefone.
+
+    O Evolution API precisa do numero cru (DDI+DDD+numero); "(48) 99999-1234"
+    e recusado. Existe uma funcao de mesmo nome em verificacao.py, mas aquela
+    e do fluxo de assinatura do QR e nao aceita None — importar de la acoplaria
+    dois assuntos sem relacao so para economizar tres linhas.
+    """
+    if not valor:
+        return ""
+    return "".join(c for c in valor if c.isdigit())
+
 # Oferta da marina paga: 4 vagas fundadoras POR ESTADO a US$ 200/mes
 # (SC/SP/RJ/ES/BA = 20 no total), depois US$ 250.
 # Os links ficam em env para trocar de conta Stripe sem rebuild do frontend.
@@ -354,6 +367,10 @@ async def create_marina_lead(data: LeadMarinaCreate):
             "contact_name": data.name,
             "email": data.email,
             "fleet_size": data.fleet,
+            # So digitos: o Evolution API nao aceita "(48) 99999-1234". Normalizar
+            # aqui e a unica garantia — se ficar so no front, qualquer POST direto
+            # grava lixo e a abordagem falha calada na hora do disparo.
+            "whatsapp": _so_digitos(data.whatsapp) or None,
             "source": data.source,
             "status": "pending",
         }).execute()

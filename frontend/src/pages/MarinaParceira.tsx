@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import styles from './MarinaParceira.module.css';
 import Header from '../components/Header';
 import { api } from '../services/api';
@@ -8,6 +10,7 @@ export default function MarinaParceira() {
     marina: '',
     name: '',
     email: '',
+    whatsapp: '',
     fleet: '',
     source: '',
   });
@@ -23,7 +26,10 @@ export default function MarinaParceira() {
   };
 
   const handleSubmit = async () => {
-    const required = ['marina', 'name', 'email', 'fleet'];
+    // WhatsApp entra como obrigatorio: e por ele que a indicada e abordada.
+    // Indicacao sem WhatsApp chega no painel e morre lá — vira lead que
+    // ninguem consegue contatar.
+    const required = ['marina', 'name', 'email', 'whatsapp', 'fleet', 'source'];
     const newErrors: Record<string, boolean> = {};
     required.forEach((key) => {
       if (!form[key as keyof typeof form].trim()) newErrors[key] = true;
@@ -72,16 +78,24 @@ export default function MarinaParceira() {
         <section className={styles.section}>
           <div className={styles.bgGlow} aria-hidden="true" />
 
-          <span className={styles.eyebrow}>20 Vagas Fundadoras</span>
+          {/* Volta para a home: esta página é aberta a partir da dobra do
+              Protocolo Genesis, então o visitante precisa de um caminho de
+              retorno explícito — sem isso o único jeito é o botão do navegador. */}
+          <Link to="/" className={styles.backLink}>
+            <ArrowLeft size={14} />
+            Voltar
+          </Link>
+
+          <span className={styles.eyebrow}>Programa de Indicação</span>
 
           <h2 className={styles.headline}>
-            Sua marina.<br />
+            Sua indicação.<br />
             <em>Sua receita.</em>
           </h2>
 
           <p className={styles.subtext}>
-            As primeiras marinas a integrar a rede Atlas operam em condições fundadoras — benefícios
-            exclusivos que não estarão disponíveis para novos parceiros após o encerramento desta fase.
+            Indique uma marina para o Programa Atlas. Quando ela entrar na rede, 100% da receita dos
+            dossiês que ela gerar é sua durante 12 meses — uma nova fonte de receita para a sua empresa.
           </p>
 
           {/* Alinhados à esquerda como o resto da coluna. Estavam centralizados
@@ -93,11 +107,11 @@ export default function MarinaParceira() {
 
           <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl">
             <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
-              Clausula Comercial de Dossies
+              Cláusula Comercial de Indicação
             </p>
             <p className="text-white/70 text-sm leading-relaxed">
-              Para parceiros fundadores aprovados: receita de dossies com retencao integral por 18 meses,
-              contados da ativacao da conta, conforme instrumento contratual.
+              Para marinas parceiras aprovadas: 100% da receita dos dossiês gerados pela marina indicada
+              por 12 meses, contados da ativação da conta da indicada, conforme instrumento contratual.
             </p>
           </div>
 
@@ -158,7 +172,7 @@ export default function MarinaParceira() {
               <>
                 <div className={styles.formGrid}>
                   <div className={styles.field}>
-                    <label className={styles.label}>Nome da Marina</label>
+                    <label className={styles.label}>Nome da Marina Indicada</label>
                     <input
                       className={`${styles.input} ${errors.marina ? styles.inputError : ''}`}
                       type="text"
@@ -194,6 +208,19 @@ export default function MarinaParceira() {
                   </div>
 
                   <div className={styles.field}>
+                    <label className={styles.label}>WhatsApp da Marina Indicada</label>
+                    <input
+                      className={`${styles.input} ${errors.whatsapp ? styles.inputError : ''}`}
+                      type="tel"
+                      name="whatsapp"
+                      inputMode="tel"
+                      placeholder="+55 48 99999-1234"
+                      value={form.whatsapp}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className={styles.field}>
                     <label className={styles.label}>Porte da Frota</label>
                     <select
                       className={`${styles.select} ${errors.fleet ? styles.inputError : ''}`}
@@ -210,12 +237,12 @@ export default function MarinaParceira() {
                   </div>
 
                   <div className={`${styles.field} ${styles.fieldFull}`}>
-                    <label className={styles.label}>Como conheceu o Atlas Yachts?</label>
+                    <label className={styles.label}>Sua Marina (quem está indicando)</label>
                     <input
-                      className={styles.input}
+                      className={`${styles.input} ${errors.source ? styles.inputError : ''}`}
                       type="text"
                       name="source"
-                      placeholder="Indicação, evento, busca..."
+                      placeholder="Nome da sua marina"
                       value={form.source}
                       onChange={handleChange}
                     />
@@ -224,24 +251,25 @@ export default function MarinaParceira() {
 
                 <div className={styles.ctaRow}>
                   <p className={styles.disclaimer}>
-                    Ao solicitar, sua marina entra na fila de análise. Retorno em até 48h via e-mail
-                    com as condições do programa e os termos comerciais aplicáveis.
+                    A marina indicada será contatada pelo Atlas em até 48h, com a sua indicação
+                    identificada. Aprovada a entrada dela na rede, os dossiês que ela gerar passam
+                    a ser receita sua por 12 meses, conforme os termos comerciais aplicáveis.
                   </p>
                   {submitError && (
                     <p className="text-red-400 text-xs mb-4">{submitError}</p>
                   )}
                   <button className={styles.btn} onClick={handleSubmit} disabled={submitting}>
-                    {submitting ? 'Enviando...' : 'Solicitar Parceria →'}
+                    {submitting ? 'Enviando...' : 'Enviar Indicação →'}
                   </button>
                 </div>
               </>
             ) : (
               <div className={styles.success}>
                 <span className={styles.successIcon}>✦</span>
-                <h3 className={styles.successTitle}>Solicitação Recebida</h3>
+                <h3 className={styles.successTitle}>Indicação Recebida</h3>
                 <p className={styles.successText}>
-                  Sua marina entrou na fila fundadora.<br />
-                  Você receberá as condições completas em até 48 horas.
+                  Vamos contatar a marina indicada em até 48 horas.<br />
+                  Você é avisado assim que ela entrar na rede.
                 </p>
               </div>
             )}

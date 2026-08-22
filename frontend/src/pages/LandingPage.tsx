@@ -359,9 +359,9 @@ export default function LandingPage() {
             <h2 className="text-5xl md:text-7xl font-serif font-bold text-white mb-8 tracking-tight leading-tight">
                O Protocolo <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Genesis.</span>
             </h2>
-            
+
             <p className="text-white/40 text-lg md:text-xl mb-16 font-light leading-relaxed max-w-2xl mx-auto">
-               Estamos escolhendo parceiros fundadores com cuidado para construir uma rede confiável, bem posicionada e com valor real para toda a operação.
+               Indique uma marina para o Programa Atlas e receba 100% da receita dos dossiês gerados por ela durante 12 meses. Uma nova fonte de receita para a sua empresa — sem custo, sem intermediários.
             </p>
             
             <div className="inline-block p-[1px] bg-gradient-to-b from-white/10 via-[#c5a059]/30 to-transparent rounded-sm relative group">
@@ -369,11 +369,11 @@ export default function LandingPage() {
                <div className="bg-[#021431]/90 px-12 py-10 rounded-sm backdrop-blur-xl relative z-10 border border-[#010c20]">
                   <div className="flex items-center justify-center gap-3 mb-6">
                      <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></span>
-                     <p className="text-[10px] text-[#c5a059] font-black uppercase tracking-[0.4em]">Confidencial</p>
+                     <p className="text-[10px] text-[#c5a059] font-black uppercase tracking-[0.4em]">Indique uma marina</p>
                   </div>
-                  
+
                   <p className="text-white/80 text-sm mb-10 font-light max-w-sm mx-auto">
-                     O que acontece quando você se torna um parceiro fundador do Yachts Atlas?
+                     Sua marina indica, a rede cresce e os dossiês da indicada viram receita sua por 12 meses.
                   </p>
                   
                   <Link 
@@ -381,7 +381,7 @@ export default function LandingPage() {
                     className="inline-flex items-center gap-4 bg-transparent border border-[#c5a059]/50 hover:bg-[#c5a059] hover:border-[#c5a059] hover:text-[#010c20] text-[#c5a059] px-10 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 overflow-hidden relative"
                   >
                      <span className="relative z-10 flex items-center gap-3">
-                       Desbloquear Arquivo
+                       Indicar Uma Marina
                        <Eye size={14} />
                      </span>
                   </Link>
