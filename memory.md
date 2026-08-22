@@ -466,3 +466,18 @@ Nada quebrava. Nenhum teste falhava. A funcionalidade simplesmente **não existi
 É o defeito mais silencioso que este código permite: o backend aceita, o banco guarda, os testes passam, e a tela não tem a porta.
 
 `test_painel_abas.py` fecha isso — toda ficha registrada em `SERVICOS` precisa ter aba correspondente. Quebrou? Acrescentar a categoria em `categorias()`.
+
+---
+
+## 22. O selo mostrava "Ouro · 0%"
+**Data da Decisão:** 21/08/2026
+
+Classificação gravada, percentual zerado — **contradição visível na tela**, e sem nenhuma pista de onde vinha.
+
+O motivo de não dar para investigar era um `except Exception: pass` na persistência do score. Se o `UPDATE` falhasse, ninguém ficava sabendo: o cálculo devolvia o número certo, a tela mostrava outro, e o log ficava mudo.
+
+Agora a falha vai para o log com o score que deveria ter sido gravado. O comportamento não muda — falhar ali continua não derrubando o cálculo, porque quem chamou recebe o valor correto de qualquer forma.
+
+**Selo errado é pior que selo ausente:** ele contradiz o próprio conteúdo do dossiê, e é a primeira coisa que o armador vê ao abrir o portal.
+
+**Padrão a repetir:** `except: pass` é aceitável quando a falha é irrelevante; quando ela produz um resultado *visível e errado*, tem que gritar no log.

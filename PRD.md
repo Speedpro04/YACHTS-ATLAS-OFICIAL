@@ -70,6 +70,7 @@ Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.
 - [x] **REV-04 — Portal do Proprietário**: `proprietario_email`/`proprietario_telefone` no ativo, código por e-mail + WhatsApp, listagem restrita e leitura-apenas *(pendente do teste end-to-end do `verifyOtp`)*
 - [x] **REV-04 — Avisos por WhatsApp (Evolution) + e-mail**; Telegram removido; e-mail migrado para o domínio próprio com SPF/DKIM/DMARC
 - [x] **REV-04 — Contador de vagas fundadoras com dado real** na `/marina-parceira` (era `12` chumbado no código)
+- [x] **REV-04 — Selo de saúde deixa de mentir**: mostrava "Ouro · 0%" porque a gravação do score falhava em silêncio (`except: pass`). Falha passa a aparecer no log
 - [x] **REV-04 — Aba de Sinistros no painel**: a ficha existia e a aba não, então ninguém chegava nela. Teste passa a exigir aba para toda ficha registrada
 - [x] **REV-04 — Registros deixam de ser públicos entre contas**: nenhum endpoint de `registros` autorizava — qualquer conta lia (e escrevia) o histórico selado de qualquer barco sabendo o id, que é previsível. Agora leitura = marina + armador, escrita = só marina, com teste que exige guarda em endpoint novo
 - [x] **REV-04 — Portal do Proprietário entrega mais**: capa com a foto do próprio barco (era imagem de banco fixa no código), selo de custódia visível ao dono, e resquício de maquete removido
