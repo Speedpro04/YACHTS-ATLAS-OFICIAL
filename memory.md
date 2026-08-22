@@ -511,3 +511,28 @@ Lote de 20, 45 segundos entre envios. Número novo em rajada é o padrão que o 
 
 **Princípio a repetir:** canal que carrega autenticação ou dinheiro não divide identidade com canal de marketing. O que é barato de separar antes é caríssimo de separar depois de banido.
 
+---
+
+## 24. O mesmo formulário em dois lugares, e por que o código não pode ser o mesmo
+**Data:** 22/08/2026
+
+Os botões "Indicar para outra marina" da página de **Lançamento** mandavam o visitante para a Oficial. Era largar uma marina aquecida no meio do funil — e numa página onde o preço é outro. Agora o formulário de indicação abre ali mesmo.
+
+### Idêntico para quem vê, diferente por baixo
+A Oficial é **React com CSS Modules**; o Lançamento é **um `index.html` com CSS e JS inline**. Não há como reaproveitar o componente. O que foi replicado foi o *resultado*: as regras de `MarinaParceira.module.css` reescritas à mão, escopadas em `#indicaModal` para não encostar no modal de cadastro, que segue com o estilo de caixa.
+
+Isso é dívida assumida com olhos abertos: **mudar o formulário agora exige mudar nos dois lugares.** O custo de unificar (transformar a LP estática em build React) é maior que o de manter dois, enquanto forem dois.
+
+### CORS não existe porque o nginx o evita
+O `nginx.conf` do Lançamento expõe a API da Oficial **por caminho exato** — o navegador vê `/api/...` como same-origin e CORS nunca entra na conversa. Quem faz a chamada cross-origin é o nginx, e servidor não tem CORS.
+
+A consequência prática, que custa caro se esquecida: **endpoint novo exige bloco novo no `nginx.conf`.** Sem ele, o formulário envia, o navegador barra, e a marina não vê erro nenhum — o pior desfecho possível, porque ela acha que indicou.
+
+### O `<select>` que denunciou a diferença
+O formulário da Oficial tem um `select` de porte da frota. A LP nunca tivera um — só `input` — então não havia CSS para ele, e o navegador desenhou a caixa branca padrão no meio de um formulário escuro. Só apareceu **no screenshot**; nenhum teste pegaria isso.
+
+**Padrão a repetir:** ao replicar um componente entre stacks, conferir os elementos que a stack de destino nunca usou. O CSS existente cobre o que já existia, não o que chegou.
+
+### Falha de rede não pode virar sucesso
+O envio mostra erro e reabilita o botão. Não esconde o formulário, não mostra "Indicação recebida". Marina que acha que indicou e não indicou é pior que marina que viu um erro — mesma família do selo que mentia (§22) e do score que falhava em silêncio.
+
