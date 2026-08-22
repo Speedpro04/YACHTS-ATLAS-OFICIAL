@@ -453,3 +453,16 @@ O portal entregava pouco, e o fundador listou três coisas — todas certas:
 Limpo de passagem um resquício de maquete: a página priorizava um ativo chamado "Wolverine" na listagem. Com o backend já filtrando por `proprietario_email`, a lista do armador só tem os barcos dele — não há o que escolher.
 
 **Corrigido também:** os documentos que inseri direto no banco ficaram sem `url_arquivo`, e sem ela a foto não renderiza. O endpoint de upload preenche esse campo; a inserção manual não. É exatamente a classe de defeito que preencher pelo banco não pega — ressalva já registrada em [[Marlin Sea Focus]].
+
+---
+
+## 21. Ficha criada sem aba é trabalho invisível
+**Data:** 21/08/2026
+
+A ficha rica de Sinistros foi escrita, registrada em `SERVICOS` e testada — e a **aba nunca foi acrescentada** à lista de categorias do `AtivoHub`. Nem a marina nem o armador conseguiam chegar nela, e os dois registros de sinistro do ativo de demonstração ficaram invisíveis no painel.
+
+Nada quebrava. Nenhum teste falhava. A funcionalidade simplesmente **não existia para quem usa**.
+
+É o defeito mais silencioso que este código permite: o backend aceita, o banco guarda, os testes passam, e a tela não tem a porta.
+
+`test_painel_abas.py` fecha isso — toda ficha registrada em `SERVICOS` precisa ter aba correspondente. Quebrou? Acrescentar a categoria em `categorias()`.

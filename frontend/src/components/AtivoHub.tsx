@@ -35,6 +35,10 @@ function categorias(tipo: Ativo['tipo']): Categoria[] {
     { key: 'fotos', titulo: 'Fotos', subtitulo: 'Registro Visual', icon: Camera },
     { key: 'motor', titulo: 'Motor', subtitulo: 'Propulsão & Mecânica', icon: Zap, healthKey: 'motor' },
     { key: 'casco', titulo: 'Casco', subtitulo: 'Estrutura & Integridade', icon: Waves, healthKey: 'casco' },
+    // Sinistro tem aba própria porque raramente fica num sistema só: encalhe
+    // atinge casco, hélice, eixo e leme; incêndio atinge motor, elétrica e
+    // interior. E é aqui que a ocorrência ganha desfecho — o antes e o depois.
+    { key: 'sinistros', titulo: 'Sinistros', subtitulo: 'Ocorrências & Reparos', icon: AlertTriangle },
     { key: 'eletrica', titulo: 'Elétrica', subtitulo: 'Eletrônica & Navegação', icon: Cpu, healthKey: 'eletrica' },
     { key: 'seguranca', titulo: 'Segurança', subtitulo: 'Salvatagem & Proteção', icon: Shield, healthKey: 'seguranca' },
     { key: 'pintura', titulo: 'Pintura', subtitulo: 'Estética & Superfície', icon: Paintbrush, healthKey: 'pintura' },
