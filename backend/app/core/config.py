@@ -77,6 +77,16 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY_OPENAI", "")
     OPENAI_CHAT_MODEL: str = (os.getenv("OPENAI_CHAT_MODEL") or os.getenv("MODELO") or "gpt-5-mini").lower()
     OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    # Chave própria da prospecção de marinas. NÃO existe para reduzir
+    # alucinação — é a mesma OpenAI e o mesmo modelo; o que segura invenção é
+    # prompt, contexto e guard rail de saída. Serve para (a) ver quanto a
+    # prospecção custa separado do bot de normas e (b) limitar o estrago se
+    # uma das duas vazar. Vazia = cai na chave principal.
+    OPENAI_API_KEY_PROSPECCAO: str = (
+        os.getenv("OPENAI_API_KEY_PROSPECCAO")
+        or os.getenv("OPENAI_API_KEY")
+        or os.getenv("API_KEY_OPENAI", "")
+    )
     # Anti-abuso/sondagem: máximo de perguntas por usuário por minuto.
     CHATBOT_RATE_LIMIT_PER_MIN: int = int(os.getenv("CHATBOT_RATE_LIMIT_PER_MIN", "15"))
     # Score mínimo de similaridade para considerar que existe norma relevante.
@@ -193,6 +203,20 @@ class Settings(BaseSettings):
     EVOLUTION_BASE_URL: str = os.getenv("EVOLUTION_BASE_URL", "")
     EVOLUTION_API_KEY: str = os.getenv("EVOLUTION_API_KEY", "")
     EVOLUTION_INSTANCE: str = os.getenv("EVOLUTION_INSTANCE", "")
+    # Instância SEPARADA, com outro número, só para prospecção ativa (indicações
+    # de marina abordadas via Evolution). Não é preciosismo: o número de cima
+    # entrega código de login e régua de cobrança, e disparo de prospecção é o
+    # que atrai denúncia de spam. Banido o número da prospecção, perde-se uma
+    # linha de vendas; banido o transacional, cai login e cobrança junto.
+    # Vazio = prospecção desligada (NÃO cai no transacional, de propósito).
+    EVOLUTION_INSTANCE_PROSPECCAO: str = os.getenv("EVOLUTION_INSTANCE_PROSPECCAO", "")
+    # Token DA INSTÂNCIA de prospecção. Preferível à chave global: um token de
+    # instância só alcança a própria instância, então se ele vazar a
+    # transacional (código de login, cobrança) continua fora de alcance.
+    # Vazio = usa a chave global.
+    EVOLUTION_API_KEY_PROSPECCAO: str = (
+        os.getenv("EVOLUTION_API_KEY_PROSPECCAO") or os.getenv("EVOLUTION_API_KEY", "")
+    )
     # DDI usado quando a marina digita o telefone sem ele. As 20 fundadoras são
     # todas brasileiras (SC/SP/RJ/ES/BA); as versões LATAM/USA/EURO rodam em
     # instalações separadas, com o DDI delas.

@@ -57,7 +57,7 @@ def normalizar_telefone(telefone: Optional[str]) -> Optional[str]:
     return digitos if len(digitos) >= 12 else None
 
 
-def _envia_evolution(telefone: str, texto: str) -> bool:
+def _envia_evolution(telefone: str, texto: str, instancia: str, apikey: str) -> bool:
     """
     Envia por `POST /message/sendText/{instance}`.
 
@@ -67,16 +67,15 @@ def _envia_evolution(telefone: str, texto: str) -> bool:
     esse canal carrega cobrança, tentamos o formato novo e caímos no antigo
     se ele for recusado, em vez de descobrir o problema pelo silêncio.
     """
-    if not (settings.EVOLUTION_BASE_URL and settings.EVOLUTION_API_KEY
-            and settings.EVOLUTION_INSTANCE):
+    if not (settings.EVOLUTION_BASE_URL and apikey and instancia):
         logger.warning("Evolution sem configuração completa — WhatsApp não enviado")
         return False
 
     url = (
         f"{settings.EVOLUTION_BASE_URL.rstrip('/')}"
-        f"/message/sendText/{settings.EVOLUTION_INSTANCE}"
+        f"/message/sendText/{instancia}"
     )
-    headers = {"apikey": settings.EVOLUTION_API_KEY, "Content-Type": "application/json"}
+    headers = {"apikey": apikey, "Content-Type": "application/json"}
     formatos = (
         ("v2", {"number": telefone, "text": texto}),
         ("v1", {"number": telefone, "textMessage": {"text": texto}}),
@@ -115,20 +114,49 @@ def whatsapp_ativo() -> bool:
     return settings.WHATSAPP_PROVIDER in _PROVEDORES
 
 
-def enviar_whatsapp(telefone: Optional[str], texto: str) -> bool:
-    """Envia uma mensagem. Devolve False (sem levantar) quando não dá."""
+def prospeccao_ativa() -> bool:
+    """Se a instância separada de prospecção está pronta para disparar."""
+    return whatsapp_ativo() and bool(settings.EVOLUTION_INSTANCE_PROSPECCAO)
+
+
+def enviar_whatsapp(
+    telefone: Optional[str], texto: str, *, prospeccao: bool = False
+) -> bool:
+    """Envia uma mensagem. Devolve False (sem levantar) quando não dá.
+
+    `prospeccao=True` manda pela instância de vendas
+    (`EVOLUTION_INSTANCE_PROSPECCAO`), nunca pela transacional. Sem essa
+    variável configurada, a prospecção **não sai** — e é de propósito: cair no
+    número transacional é o único jeito de um disparo de vendas derrubar o
+    login do armador e a régua de cobrança junto.
+
+    Quem chama sem o parâmetro continua no comportamento de sempre.
+    """
     provedor = _PROVEDORES.get(settings.WHATSAPP_PROVIDER)
     if not provedor:
         if settings.WHATSAPP_PROVIDER:
             logger.warning(f"WHATSAPP_PROVIDER desconhecido: {settings.WHATSAPP_PROVIDER}")
         return False
 
+    if prospeccao:
+        instancia = settings.EVOLUTION_INSTANCE_PROSPECCAO
+        apikey = settings.EVOLUTION_API_KEY_PROSPECCAO
+        if not instancia:
+            logger.warning(
+                "Prospecção pedida sem EVOLUTION_INSTANCE_PROSPECCAO configurada — "
+                "não enviado (não usamos a instância transacional para isto)"
+            )
+            return False
+    else:
+        instancia = settings.EVOLUTION_INSTANCE
+        apikey = settings.EVOLUTION_API_KEY
+
     numero = normalizar_telefone(telefone)
     if not numero:
         logger.warning(f"Telefone inutilizável para WhatsApp: {telefone!r}")
         return False
 
-    return provedor(numero, texto)
+    return provedor(numero, texto, instancia, apikey)
 
 
 if __name__ == "__main__":

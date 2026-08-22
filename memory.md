@@ -481,3 +481,33 @@ Agora a falha vai para o log com o score que deveria ter sido gravado. O comport
 **Selo errado é pior que selo ausente:** ele contradiz o próprio conteúdo do dossiê, e é a primeira coisa que o armador vê ao abrir o portal.
 
 **Padrão a repetir:** `except: pass` é aceitável quando a falha é irrelevante; quando ela produz um resultado *visível e errado*, tem que gritar no log.
+
+---
+
+## 23. Prospecção nunca divide o número com o transacional
+**Data:** 22/08/2026
+
+O Protocolo Genesis virou o **programa de indicação**: marina indica marina, e os dossiês da indicada são receita da indicante por 12 meses. Para abordar a indicada, o formulário passou a pedir o **WhatsApp** dela (coluna nova em `marina_leads`).
+
+O pedido inicial era disparar por esse canal. O canal já existia — e é o mesmo que entrega **código de acesso do armador** (`owner.py`) e a **régua de cobrança** (`cobranca_service.py`).
+
+### O Problema
+`EVOLUTION_INSTANCE` era um valor único. Plugar prospecção ali colocaria disparo de vendas no mesmo número que o login e a cobrança. WhatsApp bane por denúncia de spam, e ban é **por número**: uma denúncia derrubaria os três fluxos de uma vez. O armador não entra, o inadimplente não é avisado, e nada disso apita.
+
+### A Solução
+Instância separada, com número próprio (`Marinas-Indicadas`, +55 12 97813-8934), no mesmo servidor Evolution. `enviar_whatsapp(..., prospeccao=True)` escolhe a instância; quem chama sem o parâmetro continua exatamente como antes — os três chamadores existentes não mudaram uma linha.
+
+**Sem `EVOLUTION_INSTANCE_PROSPECCAO` configurada, a prospecção não envia — e de propósito não cai na transacional.** Um fallback "esperto" ali seria a forma mais fácil de, num dia de disparo, derrubar login e cobrança sem ninguém perceber.
+
+Token **de instância**, não a chave global: um token de instância só alcança a própria instância, então se ele vazar a transacional continua fora de alcance.
+
+### Sem IA na saída, de propósito
+A mensagem é **template fixo** (`prospeccao_service.py`). Ela carrega condição comercial — "12 meses", "100%" — e texto gerado a cada envio seria risco de prometer o que não foi combinado, além de sinal de bot para o WhatsApp, que classifica por padrão. Os números vivem em **constantes do módulo**: não vêm de banco, não vêm de modelo, não são digitados na hora.
+
+Quando houver IA aqui, ela entra na **resposta**, não na saída. E chave de API separada **não reduz alucinação** — é o mesmo modelo e os mesmos pesos; serve para separar custo e limitar vazamento.
+
+### Ritmo é preservação de ativo
+Lote de 20, 45 segundos entre envios. Número novo em rajada é o padrão que o WhatsApp bane. O número é o ativo mais frágil da operação.
+
+**Princípio a repetir:** canal que carrega autenticação ou dinheiro não divide identidade com canal de marketing. O que é barato de separar antes é caríssimo de separar depois de banido.
+
