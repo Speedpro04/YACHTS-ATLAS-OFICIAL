@@ -55,6 +55,27 @@ export default function MarinaParceira() {
     }
   };
 
+  // Tempo que a confirmação fica na tela, calibrado no uso real: 3s sumia
+  // antes de terminar de ler, 7s deixava a página parada esperando à toa.
+  const SEGUNDOS_DA_CONFIRMACAO = 4;
+
+  // A confirmação aparece e o formulário volta limpo sozinho.
+  // Sem isto a marina ficava presa na tela de sucesso, e indicar uma segunda
+  // exigia recarregar a página — o programa vive de indicação, dificultar a
+  // próxima trabalha contra o próprio produto.
+  useEffect(() => {
+    if (!submitted) return;
+    const t = setTimeout(() => {
+      setForm({ marina: '', name: '', email: '', whatsapp: '', fleet: '', source: '' });
+      setErrors({});
+      setSubmitError('');
+      setSubmitted(false);
+    }, SEGUNDOS_DA_CONFIRMACAO * 1000);
+    // Se a marina sair da página antes do prazo, o timer morre junto: escrever
+    // estado em componente desmontado é vazamento e vira aviso no console.
+    return () => clearTimeout(t);
+  }, [submitted]);
+
   // Contador real das 20 vagas fundadoras. Era `TAKEN_SPOTS = 12` chumbado no
   // código, contra um total de 120 — número inventado, e ainda por cima
   // contradizendo o próprio título da página. Se a leitura falhar, o bloco
@@ -217,7 +238,7 @@ export default function MarinaParceira() {
                       type="tel"
                       name="whatsapp"
                       inputMode="tel"
-                      placeholder="+55 48 99999-1234"
+                      placeholder="55 48 99999-1234"
                       value={form.whatsapp}
                       onChange={handleChange}
                     />

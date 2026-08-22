@@ -377,6 +377,30 @@ async def create_marina_lead(data: LeadMarinaCreate):
             "origem": _origem_valida(data.origem),
             "status": "pending",
         }).execute()
+
+        # Avisa o fundador. Era o UNICO fluxo do sistema que gravava e nao
+        # contava para ninguem: dossie pedido, cadastro de marina, cobranca e
+        # agenda todos avisam. Indicacao chegava calada, e so aparecia para
+        # quem fosse olhar o banco — lead esfriando sem ninguem saber.
+        # Best-effort: falhar em avisar nao pode derrubar a indicacao, que ja
+        # esta gravada a esta altura.
+        try:
+            from app.services.notify_service import notificar_fundador
+            notificar_fundador(
+                "Nova indicação de marina",
+                "\n".join([
+                    f"{data.source or 'Uma marina parceira'} indicou {data.marina}.",
+                    "",
+                    f"Responsável: {data.name}",
+                    f"E-mail: {data.email}",
+                    f"WhatsApp: {normalizar_telefone(data.whatsapp) or 'não informado'}",
+                    f"Frota: {data.fleet}",
+                    f"Origem: {_origem_valida(data.origem)}",
+                ]),
+            )
+        except Exception as e:
+            logger.error(f"Falha ao avisar sobre a indicação de {data.marina}: {e}")
+
         return {
             "message": "Solicitação recebida com sucesso",
             "id": result.data[0]["id"] if result.data else None,

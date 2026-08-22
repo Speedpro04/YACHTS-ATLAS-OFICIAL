@@ -536,3 +536,32 @@ O formulário da Oficial tem um `select` de porte da frota. A LP nunca tivera um
 ### Falha de rede não pode virar sucesso
 O envio mostra erro e reabilita o botão. Não esconde o formulário, não mostra "Indicação recebida". Marina que acha que indicou e não indicou é pior que marina que viu um erro — mesma família do selo que mentia (§22) e do score que falhava em silêncio.
 
+---
+
+## 25. A indicação era o único fluxo que chegava calado
+**Data:** 22/08/2026
+
+Cinco indicações reais entraram em `marina_leads` e ninguém soube. O endpoint gravava e respondia — só isso. Dossiê pedido, cadastro de marina, régua de cobrança e agenda **todos** avisam o fundador; a indicação era a única exceção, e ninguém tinha reparado porque a ausência de aviso é indistinguível de "não chegou indicação nenhuma".
+
+Agora `POST /leads/marina` chama `notificar_fundador` com quem indicou, quem foi indicado, contato, frota e origem. Best-effort: a indicação já está gravada quando o aviso sai, então falhar em avisar não pode derrubar nada.
+
+### O alerta saía do número que ele deveria vigiar
+`ALERTA_WHATSAPP` era `5512978138934` — exatamente o número conectado à instância `Programa-Atlas`. Ou seja, o aviso era **mensagem para si mesmo**: caía no chat "mensagem para você mesmo", fácil de não ver, e saía pelo mesmo canal que deveria monitorar.
+
+Isso não é teórico. Foi o que aconteceu neste mesmo dia: a chave da Evolution foi rotacionada, o WhatsApp parou, e o aviso de que o WhatsApp parou iria... por WhatsApp. O canal caiu em silêncio e só apareceu quando o código de login não chegou.
+
+Passou para `5512991187251`, um número **de fora** do sistema. No dia em que a `Programa-Atlas` cair, a `Marinas-Indicadas` ainda consegue contar.
+
+**Princípio:** canal de alerta não pode ser o mesmo que ele monitora, nem sair do próprio número que recebe.
+
+### Por que NÃO existe scheduler de 24/48h ainda
+Foi proposto e recusado por ordem, não por mérito. O scheduler precisaria saber se a marina **já foi contatada** — e isso o sistema não observa: contato manual (ligação, mensagem na mão) não registra nada. Um alarme que cobra por lead já resolvido é um alarme que se aprende a ignorar, e aí ele falha justamente quando importa.
+
+Esse estado vira automático de graça quando o disparo funcionar (`whatsapp_status = 'enviado'`). Construir o scheduler antes disso é construir um botão "já cuidei" só para alimentar o próprio alarme — sintoma, não causa. Ver [[23]].
+
+### Duas correções que só apareceram no uso real
+- **DDI**: o insert usava um `_so_digitos` escrito no mesmo dia, que só removia caracteres. `(48) 99123-4567` virava `48991234567`, sem o `55` — fora do contrato que o comentário da própria coluna declarava. `normalizar_telefone` já existia e era a função certa desde o início.
+- **Origem**: o mesmo formulário roda na Oficial e no Lançamento, e as indicações chegavam idênticas. Agora cada front declara a origem e o backend valida contra lista fechada — valor fora dela vira `desconhecida`, porque o campo vem do navegador e um POST direto manda o que quiser.
+
+**Padrão a repetir:** ao criar um fluxo novo, conferir se ele avisa alguém. Gravar no banco não é entregar — é só guardar.
+
