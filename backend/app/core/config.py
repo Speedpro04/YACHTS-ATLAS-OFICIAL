@@ -213,7 +213,12 @@ class Settings(BaseSettings):
     # Token DA INSTÂNCIA de prospecção. Preferível à chave global: um token de
     # instância só alcança a própria instância, então se ele vazar a
     # transacional (código de login, cobrança) continua fora de alcance.
-    # Vazio = usa a chave global.
+    #
+    # ATENÇÃO: hoje EVOLUTION_API_KEY é o token da instância transacional, e
+    # NÃO a chave global do servidor. Então o fallback abaixo NÃO serve para a
+    # prospecção — ele autentica só na Programa-Atlas e devolve 401 em
+    # qualquer outra. Ao criar a instância de prospecção, pegar o token DELA e
+    # colocar aqui. Deixar vazio faz o disparo falhar com 401, não funcionar.
     EVOLUTION_API_KEY_PROSPECCAO: str = (
         os.getenv("EVOLUTION_API_KEY_PROSPECCAO") or os.getenv("EVOLUTION_API_KEY", "")
     )
