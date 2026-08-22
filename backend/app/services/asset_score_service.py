@@ -13,9 +13,12 @@ Pesos (transparentes, fáceis de ajustar):
   15%  documentos — volume e verificação de integridade (SHA-256)
   10%  integridade estrutural — existência de laudo de casco/estrutura
 """
+import logging
 from typing import Any, Optional
 
 from app.core.supabase import get_supabase_admin
+
+logger = logging.getLogger(__name__)
 
 
 # Taxonomia REAL do painel (servicosCategorias.ts / AtivoHub.categorias()).
@@ -153,13 +156,22 @@ def calcular_saude_ativo(ativo_id: str, persistir: bool = True) -> dict[str, Any
     }
 
     # Persiste de volta no ativo para refletir nas listagens (best-effort).
+    #
+    # Falha aqui NÃO derruba o cálculo — quem chamou recebe o score correto de
+    # qualquer forma. Mas ela precisa aparecer no log: engolir em silêncio já
+    # custou caro, com o painel mostrando "Ouro · 0%" e ninguém conseguindo
+    # dizer por quê. Selo errado na tela é pior que selo ausente: contradiz o
+    # próprio conteúdo do dossiê.
     if persistir:
         try:
             supabase.table("ativos").update({
                 "progresso": score,
                 "classificacao": classificacao,
             }).eq("id", ativo_id).execute()
-        except Exception:
-            pass
+        except Exception as e:  # noqa: BLE001
+            logger.error(
+                "Score de %s calculado (%s/%s) mas NAO gravado: %s",
+                ativo_id, score, classificacao, e,
+            )
 
     return resultado
