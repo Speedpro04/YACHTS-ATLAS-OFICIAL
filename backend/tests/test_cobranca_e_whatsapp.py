@@ -47,9 +47,39 @@ def test_telefone_impossivel_nao_e_enviado(invalido):
     assert normalizar_telefone(invalido) is None
 
 
-def test_sem_provedor_configurado_nao_quebra():
-    """WhatsApp desligado é estado normal — o aviso ainda sai por e-mail."""
+def test_sem_provedor_configurado_nao_quebra(monkeypatch):
+    """WhatsApp desligado é estado normal — o aviso ainda sai por e-mail.
+
+    O provedor é desligado explicitamente. Antes, o teste dependia de o
+    ambiente estar desconfigurado — e no dia em que o `.env` local passou a
+    ter credencial boa, ele **enviou WhatsApp de verdade** para o número de
+    exemplo (5548991234567) e só então falhou. Teste que depende de ambiente
+    vazio não testa nada: ele só não faz estrago enquanto ninguém configura.
+    """
+    monkeypatch.setattr(settings, "WHATSAPP_PROVIDER", "", raising=False)
     assert enviar_whatsapp("48991234567", "oi") is False
+
+
+def test_nenhum_teste_envia_para_numero_real(monkeypatch):
+    """Trava de segurança: nada nesta suíte pode chegar na rede.
+
+    Existe porque o custo do descuido é assimétrico — um teste que envia de
+    verdade fala com um estranho em nome da empresa, e não há como desfazer.
+    """
+    chamou = []
+
+    class _ClientQueAcusa:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def post(self, *a, **k):
+            chamou.append(a)
+            raise AssertionError("teste tentou fazer POST de verdade na Evolution")
+
+    monkeypatch.setattr("app.services.whatsapp_service.httpx.Client", _ClientQueAcusa)
+    monkeypatch.setattr(settings, "WHATSAPP_PROVIDER", "", raising=False)
+    assert enviar_whatsapp("48991234567", "oi") is False
+    assert not chamou
 
 
 # --------------------------------------------------------------------------

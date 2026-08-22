@@ -130,6 +130,12 @@ def enviar_whatsapp(
     número transacional é o único jeito de um disparo de vendas derrubar o
     login do armador e a régua de cobrança junto.
 
+    A CHAVE tem fallback para a global (`AUTHENTICATION_API_KEY`); a INSTÂNCIA
+    não tem nenhum. A assimetria é o ponto: trocar a chave só muda com que
+    credencial se autentica, enquanto trocar a instância muda de qual número a
+    mensagem sai. A primeira é recuperável, a segunda fala com o cliente
+    errado pelo canal errado.
+
     Quem chama sem o parâmetro continua no comportamento de sempre.
     """
     provedor = _PROVEDORES.get(settings.WHATSAPP_PROVIDER)
@@ -149,7 +155,7 @@ def enviar_whatsapp(
             return False
     else:
         instancia = settings.EVOLUTION_INSTANCE
-        apikey = settings.EVOLUTION_API_KEY
+        apikey = settings.EVOLUTION_API_KEY or settings.AUTHENTICATION_API_KEY
 
     numero = normalizar_telefone(telefone)
     if not numero:

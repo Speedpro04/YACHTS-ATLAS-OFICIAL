@@ -203,6 +203,19 @@ class Settings(BaseSettings):
     EVOLUTION_BASE_URL: str = os.getenv("EVOLUTION_BASE_URL", "")
     EVOLUTION_API_KEY: str = os.getenv("EVOLUTION_API_KEY", "")
     EVOLUTION_INSTANCE: str = os.getenv("EVOLUTION_INSTANCE", "")
+    # Chave GLOBAL do servidor Evolution. O nome e o mesmo que a propria
+    # Evolution usa no container dela, de proposito: dois apelidos para a mesma
+    # coisa no painel foi o que gerou EVOLUTION_API_KEY duplicada e derrubou o
+    # envio do codigo de acesso em 22/08/2026.
+    #
+    # NAO e a primeira escolha para enviar. O caminho normal e o token DA
+    # INSTANCIA (EVOLUTION_API_KEY / _PROSPECCAO), que so alcanca a propria
+    # instancia — se vazar, o outro numero continua fora de alcance. A global
+    # entra so quando o token da instancia nao estiver definido.
+    #
+    # Cair na global e seguro porque a chave nao escolhe o destino: quem
+    # escolhe e a INSTANCIA, e essa nunca tem fallback.
+    AUTHENTICATION_API_KEY: str = os.getenv("AUTHENTICATION_API_KEY", "")
     # Instância SEPARADA, com outro número, só para prospecção ativa (indicações
     # de marina abordadas via Evolution). Não é preciosismo: o número de cima
     # entrega código de login e régua de cobrança, e disparo de prospecção é o
@@ -214,13 +227,12 @@ class Settings(BaseSettings):
     # instância só alcança a própria instância, então se ele vazar a
     # transacional (código de login, cobrança) continua fora de alcance.
     #
-    # ATENÇÃO: hoje EVOLUTION_API_KEY é o token da instância transacional, e
-    # NÃO a chave global do servidor. Então o fallback abaixo NÃO serve para a
-    # prospecção — ele autentica só na Programa-Atlas e devolve 401 em
-    # qualquer outra. Ao criar a instância de prospecção, pegar o token DELA e
-    # colocar aqui. Deixar vazio faz o disparo falhar com 401, não funcionar.
+    # Vazio cai na AUTHENTICATION_API_KEY (global), que alcança qualquer
+    # instância. NÃO cai na EVOLUTION_API_KEY: aquela é o token da instância
+    # transacional e daria 401 aqui.
     EVOLUTION_API_KEY_PROSPECCAO: str = (
-        os.getenv("EVOLUTION_API_KEY_PROSPECCAO") or os.getenv("EVOLUTION_API_KEY", "")
+        os.getenv("EVOLUTION_API_KEY_PROSPECCAO")
+        or os.getenv("AUTHENTICATION_API_KEY", "")
     )
     # DDI usado quando a marina digita o telefone sem ele. As 20 fundadoras são
     # todas brasileiras (SC/SP/RJ/ES/BA); as versões LATAM/USA/EURO rodam em
