@@ -43,7 +43,10 @@ export default function MarinaParceira() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      await api.leads.marina(form);
+      // 'oficial' fixo: esta pagina so existe no yachtsatlas.online. O mesmo
+      // formulario roda na pagina de Lancamento, e sem isto as duas indicacoes
+      // chegam identicas no banco — nao da para saber quem indicou de onde.
+      await api.leads.marina({ ...form, origem: 'oficial' });
       setSubmitted(true);
     } catch {
       setSubmitError('Erro ao enviar. Tente novamente ou entre em contato por e-mail.');

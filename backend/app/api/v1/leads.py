@@ -12,23 +12,23 @@ from app.schemas.models import LeadMarinaCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import require_platform_admin
 from app.core.config import settings, LAUNCH_STATES
+from app.services.whatsapp_service import normalizar_telefone
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-def _so_digitos(valor: Optional[str]) -> str:
-    """Deixa so os digitos de um telefone.
+# Paginas que podem enviar indicacao. Lista fechada de proposito: `origem` vem
+# do front e um POST direto pode mandar qualquer coisa. Valor fora daqui vira
+# "desconhecida" em vez de sujar a coluna com texto arbitrario.
+ORIGENS_DE_INDICACAO = ("oficial", "lancamento")
 
-    O Evolution API precisa do numero cru (DDI+DDD+numero); "(48) 99999-1234"
-    e recusado. Existe uma funcao de mesmo nome em verificacao.py, mas aquela
-    e do fluxo de assinatura do QR e nao aceita None — importar de la acoplaria
-    dois assuntos sem relacao so para economizar tres linhas.
-    """
-    if not valor:
-        return ""
-    return "".join(c for c in valor if c.isdigit())
+
+def _origem_valida(valor: Optional[str]) -> str:
+    """Normaliza a origem declarada pelo front."""
+    v = (valor or "").strip().lower()
+    return v if v in ORIGENS_DE_INDICACAO else "desconhecida"
 
 # Oferta da marina paga: 4 vagas fundadoras POR ESTADO a US$ 200/mes
 # (SC/SP/RJ/ES/BA = 20 no total), depois US$ 250.
@@ -367,11 +367,14 @@ async def create_marina_lead(data: LeadMarinaCreate):
             "contact_name": data.name,
             "email": data.email,
             "fleet_size": data.fleet,
-            # So digitos: o Evolution API nao aceita "(48) 99999-1234". Normalizar
-            # aqui e a unica garantia — se ficar so no front, qualquer POST direto
+            # normalizar_telefone faz digitos + DDI + descarte do curto demais.
+            # Antes isto so tirava os caracteres, e "(48) 99123-4567" era gravado
+            # como "48991234567", sem o 55 — fora do contrato da propria coluna.
+            # Normalizar aqui, e nao no front, e a unica garantia: POST direto
             # grava lixo e a abordagem falha calada na hora do disparo.
-            "whatsapp": _so_digitos(data.whatsapp) or None,
+            "whatsapp": normalizar_telefone(data.whatsapp),
             "source": data.source,
+            "origem": _origem_valida(data.origem),
             "status": "pending",
         }).execute()
         return {

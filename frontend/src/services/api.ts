@@ -149,7 +149,7 @@ export const api = {
       estados: string[]
       por_estado: Record<string, { total: number; ocupadas: number; restantes: number }>
     }> => apiRequest('/leads/marina/vagas'),
-    marina: (data: { marina: string; name: string; email: string; fleet: string; whatsapp?: string; source?: string }) =>
+    marina: (data: { marina: string; name: string; email: string; fleet: string; whatsapp?: string; source?: string; origem?: string }) =>
       apiRequest('/leads/marina', { method: 'POST', body: JSON.stringify(data) }),
     parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>
       apiRequest('/leads/parceiro', { method: 'POST', body: JSON.stringify(data) }),

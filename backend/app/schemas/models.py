@@ -120,6 +120,10 @@ class LeadMarinaCreate(BaseModel):
     # WhatsApp da marina indicada: e por ele que a abordagem sai (Evolution API).
     whatsapp: Optional[str] = None
     source: Optional[str] = None
+    # Pagina de onde veio: 'oficial' ou 'lancamento'. Vem do front, entao e
+    # tratado como palpite, nao como verdade — o backend valida contra a lista
+    # conhecida antes de gravar.
+    origem: Optional[str] = None
 
 
 # --- Ativo Models ---
