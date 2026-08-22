@@ -495,7 +495,7 @@ O pedido inicial era disparar por esse canal. O canal já existia — e é o mes
 `EVOLUTION_INSTANCE` era um valor único. Plugar prospecção ali colocaria disparo de vendas no mesmo número que o login e a cobrança. WhatsApp bane por denúncia de spam, e ban é **por número**: uma denúncia derrubaria os três fluxos de uma vez. O armador não entra, o inadimplente não é avisado, e nada disso apita.
 
 ### A Solução
-Instância separada, com número próprio (`Marinas-Indicadas`, +55 12 97813-8934), no mesmo servidor Evolution. `enviar_whatsapp(..., prospeccao=True)` escolhe a instância; quem chama sem o parâmetro continua exatamente como antes — os três chamadores existentes não mudaram uma linha.
+Instância separada, com número próprio (`Marinas-Indicadas`, +55 12 99758-8791), no mesmo servidor Evolution. `enviar_whatsapp(..., prospeccao=True)` escolhe a instância; quem chama sem o parâmetro continua exatamente como antes — os três chamadores existentes não mudaram uma linha.
 
 **Sem `EVOLUTION_INSTANCE_PROSPECCAO` configurada, a prospecção não envia — e de propósito não cai na transacional.** Um fallback "esperto" ali seria a forma mais fácil de, num dia de disparo, derrubar login e cobrança sem ninguém perceber.
 
