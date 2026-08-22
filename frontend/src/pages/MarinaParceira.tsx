@@ -40,6 +40,17 @@ export default function MarinaParceira() {
       return;
     }
 
+    // Formato do e-mail conferido AQUI, com mensagem própria. Quem recusa de
+    // verdade é o EmailStr do backend — mas ele responde 422, e o catch abaixo
+    // transforma isso em "Erro ao enviar", que não diz qual campo está errado.
+    // Aconteceu de verdade: "marinasolares@gmailcom" (sem o ponto) virou erro
+    // genérico, e não havia como a marina descobrir sozinha.
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) {
+      setErrors({ email: true });
+      setSubmitError('E-mail inválido. Confira se não falta um ponto ou uma letra.');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
     try {
