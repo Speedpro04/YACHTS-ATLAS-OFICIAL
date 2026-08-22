@@ -234,6 +234,13 @@ class Settings(BaseSettings):
         os.getenv("EVOLUTION_API_KEY_PROSPECCAO")
         or os.getenv("AUTHENTICATION_API_KEY", "")
     )
+    # Segredo do webhook que recebe as respostas do WhatsApp. O endpoint é
+    # público por necessidade (a Evolution chama de fora), e o que ele faz é
+    # escrever na blocklist. Sem segredo, qualquer um na internet bloqueia
+    # qualquer número. Vazio = webhook DESLIGADO, não aberto: preferir não
+    # receber opt-out a aceitar de quem for.
+    WHATSAPP_WEBHOOK_TOKEN: str = os.getenv("WHATSAPP_WEBHOOK_TOKEN", "")
+
     # DDI usado quando a marina digita o telefone sem ele. As 20 fundadoras são
     # todas brasileiras (SC/SP/RJ/ES/BA); as versões LATAM/USA/EURO rodam em
     # instalações separadas, com o DDI delas.

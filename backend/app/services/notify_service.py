@@ -40,8 +40,19 @@ def notificar_fundador(titulo: str, corpo: str) -> bool:
     if settings.ALERTA_WHATSAPP:
         try:
             from app.services.whatsapp_service import enviar_whatsapp
+            # Sai pela instância de MARINAS, não pela transacional. A
+            # transacional entrega o código de acesso do armador, que é
+            # autenticação: quanto menos tráfego passar por ela, menor a chance
+            # de o login cair junto com outra coisa. Aviso ao fundador é
+            # operação, não autenticação — não precisa desse número.
+            #
+            # E o destino (ALERTA_WHATSAPP) é um número de FORA das instâncias.
+            # Enquanto era o próprio número da transacional, o aviso chegava no
+            # chat "mensagem para você mesmo" e saía pelo canal que ele deveria
+            # vigiar — foi assim que a queda do WhatsApp passou despercebida.
             entregou = enviar_whatsapp(
-                settings.ALERTA_WHATSAPP, f"*{titulo}*\n\n{corpo}"
+                settings.ALERTA_WHATSAPP, f"*{titulo}*\n\n{corpo}",
+                prospeccao=True,
             ) or entregou
         except Exception as e:
             logger.error(f"Falha ao avisar o fundador por WhatsApp: {e}")

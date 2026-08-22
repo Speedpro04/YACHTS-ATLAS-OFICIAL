@@ -2,7 +2,7 @@
 Yachts Atlas — API v1 Router
 """
 from fastapi import APIRouter
-from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros, chatbot, normas, verificacao, lgpd
+from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros, chatbot, normas, verificacao, lgpd, whatsapp
 
 router = APIRouter()
 
@@ -25,3 +25,6 @@ router.include_router(normas.router, prefix="/normas", tags=["normas"])
 # Público (sem auth): destino do QR impresso no dossiê.
 router.include_router(verificacao.router, prefix="/verificar", tags=["verificacao"])
 router.include_router(lgpd.router, prefix="/lgpd", tags=["lgpd"])
+# Público (sem auth): a Evolution chama de fora. Protegido por token próprio
+# — ver WHATSAPP_WEBHOOK_TOKEN. Só reconhece pedido de saída da prospecção.
+router.include_router(whatsapp.router, prefix="/whatsapp", tags=["whatsapp"])

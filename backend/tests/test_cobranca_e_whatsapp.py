@@ -204,7 +204,12 @@ def envio_falso(monkeypatch):
     )
     monkeypatch.setattr(
         "app.services.whatsapp_service.enviar_whatsapp",
-        lambda tel, texto: registro["whatsapps"].append((tel, texto)) or True,
+        # **kwargs para o dublê não quebrar quando `enviar_whatsapp` ganhar
+        # parâmetro novo. Sem isso, a chamada levanta TypeError, o
+        # `except Exception` do notify_service engole, e o teste falha
+        # apontando para o lugar errado — foi o que aconteceu ao acrescentar
+        # `prospeccao=`.
+        lambda tel, texto, **kwargs: registro["whatsapps"].append((tel, texto)) or True,
     )
     monkeypatch.setattr(
         "app.services.stripe_service.StripeService._atualizar_metadata",

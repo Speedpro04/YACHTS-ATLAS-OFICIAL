@@ -63,14 +63,47 @@ PAUSA_ENTRE_ENVIOS = 45  # segundos
 
 LINK = "https://yachtsatlas.online"
 
+# O nome de quem indicou aparece DUAS vezes, e a primeira na segunda linha.
+# É o único ativo que separa esta mensagem de um disparo frio qualquer: se ele
+# aparece só no fim, a marina já leu tudo como propaganda antes de chegar lá.
+#
+# O que a mensagem NÃO faz, de propósito:
+#   • não diz "todos estão aderindo" — a rede está em formação e o contador
+#     mostra 0 de 20 vagas. Afirmação que o interlocutor desmente em um clique
+#     custa mais do que ganha, ainda mais em mensagem não solicitada;
+#   • não diz que a rede está começando ("primeiras vagas", "estamos abrindo").
+#     Isso entrega o estágio da operação para quem não precisa saber, e enfraquece
+#     a proposta em vez de criar urgência. A condição especial se sustenta no
+#     fato de ELA ter sido indicada, que é sobre ela e não sobre nós;
+#   • não abre o preço. "Condição especial" convida a responder; número no
+#     primeiro toque encerra a conversa antes de existir valor.
 MENSAGEM_1 = (
     "Olá, {responsavel}. Aqui é do *Yachts Atlas*.\n\n"
-    "A *{indicadora}* indicou a {indicada} para integrar nossa rede.\n\n"
-    "Somos a custódia digital de ativos náuticos: organizamos documentos, "
-    "laudos e histórico de embarcações num dossiê certificado. Para a marina, "
-    "cada dossiê emitido vira receita.\n\n"
-    "Conheça nosso Programa Atlas: {link}\n\n"
-    "Faz sentido conversarmos?"
+    "A *{indicadora}* indicou a {indicada} para o nosso "
+    "*Programa de Custódia*.\n\n"
+    # "sua Marina", com M maiúsculo: fala com ELA, não sobre uma categoria.
+    # A maiúscula é deliberada — trata a Marina como instituição, do mesmo modo
+    # que se escreve o nome de uma empresa. Não "corrigir" para minúscula.
+    # "selo de integridade", NÃO "dossiê certificado". O Atlas não inspeciona
+    # embarcação nem emite certificado — isso é atribuição de órgão competente,
+    # e a própria FAQ do site diz isso. O que ele certifica é a INTEGRIDADE do
+    # registro (SHA-256, selo imutável, QR que valida). Prometer certificação
+    # do ativo em mensagem comercial é promessa que o produto não cumpre.
+    "Organizamos documentos, laudos e todo o histórico de cada embarcação num "
+    "*Dossiê Náutico* com selo de integridade — e cada dossiê emitido vira "
+    "receita para sua Marina.\n\n"
+    "A indicação da *{indicadora}* garante condição especial para vocês.\n\n"
+    # Instrução explícita antes do link. Link solto no meio do texto é fácil de
+    # passar batido; dizer o que fazer com ele é o que transforma leitura em
+    # clique.
+    "Acesse a página e conheça o programa:\n"
+    "{link}\n\n"
+    "Faz sentido conversarmos?\n\n"
+    # A saída fica em itálico e por último: cumpre o dever de transparência sem
+    # roubar a atenção da pergunta. Só pode existir porque o webhook de opt-out
+    # existe (api/v1/whatsapp.py) — prometer saída que não funciona é o que
+    # transforma "não quero" em denúncia, e denúncia é o que bane o número.
+    "_Se preferir não receber, é só responder SAIR._"
 )
 
 
@@ -108,9 +141,8 @@ def esta_bloqueado(supabase, telefone: str) -> bool:
 def bloquear(telefone: Optional[str], motivo: str = "pediu SAIR") -> bool:
     """Põe um número na blocklist. Chamada pelo webhook de resposta.
 
-    Ainda não há webhook da Evolution ligado: enquanto não houver, o opt-out
-    depende de alguém rodar isto à mão ao ver um "SAIR" na caixa. A mensagem
-    promete a saída, então essa ponta precisa existir antes do primeiro lote.
+    Chamada por `api/v1/whatsapp.py` quando a marina responde SAIR. Também
+    serve para bloquear à mão um número que pediu por outro caminho.
     """
     numero = normalizar_telefone(telefone)
     if not numero:
