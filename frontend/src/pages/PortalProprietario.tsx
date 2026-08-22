@@ -9,16 +9,36 @@ export default function PortalProprietario() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [ativo, setAtivo] = useState<Ativo | null>(null)
+  // Foto do PRÓPRIO barco na capa. Antes era uma imagem de banco fixa no
+  // código: o armador abria o portal e via o barco de outra pessoa — logo no
+  // momento em que ele deveria reconhecer o dele.
+  const [capa, setCapa] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
       try {
+        // A lista já vem filtrada pelo backend: o armador só recebe os barcos
+        // com o e-mail dele. Não há o que escolher aqui.
         const lista = await api.ativos.list()
         const arr = Array.isArray(lista) ? lista : []
-        // Embarcação de exemplo: prioriza o Wolverine; se não achar, usa a primeira.
-        const wolverine = arr.find((a: Ativo) =>
-          `${a.marca} ${a.modelo}`.toLowerCase().includes('wolverine'))
-        setAtivo(wolverine || arr[0] || null)
+        const meu = arr[0] || null
+        setAtivo(meu)
+
+        if (meu?.id) {
+          try {
+            const docs = await api.documentos.list(meu.id)
+            const fotos = (Array.isArray(docs) ? docs : []).filter(
+              (d: any) => d?.tipo === 'foto' && d?.url_arquivo,
+            )
+            // Vitrine primeiro: são as fotos de apresentação, escolhidas pela
+            // marina justamente para mostrar o barco. Sem vitrine, qualquer
+            // foto do cofre serve melhor que uma imagem genérica.
+            const vitrine = fotos.find((d: any) => d.categoria === 'vitrine')
+            setCapa((vitrine || fotos[0])?.url_arquivo || null)
+          } catch {
+            /* sem foto, a capa cai no fundo institucional */
+          }
+        }
       } catch {
         setAtivo(null)
       } finally {
@@ -95,9 +115,10 @@ export default function PortalProprietario() {
         {/* Vessel Banner */}
         <div className="relative rounded-sm overflow-hidden border border-white/10 aspect-[21/9] md:aspect-[21/6] mb-12 group">
           <img
-            src="/boat-picture-light.jpg"
-            alt="Embarcação"
+            src={capa || '/boat-picture-light.jpg'}
+            alt={ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+            onError={(e) => { e.currentTarget.src = '/boat-picture-light.jpg' }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-[#010c20]/50 to-transparent"></div>
 
@@ -111,6 +132,25 @@ export default function PortalProprietario() {
                   <CheckCircle2 size={12} />
                   Ativo Certificado
                 </span>
+                {/* A nota que a marina vê, o dono também vê.
+                    Ela é a prova de que a marina está alimentando o cofre —
+                    mostrar ao armador reforça o trabalho dela, não expõe. */}
+                {ativo.classificacao && (
+                  <span
+                    className={`text-[10px] font-black px-3 py-1 rounded-sm uppercase tracking-widest border ${
+                      ativo.classificacao === 'gold'
+                        ? 'text-[#c5a059] border-[#c5a059]/40 bg-[#c5a059]/10'
+                        : ativo.classificacao === 'silver'
+                        ? 'text-white/70 border-white/25 bg-white/5'
+                        : 'text-amber-600/80 border-amber-600/30 bg-amber-600/10'
+                    }`}
+                    title="Índice de custódia: quanto do histórico deste ativo já está registrado e selado"
+                  >
+                    {ativo.classificacao === 'gold' ? 'Ouro'
+                      : ativo.classificacao === 'silver' ? 'Prata' : 'Bronze'}
+                    {typeof ativo.progresso === 'number' ? ` · ${ativo.progresso}%` : ''}
+                  </span>
+                )}
               </div>
               <h2 className="text-3xl font-serif font-bold text-white tracking-tight">{ativo.nome_reg || `${ativo.marca} ${ativo.modelo}`}</h2>
               <div className="flex items-center gap-4 mt-2 text-[10px] text-white/50 uppercase tracking-widest font-black">

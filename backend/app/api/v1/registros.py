@@ -19,6 +19,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user
+from app.core.authz import get_ativo_autorizado
 from pydantic import BaseModel, Field
 from typing import Optional, Any
 
@@ -91,6 +92,47 @@ def _recalcular_saude(ativo_id: str) -> None:
         logger.warning("Nao foi possivel recalcular a saude de %s: %s", ativo_id, e)
 
 
+def _so_a_marina(ativo_id: str, token: dict) -> None:
+    """
+    Escrita e da MARINA. O armador le, nao mexe.
+
+    `_owner_do_ativo` apenas DESCOBRE de quem e o ativo para preencher o campo
+    — nunca verificou se quem pede tem direito. Sem esta checagem, uma conta
+    qualquer escrevia registro no barco de outra marina, e o guardiao central
+    (core/authz.py) ficava sendo contornado justamente na tabela que e o
+    produto: a cadeia de custodia selada.
+    """
+    get_ativo_autorizado(ativo_id, str(token.get("sub") if token else ""))
+
+
+def _pode_ler(ativo_id: str, token: dict) -> None:
+    """
+    Leitura: a marina dona E o armador do barco.
+
+    `incluir_proprietario=True` e o que deixa o dono acompanhar o proprio
+    historico no Portal do Proprietario — ver e direito dele. Alterar nao:
+    isso segue exigindo ser a marina.
+    """
+    get_ativo_autorizado(
+        ativo_id, str(token.get("sub") if token else ""), incluir_proprietario=True
+    )
+
+
+def _ativo_do_rascunho(supabase, rascunho_id: str) -> str:
+    """
+    Descobre a qual ativo o rascunho pertence, para poder autorizar.
+
+    Estes endpoints recebem o id do RASCUNHO, entao a checagem precisa de um
+    salto a mais. Sem ele, ficavam abertos: bastava um id de rascunho para
+    editar, descartar ou SELAR trabalho de outra marina — e selar e
+    irreversivel.
+    """
+    r = supabase.table("registros_rascunho").select("ativo_id").eq("id", rascunho_id).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Rascunho não encontrado")
+    return r.data[0]["ativo_id"]
+
+
 def _owner_do_ativo(supabase, ativo_id: str) -> Optional[str]:
     """Retorna o usuario_id (dono) do ativo, para vincular o registro."""
     ativo = supabase.table("ativos").select("usuario_id").eq("id", ativo_id).execute()
@@ -99,7 +141,15 @@ def _owner_do_ativo(supabase, ativo_id: str) -> Optional[str]:
 
 @router.get("/{ativo_id}")
 async def list_registros(ativo_id: str, token: dict = Depends(get_current_user)):
-    """Lista os registros selados de um ativo, com a situação derivada."""
+    """Lista os registros selados de um ativo, com a situação derivada.
+
+    Nao tinha verificacao nenhuma: qualquer conta autenticada lia os registros
+    de qualquer barco sabendo o id — e o id e previsivel (YA-IATE-2015-3A38),
+    entao bastava trocar os digitos finais para varrer os clientes das outras
+    marinas. O historico selado e o produto; vaza-lo destroi o motivo de
+    alguem confiar o barco a plataforma.
+    """
+    _pode_ler(ativo_id, token)
     try:
         supabase = get_supabase_admin()
         result = (
@@ -119,6 +169,7 @@ async def create_registro(data: RegistroCreate, token: dict = Depends(get_curren
     """Cria um registro imutável."""
     if data.status not in STATUS_VALIDOS:
         raise HTTPException(status_code=400, detail=f"status inválido (use: {', '.join(STATUS_VALIDOS)})")
+    _so_a_marina(data.ativo_id, token)
     try:
         supabase = get_supabase_admin()
 
@@ -157,6 +208,8 @@ async def retificar_registro(data: RetificacaoCreate, token: dict = Depends(get_
         raise HTTPException(status_code=400, detail=f"status inválido (use: {', '.join(STATUS_VALIDOS)})")
 
     supabase = get_supabase_admin()
+
+    _so_a_marina(data.ativo_id, token)
 
     alvo = supabase.table("registros").select("id, ativo_id").eq("id", data.retifica_id).execute()
     if not alvo.data:
@@ -198,6 +251,9 @@ async def retificar_registro(data: RetificacaoCreate, token: dict = Depends(get_
 
 @router.get("/rascunho/{ativo_id}")
 async def list_rascunhos(ativo_id: str, token: dict = Depends(get_current_user)):
+    # Rascunho e trabalho em andamento da MARINA — ainda nao selado e nao
+    # entra no dossie. O armador nao ve o que ela ainda esta digitando.
+    _so_a_marina(ativo_id, token)
     supabase = get_supabase_admin()
     result = (
         supabase.table("registros_rascunho").select("*")
@@ -209,6 +265,7 @@ async def list_rascunhos(ativo_id: str, token: dict = Depends(get_current_user))
 @router.post("/rascunho")
 async def create_rascunho(data: RegistroCreate, token: dict = Depends(get_current_user)):
     """Cria um rascunho. Editável e descartável — ainda não entra no dossiê."""
+    _so_a_marina(data.ativo_id, token)
     supabase = get_supabase_admin()
     usuario_id = _owner_do_ativo(supabase, data.ativo_id)
     if not usuario_id:
@@ -231,6 +288,7 @@ async def update_rascunho(
     rascunho_id: str, data: RascunhoUpdate, token: dict = Depends(get_current_user)
 ):
     supabase = get_supabase_admin()
+    _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
     campos = {k: v for k, v in data.model_dump().items() if v is not None}
     if not campos:
         raise HTTPException(status_code=400, detail="Nada para atualizar")
@@ -244,6 +302,7 @@ async def update_rascunho(
 async def descartar_rascunho(rascunho_id: str, token: dict = Depends(get_current_user)):
     """Descarta um rascunho. Só vale antes de selar — depois não há volta."""
     supabase = get_supabase_admin()
+    _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
     supabase.table("registros_rascunho").delete().eq("id", rascunho_id).execute()
     return {"message": "Rascunho descartado"}
 
@@ -256,6 +315,7 @@ async def selar_rascunho(rascunho_id: str, token: dict = Depends(get_current_use
     excluído. Correções só por retificação.
     """
     supabase = get_supabase_admin()
+    _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
 
     r = supabase.table("registros_rascunho").select("*").eq("id", rascunho_id).execute()
     if not r.data:
@@ -295,6 +355,9 @@ async def selar_rascunho(rascunho_id: str, token: dict = Depends(get_current_use
 
 @router.get("/stats/{ativo_id}")
 async def get_registro_stats(ativo_id: str, token: dict = Depends(get_current_user)):
+    # Contagem por categoria tambem e informacao do ativo: dizer quantos
+    # registros a marina tem em cada aba ja entrega o tamanho da operacao dela.
+    _pode_ler(ativo_id, token)
     """Contagem de registros por status para um ativo."""
     try:
         supabase = get_supabase_admin()

@@ -406,3 +406,50 @@ Bronze <50 · Prata 50–79 · Ouro 80+
 Um comprador lê "Ouro" e entende *"barco excelente"*, não *"dossiê completo"*.
 
 Caminhos possíveis, a decidir: **(A)** renomear para *Índice de Custódia* / *Completude do Dossiê* — honesto, e coerente com o PRD, que diz que o Yachts Atlas **não inspeciona a embarcação**; ou **(B)** fazer a nota penalizar registro em atenção, sinistro sem desfecho e documento vencido. A inclinação é (A): dar nota de saúde a um ativo que não se vistoriou é assumir responsabilidade que não é da plataforma.
+
+---
+
+## 19. O histórico selado estava aberto para qualquer conta
+**Data da Decisão:** 21/08/2026
+
+### O Problema
+Nenhum endpoint de `registros` verificava autorização. Nem para ler, nem para escrever.
+
+`GET /registros/{ativo_id}` devolvia os registros selados de **qualquer barco** para **qualquer conta autenticada**, bastando o id — e o id é previsível (`YA-IATE-2015-3A38`). Trocando os dígitos finais, uma marina varria os clientes das outras.
+
+E escrever também passava: `_owner_do_ativo` apenas **descobria** de quem era o ativo para preencher o campo — nunca perguntou se quem pedia tinha direito. Dava para selar registro no barco de outra marina, e **selar é irreversível**.
+
+Isso tornava inútil a trava construída em `core/authz.py`: ela protegia os documentos, e os registros passavam por fora — justamente na tabela que é o produto.
+
+### Como apareceu
+O fundador reclamou que o armador **não conseguia abrir nada** no Portal do Proprietário. Investigando por que o portal não lia, apareceu que qualquer um lia.
+
+### A regra, agora em nove endpoints
+- **Ler** (`_pode_ler`) — a marina dona **e** o armador (`incluir_proprietario=True`). Ver o próprio barco é direito do dono.
+- **Escrever** (`_so_a_marina`) — só a marina. Criação, retificação, rascunho, edição, descarte e selagem.
+
+Rascunho também é da marina: é trabalho em andamento, ainda não selado, e o dono não vê o que ela está digitando.
+
+Os endpoints que recebem o id do RASCUNHO precisam de um salto a mais (`_ativo_do_rascunho`) — sem ele, a checagem seria feita contra um id que não é de ativo nenhum e passaria batido.
+
+### O teste que mais importa
+`test_todo_endpoint_tem_alguma_guarda` varre o módulo e exige guarda em cada `@router`. Os testes por endpoint cobrem o que existe hoje; esse cobre **o que alguém acrescentar amanhã**.
+
+E há um teste guardando a distinção entre as duas guardas: se virarem a mesma coisa, ou o dono perde o portal, ou passa a escrever no dossiê que deveria ser prova independente dele.
+
+---
+
+## 20. Portal do Proprietário: ver é direito do dono
+**Data da Decisão:** 21/08/2026
+
+O portal entregava pouco, e o fundador listou três coisas — todas certas:
+
+**A capa mostrava o barco de outra pessoa.** A imagem estava fixa no código (`/boat-picture-light.jpg`, foto de banco). O armador abria o portal justamente no momento em que deveria reconhecer o próprio barco. Agora usa a foto do cofre — vitrine primeiro, que é a escolhida pela marina para apresentar o ativo.
+
+**A nota de saúde não aparecia.** A marina via "Ouro · 87%", o dono não via nada. E há um ângulo comercial: essa nota é a prova de que a marina está fazendo bem o trabalho dela — **mostrar ao armador reforça a marina**, não a expõe.
+
+**Ele não conseguia abrir nada** — o que levou ao achado de segurança acima ([[o histórico selado estava aberto]]).
+
+Limpo de passagem um resquício de maquete: a página priorizava um ativo chamado "Wolverine" na listagem. Com o backend já filtrando por `proprietario_email`, a lista do armador só tem os barcos dele — não há o que escolher.
+
+**Corrigido também:** os documentos que inseri direto no banco ficaram sem `url_arquivo`, e sem ela a foto não renderiza. O endpoint de upload preenche esse campo; a inserção manual não. É exatamente a classe de defeito que preencher pelo banco não pega — ressalva já registrada em [[Marlin Sea Focus]].
