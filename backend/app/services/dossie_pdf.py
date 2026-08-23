@@ -1560,6 +1560,18 @@ def _montar(dados: dict, indice):
          Paragraph("Os três juntos são exclusivos deste documento. Sem eles, a "
                    "consulta não retorna dados — nem o conteúdo do dossiê é "
                    "exposto publicamente.", S["small"]),
+         Spacer(1, 3),
+         # Avisar que o arquivo pode ser conferido é, por si só, o que
+         # desestimula a adulteração: ninguém edita um documento sabendo que a
+         # cópia pode ser confrontada com a original em dois segundos.
+         #
+         # Uma linha só, em corpo pequeno e dentro do quadro que já existe. O
+         # dossiê é o produto — não pode virar folheto do serviço de
+         # verificação.
+         Paragraph("A verificação também informa a <b>impressão digital "
+                   "(SHA-256)</b> deste arquivo. Documento alterado após a "
+                   "emissão não confere com a impressão registrada.",
+                   S["small"]),
          ],
     ]], colWidths=[46 * mm, 130 * mm])
     bloco.setStyle(TableStyle([

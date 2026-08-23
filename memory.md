@@ -685,5 +685,43 @@ A tabela tem trigger que recusa `UPDATE` e `DELETE`, como `registros`. Testado: 
 ### Lista, não valor único
 A verificação devolve **todos** os hashes do protocolo. O mesmo ativo pode ter mais de uma via legítima (reemissão depois de novo registro selado), e mostrar só a última faria o portador de uma via anterior concluir, erradamente, que o documento dele foi adulterado.
 
+### O aviso no PDF é parte da defesa
+O dossiê traz, no quadro de verificação, uma linha em corpo pequeno: *"A verificação também informa a impressão digital (SHA-256) deste arquivo. Documento alterado após a emissão não confere com a impressão registrada."*
+
+Não é informação de serviço — é dissuasão. **Ninguém edita um documento sabendo que a cópia pode ser confrontada com a original em dois segundos.** O aviso trabalha antes da fraude, não depois.
+
+Uma linha só, dentro do quadro que já existe: o dossiê é o produto e não pode virar folheto do serviço de verificação.
+
 **Diretriz do fundador, registrada:** *"Temos que ser imutáveis. Essa é a base de trabalho do Programa Atlas — onde você achar que pode ser alterado ou fraudado, me fala e resolvemos juntos."* Vale como instrução permanente: apontar toda superfície adulterável que aparecer, mesmo sem ser perguntado.
+
+---
+
+## 30. A contra-prova: o arquivo não sai do computador de quem verifica
+**Data:** 23/08/2026
+
+Com a impressão digital de cada emissão registrada (§29), faltava a porta: um lugar onde **qualquer pessoa** confere um PDF sem precisar de conta, de conhecimento técnico ou de permissão.
+
+`/conferir` faz isso. E a decisão de projeto que importa: **o navegador calcula o SHA-256 localmente (Web Crypto) e envia só os 64 caracteres.** O documento nunca é transmitido.
+
+Isso resolve o problema de confiança na ordem certa: **ninguém deveria precisar entregar um documento sigiloso a um terceiro só para descobrir se ele é legítimo.** De quebra é instantâneo e não custa banda — um dossiê com 430 fotos passa de 20 MB, e fazer upload disso a cada conferência seria caro para os dois lados.
+
+A garantia de privacidade aparece na tela **antes** da área de upload, de propósito: é a primeira dúvida de quem vai jogar um documento sigiloso num site.
+
+### "Não corresponde" não é erro HTTP
+O endpoint devolve **200 com `corresponde: false`**, não 404. "Não corresponde" é uma resposta legítima e é **metade do serviço** — devolver erro faria o front tratar como falha e mostrar "algo deu errado" onde deveria mostrar um veredito.
+
+### E não corresponder não é acusar
+A tela diz, quando não bate: *"Isso não significa necessariamente fraude: o arquivo pode ter sido reimpresso, convertido ou salvo por outro programa, o que altera os bytes sem mudar o conteúdo visível."*
+
+É verdade e importa. Um PDF que passou por impressora virtual tem outros bytes e o mesmo conteúdo. Sem essa ressalva, a ferramenta acusaria gente inocente — e uma ferramenta que gera acusação falsa deixa de ser usada.
+
+### Por que gratuita
+O efeito antifraude vem da **existência** da conferência, não do preço: ninguém adultera um documento que qualquer um confere em dois segundos. Cobrar aqui mataria exatamente o que faz funcionar.
+
+O pago é outro produto — o **laudo assinado**, para quem precisa *provar a terceiro* (seguradora em análise de sinistro, advogado em disputa). Referência de US$ 40, registrada no PRD. Uma não canibaliza a outra: quem confere de graça queria **saber**; quem paga precisa **provar**, e print de tela não vale em processo.
+
+### O preço não vai no PDF
+O dossiê é imutável depois de emitido — e **tudo que muda com o tempo não pode ser impresso**. Um dossiê com "US$ 40" continuaria dizendo isso depois do reajuste, sem correção possível. O preço vive na página de verificação, que é dinâmica.
+
+No PDF fica só uma linha, em corpo pequeno, que **não vende nada**: avisa que a impressão digital pode ser conferida. É dissuasão, não propaganda — trabalha antes da fraude, não depois.
 

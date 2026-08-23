@@ -248,10 +248,13 @@ export default function Verificacao() {
             ))}
           </div>
           <p className="text-white/30 text-[11.5px] mt-4 leading-relaxed">
-            Como conferir: no computador, <span className="text-white/50 font-mono">shasum -a 256 dossie.pdf</span> (macOS/Linux)
-            ou <span className="text-white/50 font-mono">certutil -hashfile dossie.pdf SHA256</span> (Windows).
             Mais de uma linha significa mais de uma via legítima emitida — a sua
             precisa bater com <span className="text-white/50">uma delas</span>.
+            {' '}<a href="/conferir" className="text-[#c5a059] underline underline-offset-2">
+              Confira seu arquivo automaticamente
+            </a>{' '}— ele não sai do seu computador. No terminal:{' '}
+            <span className="text-white/50 font-mono">shasum -a 256 dossie.pdf</span> (macOS/Linux)
+            ou <span className="text-white/50 font-mono">certutil -hashfile dossie.pdf SHA256</span> (Windows).
           </p>
         </div>
       )}

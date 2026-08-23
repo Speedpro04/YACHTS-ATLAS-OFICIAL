@@ -39,14 +39,22 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 18. **Scheduler de 24/48h para indicação não contatada** — proposto e adiado por ordem, não por mérito: ele precisa saber se a marina **já foi contatada**, e contato manual não registra nada hoje. Alarme que cobra por lead já resolvido é alarme que se aprende a ignorar. O estado vira automático quando o disparo funcionar (`whatsapp_status = 'enviado'`) — fazer depois do item 16.
 19. **Oficial não valida formato de e-mail no navegador** — só checa se está preenchido; quem recusa é o `EmailStr` do backend, e a marina vê "Erro ao enviar" sem saber que o problema é o e-mail. O Lançamento já valida com mensagem específica.
 
-## Contra-prova de Autenticidade (próxima fase)
+## Contra-prova de Autenticidade
 
-Serviço em que **qualquer pessoa sobe um PDF** e a plataforma responde se ele corresponde a um dossiê emitido. A base já existe: `dossie_emitidos` guarda o SHA-256 de cada emissão, append-only.
+**A versão gratuita está no ar** em `/conferir`: qualquer pessoa arrasta o PDF e descobre se ele corresponde a um dossiê emitido. O **arquivo não sai do computador** — o navegador calcula o SHA-256 (Web Crypto) e envia só os 64 caracteres. Ninguém deveria precisar entregar um documento sigiloso a um terceiro para descobrir se ele é legítimo.
 
-- **Gratuita** — sobe o PDF, recebe "autêntico / não corresponde". É a melhor propaganda que o Atlas pode ter: o corretor entende o produto inteiro em dois segundos, sem explicação. E o efeito antifraude vem da **existência** do serviço, não do preço — ninguém adultera documento que pode ser conferido.
+`dossie_emitidos` guarda o SHA-256 de cada emissão, append-only por trigger no banco.
+
+- **Gratuita (feita)** — sobe o PDF, recebe "autêntico / não corresponde". É a melhor propaganda que o Atlas pode ter: o corretor entende o produto inteiro em dois segundos, sem explicação. E o efeito antifraude vem da **existência** do serviço, não do preço — ninguém adultera documento que pode ser conferido.
 - **Paga (depois)** — **Laudo de Autenticidade** em PDF, assinado, para quem precisa *provar a terceiro*: seguradora em análise de sinistro, advogado em disputa, comprador desconfiado. Custo marginal quase zero (é consulta a hash), em momento de alta urgência e alto valor.
 
-Ordem recomendada: gratuita primeiro. Serviço pago sem base de documentos emitidos não tem o que verificar.
+**Preço de referência (a confirmar quando houver volume): US$ 40 por laudo · US$ 300 no pacote de 10** (US$ 30 cada, para seguradora e corretora que verificam com frequência).
+
+Ancorado nos preços do próprio produto — dossiê de entrada US$ 100, adicional US$ 150 — o laudo é serviço EM CIMA do dossiê e não pode chegar perto dele, senão parece cobrança em duplicata. Abaixo de US$ 20 perde credibilidade: num documento destinado a seguradora ou processo, preço baixo demais faz duvidar do peso dele. Acima de US$ 50 sai da faixa de decisão imediata e vira algo que se pensa, compara e adia — o oposto do que se quer num momento de urgência. Número redondo, não US$ 39,90: a marca é institucional e linguagem de varejo destoa de um laudo com CNPJ e selo SHA-256.
+
+A consulta gratuita NUNCA é cobrada. O valor dela é ser grátis e sem atrito — é ela que espalha o produto e faz o efeito antifraude funcionar.
+
+Ordem recomendada: gratuita primeiro (**feita**). Serviço pago sem base de documentos emitidos não tem o que verificar — hoje o laudo teria pouquíssimo o que atestar.
 
 ---
 

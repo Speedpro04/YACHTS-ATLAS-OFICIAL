@@ -26,6 +26,7 @@ import NormasTecnicas from './pages/NormasTecnicas'
 import SeoMeta from './components/SeoMeta'
 import TermosFundadores from './pages/TermosFundadores'
 import VerificacaoManual from './pages/VerificacaoManual'
+import ConferirDocumento from './pages/ConferirDocumento'
 import Privacidade from './pages/Privacidade'
 import Verificacao from './pages/Verificacao'
 
@@ -54,6 +55,9 @@ function App() {
             endereco nao existia, e quem nao conseguisse ler o QR ficava sem
             saida. Precisa vir ANTES da rota com parametro. */}
         <Route path="/verificar" element={<VerificacaoManual />} />
+        {/* Contra-prova: sobe o PDF e confere se ele foi alterado depois da
+            emissao. O arquivo NAO sai do navegador — so o SHA-256 e enviado. */}
+        <Route path="/conferir" element={<ConferirDocumento />} />
         <Route path="/verificar/:protocolo" element={<Verificacao />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route element={<PrivateRoute />}>

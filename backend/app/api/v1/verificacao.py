@@ -74,6 +74,68 @@ def _confere_assinatura(protocolo: str, emitido: str, s: str) -> bool:
     return hmac.compare_digest(assinar(protocolo, emitido), (s or "").lower())
 
 
+@router.get("/documento/{hash_pdf}")
+async def verificar_documento(hash_pdf: str):
+    """Contra-prova: este arquivo corresponde a algum dossiê emitido?
+
+    Recebe a IMPRESSÃO DIGITAL, nunca o arquivo. Quem verifica calcula o
+    SHA-256 no próprio navegador e envia só o hash — o dossiê não sai da
+    máquina dele. Além de rápido e barato, resolve o problema de confiança na
+    ordem certa: ninguém deveria precisar entregar um documento sigiloso a um
+    terceiro para descobrir se ele é legítimo.
+
+    Aberto de propósito, sem autenticação e sem cobrança. O efeito antifraude
+    vem da EXISTÊNCIA da conferência, não do preço: ninguém adultera um
+    documento que qualquer um confere em dois segundos. Cobrar aqui mataria
+    justamente o que faz isso funcionar.
+
+    Não há risco de enumeração: um SHA-256 tem 2^256 possibilidades, e para
+    ter o hash é preciso ter o arquivo. Quem tem o arquivo já sabe de que
+    ativo ele é.
+    """
+    h = (hash_pdf or "").strip().lower()
+    # Formato antes de consultar: 64 hex. Recusar aqui evita transformar erro
+    # de digitação em consulta ao banco, e deixa a mensagem específica.
+    if len(h) != 64 or any(c not in "0123456789abcdef" for c in h):
+        raise HTTPException(
+            status_code=400,
+            detail="Impressão digital inválida. Informe um SHA-256 (64 caracteres).",
+        )
+
+    try:
+        res = (
+            get_supabase_admin().table("dossie_emitidos")
+            .select("protocolo, emitido_em, tamanho_bytes, created_at")
+            .eq("hash_pdf", h).order("created_at", desc=True).limit(1).execute()
+        )
+    except Exception as ex:
+        logging.getLogger(__name__).error(f"Falha ao consultar emissão {h[:12]}: {ex}")
+        raise HTTPException(status_code=503, detail="Não foi possível consultar agora. Tente novamente.")
+
+    if not res.data:
+        # NÃO é erro HTTP: "não corresponde" é uma resposta legítima e é
+        # metade do serviço. Devolver 404 faria o front tratar como falha e
+        # mostrar "erro" onde deveria mostrar um veredito.
+        return {
+            "corresponde": False,
+            "hash": h,
+            "mensagem": "Esta impressão digital não corresponde a nenhum dossiê "
+                        "emitido pelo Yachts Atlas. O arquivo pode ter sido "
+                        "alterado após a emissão, ou não ter origem nesta plataforma.",
+        }
+
+    d = res.data[0]
+    return {
+        "corresponde": True,
+        "hash": h,
+        "protocolo": d.get("protocolo"),
+        "emitido_em": "/".join(reversed(str(d.get("emitido_em"))[:10].split("-"))),
+        "tamanho_bytes": d.get("tamanho_bytes"),
+        "mensagem": "Documento íntegro. Esta impressão digital corresponde "
+                    "exatamente ao dossiê emitido pelo Yachts Atlas.",
+    }
+
+
 @router.get("/{protocolo}")
 async def verificar(
     protocolo: str,
