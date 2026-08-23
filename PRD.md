@@ -106,6 +106,16 @@ A correção não é só virar a chave do balde — as URLs públicas estão gra
 
 Validade do link: **8 horas** — cobre uma jornada de trabalho sem recarregar a página, e mesmo assim morre no mesmo dia. Link assinado vazado expõe **um arquivo**; o balde público expõe todos.
 
+**FECHADO em 23/08/2026**, na ordem: código em produção → conferido com o balde ainda aberto (painel servindo `/object/sign/`) → balde fechado → conferido de novo.
+
+| | Antes | Depois |
+|---|---|---|
+| Baixar documento de cliente sem autenticação | `HTTP 200` | `HTTP 400 NoSuchBucket` |
+| Dossiê: fotos montadas | 8, URL pública | 8, todas assinadas, todas baixam |
+| Alcance de um link vazado | o balde inteiro | um arquivo, por 8 horas |
+
+Resíduo conhecido: o Smart CDN da Cloudflare continua servindo cópias já em cache dos arquivos que haviam sido buscados publicamente antes (`CF-Cache-Status: HIT`). Não é exposição nova — são os mesmos endereços que já estavam abertos — e envelhece sozinho. Requisição com parâmetro novo (cache miss) já vai à origem e recebe 400.
+
 **Ordem obrigatória:** o código vai a produção **primeiro**, o balde fecha **depois**. Invertido, o painel para de mostrar documento e o dossiê sai sem foto no instante da mudança.
 
 Sem fallback: `get_presigned_url` não cai mais para URL pública quando a assinatura falha. Com o balde privado, esse fallback devolveria um endereço que responde 400 — um link que parece bom e não abre, descoberto na frente do comprador ou do perito.

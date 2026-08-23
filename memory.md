@@ -870,4 +870,14 @@ O que se conferiu antes de escrever qualquer linha:
 
 **Ordem obrigatória: código primeiro, balde depois.** Invertido, o sistema quebra no instante da mudança.
 
+**Fechado no mesmo dia**, e a prova vale mais que a descrição:
+
+```
+ANTES   curl na URL publica, sem login  ->  HTTP 200, 11.689 bytes baixados
+DEPOIS  mesma URL, cache furado         ->  HTTP 400 {"error":"Bucket not found"}
+DOSSIE  8 fotos, 8 assinadas, 8 baixam  ->  nenhuma regressao
+```
+
+**Resíduo:** o Smart CDN da Cloudflare seguiu servindo cópias em cache (`CF-Cache-Status: HIT`) dos arquivos já buscados publicamente antes. Isso quase me fez concluir que o fechamento falhou — a URL crua respondia 200 depois do `public=false`. O que separou cache de falha real foi acrescentar um parâmetro qualquer à URL: cache miss, vai à origem, 400. **Sem esse teste eu teria revertido uma mudança que estava certa.**
+
 **Padrão a repetir:** antes de fechar uma porta que está aberta há tempo, mapear **quem já está passando por ela**. O trabalho do dia foi 80% mapeamento e 20% código — e o mapeamento é que evitou quebrar o dossiê pela segunda vez na mesma semana.
