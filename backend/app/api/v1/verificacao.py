@@ -144,6 +144,10 @@ async def verificar_documento(hash_pdf: str):
 # desconfiar do documento inteiro.
 _FUSO_BR = timezone(timedelta(hours=-3))
 
+# Quantas vias a página lista. O resto é resumido em uma frase, e a conferência
+# automática (/conferir) alcança todas de qualquer jeito.
+_VIAS_LISTADAS = 5
+
 
 def _emissao_legivel(registro: dict) -> str:
     """Data da emissão com a hora, quando ela existir.
@@ -245,18 +249,34 @@ async def verificar(
     # emissão. A plataforma não precisa guardar o arquivo — basta lembrar a
     # impressão digital dele.
     emitidos = []
+    emitidos_total = 0
     try:
         res = (
             get_supabase_admin().table("dossie_emitidos")
             .select("hash_pdf, emitido_em, created_at")
             .eq("protocolo", protocolo)
             .order("created_at", desc=True)
-            .limit(5).execute()
+            .limit(_VIAS_LISTADAS).execute()
         )
         emitidos = [
             {"hash": d.get("hash_pdf"), "emitido_em": _emissao_legivel(d)}
             for d in (res.data or []) if d.get("hash_pdf")
         ]
+        # Quantas existem ao todo, não quantas couberam na lista.
+        #
+        # A página diz "a sua precisa bater com uma delas". Passando de
+        # _VIAS_LISTADAS, essa frase vira mentira: o portador de uma via antiga
+        # não encontra a dele e conclui que o documento é falso — o oposto
+        # exato do que a verificação existe para fazer.
+        #
+        # A contra-prova (/verificar/documento/{hash}) NUNCA teve esse limite:
+        # busca por hash em todos os registros. Então a via antiga continua
+        # sendo reconhecida; o que faltava era a página dizer isso.
+        total = (
+            get_supabase_admin().table("dossie_emitidos")
+            .select("id", count="exact").eq("protocolo", protocolo).execute()
+        )
+        emitidos_total = total.count or len(emitidos)
     except Exception as ex:
         logging.getLogger(__name__).error(f"Falha ao ler emissões de {protocolo}: {ex}")
 
@@ -269,6 +289,7 @@ async def verificar(
         # legítimos. Mostrar só o último faria o portador de uma via anterior
         # concluir, erradamente, que o documento dele foi adulterado.
         "documentos_emitidos": emitidos,
+        "documentos_emitidos_total": emitidos_total,
         "embarcacao": {"nome": nome, "ficha": ficha or None,
                        "classificacao": (ativo.get("classificacao") or "").upper() or None},
         "custodia": {

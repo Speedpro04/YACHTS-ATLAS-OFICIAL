@@ -145,6 +145,8 @@ O último só apareceu porque `test_conhecimento_esta_em_dia_com_o_codigo` quebr
 
 Reemissão é legítima (o dossiê é atualizado a cada novo registro selado) e cada via tem hash próprio. A página do QR listava todas — mas só com a data, então três vias do mesmo dia apareciam como três linhas idênticas. O portador sabia apenas que "uma das três deveria bater".
 
+A lista mostra as **5 vias mais recentes**. Passando disso, a página avisa quantas existem ao todo e aponta para a conferência automática — que **não tem esse limite**: `/verificar/documento/{hash}` busca a impressão digital em todas as emissões. Sem esse aviso, o portador de uma via antiga não encontraria a dele na lista e concluiria que o documento é falso, que é o oposto do que a verificação existe para fazer.
+
 Passou a mostrar `DD/MM/AAAA · HH:MM`, com a hora vinda de `created_at`. **Nunca de `emitido_em`**: aquele é o campo coberto pela assinatura HMAC do QR (`protocolo + data de emissão`), e mexer nele invalidaria todo QR já impresso. Fuso fixo `-03:00` em vez de `ZoneInfo`, que depende de `tzdata` e pode faltar fora do contêiner.
 
 ## Acesso ao Dossiê

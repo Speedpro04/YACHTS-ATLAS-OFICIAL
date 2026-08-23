@@ -36,6 +36,8 @@ interface Resultado {
   // registro selado) — mostrar só a última faria o portador de uma via
   // anterior concluir, erradamente, que o documento dele foi adulterado.
   documentos_emitidos?: { hash: string; emitido_em: string }[]
+  // Quantas vias existem ao todo — a lista acima mostra no máximo 5.
+  documentos_emitidos_total?: number
   aviso: string
 }
 
@@ -247,6 +249,19 @@ export default function Verificacao() {
               </div>
             ))}
           </div>
+          {typeof dados.documentos_emitidos_total === 'number' &&
+           dados.documentos_emitidos_total > dados.documentos_emitidos.length && (
+            /* Sem este aviso, o portador de uma via antiga não encontra a dele na
+               lista e conclui que o documento é falso — o oposto do que esta
+               página existe para fazer. A conferência automática não tem o
+               limite de 5: ela busca a impressão digital em todas as emissões. */
+            <p className="text-amber-300/60 text-[11.5px] mt-4 leading-relaxed">
+              Mostrando as {dados.documentos_emitidos.length} vias mais recentes de{' '}
+              <span className="text-amber-300/90">{dados.documentos_emitidos_total}</span>.
+              Se a sua não estiver aqui, use a conferência automática abaixo — ela
+              alcança todas.
+            </p>
+          )}
           <p className="text-white/30 text-[11.5px] mt-4 leading-relaxed">
             Mais de uma linha significa mais de uma via legítima emitida — a sua
             precisa bater com <span className="text-white/50">uma delas</span>.

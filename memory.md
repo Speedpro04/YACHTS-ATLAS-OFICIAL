@@ -929,3 +929,7 @@ A informação existia o tempo todo: `created_at` guarda 19:48, 10:19 e 09:41. S
 **Fuso fixo `-03:00` em vez de `ZoneInfo("America/Sao_Paulo")`:** o Brasil não tem horário de verão desde 2019, e o `ZoneInfo` depende do pacote `tzdata`, que existe no contêiner e pode faltar na máquina local. Data de emissão que aparece diferente em dois lugares é o tipo de coisa que faz um perito desconfiar do documento inteiro.
 
 Hora ausente ou corrompida cai na data sozinha, sem quebrar a verificação.
+
+**Segunda armadilha na mesma tela, achada porque o Marcos emitiu uma quarta via:** a lista tem `limit(5)`, e o texto diz *"a sua precisa bater com uma delas"*. Passando de cinco, essa frase vira mentira — o portador de uma via antiga não acha a dele e conclui que o documento é falso. A contra-prova (`/verificar/documento/{hash}`) **nunca teve esse limite**: busca por hash em todas as emissões. O que faltava era a página dizer isso. Agora informa quantas existem ao todo e aponta para a conferência automática.
+
+**Padrão a repetir:** limite de exibição em lista é decisão de UI até o momento em que um texto ao lado faz afirmação sobre o conjunto inteiro. Aí vira afirmação falsa — e num documento de custódia, afirmação falsa é o pior defeito possível.
