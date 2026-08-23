@@ -881,3 +881,24 @@ DOSSIE  8 fotos, 8 assinadas, 8 baixam  ->  nenhuma regressao
 **Resíduo:** o Smart CDN da Cloudflare seguiu servindo cópias em cache (`CF-Cache-Status: HIT`) dos arquivos já buscados publicamente antes. Isso quase me fez concluir que o fechamento falhou — a URL crua respondia 200 depois do `public=false`. O que separou cache de falha real foi acrescentar um parâmetro qualquer à URL: cache miss, vai à origem, 400. **Sem esse teste eu teria revertido uma mudança que estava certa.**
 
 **Padrão a repetir:** antes de fechar uma porta que está aberta há tempo, mapear **quem já está passando por ela**. O trabalho do dia foi 80% mapeamento e 20% código — e o mapeamento é que evitou quebrar o dossiê pela segunda vez na mesma semana.
+
+---
+
+## 36. As molduras vazias eram um andaime que ficou de pé
+**Data:** 23/08/2026
+
+O Marcos apontou quatro caixas azuis vazias na seção fotográfica do dossiê, cada uma com selo "SELADA SHA-256" em cima, o nome da categoria embaixo e **nada no meio**:
+
+```python
+moldura = Table([[selo], [""], [Paragraph(label)]],
+                rowHeights=[5*mm, 24*mm, 7*mm])
+                            #     ↑ 24 mm de nada
+```
+
+Não era bug: era **lugar reservado**. Foram desenhadas quando o PDF ainda não mostrava imagem nenhuma, para o dossiê não ter um buraco onde as fotos deveriam estar. Em 22/08 as fotos passaram a sair de verdade e as molduras deveriam ter saído junto — ficaram, e viraram um terço de página de caixa vazia repetindo o que a tabela de contagem, no fim da mesma seção, já dizia melhor.
+
+Removidas (43 linhas). Ao tirá-las, a tabela sobrou **sozinha numa página inteira** — defeito novo criado pela correção. Movida para antes da galeria: resumo primeiro, imagens depois, que é a ordem certa de qualquer jeito.
+
+**Padrão a repetir:** quando uma capacidade nova entra, procurar o andaime que existia para disfarçar a ausência dela. Andaime esquecido não parece andaime — parece defeito.
+
+**Divergência de produto, aberta e não resolvida por mim:** existe foto gravada como `galeria_seguranca`, mas `seguranca` **não está** em `COBERTURA_CATS` (a lista de 9 do painel, cujos mínimos somam exatamente os 430 de `MAX_FOTOS`). O painel joga essa foto em "Outros" via `normalizarCategoria`; o dossiê a mostrava como "Seguranca", sem cedilha. Mapeei o rótulo no `GALERIA_LABELS` para o documento não imprimir errado, **mas painel e dossiê continuam discordando** — e acertar isso mexe no 430, número que aparece nos dois. Decisão do Marcos, não minha.

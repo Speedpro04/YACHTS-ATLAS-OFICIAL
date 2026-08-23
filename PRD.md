@@ -120,6 +120,14 @@ Resíduo conhecido: o Smart CDN da Cloudflare continua servindo cópias já em c
 
 Sem fallback: `get_presigned_url` não cai mais para URL pública quando a assinatura falha. Com o balde privado, esse fallback devolveria um endereço que responde 400 — um link que parece bom e não abre, descoberto na frente do comprador ou do perito.
 
+### Registro Fotográfico — molduras vazias removidas (23/08/2026)
+
+A seção 15 abria com uma grade de molduras: selo "SELADA SHA-256" em cima, nome da categoria embaixo, **24 mm de vazio no meio**. Eram lugar reservado da época em que o PDF não mostrava imagem alguma. Com as fotos saindo de verdade desde 22/08, viraram um terço de página de caixa vazia repetindo a tabela de contagem que já existia na mesma seção.
+
+Removidas. A tabela `Categoria | Imagens` passou para **antes** da galeria (resumo primeiro, imagens depois) — sozinha no fim, ela ocupava uma página inteira para quatro linhas.
+
+**Divergência conhecida, pendente de decisão:** existe foto gravada como `galeria_seguranca`, mas `seguranca` não consta em `COBERTURA_CATS` (as 9 categorias do painel, cujos mínimos somam exatamente os **430** de `MAX_FOTOS`). O painel a exibe em "Outros"; o dossiê a exibe como "Segurança". Alinhar de vez implica mexer no 430, que aparece no painel e no documento.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

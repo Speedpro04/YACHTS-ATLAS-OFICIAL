@@ -258,49 +258,6 @@ def _timeline(eventos, total_w=176 * mm):
     return t
 
 
-def _grade_fotos(categorias, total_w=176 * mm, cols=3):
-    """Molduras com selo de auditoria, uma por categoria fotográfica real."""
-    if not categorias:
-        return None
-    cel_w = total_w / cols
-    fichas = []
-    for c in categorias:
-        selo = Table([[
-            Paragraph("&#10003; SELADA SHA-256", ParagraphStyle(
-                "sl", fontName=SANS_B, fontSize=4.8, textColor=NAVY, leading=7)),
-            Paragraph(str(c.get("total") or ""), ParagraphStyle(
-                "tg", fontName=SANS_B, fontSize=4.8, textColor=NAVY,
-                leading=7, alignment=TA_RIGHT)),
-        ]], colWidths=[(cel_w - 8 * mm) * 0.62, (cel_w - 8 * mm) * 0.38])
-        selo.setStyle(TableStyle([
-            ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        moldura = Table([[selo], [""], [Paragraph(
-            str(c.get("label") or ""), ParagraphStyle(
-                "pl", fontName=SANS_B, fontSize=6, textColor=WHITE, leading=9))]],
-            colWidths=[cel_w - 4 * mm], rowHeights=[5 * mm, 24 * mm, 7 * mm])
-        moldura.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, 0), GOLD),
-            ("BACKGROUND", (0, 1), (0, -1), SURFACE),
-            ("BOX", (0, 0), (-1, -1), 0.5, blend(GOLD, NAVY, 0.5)),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-            ("TOPPADDING", (0, 0), (0, 0), 1.4), ("BOTTOMPADDING", (0, 0), (0, 0), 1.4),
-            ("VALIGN", (0, 2), (0, 2), "MIDDLE"),
-        ]))
-        fichas.append(moldura)
-    linhas = [fichas[i:i + cols] for i in range(0, len(fichas), cols)]
-    for ln in linhas:
-        while len(ln) < cols:
-            ln.append("")
-    t = Table(linhas, colWidths=[cel_w] * cols)
-    t.setStyle(TableStyle([
-        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 4 * mm),
-        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 4 * mm),
-    ]))
-    return t
-
-
 def _info_grid(pairs, cols=3, total_w=176 * mm):
     """Grade label/valor. Pares sem valor são descartados — nunca vira vazio."""
     pairs = [(k, v) for k, v in pairs if v not in (None, "", "None")]
@@ -555,7 +512,13 @@ def _celula_foto(foto: dict, larg_mm: float):
 def _galeria_de_imagens(fotos: list[dict]):
     """Todas as fotos numa grade de 3 colunas, agrupadas por categoria.
 
-    NÃO confundir com `_grade_fotos`, logo acima: aquela desenha os CARTÕES DE
+    Antes desta seção existir, uma grade de molduras vazias (`_grade_fotos`)
+    ocupava este espaço: um retângulo azul de 24 mm por categoria, com selo em
+    cima e rótulo embaixo, e NADA no meio. Fazia sentido enquanto o PDF ainda
+    não mostrava imagem nenhuma — era um lugar reservado. Depois que as fotos
+    passaram a sair de verdade, virou um terço de página de caixa vazia
+    repetindo o que a tabela de contagem, no fim da seção, já diz melhor.
+    Removida em 23/08/2026. O que ela dizia era:
     CONTAGEM por categoria ("Motor / Propulsão · 3"); esta desenha as IMAGENS.
     Os dois nomes quase iguais foram um deslize meu — renomeado para que quem
     mexer aqui depois não troque um pelo outro.
@@ -1399,10 +1362,14 @@ def _montar(dados: dict, indice):
             + " · cada arquivo com hash SHA-256 imutável.", S["body"]))
         cats = foto.get("categorias") or []
         if cats:
+            # A contagem por categoria vem ANTES das imagens: resumo primeiro,
+            # detalhe depois. Estava no fim da seção, atrás de uma grade de
+            # molduras vazias; tirada a grade, ela sobrava sozinha numa página
+            # inteira só para si.
             story.append(sp(4))
-            grade = _grade_fotos(cats)
-            if grade:
-                story.append(grade)
+            story.append(_data_table(["Categoria", "Imagens"],
+                                     [[c.get("label"), c.get("total")] for c in cats],
+                                     [130 * mm, 46 * mm]))
 
         # As imagens em si. Antes esta seção terminava na tabela de contagem
         # acima: o dossiê dizia "8 imagens seladas e geolocalizadas" e não
@@ -1416,11 +1383,6 @@ def _montar(dados: dict, indice):
             for bloco in _galeria_de_imagens(imagens):
                 story.append(bloco)
 
-        if cats:
-            story.append(sp(2))
-            story.append(_data_table(["Categoria", "Imagens"],
-                                     [[c.get("label"), c.get("total")] for c in cats],
-                                     [130 * mm, 46 * mm]))
         n += 1
         story.append(PageBreak())
 
