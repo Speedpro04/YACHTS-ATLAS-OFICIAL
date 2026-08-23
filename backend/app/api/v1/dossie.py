@@ -8,6 +8,7 @@ Dois caminhos de acesso ao dossiê:
     (POST /solicitar); a Yachts Atlas libera manualmente (POST .../liberar) e o
     acesso é feito por uma página simples no celular, protegida por senha-mestra.
 """
+import logging
 import secrets
 from datetime import datetime, timezone
 from typing import Optional
@@ -21,9 +22,12 @@ from app.core.security import get_current_user
 from app.core.supabase import get_supabase_admin
 from app.core.authz import get_ativo_autorizado
 from app.services.dossie_data import montar_dados_dossie
+import hashlib
 from app.services.dossie_pdf import gerar_pdf_dossie
 from app.services.alert_service import send_email_alert
 from app.services.notify_service import notificar_fundador
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -62,6 +66,46 @@ async def dados_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _registrar_emissao(ativo_id: str, pdf: bytes, dados: dict,
+                       emitido_por: str | None, canal: str) -> str:
+    """Grava a impressão digital do PDF emitido e devolve o hash.
+
+    Existe porque a assinatura do QR cobre **protocolo + data de emissão**, e
+    não o conteúdo. Quem recebesse um dossiê legítimo podia abrir o PDF, mudar
+    "R$ 89 mil" para "R$ 340 mil", apagar o histórico de sinistros — e o QR
+    continuaria dizendo "Documento autêntico", porque protocolo e data não
+    mudaram.
+
+    O que fecha isso não é assinar melhor: é a plataforma LEMBRAR o que emitiu.
+    Com o hash registrado, quem tem o PDF em mãos calcula o SHA-256 do próprio
+    arquivo e compara com o que a verificação informa. Bateu, é o original;
+    não bateu, foi mexido depois da emissão.
+
+    A tabela é append-only no BANCO (trigger que recusa UPDATE e DELETE), pelo
+    mesmo princípio dos registros selados: capacidade que não existe não pode
+    ser abusada — nem pela service_role, nem por quem tiver a chave.
+
+    Best-effort: falhar em registrar não pode impedir a entrega do dossiê que
+    o cliente pediu e pagou. Devolve o hash de qualquer forma, porque ele é
+    calculado aqui e impresso no documento.
+    """
+    digest = hashlib.sha256(pdf).hexdigest()
+    try:
+        ident = dados.get("identificacao") or {}
+        get_supabase_admin().table("dossie_emitidos").insert({
+            "ativo_id": ativo_id,
+            "protocolo": ativo_id,
+            "emitido_em": datetime.now(timezone.utc).date().isoformat(),
+            "hash_pdf": digest,
+            "tamanho_bytes": len(pdf),
+            "emitido_por": emitido_por,
+            "canal": canal,
+        }).execute()
+    except Exception as e:
+        logger.error(f"Falha ao registrar emissão do dossiê {ativo_id}: {e}")
+    return digest
+
+
 @router.get("/{ativo_id}/pdf")
 async def pdf_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     """Gera o PDF do dossiê do dono/marina (só seções com dado)."""
@@ -69,6 +113,10 @@ async def pdf_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     try:
         dados = montar_dados_dossie(ativo_id)
         pdf = gerar_pdf_dossie(dados)
+        # A plataforma passa a LEMBRAR o que emitiu. Sem isto, um dossiê
+        # legítimo podia ser editado depois da entrega e o QR continuaria
+        # validando — a assinatura cobre protocolo e data, não o conteúdo.
+        _registrar_emissao(ativo_id, pdf, dados, user.get("sub"), "painel")
         return Response(
             content=pdf,
             media_type="application/pdf",
@@ -350,6 +398,12 @@ async def acesso_processar(solicitacao_id: str, senha: str = Form(...)):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Terceiro (corretor, comprador, seguradora) — é justamente a via em que o
+    # documento sai do controle da marina, então é a que MAIS precisa da
+    # impressão digital registrada.
+    _registrar_emissao(ativo_id, pdf, dados,
+                       sol.get("destinatario_email"), "acesso_link")
 
     return Response(
         content=pdf,

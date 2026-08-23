@@ -31,6 +31,11 @@ interface Resultado {
     integro: boolean
     algoritmo: string
   }
+  // Impressão digital dos dossiês emitidos para este protocolo. Lista porque
+  // o mesmo ativo pode ter mais de uma via legítima (reemissão após novo
+  // registro selado) — mostrar só a última faria o portador de uma via
+  // anterior concluir, erradamente, que o documento dele foi adulterado.
+  documentos_emitidos?: { hash: string; emitido_em: string }[]
   aviso: string
 }
 
@@ -210,6 +215,46 @@ export default function Verificacao() {
           {integridade.registros_com_hash} de {integridade.total} registros com hash verificado
         </div>
       </div>
+
+      {/* Impressão digital do documento.
+
+          A assinatura do QR cobre protocolo + data de emissão, NÃO o conteúdo:
+          quem recebesse um dossiê legítimo podia editar valores, apagar o
+          histórico de sinistros, e o QR continuaria dizendo "autêntico".
+
+          Este bloco fecha isso. O portador calcula o SHA-256 do próprio PDF e
+          compara com o que a plataforma registrou ao emitir. Bateu, é o
+          original; não bateu, foi mexido depois da emissão. */}
+      {dados.documentos_emitidos && dados.documentos_emitidos.length > 0 && (
+        <div className="mt-5 bg-[#021a3d] border border-white/10 rounded-sm p-6">
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059]">
+            Impressão digital do documento
+          </div>
+          <p className="text-white/60 text-[13px] mt-3 leading-relaxed">
+            O PDF entregue pela plataforma tem a impressão digital abaixo. Se o
+            documento em suas mãos tiver outra, ele foi <span className="text-white/80">alterado
+            depois da emissão</span> — o QR Code sozinho não detecta edição de conteúdo.
+          </p>
+          <div className="mt-4 space-y-2">
+            {dados.documentos_emitidos.map((d) => (
+              <div key={d.hash} className="bg-black/25 border border-white/5 rounded-sm px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-white/35">
+                  Emitido em {d.emitido_em}
+                </div>
+                <div className="font-mono text-[11px] text-[#c5a059] break-all mt-1 leading-relaxed">
+                  {d.hash}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-white/30 text-[11.5px] mt-4 leading-relaxed">
+            Como conferir: no computador, <span className="text-white/50 font-mono">shasum -a 256 dossie.pdf</span> (macOS/Linux)
+            ou <span className="text-white/50 font-mono">certutil -hashfile dossie.pdf SHA256</span> (Windows).
+            Mais de uma linha significa mais de uma via legítima emitida — a sua
+            precisa bater com <span className="text-white/50">uma delas</span>.
+          </p>
+        </div>
+      )}
 
       {/* Aviso de escopo */}
       <p className="mt-5 text-white/30 text-[12px] leading-relaxed">{dados.aviso}</p>

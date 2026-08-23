@@ -11,6 +11,7 @@
 - [x] **REV-06 — Painel contava a tabela errada**: cards de Documentação e Fotos diziam "Sem registro" com 21 PDFs e 8 fotos guardados — a contagem lia só `registros`, e esses dois vivem em `documentos`
 - [x] **REV-06 — Tipografia do dossiê**: +1pt em todos os estilos de corpo e entrelinha de 1,45× para 1,6×. Documento lido impresso, por quem não conhece o conteúdo
 - [x] **REV-06 — Entrada manual da verificação** (`/verificar`): o dossiê impresso manda "sem câmera, acesse o endereço e informe protocolo, código e data" — e esse endereço **não existia**. `App.tsx` só declarava `/verificar/:protocolo`, e a página respondia "Link incompleto. [...] informe o protocolo" **sem um único campo para informar**. Agora há formulário com os três dados, que normaliza o que a pessoa digita (maiúscula no protocolo, minúscula no código, barra → hífen na data) e monta a mesma URL do QR. Quem lê o dossiê é perito e corretor, com papel na mão e leitor que pode não abrir
+- [x] **REV-06 — Impressão digital do dossiê emitido** (`dossie_emitidos`): a assinatura do QR cobre **protocolo + data**, não o conteúdo — quem recebesse um dossiê legítimo podia editar valores, apagar o histórico de sinistros, e o QR continuaria dizendo "autêntico". A plataforma passa a registrar o **SHA-256 dos bytes de cada PDF emitido**; quem tem o documento confere o próprio hash contra o que a verificação informa. Tabela **append-only por trigger no banco** (UPDATE e DELETE recusados, nem a `service_role` passa) — testado. A página de verificação mostra a impressão digital e como conferi-la (`shasum` / `certutil`)
 
 ## Manutenção Preditiva Semanal
 Rotina de verificação em [CHECKLIST-SEMANAL.md](CHECKLIST-SEMANAL.md), ordenada por criticidade — do que derruba o negócio ao que só previne problema futuro. Existe porque **o sistema falha em silêncio**: webhook que parou, e-mail que virou spam, WhatsApp que desconectou. Nada disso apita, e a marina só descobre quando já custou dinheiro ou confiança.
@@ -37,6 +38,17 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 17. **Vínculo da indicação depende de digitação** — quem indica escreve o nome da própria marina em campo livre (`marina_leads.source`). O casamento com a indicante é manual, como já era no cadastro. Vira problema quando o volume passar de algumas dezenas.
 18. **Scheduler de 24/48h para indicação não contatada** — proposto e adiado por ordem, não por mérito: ele precisa saber se a marina **já foi contatada**, e contato manual não registra nada hoje. Alarme que cobra por lead já resolvido é alarme que se aprende a ignorar. O estado vira automático quando o disparo funcionar (`whatsapp_status = 'enviado'`) — fazer depois do item 16.
 19. **Oficial não valida formato de e-mail no navegador** — só checa se está preenchido; quem recusa é o `EmailStr` do backend, e a marina vê "Erro ao enviar" sem saber que o problema é o e-mail. O Lançamento já valida com mensagem específica.
+
+## Contra-prova de Autenticidade (próxima fase)
+
+Serviço em que **qualquer pessoa sobe um PDF** e a plataforma responde se ele corresponde a um dossiê emitido. A base já existe: `dossie_emitidos` guarda o SHA-256 de cada emissão, append-only.
+
+- **Gratuita** — sobe o PDF, recebe "autêntico / não corresponde". É a melhor propaganda que o Atlas pode ter: o corretor entende o produto inteiro em dois segundos, sem explicação. E o efeito antifraude vem da **existência** do serviço, não do preço — ninguém adultera documento que pode ser conferido.
+- **Paga (depois)** — **Laudo de Autenticidade** em PDF, assinado, para quem precisa *provar a terceiro*: seguradora em análise de sinistro, advogado em disputa, comprador desconfiado. Custo marginal quase zero (é consulta a hash), em momento de alta urgência e alto valor.
+
+Ordem recomendada: gratuita primeiro. Serviço pago sem base de documentos emitidos não tem o que verificar.
+
+---
 
 ## Expansão Internacional (3 Versões)
 Estratégia multi-região pensada **desde a arquitetura**: o mesmo DNA (custódia selada + dossiê imutável + SHA-256) replicado em **3 sistemas independentes**, cada um com idioma, banco, subdomínio e conformidade regulatória próprios. As **portas de entrada** já vivem no header (botões dourados `Latan-Atlas · USA-Atlas · Europa-Atlas`), hoje como placeholders visuais a partir da constante `REGIOES` (`Header.tsx`).

@@ -136,10 +136,42 @@ async def verificar(
         ativo.get("ano_fabricacao"),
     ] if x)
 
+    # Impressão digital dos dossiês já emitidos para este protocolo.
+    #
+    # É o que fecha a lacuna da assinatura: ela cobre protocolo + data, não o
+    # conteúdo. Quem recebesse um dossiê legítimo podia editar valores, apagar
+    # o histórico de sinistros, e o QR continuaria dizendo "autêntico".
+    #
+    # Com o hash aqui, quem tem o PDF em mãos calcula o SHA-256 do próprio
+    # arquivo e compara. Bateu, é o original; não bateu, foi mexido depois da
+    # emissão. A plataforma não precisa guardar o arquivo — basta lembrar a
+    # impressão digital dele.
+    emitidos = []
+    try:
+        res = (
+            get_supabase_admin().table("dossie_emitidos")
+            .select("hash_pdf, emitido_em, created_at")
+            .eq("protocolo", protocolo)
+            .order("created_at", desc=True)
+            .limit(5).execute()
+        )
+        emitidos = [
+            {"hash": d.get("hash_pdf"),
+             "emitido_em": "/".join(reversed(str(d.get("emitido_em"))[:10].split("-")))}
+            for d in (res.data or []) if d.get("hash_pdf")
+        ]
+    except Exception as ex:
+        logging.getLogger(__name__).error(f"Falha ao ler emissões de {protocolo}: {ex}")
+
     return {
         "autentico": True,
         "protocolo": protocolo,
         "emitido_em": e,
+        # Lista, e não um valor só: o mesmo ativo pode ter mais de um dossiê
+        # emitido (atualização depois de novo registro selado), e todos são
+        # legítimos. Mostrar só o último faria o portador de uma via anterior
+        # concluir, erradamente, que o documento dele foi adulterado.
+        "documentos_emitidos": emitidos,
         "embarcacao": {"nome": nome, "ficha": ficha or None,
                        "classificacao": (ativo.get("classificacao") or "").upper() or None},
         "custodia": {

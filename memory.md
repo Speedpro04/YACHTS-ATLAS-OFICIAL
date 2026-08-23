@@ -656,3 +656,34 @@ E normaliza o que a pessoa digita: protocolo para maiúscula, código para minú
 
 **Padrão a repetir:** toda instrução impressa num artefato que não se pode corrigir depois precisa ser testada como o leitor a executaria — não como quem a escreveu imagina.
 
+---
+
+## 29. O QR provava a origem, não a integridade
+**Data:** 23/08/2026
+
+Perguntado "para que serve realmente o QR code?", a resposta honesta expôs uma lacuna que ninguém tinha visto.
+
+A assinatura é `HMAC-SHA256(protocolo + data de emissão)`. Ela prova que **o documento nasceu no Yachts Atlas** — sem o segredo não se fabrica um código válido. Mas ela **não cobre o conteúdo do PDF**.
+
+### O ataque que isso permitia
+Quem recebesse um dossiê legítimo — o próprio dono querendo vender mais caro, um corretor, qualquer um a quem foi entregue — podia abrir o PDF e mudar "Investido: R$ 89,3 mil" para "R$ 340 mil", apagar a seção de sinistros, subir o índice de segurança. **O QR continuaria validando**, porque protocolo e data não mudaram.
+
+Fabricar do zero era impossível (exige o segredo). Adulterar um legítimo, não.
+
+### O que fecha: a plataforma lembrar o que emitiu
+`dossie_saidas` registrava **para quem** o dossiê foi, nunca **o que** foi. Sem o original, não havia com que comparar.
+
+Entra `dossie_emitidos`: o **SHA-256 dos bytes do PDF entregue**, gravado na emissão. Quem tem o documento em mãos calcula o hash do próprio arquivo e compara com o que a verificação informa. Bateu, é o original; não bateu, foi mexido depois. Testado: **um único byte trocado muda o hash inteiro**.
+
+A plataforma não guarda o arquivo — guarda a impressão digital dele. Barato de armazenar, impossível de falsificar.
+
+### Imutabilidade no BANCO, não na aplicação
+A tabela tem trigger que recusa `UPDATE` e `DELETE`, como `registros`. Testado: tentar alterar o hash levanta exceção; tentar apagar, também. **Nem a `service_role` consegue** — para remover a linha de teste foi preciso desligar o gatilho por SQL.
+
+É o mesmo princípio que já regia os registros selados: *capacidade que não existe não pode ser abusada*. De nada adianta prometer imutabilidade e deixar a aplicação com poder de reescrever.
+
+### Lista, não valor único
+A verificação devolve **todos** os hashes do protocolo. O mesmo ativo pode ter mais de uma via legítima (reemissão depois de novo registro selado), e mostrar só a última faria o portador de uma via anterior concluir, erradamente, que o documento dele foi adulterado.
+
+**Diretriz do fundador, registrada:** *"Temos que ser imutáveis. Essa é a base de trabalho do Programa Atlas — onde você achar que pode ser alterado ou fraudado, me fala e resolvemos juntos."* Vale como instrução permanente: apontar toda superfície adulterável que aparecer, mesmo sem ser perguntado.
+
