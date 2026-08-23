@@ -124,6 +124,11 @@
         "minimo": 40
       },
       {
+        "key": "seguranca",
+        "label": "Segurança & Salvatagem",
+        "minimo": 30
+      },
+      {
         "key": "antes_depois",
         "label": "Antes e Depois",
         "minimo": 40
@@ -139,7 +144,7 @@
         "minimo": 30
       }
     ],
-    "max_fotos": 430
+    "max_fotos": 460
   },
   "fichas_painel": [
     "manutencao",

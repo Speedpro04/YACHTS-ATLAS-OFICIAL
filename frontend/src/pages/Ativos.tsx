@@ -6,19 +6,13 @@ import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import AtivoHub from '../components/AtivoHub'
 import { obterGeo } from '../utils/geo'
+import { COBERTURA_CATS, MAX_FOTOS } from '../config/coberturaFotos'
 
-// Categorias da galeria fotográfica da embarcação (organizada + sai no dossiê)
-const GALERIA_CATS: { key: string; label: string }[] = [
-  { key: 'embarcacao', label: 'Fotos da Embarcação' },
-  { key: 'casco_exterior', label: 'Integridade do Casco' },
-  { key: 'motor', label: 'Motor / Propulsão' },
-  { key: 'pintura', label: 'Pintura' },
-  { key: 'interior', label: 'Interior' },
-  { key: 'eletronica', label: 'Eletrônica / Navegação' },
-  { key: 'notas_fiscais', label: 'Notas Fiscais' },
-  { key: 'antes_depois', label: 'Antes e Depois' },
-  { key: 'outros', label: 'Outros' },
-]
+// Categorias e capacidade vêm da MESMA fonte que a Cobertura Fotográfica usa.
+// Esta lista era uma CÓPIA, com o MAX_FOTOS chumbado logo abaixo — e foi assim
+// que `seguranca` passou a existir no banco sem existir em lugar nenhum da
+// configuração. Duas listas do mesmo assunto divergem; é questão de tempo.
+const GALERIA_CATS = COBERTURA_CATS
 
 export default function Ativos() {
   const { t } = useTranslation()
@@ -44,8 +38,6 @@ export default function Ativos() {
     num_cabines: '', capacidade_tanque: '', modelo_motor: '', potencia_motor: '',
     num_motores: '', tipo_combustivel: '',
   })
-  // Galeria inicial organizada por categoria (até 430 fotos por embarcação)
-  const MAX_FOTOS = 430
   const [novoAtivo, setNovoAtivo] = useState<Ativo | null>(null)
   const [galeria, setGaleria] = useState<Record<string, any[]>>({})
   const [catAtiva, setCatAtiva] = useState<string>(GALERIA_CATS[0].key)

@@ -126,7 +126,20 @@ A seção 15 abria com uma grade de molduras: selo "SELADA SHA-256" em cima, nom
 
 Removidas. A tabela `Categoria | Imagens` passou para **antes** da galeria (resumo primeiro, imagens depois) — sozinha no fim, ela ocupava uma página inteira para quatro linhas.
 
-**Divergência conhecida, pendente de decisão:** existe foto gravada como `galeria_seguranca`, mas `seguranca` não consta em `COBERTURA_CATS` (as 9 categorias do painel, cujos mínimos somam exatamente os **430** de `MAX_FOTOS`). O painel a exibe em "Outros"; o dossiê a exibe como "Segurança". Alinhar de vez implica mexer no 430, que aparece no painel e no documento.
+**Resolvido no mesmo dia — capacidade fotográfica passou de 430 para 460.** Existia foto gravada como `galeria_seguranca` sem a categoria existir na configuração: o painel a jogava em "Outros", o dossiê imprimia "Seguranca" sem cedilha. Com o aval do fundador, **`Segurança & Salvatagem` virou a 10ª categoria** (mínimo 30) — salvatagem é item que seguradora e perito olham primeiro.
+
+O número **público das páginas continua 430**, por decisão do fundador: *"a mais não tem problema, menos é ruim"*. Prometer 430 e entregar 460 é seguro; o inverso não seria.
+
+O 430 vivia em **quatro** lugares, e essa duplicação foi a causa raiz:
+
+| Fonte | Antes | Agora |
+|---|---|---|
+| `config/coberturaFotos.ts` | `COBERTURA_CATS` + `MAX_FOTOS` | **fonte única** |
+| `pages/Ativos.tsx` | lista e número **duplicados** | importa da config |
+| `services/dossie_data.py` | espelho manual | `MAX_FOTOS = 460` |
+| `conhecimento_produto.json` (Solara) | gerado do front | regenerado |
+
+O último só apareceu porque `test_conhecimento_esta_em_dia_com_o_codigo` quebrou. Sem esse teste, a Capitã Solara ensinaria "430 fotos" às marinas enquanto o painel oferecia 460 — com convicção e sem ninguém perceber.
 
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).

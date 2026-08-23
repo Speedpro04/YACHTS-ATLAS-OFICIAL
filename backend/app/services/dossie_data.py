@@ -64,15 +64,10 @@ GALERIA_LABELS: dict[str, str] = {
     "antes_depois": "Antes e Depois",
     "outros": "Outros",
     "fotos": "Registro Geral",
-    # Não está em COBERTURA_CATS (a lista de 9 do painel, cujos mínimos somam
-    # exatamente os 430 de MAX_FOTOS). Existe no banco mesmo assim, e o painel
-    # a joga em "Outros" via normalizarCategoria. Mapeada aqui para o dossiê
-    # não imprimir "Seguranca" sem cedilha — mas a divergência painel × dossiê
-    # continua de pé e é decisão de produto, não de código.
-    "seguranca": "Segurança",
+    "seguranca": "Segurança & Salvatagem",
 }
 
-MAX_FOTOS = 430  # capacidade fotográfica por embarcação (espelha o front)
+MAX_FOTOS = 460  # capacidade fotográfica por embarcação (espelha COBERTURA_CATS do front)
 
 
 def _mascarar_documento(doc: Optional[str]) -> Optional[str]:
