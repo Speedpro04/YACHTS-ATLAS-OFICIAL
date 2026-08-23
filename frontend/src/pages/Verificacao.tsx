@@ -156,7 +156,14 @@ export default function Verificacao() {
           {embarcacao.classificacao && (
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ffcf8a]
                              bg-[#c5a059]/[0.14] border border-[#c5a059]/40 px-4 py-2 rounded-sm">
-              Classificação {embarcacao.classificacao}
+              {/* "Índice de Custódia", não "Classificação". O número mede
+                  abrangência de registro (50% categorias preenchidas, 25%
+                  volume de manutenção, 15% documentos) — nada sobre a condição
+                  da embarcação. Um barco com o casco furado pontua igual a um
+                  intacto com o mesmo tanto de registro. Chamar de
+                  "Classificação" fazia o comprador ler como estado do ativo, o
+                  que contradiz a própria FAQ do site: o Atlas não inspecciona. */}
+              Índice de Custódia: {embarcacao.classificacao}
             </span>
           )}
         </div>

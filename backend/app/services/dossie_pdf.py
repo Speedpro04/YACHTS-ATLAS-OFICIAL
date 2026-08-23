@@ -140,15 +140,20 @@ S = {
     "h2":      ParagraphStyle("h2", fontName=SANS_B, fontSize=10, textColor=GOLD, leading=14),
     "section": ParagraphStyle("section", fontName=SANS_B, fontSize=10.5, textColor=GOLD,
                               leading=15, spaceBefore=2, spaceAfter=2),
-    "label":   ParagraphStyle("label", fontName=SANS, fontSize=6, textColor=GOLD_DIM, leading=9),
-    "value":   ParagraphStyle("value", fontName=SANS_B, fontSize=9, textColor=WHITE, leading=12.5),
-    "body":    ParagraphStyle("body", fontName=SANS, fontSize=8.5, textColor=WHITE_DIM, leading=12.5),
-    "body_j":  ParagraphStyle("body_j", fontName=SANS, fontSize=7.8, textColor=WHITE_DIM,
-                              leading=11.5, alignment=TA_JUSTIFY),
-    "small":   ParagraphStyle("small", fontName=SANS, fontSize=6.8, textColor=WHITE_FAINT, leading=10),
+    # Corpo do dossiê: +1pt em cada estilo e entrelinha em ~1,6x o tamanho da
+    # fonte (antes ficava em ~1,45x). O documento é lido impresso e por
+    # comprador, corretor e perito — não por quem já conhece o conteúdo. Texto
+    # apertado num PDF de 19 páginas cansa antes da metade, e o que se perde é
+    # justamente a leitura das seções técnicas, que é onde está o valor.
+    "label":   ParagraphStyle("label", fontName=SANS, fontSize=7, textColor=GOLD_DIM, leading=11),
+    "value":   ParagraphStyle("value", fontName=SANS_B, fontSize=10, textColor=WHITE, leading=15),
+    "body":    ParagraphStyle("body", fontName=SANS, fontSize=9.5, textColor=WHITE_DIM, leading=15),
+    "body_j":  ParagraphStyle("body_j", fontName=SANS, fontSize=8.8, textColor=WHITE_DIM,
+                              leading=14, alignment=TA_JUSTIFY),
+    "small":   ParagraphStyle("small", fontName=SANS, fontSize=7.8, textColor=WHITE_FAINT, leading=12),
     "kpi_num": ParagraphStyle("kpi_num", fontName=SERIF, fontSize=19, textColor=WHITE, leading=22),
-    "kpi_lbl": ParagraphStyle("kpi_lbl", fontName=SANS_B, fontSize=5.5, textColor=GOLD_DIM, leading=8),
-    "card":    ParagraphStyle("card", fontName=SANS_B, fontSize=9.5, textColor=WHITE, leading=13),
+    "kpi_lbl": ParagraphStyle("kpi_lbl", fontName=SANS_B, fontSize=6.5, textColor=GOLD_DIM, leading=9.5),
+    "card":    ParagraphStyle("card", fontName=SANS_B, fontSize=10.5, textColor=WHITE, leading=15),
 }
 
 
@@ -413,13 +418,216 @@ def _data_table(header, linhas, col_widths):
     return t
 
 
+# Fotos: quanto cada imagem ocupa e com que resolução entra no PDF.
+#
+# 3 colunas de 56mm cabem na largura útil. A 150 dpi isso pede ~330px; usamos
+# 520 para o zoom da tela não estourar em pixel. Capacidade é de 430 fotos por
+# embarcação e TODAS entram — o controle de tamanho é a compressão, não o
+# corte: um dossiê que fala das fotos e não as mostra é o defeito que isto veio
+# consertar.
+FOTO_COLS = 3
+FOTO_LARGURA_MM = 56
+FOTO_PX_MAX = 520
+FOTO_JPEG_Q = 72
+FOTO_TIMEOUT = 12.0
+
+
+# Cache das fotos já baixadas nesta emissão.
+#
+# gerar_pdf_dossie monta o documento DUAS vezes — a 1ª para descobrir em que
+# página cai cada seção, a 2ª para escrever o índice com os números reais. Sem
+# cache, cada foto é baixada duas vezes: com 430 fotos seriam 860 downloads, e
+# a primeira medição já custou 102 s com apenas 8.
+_CACHE_FOTOS: dict = {}
+
+
+def _prefetch_fotos(urls: list[str]) -> None:
+    """Baixa as fotos em paralelo antes de montar o documento.
+
+    Sequencial, o tempo é a soma das latências; em paralelo, é a da mais lenta.
+    O limite de 8 é para não abrir centenas de conexões contra o Storage e
+    virar o problema que se queria resolver.
+    """
+    pendentes = [u for u in dict.fromkeys(urls) if u not in _CACHE_FOTOS]
+    if not pendentes:
+        return
+    from concurrent.futures import ThreadPoolExecutor
+    import httpx
+
+    # UM cliente para todos os downloads. Medido: abrindo conexão nova a cada
+    # foto, um arquivo de 11 KB levava os mesmos 4,7 s que um de 803 KB — o
+    # custo era o aperto de mão TLS, não o tamanho. Reaproveitando a conexão,
+    # esse custo é pago uma vez só.
+    limites = httpx.Limits(max_connections=8, max_keepalive_connections=8)
+    with httpx.Client(timeout=FOTO_TIMEOUT, follow_redirects=True,
+                      limits=limites) as cliente:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            resultados = pool.map(lambda u: _baixar_foto_sem_cache(u, cliente), pendentes)
+            for url, resultado in zip(pendentes, resultados):
+                _CACHE_FOTOS[url] = resultado
+
+
+def _baixar_foto(url: str):
+    """Versão com cache — é esta que o renderizador usa."""
+    if url not in _CACHE_FOTOS:
+        _CACHE_FOTOS[url] = _baixar_foto_sem_cache(url)
+    guardado = _CACHE_FOTOS[url]
+    if guardado is None:
+        return None
+    # BytesIO é consumido na leitura: a 2ª passada receberia um buffer no fim
+    # do arquivo e a imagem sairia vazia. Rebobinar é obrigatório.
+    buf, tam = guardado
+    buf.seek(0)
+    return buf, tam
+
+
+def _baixar_foto_sem_cache(url: str, cliente=None):
+    """Baixa e reduz uma foto. Devolve None se não der — nunca levanta.
+
+    Best-effort por necessidade: o dossiê tem que sair mesmo com uma imagem
+    fora do ar. Uma foto faltando é uma lacuna visível; uma exceção aqui é o
+    dossiê inteiro que não é emitido.
+    """
+    try:
+        import httpx
+        from PIL import Image
+        if cliente is not None:
+            r = cliente.get(url)
+        else:
+            r = httpx.get(url, timeout=FOTO_TIMEOUT, follow_redirects=True)
+        r.raise_for_status()
+        img = Image.open(BytesIO(r.content))
+        # webp e png com alfa não sobrevivem ao JPEG sem fundo: achatamos sobre
+        # branco em vez de deixar o alfa virar preto.
+        if img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGBA")
+            fundo = Image.new("RGB", img.size, (255, 255, 255))
+            fundo.paste(img, mask=img.split()[-1])
+            img = fundo
+        else:
+            img = img.convert("RGB")
+        img.thumbnail((FOTO_PX_MAX, FOTO_PX_MAX), Image.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=FOTO_JPEG_Q, optimize=True)
+        buf.seek(0)
+        return buf, img.size
+    except Exception as e:
+        logger.warning(f"Foto do dossiê não pôde ser embutida ({url[:60]}...): {e}")
+        return None
+
+
+def _celula_foto(foto: dict, larg_mm: float):
+    """Uma foto com a legenda que a torna prova, e não ilustração."""
+    baixada = _baixar_foto(foto["url"])
+    larg = larg_mm * mm
+    if not baixada:
+        # Lacuna honesta: diz que a foto existe e está selada, e que só a
+        # imagem não pôde ser embutida agora.
+        corpo = Paragraph("Imagem indisponível no momento da emissão — "
+                          "registro selado permanece íntegro.", S["small"])
+    else:
+        buf, (pw, ph) = baixada
+        alt = larg * (ph / pw)
+        corpo = RLImage(buf, width=larg, height=alt)
+
+    selo = " · ".join(x for x in [
+        foto.get("data"),
+        "GEO" if foto.get("geo") else None,
+        foto.get("hash"),
+    ] if x)
+    linhas = [[corpo], [Paragraph(track(str(foto.get("label", "")).upper()), S["label"])]]
+    if selo:
+        linhas.append([Paragraph(selo, ParagraphStyle(
+            "fotosel", fontName="Courier", fontSize=6.2, textColor=WHITE_FAINT, leading=9))])
+    if foto.get("descricao"):
+        linhas.append([Paragraph(str(foto["descricao"]), S["small"])])
+
+    t = Table(linhas, colWidths=[larg])
+    t.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, 0), 0), ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
+        ("TOPPADDING", (0, 1), (-1, -1), 1), ("BOTTOMPADDING", (0, 1), (-1, -1), 1),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+    return t
+
+
+def _galeria_de_imagens(fotos: list[dict]):
+    """Todas as fotos numa grade de 3 colunas, agrupadas por categoria.
+
+    NÃO confundir com `_grade_fotos`, logo acima: aquela desenha os CARTÕES DE
+    CONTAGEM por categoria ("Motor / Propulsão · 3"); esta desenha as IMAGENS.
+    Os dois nomes quase iguais foram um deslize meu — renomeado para que quem
+    mexer aqui depois não troque um pelo outro.
+
+    KeepTogether por LINHA, não pela grade inteira: uma grade de 430 fotos que
+    não pode ser quebrada não caberia em página nenhuma e o ReportLab
+    desistiria de renderizar.
+    """
+    if not fotos:
+        return []
+    saida = []
+    for i in range(0, len(fotos), FOTO_COLS):
+        bloco = fotos[i:i + FOTO_COLS]
+        celulas = [_celula_foto(f, FOTO_LARGURA_MM) for f in bloco]
+        while len(celulas) < FOTO_COLS:
+            celulas.append("")
+        linha = Table([celulas],
+                      colWidths=[FOTO_LARGURA_MM * mm + 4 * mm] * FOTO_COLS)
+        linha.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ]))
+        saida.append(KeepTogether(linha))
+    return saida
+
+
+def _credenciais_verificacao(protocolo: str, codigo: str, emitido: str):
+    """As três credenciais que a verificação manual exige, lado a lado.
+
+    Existem juntas de propósito. A API pede protocolo, código e data de
+    emissão; o card antigo mostrava só o código e mandava "informe o protocolo
+    e o código" — o protocolo estava noutro bloco da página e a data nem era
+    citada. Quem não conseguisse ler o QR ficava sem os dados para digitar.
+    """
+    rot = ParagraphStyle("credlabel", fontName=SANS_B, fontSize=5.6,
+                         textColor=WHITE_DIM, leading=8)
+    val = ParagraphStyle("credvalor", fontName="Courier", fontSize=8.2,
+                         textColor=GOLD_LIGHT, leading=11)
+    t = Table([
+        [Paragraph(track("PROTOCOLO"), rot),
+         Paragraph(track("CÓDIGO"), rot),
+         Paragraph(track("EMISSÃO"), rot)],
+        [Paragraph(protocolo, val), Paragraph(codigo, val), Paragraph(emitido, val)],
+    ], colWidths=[52 * mm, 38 * mm, 30 * mm])
+    t.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, 0), 2),
+        ("BOTTOMPADDING", (0, 1), (-1, 1), 0),
+        ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+    ]))
+    return t
+
+
 def _qr(url, size_mm=40):
     import qrcode
     qr = qrcode.QRCode(box_size=10, border=1,
                        error_correction=qrcode.constants.ERROR_CORRECT_M)
     qr.add_data(url)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="#c5a059", back_color="#010c20").convert("RGB")
+    # Módulos ESCUROS sobre fundo CLARO, como a ISO/IEC 18004 exige.
+    #
+    # Antes era o inverso (dourado claro sobre o navy da marca), e testado com
+    # zxing sobre o PDF real: leitor sem detecção de inversão — ZXing/ZBar
+    # padrão, câmera nativa de Android de fabricante, app de vistoria — NÃO
+    # lia. iPhone e Google Lens liam. Invertendo, os dois leem.
+    #
+    # O navy da marca continua presente: ele agora é a cor dos MÓDULOS, o que
+    # preserva a identidade e ainda respeita a spec. E isto vai para papel
+    # impresso: QR ilegível num dossiê já emitido não tem correção retroativa.
+    img = qr.make_image(fill_color="#010c20", back_color="#ffffff").convert("RGB")
     buf = BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
@@ -743,7 +951,9 @@ def _capa(dados: dict, ident: dict) -> list:
     classif = dados.get("classificacao")
     if classif:
         st.append(sp(9))
-        badge = Table([[Paragraph(track(f"CLASSIFICAÇÃO {classif}"), ParagraphStyle(
+        # "Índice de Custódia", não "Classificação": o número mede abrangência
+        # de registro, não a condição da embarcação. Ver Verificacao.tsx.
+        badge = Table([[Paragraph(track(f"ÍNDICE DE CUSTÓDIA: {classif}"), ParagraphStyle(
             "cg", fontName=SANS_B, fontSize=7, textColor=GOLD_LIGHT, leading=11))]],
             colWidths=[62 * mm], hAlign="LEFT")
         badge.setStyle(TableStyle([
@@ -778,7 +988,14 @@ def _capa(dados: dict, ident: dict) -> list:
     # ── O ativo em números (tudo derivado do banco) ──
     r = dados.get("resumo") or {}
     tiles = [
+        # "Investido" é gasto em manutenção e reparo; "Cobertura" é o valor
+        # segurado. Ficavam somados no mesmo tile, e a capa anunciava R$ 2,5 mi
+        # investidos num barco cujo gasto real foi R$ 89,3 mil — 27 vezes mais.
+        # Duas coisas diferentes, dois tiles.
         (r.get("investido"), "Investido no ativo", GOLD),
+        (r.get("cobertura"), "Cobertura segurada", WHITE),
+        # A primeira conta que um comprador faz. O dado sempre esteve aqui.
+        (r.get("custo_mensal"), "Custo médio / mês", WHITE),
         (r.get("registros"), "Registros selados", WHITE),
         (r.get("imagens"), "Documentos selados", WHITE),
         (r.get("meses_custodia") and f"{r['meses_custodia']}", "Meses de custódia", WHITE),
@@ -810,9 +1027,16 @@ def _capa(dados: dict, ident: dict) -> list:
 def gerar_pdf_dossie(dados: dict) -> bytes:
     """Gera o PDF do dossiê. Duas passadas: a 1ª mede em que página cada seção
     cai, a 2ª monta o índice com os números reais."""
-    mapa = _montar(dados, indice=None).mapa_secoes
-    doc = _montar(dados, indice=mapa)
-    return doc._buffer.getvalue()
+    _CACHE_FOTOS.clear()
+    _prefetch_fotos([f["url"] for f in (dados.get("fotografico") or {}).get("fotos") or []])
+    try:
+        mapa = _montar(dados, indice=None).mapa_secoes
+        doc = _montar(dados, indice=mapa)
+        return doc._buffer.getvalue()
+    finally:
+        # As imagens já estão dentro do PDF; segurá-las na memória depois disso
+        # é vazamento — 430 fotos por emissão, em servidor de container.
+        _CACHE_FOTOS.clear()
 
 
 def _montar(dados: dict, indice):
@@ -918,6 +1142,56 @@ def _montar(dados: dict, indice):
     if ti:
         story.append(_section_title(f"{n:02d} — Identificação da Embarcação"))
         story.append(ti)
+
+        # Titular da custódia. O dossiê dizia quem CUSTODIA (a marina, na capa)
+        # e nunca de quem é o barco — num documento cujo leitor é comprador,
+        # corretor e seguradora, é a primeira pergunta que se faz.
+        #
+        # Nome e documento MASCARADO, e nada de contato: e-mail e telefone são
+        # chave de acesso ao Portal, e este PDF circula. O comprador precisa
+        # saber de quem é o barco, não como ligar para o dono — o contato passa
+        # pela marina, que é o modelo do negócio.
+        titular = dados.get("titular") or {}
+        tt = _info_grid([
+            ("Titular", titular.get("nome")),
+            ("CPF / CNPJ", titular.get("documento")),
+        ], cols=3)
+        if tt:
+            story.append(sp(5))
+            story.append(Paragraph(track("TITULAR DA CUSTÓDIA"), S["label"]))
+            story.append(sp(2))
+            story.append(tt)
+
+        # Especificações e motorização — dez colunas que existiam no banco e
+        # nunca chegavam ao documento. É a primeira coisa que uma seguradora
+        # confere (material do casco, motorização) e que um comprador precisa
+        # saber (boca para a vaga, calado para o canal, quantos passageiros).
+        # Um dossiê de "conformidade náutica" que não diz a boca do barco está
+        # incompleto.
+        esp = dados.get("especificacoes") or {}
+        te = _info_grid([
+            ("Comprimento", esp.get("comprimento")), ("Boca", esp.get("boca")),
+            ("Calado", esp.get("calado")), ("Casco", esp.get("material_casco")),
+            ("Passageiros", esp.get("passageiros")), ("Cabines", esp.get("cabines")),
+            ("Tanque", esp.get("tanque")),
+        ], cols=3)
+        if te:
+            story.append(sp(5))
+            story.append(Paragraph(track("ESPECIFICAÇÕES TÉCNICAS"), S["label"]))
+            story.append(sp(2))
+            story.append(te)
+
+        mot = dados.get("motorizacao_ficha") or {}
+        tm = _info_grid([
+            ("Modelo", mot.get("modelo")), ("Potência", mot.get("potencia")),
+            ("Nº de motores", mot.get("quantidade")),
+            ("Combustível", mot.get("combustivel")),
+        ], cols=3)
+        if tm:
+            story.append(sp(5))
+            story.append(Paragraph(track("MOTORIZAÇÃO"), S["label"]))
+            story.append(sp(2))
+            story.append(tm)
         n += 1
 
     # 02 — Proprietários
@@ -947,6 +1221,89 @@ def _montar(dados: dict, indice):
             ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
         ]))
         story.append(t)
+        n += 1
+
+    # Comprovação Fiscal e Documental — os documentos selados, um a um.
+    #
+    # Sem esta seção, a capa afirmava um valor investido e o dossiê não exibia
+    # um comprovante sequer: as notas fiscais estavam no cofre desde sempre
+    # ("Nota Fiscal (NFS-e) — Pintura de Fundo" etc.) e nunca chegavam ao
+    # documento. É o que separa "custou R$ 48 mil" de "custou R$ 48 mil, aqui
+    # está a nota, e este é o hash que prova que ela não mudou".
+    comprov = dados.get("comprovacao") or []
+    if comprov:
+        story.append(_section_title(f"{n:02d} — Comprovação Fiscal e Documental"))
+        story.append(Paragraph(
+            f"{len(comprov)} documento(s) selado(s) com hash SHA-256 no momento do "
+            "envio. Notas fiscais, laudos, certificados e apólices que sustentam "
+            "os valores e serviços declarados neste dossiê. O arquivo original "
+            "permanece no cofre digital, acessível ao proprietário e à marina "
+            "custodiante.", S["body"]))
+        story.append(sp(4))
+        story.append(_data_table(
+            ["Categoria", "Documento", "Data", "Hash SHA-256"],
+            [[c["categoria"], c["descricao"], c["data"], c["hash"]] for c in comprov],
+            [30 * mm, 86 * mm, 22 * mm, 30 * mm],
+        ))
+        n += 1
+
+    # Perfil de Manutenção — preventiva × corretiva.
+    #
+    # `natureza_manutencao` é campo obrigatório na ficha e nunca aparecia no
+    # documento. É o dado de risco mais forte que a plataforma coleta: barco
+    # com manutenção programada é outro risco (e outro preço de apólice) que
+    # barco que só conserta depois da falha.
+    perfil = dados.get("perfil_manutencao") or {}
+    if perfil.get("total"):
+        story.append(_section_title(f"{n:02d} — Perfil de Manutenção"))
+        pct = perfil.get("pct_preventiva")
+        story.append(Paragraph(
+            f"<b>{pct}%</b> dos serviços classificados são de natureza "
+            "<b>preditiva/preventiva</b> — executados por programação, não por "
+            "falha. Manutenção programada é o indicador que seguradoras usam "
+            "para precificar risco, e que compradores usam para estimar o que "
+            "vão gastar.", S["body"]))
+        story.append(sp(4))
+        story.append(_data_table(
+            ["Natureza", "Serviços", "Valor"],
+            [["Preditiva / Preventiva (programada)", perfil.get("preventiva"),
+              perfil.get("valor_preventiva_fmt") or "—"],
+             ["Corretiva (reparo / falha)", perfil.get("corretiva"),
+              perfil.get("valor_corretiva_fmt") or "—"]],
+            [96 * mm, 34 * mm, 38 * mm],
+        ))
+        n += 1
+
+    # Vencimentos & Conformidade.
+    #
+    # Cinco datas ficavam seladas no JSONB e nenhuma chegava ao documento. É a
+    # resposta para "o que vou ter que renovar?" — pergunta que decide quem
+    # paga o quê numa negociação — e o que a seguradora confere antes de
+    # emitir apólice.
+    venc = dados.get("vencimentos") or []
+    if venc:
+        story.append(_section_title(f"{n:02d} — Vencimentos & Conformidade"))
+        alertas = [v for v in venc if v["situacao"] in ("vencido", "a_vencer")]
+        if alertas:
+            story.append(Paragraph(
+                f"<b>{len(alertas)} item(ns)</b> vencido(s) ou a vencer nos "
+                "próximos 90 dias. Datas conferidas contra os registros selados "
+                "na data de emissão deste dossiê.", S["body"]))
+        else:
+            story.append(Paragraph(
+                "Nenhum item vencido ou a vencer nos próximos 90 dias. Datas "
+                "conferidas contra os registros selados.", S["body"]))
+        story.append(sp(4))
+        story.append(_data_table(
+            ["Item", "Vence em", "Prazo", "Situação"],
+            [[v["item"], v["vence_em"],
+              (f"{v['dias']} dias" if v["dias"] >= 0
+               else f"vencido há {abs(v['dias'])} dias"),
+              {"vencido": "VENCIDO", "a_vencer": "A VENCER",
+               "em_dia": "Em dia"}[v["situacao"]]]
+             for v in venc],
+            [66 * mm, 30 * mm, 40 * mm, 32 * mm],
+        ))
         n += 1
 
     story.append(PageBreak())
@@ -1046,6 +1403,20 @@ def _montar(dados: dict, indice):
             grade = _grade_fotos(cats)
             if grade:
                 story.append(grade)
+
+        # As imagens em si. Antes esta seção terminava na tabela de contagem
+        # acima: o dossiê dizia "8 imagens seladas e geolocalizadas" e não
+        # mostrava nenhuma. Num produto que vende "até 430 imagens datadas e
+        # geolocalizadas", falar delas sem mostrá-las esvazia o argumento.
+        imagens = foto.get("fotos") or []
+        if imagens:
+            story.append(sp(6))
+            story.append(Paragraph(track("IMAGENS SELADAS"), S["label"]))
+            story.append(sp(3))
+            for bloco in _galeria_de_imagens(imagens):
+                story.append(bloco)
+
+        if cats:
             story.append(sp(2))
             story.append(_data_table(["Categoria", "Imagens"],
                                      [[c.get("label"), c.get("total")] for c in cats],
@@ -1165,24 +1536,30 @@ def _montar(dados: dict, indice):
         qr_img,
         [Paragraph("COMO VERIFICAR ESTE DOCUMENTO", S["h2"]),
          Spacer(1, 5),
-         Paragraph("1. Aponte a câmera para o QR ao lado — ou acesse o endereço "
-                   "abaixo e informe o protocolo e o código.<br/>"
-                   "2. A plataforma recalcula os hashes dos registros selados.<br/>"
-                   "3. A resposta confirma a autenticidade deste documento e a "
-                   "integridade da cadeia de custódia.", S["body"]),
+         Paragraph("1. Aponte a câmera para o QR ao lado — ele já leva os três "
+                   "dados abaixo.<br/>"
+                   "2. Sem câmera: acesse o endereço e informe protocolo, "
+                   "código e data de emissão.<br/>"
+                   "3. A plataforma recalcula os hashes e confirma a "
+                   "autenticidade e a integridade da cadeia de custódia.",
+                   S["body"]),
          Spacer(1, 6),
          Paragraph(track("ENDEREÇO"), S["label"]),
          Paragraph("yachtsatlas.online/verificar",
                    ParagraphStyle("vu", fontName="Courier", fontSize=7.5,
                                   textColor=GOLD_LIGHT, leading=11)),
+         Spacer(1, 5),
+         # Os TRÊS dados que a API exige, juntos e no mesmo lugar.
+         # Antes o card pedia "informe o protocolo e o código" e mostrava
+         # só o código: o protocolo ficava noutro bloco da página e a data
+         # de emissão não era sequer mencionada — embora seja obrigatória
+         # (`e` em verificacao.py). Quem seguisse a instrução impressa não
+         # conseguia verificar de jeito nenhum.
+         _credenciais_verificacao(protocolo, _s.upper(), emitido),
          Spacer(1, 4),
-         Paragraph(track("CÓDIGO DE VERIFICAÇÃO"), S["label"]),
-         Paragraph(_s.upper(), ParagraphStyle("vc", fontName="Courier", fontSize=9,
-                                              textColor=GOLD_LIGHT, leading=12)),
-         Spacer(1, 3),
-         Paragraph("O código é exclusivo deste documento. Sem ele, a consulta "
-                   "não retorna dados — nem o conteúdo do dossiê é exposto "
-                   "publicamente.", S["small"]),
+         Paragraph("Os três juntos são exclusivos deste documento. Sem eles, a "
+                   "consulta não retorna dados — nem o conteúdo do dossiê é "
+                   "exposto publicamente.", S["small"]),
          ],
     ]], colWidths=[46 * mm, 130 * mm])
     bloco.setStyle(TableStyle([
