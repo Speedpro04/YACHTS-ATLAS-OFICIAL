@@ -725,3 +725,23 @@ O dossiê é imutável depois de emitido — e **tudo que muda com o tempo não 
 
 No PDF fica só uma linha, em corpo pequeno, que **não vende nada**: avisa que a impressão digital pode ser conferida. É dissuasão, não propaganda — trabalha antes da fraude, não depois.
 
+---
+
+## 31. O segredo do QR saiu do repositório e foi para produção
+**Data:** 23/08/2026
+
+O `VERIFICACAO_SECRET` era o bloqueador mais antigo do PRD e o mais grave: faltando a variável, o código caía no literal `yachts-atlas-verificacao-dev` — **que está publicado no repositório público**. Qualquer pessoa calculava a assinatura e fabricava um dossiê falso com QR que validava.
+
+Trocado em 23/08/2026, com uma janela que não se repete: `dossie_saidas` estava **zerada**. Nenhum dossiê real havia sido emitido, então a troca não invalidou o QR de ninguém. **Depois da primeira emissão real essa janela fecha para sempre** — rotacionar o segredo mata todo QR já impresso, e papel não se atualiza.
+
+Confirmado contra produção, não suposto:
+
+| Assinatura gerada com | Produção responde |
+|---|---|
+| literal de desenvolvimento (o do repo) | **404 — recusado** |
+| segredo novo | **200 — aceito** |
+
+**Se um dia for preciso rotacionar, versione em vez de trocar**: incluir a versão do segredo na URL do QR e manter as anteriores válidas para os documentos já emitidos. Trocar direto é a única operação irreversível desta parte do sistema.
+
+**Padrão a repetir:** segredo com fallback para literal é bomba-relógio — o app sobe, funciona, e ninguém percebe que a proteção não existe. O aviso no log não basta: ninguém lê log. Onde o fallback for perigoso, o certo é **recusar subir** (foi o que se fez com a instância de prospecção, §23).
+

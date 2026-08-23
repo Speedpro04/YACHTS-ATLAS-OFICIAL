@@ -21,7 +21,7 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
-3. **`VERIFICACAO_SECRET` em produção (BLOQUEIA O LANÇAMENTO)** — sem ele o código cai no literal de desenvolvimento, que está no repositório público. **Verificado em 21/08: produção aceitou uma assinatura forjada com esse literal** — qualquer um pode fabricar um dossiê falso com QR que valida. Configurar **antes do primeiro dossiê**; trocar depois invalida todo QR já emitido.
+3. ~~**`VERIFICACAO_SECRET` em produção**~~ — **RESOLVIDO em 23/08/2026.** Segredo forte configurado no EasyPanel e confirmado contra produção: assinatura gerada com o literal de desenvolvimento (o que está no repositório público) passou a ser **recusada com 404**, e a gerada com o segredo novo é aceita. Fabricar dossiê falso com QR que valida deixou de ser possível. **Não trocar mais**: a partir da primeira emissão real, rotacionar invalida todo QR já impresso — versionar a assinatura em vez de trocar.
 4. **Privacidade do bucket `media`** — hoje é público; mover documentos sensíveis p/ bucket privado + URL assinada (LGPD).
 5. **Soft-delete de ativo** — para imutabilidade **total** (hoje DELETE de ativo apaga registros em cascata).
 6. **`audit_logs`** — insert está falhando por RLS (`42501`); ajustar policy para a auditoria gravar de fato.
