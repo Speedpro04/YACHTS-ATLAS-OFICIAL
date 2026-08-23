@@ -98,6 +98,8 @@ Corrigido: cliente de serviço + ator textual preservado em `metadata.ator` (com
 - `ALLOWED_ORIGINS` — CORS (inclui `yachtsatlas.online`).
 - `MAINTENANCE_USERNAME/PASSWORD/MASTER_TOKEN`, `MAINTENANCE_BYPASS_ENABLED`, `DOSSIER_MASTER_PASSWORD` — acesso de manutenção/admin (**nunca remover sem confirmação do fundador**).
 - `SUPABASE_URL`, `SUPABASE_KEY` (publishable), `SUPABASE_SERVICE_KEY` (secret), `SUPABASE_JWT_SECRET`, `OPENAI_API_KEY`, `STRIPE_*`.
+- `SUPABASE_JWT_SECRET` — **não é mais usado por código nenhum** e a chave legada HS256 foi **revogada no Supabase em 23/08/2026** (ver `LUZ-VERMELHA-JWT.md`). A variável segue definida em `config.py` só por compatibilidade; pode sair numa limpeza futura.
+- `MAINTENANCE_JWT_SECRET` — assina o crachá do login de manutenção. **Sem fallback de propósito**: faltando a variável, o login de manutenção desliga em vez de voltar a assinar com o segredo vazado. O `MAINTENANCE_MASTER_TOKEN` não passa por aqui e continua abrindo o acesso.
 - `VERIFICACAO_SECRET` — assina o QR de autenticidade do dossiê. **Sem ela o código cai no literal de desenvolvimento, que está no repositório público.** Trocar depois de emitir o primeiro dossiê invalida todos os QR já impressos.
 - **E-mail (Hostinger, domínio próprio):** `EMAIL_SENDER` (`contato@yachtsatlas.online`), `EMAIL_PASSWORD`, `EMAIL_SMTP_HOST` (`smtp.hostinger.com`), `EMAIL_SMTP_PORT` (465), `EMAIL_REMETENTE_COBRANCA` (alias `cobranca@`).
 - **WhatsApp (Evolution):** `WHATSAPP_PROVIDER`, `EVOLUTION_BASE_URL`, `EVOLUTION_INSTANCE` (transacional: código de acesso e cobrança), `EVOLUTION_API_KEY` (token DA instância transacional), `AUTHENTICATION_API_KEY` (chave global do servidor Evolution — só fallback), `DDI_PADRAO`, `WHATSAPP_WEBHOOK_TOKEN`.

@@ -157,16 +157,61 @@ class S3Service:
                 url = getattr(res, 'signed_url', None) or str(res)
                 
             if not url:
-                url = supabase.storage.from_("media").get_public_url(key)
-                
+                # Sem fallback para URL publica, de proposito. O balde `media`
+                # guarda documento de cliente e caminha para ser fechado; com
+                # ele privado, get_public_url devolve um endereco que responde
+                # 400 — um link que PARECE bom e nao abre. O portador so
+                # descobre na frente do comprador ou do perito.
+                #
+                # Falhar alto aqui e melhor: quem chamou trata, e o erro tem
+                # nome. Foi a licao de 23/08/2026, quando "sucesso" e "nem
+                # tentei" ficaram indistinguiveis no log por meio dia.
+                raise UploadError(f"Supabase nao devolveu URL assinada para {key}")
+
             logger.info(f"Generated signed URL for {key}")
             return url
+        except UploadError:
+            raise
         except Exception as e:
             logger.error(f"Failed to generate signed URL for {key}: {str(e)}")
-            try:
-                return get_supabase_admin().storage.from_("media").get_public_url(key)
-            except Exception:
-                raise UploadError(f"Failed to generate presigned URL: {str(e)}")
+            raise UploadError(f"Failed to generate presigned URL: {str(e)}")
+
+    def urls_assinadas(self, keys: list, expires_in: int = 3600) -> dict:
+        """Assina varios caminhos de uma vez. Devolve {caminho: url}.
+
+        Um dossie tem dezenas de fotos; assinar uma a uma seriam dezenas de
+        idas ao Supabase, em serie, no meio da geracao do PDF. A API tem
+        `create_signed_urls` no plural justamente para isso — uma chamada.
+
+        Caminho que falhar simplesmente NAO entra no resultado. Quem chamou
+        decide o que fazer com a ausencia (pular a foto, esconder o botao),
+        que e sempre melhor do que entregar um link quebrado no lugar.
+        """
+        keys = [k for k in dict.fromkeys(keys) if k]
+        if not keys:
+            return {}
+
+        try:
+            resp = get_supabase_admin().storage.from_("media").create_signed_urls(
+                keys, expires_in
+            )
+        except Exception as e:
+            logger.error(f"Falha ao assinar {len(keys)} caminhos em lote: {e}")
+            return {}
+
+        assinadas = {}
+        for item in (resp or []):
+            if not isinstance(item, dict):
+                continue
+            caminho = item.get("path") or item.get("Key")
+            url = item.get("signedURL") or item.get("signedUrl")
+            if caminho and url and not item.get("error"):
+                assinadas[caminho] = url
+
+        faltaram = len(keys) - len(assinadas)
+        if faltaram:
+            logger.warning(f"{faltaram} de {len(keys)} caminhos ficaram sem URL assinada")
+        return assinadas
     
     def download_file(self, key: str) -> bytes:
         """Download file from Supabase Storage"""

@@ -50,3 +50,10 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Qualquer variante do .env, nao so as terminacoes previstas.
+# As regras acima (.env.local, .env.*.local, *.env) deixavam passar nomes como
+# `.env.backup-antes-da-troca` — que existiu por uma hora em 23/08/2026 com a
+# senha antiga dentro, a um `git add -A` de virar o vazamento de julho de novo.
+.env.*
+!.env.example

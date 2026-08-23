@@ -1,7 +1,25 @@
-# 🔴 Luz Vermelha — JWT Secret vazado e ainda em uso
+# 🟢 Luz Vermelha — JWT Secret vazado (RESOLVIDO)
 
-> **Status:** ABERTO — bloqueador nº 1 de lançamento "pra valer".
-> **Diagnóstico:** 2026-07-16.
+> **Status:** **FECHADO em 23/08/2026.** Chave legada HS256 **revogada** no
+> dashboard do Supabase. O segredo publicado no commit `15ac4be` não é mais
+> aceito para assinar nem para verificar JWT.
+> **Diagnóstico:** 2026-07-16. **Encerramento:** 2026-08-23 (38 dias aberto).
+>
+> ```
+> REVOGADO · 267D9897-1B04-42D4-B7C3-1C2972049C57
+> Legado HS256 (Segredo Compartilhado) · última rotação: 4 meses antes
+> ```
+>
+> Produção conferida logo após a revogação — `/health`, `/leads/marina/vagas`,
+> `/payments/plans`, `/verificar/documento/{hash}` e `/auth/maintenance/login`
+> todos respondendo como esperado.
+>
+> **O que fechou de fato foi o REVOKE, não a rotação.** Girar a chave só troca
+> quem *assina* os tokens novos; o segredo vazado continua sendo *aceito* até
+> ser revogado explicitamente. Parar no "girar" dá sensação de resolvido sem
+> resolver — foi o ponto que mais precisou de atenção no dia.
+>
+> O texto abaixo fica como registro do diagnóstico original.
 > **Regra de trabalho:** um item por vez, nada aplicado sem OK explícito do fundador.
 > **Não contém segredo** — este arquivo é versionado. Nunca colar o valor da chave aqui.
 

@@ -810,3 +810,41 @@ Provado contra produção, não suposto: UPDATE e DELETE recusados pelo gatilho,
 **Padrão a repetir (é o mesmo do §32, no mesmo dia):** `except` que engole erro para não derrubar o fluxo principal é decisão certa e cria um ponto cego por construção. Onde houver um desses, alguma coisa precisa **perguntar em voz alta se aquilo está funcionando** — senão "nunca funcionou" fica indistinguível de "não houve o que registrar". Dois sistemas caíram nisso no mesmo dia por motivos diferentes: o aviso ao fundador e a auditoria.
 
 **Aberto, não tocado:** `POST /auth/maintenance/login` respondeu **503** em produção — falta `MAINTENANCE_USERNAME`/`PASSWORD` ou `MAINTENANCE_JWT_SECRET`. É acesso do fundador; avisar, nunca mexer sem ordem dele.
+
+---
+
+## 34. O bloqueador nº 1 morreu — e quase morreu pela metade
+**Data:** 23/08/2026 (aberto desde 16/07/2026 — 38 dias)
+
+O `SUPABASE_JWT_SECRET` estava publicado no commit `15ac4be` e continuava sendo o valor em uso. Quem tivesse o valor forjava `{"sub":"maintenance-admin"}` e virava `platform_admin` sem senha.
+
+Fechado. A chave legada HS256 foi **revogada** no dashboard:
+
+```
+REVOGADO · 267D9897-1B04-42D4-B7C3-1C2972049C57
+Legado HS256 (Segredo Compartilhado) · ultima rotacao: 4 meses antes
+```
+
+**A lição do dia está no "quase".** São três botões na tela do Supabase e é fácil parar no segundo:
+
+| Botão | O que faz de verdade |
+|---|---|
+| Migrate JWT secret | importa o legado para o sistema novo. Não muda nada. |
+| Rotate keys | passa a **assinar** com a chave nova. O segredo vazado **continua sendo aceito**. |
+| **Revoke key** | **é este que mata.** Sem ele, girar foi teatro. |
+
+Parar no "girar" dá a sensação exata de resolvido — a tela mostra chave nova, tudo verde — enquanto o buraco segue aberto. Foi o ponto que mais precisou de atenção no dia.
+
+**O que tornou o revoke seguro, verificado antes e não suposto:**
+
+1. `SUPABASE_JWT_SECRET` não era usado por **nenhum** código (só definição em `config.py` e comentários).
+2. `SUPABASE_KEY` e `SUPABASE_SERVICE_KEY` são do formato novo (`sb_publishable_` / `sb_secret_`), **independentes** da chave de assinatura. Na conta antiga, `anon` e `service_role` *eram* JWTs assinados pelo segredo — ali, revogar derrubaria o backend inteiro.
+3. O backend não confere assinatura localmente: pergunta ao Supabase via `auth.get_user(token)` ([security.py](backend/app/core/security.py)).
+4. O frontend não tem sequer biblioteca de JWT no `package.json`.
+5. A Edge Function `verify-owner-secret` (`verify_jwt: true`) é **órfã** — o portal do armador usa código de uso único por e-mail/WhatsApp, ninguém a chama.
+
+**Ordem que se impôs no dia:** consertar primeiro a porta que não abria (login de manutenção em 503 por falta de `MAINTENANCE_USERNAME`/`PASSWORD` em produção), só depois trocar as fechaduras. Não faz sentido mexer em chave de segurança sem ter acesso administrativo funcionando.
+
+**Achado de brinde:** o `.gitignore` tinha `.env`, `.env.local`, `.env.*.local` e `*.env` — e **nenhuma** dessas pega `.env.backup-antes-da-troca`. Um backup meu ficou uma hora no diretório com a senha antiga dentro, a um `git add -A` de repetir o vazamento de julho. Corrigido com `.env.*` + `!.env.example`, **testado com nomes reais** — a primeira verificação que escrevi deu falso positivo porque procurou o texto `.env.*` e o encontrou dentro de `.env.*.local`.
+
+**Padrão a repetir:** ler a regra não é testar a regra. Errei nisso duas vezes no mesmo dia (aqui e no `normalizar_telefone`, que eu disse ter consertado um caso que ele não cobre). Quando a conclusão importa, executar vale mais que inspecionar.
