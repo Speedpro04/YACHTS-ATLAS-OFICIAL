@@ -75,6 +75,20 @@ Estratégia multi-região pensada **desde a arquitetura**: o mesmo DNA (custódi
 
 > Princípio: reaproveitar o núcleo (painel config-driven + imutabilidade + dossiê PDF) e trocar apenas a camada de idioma, dados e conformidade por região.
 
+### A trilha de auditoria nunca gravou (23/08/2026)
+
+`audit_logs` tinha **0 linhas desde a criação**. Não quebrou — nunca funcionou. Três defeitos empilhados:
+
+1. **O serviço usava a chave anônima.** A tabela tem RLS ligado e **só políticas de SELECT** — nenhuma de INSERT. Toda gravação voltava `42501` e era engolida pelo `except` (correto: auditoria falhando não pode derrubar o acesso de uma marina; o efeito, porém, foi silêncio total).
+2. **`user_id` é `uuid`, e 11 pontos do código mandavam texto** — `system`, `anonymous`, `maintenance-admin`, `unknown`. Mesmo com o cliente certo, essas chamadas morreriam em `invalid input syntax for type uuid`.
+3. **A tabela não era append-only.** `registros`, `documentos` e `dossie_emitidos` têm gatilho; `audit_logs` não tinha.
+
+Corrigido: cliente de serviço + ator textual preservado em `metadata.ator` (com `user_id` nulo) + gatilho `trg_audit_logs_imutavel` recusando UPDATE e DELETE.
+
+**A ausência de política de INSERT ficou como está, de propósito.** Cliente nenhum deve escrever aqui — se o navegador pudesse inserir, qualquer um forjaria "fulano acessou o dossiê tal", e trilha forjável não é prova. Quem escreve é o backend, com a chave de serviço, que passa por cima do RLS mas **não** passa por cima de gatilho.
+
+> Por que importa comercialmente: a trilha é a resposta a *"quem abriu este dossiê, quando, de qual IP"* — a pergunta que uma seguradora faz. É o lastro do **Laudo de Autenticidade (US$ 40)**.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

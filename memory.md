@@ -778,3 +778,35 @@ O que mudou (`app/services/diagnostico_avisos.py`):
 **Token de instância da Evolution:** 32 caracteres + 3 hífens = **35 no total**. Um caractere a mais (o `+` que veio colado junto numa cópia) vira 401 mudo. Conferir tamanho é mais rápido que conferir conteúdo.
 
 **Padrão a repetir:** quando eu me pegar deduzindo pela terceira vez, o defeito não é mais o bug — é a falta de observabilidade. Parar de investigar e **construir o instrumento** sai mais barato que a quarta hipótese. E o instrumento precisa rodar **sozinho**, no caminho que já se percorre (o log do deploy): ferramenta que só responde quando alguém suspeita não serve para o caso em que ninguém suspeitou.
+
+---
+
+## 33. A trilha de auditoria tinha zero linhas desde sempre
+**Data:** 23/08/2026
+
+Apareceu por acaso, no log que a gente estava lendo por outro motivo:
+
+```
+Error creating audit log: new row violates row-level security policy
+for table "audit_logs"  (42501)
+```
+
+Repetido a cada abertura de documento ou de ativo. `select count(*) from audit_logs` → **0**. Não quebrou naquele dia: **nunca funcionou**.
+
+Três defeitos empilhados, e cada um sozinho já bastava:
+
+1. **Cliente errado.** `audit_service` conectava com a chave anônima. A tabela tem RLS ligado e só políticas de SELECT — nenhuma de INSERT. Toda gravação recusada.
+2. **Tipo errado.** `user_id` é `uuid`; 11 pontos do código mandam `system`, `anonymous`, `maintenance-admin`, `unknown`. Mesmo com o cliente certo, morreriam em `invalid input syntax for type uuid`.
+3. **Sem imutabilidade.** `registros`, `documentos` e `dossie_emitidos` têm gatilho append-only. `audit_logs` não tinha.
+
+O terceiro era o mais perigoso **na hora de consertar**: ligar a gravação sem proteger a tabela criaria algo pior que o vazio — um registro que **parece prova** e pode ser reescrito por quem tem a chave de serviço. Por isso o gatilho veio primeiro, e só depois a gravação.
+
+**A falta de política de INSERT não é o defeito e ficou como está.** Se o navegador pudesse escrever ali, qualquer um forjaria "fulano acessou o dossiê tal". Quem escreve é o backend, com a chave de serviço — que passa por cima do RLS mas **não** passa por cima de gatilho. Essa distinção é o desenho, não um acaso.
+
+O ator textual passou a viver em `metadata.ator`, com `user_id` nulo: quem fez a ação continua registrado, só não finge ser usuário cadastrado.
+
+Provado contra produção, não suposto: UPDATE e DELETE recusados pelo gatilho, e a primeira linha da trilha é a própria ativação dela.
+
+**Padrão a repetir (é o mesmo do §32, no mesmo dia):** `except` que engole erro para não derrubar o fluxo principal é decisão certa e cria um ponto cego por construção. Onde houver um desses, alguma coisa precisa **perguntar em voz alta se aquilo está funcionando** — senão "nunca funcionou" fica indistinguível de "não houve o que registrar". Dois sistemas caíram nisso no mesmo dia por motivos diferentes: o aviso ao fundador e a auditoria.
+
+**Aberto, não tocado:** `POST /auth/maintenance/login` respondeu **503** em produção — falta `MAINTENANCE_USERNAME`/`PASSWORD` ou `MAINTENANCE_JWT_SECRET`. É acesso do fundador; avisar, nunca mexer sem ordem dele.

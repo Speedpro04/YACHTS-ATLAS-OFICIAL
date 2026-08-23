@@ -10,7 +10,7 @@ import json
 import uuid
 
 from app.core.config import settings
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin
 
 
 logger = logging.getLogger(__name__)
@@ -54,12 +54,41 @@ class AuditSeverity(str, Enum):
     CRITICAL = "critical"
 
 
+def _uuid_ou_none(valor) -> Optional[str]:
+    """Devolve o valor se for UUID de verdade; senao, None.
+
+    Ator que nao e usuario cadastrado ("system", "anonymous") vira None aqui e
+    e preservado em `metadata.ator`. Sem isto a insercao inteira falha, e o
+    registro da acao se perde por causa de um campo acessorio.
+    """
+    if not valor:
+        return None
+    try:
+        return str(uuid.UUID(str(valor)))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
 class AuditService:
     """Premium audit service with complete tracking"""
     
     def __init__(self):
         try:
-            self.supabase = get_supabase_client()
+            # Chave de SERVICO, nao a anonima.
+            #
+            # `audit_logs` tem RLS ligado e SO politicas de SELECT — nenhuma de
+            # INSERT, e isso esta certo: se o navegador pudesse escrever aqui,
+            # qualquer um forjaria "fulano acessou o dossie tal", e trilha
+            # forjavel nao e prova de nada. Quem escreve e o backend.
+            #
+            # Com o cliente anonimo toda insercao voltava 42501 e era engolida
+            # pelo except la embaixo. Resultado: a tabela tinha ZERO linhas
+            # desde sempre, e o log de producao repetia o erro sem que ninguem
+            # ligasse os pontos. Corrigido em 23/08/2026.
+            #
+            # A chave de servico passa por cima do RLS, mas NAO passa por cima
+            # de gatilho: `trg_audit_logs_imutavel` recusa UPDATE e DELETE.
+            self.supabase = get_supabase_admin()
             logger.info("AuditService initialized")
         except Exception as e:
             self.supabase = None
@@ -85,12 +114,25 @@ class AuditService:
         try:
             audit_id = str(uuid.uuid4())
             timestamp = datetime.utcnow().isoformat()
+
+            # `user_id` e uuid no banco, mas 11 pontos do sistema registram um
+            # ator que NAO e usuario: "system", "anonymous", "maintenance-admin",
+            # "unknown". Mandar esses textos para uma coluna uuid derruba a
+            # insercao com "invalid input syntax for type uuid" — e o except
+            # engole, entao some sem deixar rastro.
+            #
+            # Guardar o ator em `metadata` em vez de descartar: quem fez a acao
+            # continua registrado, so nao finge ser um usuario cadastrado.
+            uid = _uuid_ou_none(user_id)
+            metadata = dict(metadata or {})
+            if uid is None and user_id:
+                metadata["ator"] = user_id
             
             # Build comprehensive audit record
             audit_data = {
                 "id": audit_id,
                 "action": action.value,
-                "user_id": user_id,
+                "user_id": uid,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
                 "timestamp": timestamp,
@@ -99,7 +141,7 @@ class AuditService:
                 "details": details or {},
                 "error_message": error_message,
                 "location": location or {},
-                "metadata": metadata or {},
+                "metadata": metadata,
                 "created_at": timestamp
             }
             
