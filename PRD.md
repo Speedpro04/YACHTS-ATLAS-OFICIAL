@@ -1,100 +1,16 @@
-# PRD — Yachts Atlas
-
-> Atualizado em 2026-08-20 (REV-04 — Acesso pago, cobrança e Portal do Proprietário).
-> **Novo (REV-04):** **Recorrência passa a valer**: só entra quem pagou, 20 dias de atraso cortam e o pagamento religa sozinho — validado em produção com cartão real. Preço de fundadora agora depende da **origem** (campanha × site oficial), não do estado da marina. **Portal do Proprietário** de verdade: o armador entra com o próprio e-mail e código, e vê só o barco dele. Avisos migraram para **WhatsApp (Evolution) + e-mail pelo domínio próprio**; Telegram removido.
-> **REV-03 (2026-07-06):** Alinhamento total painel↔dossiê↔score + Expansão Internacional iniciada.
-> **Novo (REV-03):** Abas **Casco** e **Drenagem/Porão** agora entram como seções no Dossiê PDF (antes a marina preenchia e não aparecia). **Asset Score** corrigido — cruzava taxonomia antiga contra os registros reais, zerando abrangência/profundidade; agora usa a taxonomia do painel como fonte única. Header ganhou as **3 portas de entrada internacionais** (Latan/USA/Europa). Ver [Expansão Internacional](#expansão-internacional-3-versões).
-> **REV-02:** Abas Manutenção e Elétrica com classificação Preditiva/Corretiva, sistemas náuticos afetados e alertas automáticos de recorrência no Dosiê PDF.
-> Ver detalhes das especificações em [PAINEL-TÉCNICO-MELHORIAS-REV-01.md](file:///c:/YACTHS-ATLAS-OFICIAL/PAINEL-T%C3%89CNICO-MELHORIAS-REV-01.md)
-
-## Project Overview
-**Yachts Atlas** é uma plataforma de **custódia digital e conformidade** de ativos náuticos de alto valor. Cada embarcação ganha um **Dossiê** — registro selado e **imutável** de histórico técnico, operação, documentação e fotos — entregue **pela marina** ao proprietário/comprador/seguradora.
-
-Documento de custódia **privado**, elaborado em observância à **LESTA (Lei 9.537/97)**, ao **RLESTA** e às **NORMAM/DPC** da Marinha do Brasil (não substitui documentos oficiais — complementa, com cadeia de custódia verificável).
-
-- Produto da **AXOS HUB** (CNPJ 26.998.571/0001-50 — empresa solo).
-- Domínio de produção: **https://yachtsatlas.online** (EasyPanel, Docker único: Nginx + FastAPI).
-
-## Modelo de Negócio (DEFINITIVO)
-- **Recorrência é o produto.** A marina assina; **100% do dossiê é da marina** (negócio marina ↔ dono é direto, fora da plataforma).
-- **Preços (só dois):**
-  - **20 marinas de lançamento → $200/mês**
-  - **até 120 marinas restantes → $250/mês** (total 140)
-  - Cobrança via **Stripe Payment Links** (conta **Axos Hub / CNPJ**). O `config.py` espelha o modelo (`LAUNCH_SLOTS=20/$200`, `TRADITIONAL_SLOTS=120/$250`).
-  - **O preço de fundadora é da CAMPANHA, não do estado da marina.** Quem chega pelo **Lançamento** (`lancamento.yachtsatlas.online`) leva US$ 200 enquanto houver vaga; quem chega pelo **Oficial** paga US$ 250 sempre — mesmo em SC/SP/RJ/ES/BA com vaga livre. Origem desconhecida cai no Oficial de propósito (`ORIGENS_DE_LANCAMENTO` em `leads.py`). Sem isso, a marina **indicada** — que deve entrar por US$ 250 — consumia uma das 20 vagas.
-  - **Preço fundador travado por 12 meses**; no 13º mês a assinatura passa a US$ 250, agendado na própria Stripe (`SubscriptionSchedule`) no ato do pagamento.
-  - **A vaga é reservada por 3 horas** entre o cadastro e o pagamento, e o prazo é dito à marina na tela.
-- **O dossiê NÃO é vendido pela plataforma** (checkout de dossiê está desativado — HTTP 410). Liberação para terceiros é por pedido + liberação manual + senha-mestra.
-- **Piloto atual:** 3 marinas rodando **grátis por 6 meses** como **prova social** antes do lançamento das fundadoras.
-
-## Technology Stack
-- **Frontend**: React (Vite), Tailwind, Lucide, i18next (PT/EN/ES).
-- **Backend**: FastAPI (Python), Supabase (Auth, Postgres 17, Storage bucket `media`).
-- **RAG / IA (Capitã Solara)**: pgvector + `text-embedding-3-small`, corpus de normas náuticas (20 normas / 46 seções); pipeline de embeddings em Polars (`backfill_embeddings.py`).
-- **Pagamentos**: Stripe (Payment Links + Subscriptions; webhook persiste em `payments` e cadastra marina fundadora via RPC). *Ainda em modo TEST.*
-- **Chaves Supabase**: migrado para o formato novo — **publishable** (`sb_publishable_…`) no front, **secret** (`sb_secret_…`) no backend; as chaves legadas JWT (`eyJ…`) foram **desativadas pela Supabase** em jun/2026.
-- **Deploy**: Dockerfile unificado (Nginx serve o front e faz proxy de `/api` p/ Uvicorn) no EasyPanel, **auto-deploy observando o branch `master`**.
-
-## Key Features
-1. **Dossiê de Custódia (PDF)**: gerado a partir do **painel técnico real** (`registros` + `documentos`), espelhando as categorias do painel — "nenhuma seção vazia". Layout **premium/institucional**: capa, **Marina Custodiante** (nome, CNPJ, responsável, endereço), preâmbulo legal, **Quadro de Conformidade Regulatória** (NORMAM), seções técnicas, avaliação de mercado, registro fotográfico, **Termo de Custódia e Integridade**. Header/rodapé com logo dourada + CNPJ + protocolo. *(Kit de dossiê-modelo fictício mantido em `dossie-exemplo/`, fora do versionamento.)*
-2. **Painel Técnico**: fichas seladas (logbook) por categoria — manutenção, diário de bordo, motor, velame, **casco**, **drenagem/porão**, elétrica, segurança, pintura, interior, seguro — todas no mesmo molde rico (config-driven em `servicosCategorias.ts` → `AtivoHub` lê dinâmico), com upload de evidências (SHA-256). **Fonte única de taxonomia**: painel, dossiê (`CATEGORIAS_TECNICAS`) e Asset Score (`asset_score_service`) usam as mesmas chaves — toda aba preenchida vira seção no dossiê e conta no score. **Destaque: Manutenção e Elétrica classificadas por Natureza (Preditiva vs Corretiva) e Sistema Náutico Afetado, gerando dashboard de confiabilidade e alertas automáticos de recorrência no Dosiê. Aba Elétrica com cobertura total de instrumentação: VHF DSC (NORMAM-02), EPIRB com validade e cadastro ANATEL, AIS Classe B, GPS/Ploter, Sonda, Piloto Automático, Radar e Luzes de Navegação (RIPEAM/COLREGS 1972).**
-3. **Diário de Bordo (Operação)**: registro rigoroso de cada **ida ao mar** — condutor + habilitação/CHA, manuseio, lançamento, horímetros saída/retorno (tempo de uso), reboque, estado/avaria — com evidências seladas. Flui para o dosiê. *(Pensado para seguradoras, cruzando com os alertas de preventiva/corretiva do painel técnico.)*
-4. **Imutabilidade real** (`registros`): cada registro recebe **hash SHA-256 no insert** (trigger) e o banco **bloqueia qualquer UPDATE** (append-only / anti-adulteração) — vale até para a `service_role`. *DELETE segue permitido por causa do cascade de exclusão de ativo (soft-delete pendente para imutabilidade total).*
-5. **Cofre de Documentos**: Supabase Storage, SHA-256 por arquivo, **descrição do que é cada documento** no upload.
-6. **Cobertura Fotográfica**: até **430 fotos por embarcação** (400 cobertura + 30 vitrine), geolocalizadas no upload.
-7. **Capitã Solara (IA)**: assistente de **normas** (RAG/pgvector, citando a fonte) **e de suporte ao produto** — "onde cadastro?", "como gero o dossiê?". O conhecimento do produto vive no PROMPT, não no RAG (é pequeno e cabe inteiro), e é **gerado do código** (`conhecimento_produto.py`), com teste que quebra se alguém mudar uma categoria sem regenerar. Responde pergunta misturada inteira: a exigência vem da norma, o caminho vem do produto. Nunca descreve tela que não esteja no conhecimento. O que perguntam fica em `solara_perguntas` — mapa do que está confuso na interface, não métrica de atendimento.
-8. **Acesso pago**: `app/core/acesso.py` decide quem pode usar o sistema. **Fail-open** — barra só quem está explicitamente marcado; manutenção, admin e piloto gratuito passam direto. O corte por inadimplência é calculado **na leitura**, não por cron: não depende de rotina estar de pé, e o religamento é automático.
-9. **Régua de cobrança**: avisos nos dias 0, 7, 15, 19 e 20 por e-mail e WhatsApp, com registro do que já saiu — rodar duas vezes não duplica, e um dia sem rodar não perde aviso (`cron_cobranca`).
-10. **Portal do Proprietário**: o armador entra com o **próprio e-mail** e um código de uso único (e-mail + WhatsApp), sem senha para criar. Vê **somente os barcos com o e-mail dele** e **apenas lê** — não cadastra, não edita, não sela. O vínculo é `ativos.proprietario_email`, e a leitura-apenas é garantida por construção (`incluir_proprietario` em `core/authz.py`, que só endpoints de leitura passam).
-
-## Status de Implementação
-- [x] Landing Page & identidade (tema dark premium, True Blue #010c20) + i18n PT/EN/ES
-- [x] Auth unificada (Supabase session Bearer; token de manutenção p/ admin)
-- [x] Painel técnico com fichas seladas (mesmo molde para todas as categorias)
-- [x] **Diário de Bordo (operação / idas ao mar)** + seção no dossiê
-- [x] **Imutabilidade real** dos registros (hash SHA-256 + trigger append-only, UPDATE bloqueado) — *aplicada direto no banco*
-- [x] **Descrição de documento** no cofre (Documentação)
-- [x] Geolocalização das imagens no upload; cobertura fotográfica (430)
-- [x] Dossiê (dados + PDF) com controle de acesso por ativo; layout premium
-- [x] Pagamento: webhook Stripe persiste em `payments` + cadastra marina fundadora (RPC)
-- [x] RAG Solara (pgvector, 46/46 seções embeddadas)
-- [x] Correção de performance (dedupe/cache de GET — chamadas repetidas viram 1)
-- [x] Hardening: `search_path` fixo nas funções do banco
-- [x] Containerização + deploy de produção
-- [x] **REV-03 — Alinhamento painel↔dossiê↔score**: `casco` e `drenagem` incluídas no dossiê; Asset Score/health map corrigidos (taxonomia do painel como fonte única + alias `velame→motor`); remoção de código morto (`TechnicalFormOverlay.tsx`, `registros_checklists.py`)
-- [x] **REV-03 — Header internacional**: 3 botões de mercado (Latan/USA/Europa) responsivos (desktop + mobile), a partir da constante `REGIOES`
-- [x] **REV-04 — Acesso pago**: só entra quem pagou; 20 dias de atraso cortam; pagamento religa sozinho; cancelamento revoga. **Validado em produção com cartão real** (link recorrente de R$ 1,00) — os cinco caminhos testados de ponta a ponta.
-- [x] **REV-04 — Régua de cobrança** (dias 0/7/15/19/20) por e-mail e WhatsApp, com registro do que já saiu
-- [x] **REV-04 — Preço por origem**: Lançamento US$ 200 · Oficial US$ 250; reserva de vaga por 3h avisada ao cliente
-- [x] **REV-04 — Reajuste do 13º mês** agendado na Stripe no ato do pagamento *(pendente de validação em modo teste)*
-- [x] **REV-04 — Portal do Proprietário**: `proprietario_email`/`proprietario_telefone` no ativo, código por e-mail + WhatsApp, listagem restrita e leitura-apenas *(pendente do teste end-to-end do `verifyOtp`)*
-- [x] **REV-04 — Avisos por WhatsApp (Evolution) + e-mail**; Telegram removido; e-mail migrado para o domínio próprio com SPF/DKIM/DMARC
-- [x] **REV-04 — Contador de vagas fundadoras com dado real** na `/marina-parceira` (era `12` chumbado no código)
-- [x] **REV-04 — Selo de saúde deixa de mentir**: mostrava "Ouro · 0%" porque a gravação do score falhava em silêncio (`except: pass`). Falha passa a aparecer no log
-- [x] **REV-04 — Aba de Sinistros no painel**: a ficha existia e a aba não, então ninguém chegava nela. Teste passa a exigir aba para toda ficha registrada
-- [x] **REV-04 — Registros deixam de ser públicos entre contas**: nenhum endpoint de `registros` autorizava — qualquer conta lia (e escrevia) o histórico selado de qualquer barco sabendo o id, que é previsível. Agora leitura = marina + armador, escrita = só marina, com teste que exige guarda em endpoint novo
-- [x] **REV-04 — Portal do Proprietário entrega mais**: capa com a foto do próprio barco (era imagem de banco fixa no código), selo de custódia visível ao dono, e resquício de maquete removido
-- [x] **REV-04 — A nota do ativo volta a se mexer**: `calcular_saude_ativo` só rodava num endpoint que o frontend nunca chamava, então o selo ficava parado no valor do cadastro (Marlin Sea: 16 registros, 25 documentos, e "Bronze · Saúde 0%" na tela). Agora recalcula ao selar registro
-- [x] **REV-04 — Ativo de demonstração pronto** (`YA-IATE-2015-3A38`, Marlin Sea Focus): 16 registros selados em 11 categorias e 25 documentos, com uma linha do tempo completa incluindo sinistro e desfecho. Base para gerar o **primeiro dossiê de ponta a ponta** — `dossie_saidas` ainda está zerada
-- [x] **REV-04 — Sinistros com ficha rica e desfecho** (`resolve_id`): a aba mais grave era a mais pobre (4 campos). Agora registra a ocorrência e o reparo como **dois registros selados**, com sistemas atingidos marcáveis em conjunto e o par de fotos antes/depois. O Casco segue sendo vistoria de rotina
-- [x] **REV-04 — Indicação registrada no cadastro**: a página promete que quem indica participa dos dossiês da indicada, mas nada capturava o vínculo — e ele **só existe no momento do cadastro**. Texto cru sempre preservado; casamento automático por e-mail ou nome; liberação do bônus segue manual
-- [x] **REV-04 — Régua de cobrança roda sozinha** (`services/agenda.py`, no startup do FastAPI): cron externo some em migração de servidor e ninguém percebe, porque não avisar é indistinguível de não haver devedor. O corte segue sendo do porteiro, na leitura
-- [x] **REV-04 — Stripe: assinatura vira "não paga", nunca cancelada** — cancelar quebraria o religamento automático; e-mails de cobrança da Stripe desligados (a régua própria é em português), aviso de cartão a vencer ligado
-- [x] **REV-04 — Identidade no link de pagamento** (`client_reference_id`): sem ela a marina pagava e **não recebia acesso**, porque a carteira Link da Stripe usa outro e-mail. Descoberto ao ver `payments` vazia depois de um pagamento real
-- [x] **REV-04 — Solara com suporte ao produto** + registro das perguntas (`solara_perguntas`); conhecimento gerado do código e guardado por teste
-- [x] **REV-04 — Tela para de piscar a cada troca de aba**: `PrivateRoute` passou a observar o id do usuário, não o objeto da sessão (o Supabase renova o token no foco); conversa da Solara sobrevive à navegação
-- [x] **REV-04 — Upload com acento/espaço no nome**: a chave do storage é sanitizada (o nome original segue em `documentos.nome_arquivo`)
-- [x] **REV-05 — Protocolo Genesis vira o programa de indicação**: a dobra da home e a `/marina-parceira` falavam de "parceiro fundador" e "retenção por 18 meses" — condição do **Lançamento**, que não pode aparecer no **Oficial**. Agora vendem a indicação: marina indica marina e leva **100% dos dossiês da indicada por 12 meses**. Título "O Protocolo Genesis" preservado (é identidade), copy e CTA trocados; botão de voltar acrescentado na página de destino
-- [x] **REV-05 — WhatsApp da marina indicada** no formulário e em `marina_leads`, normalizado para só dígitos **no backend** (se ficasse no front, qualquer POST direto gravaria lixo e o disparo falharia calado)
-- [x] **REV-05 — Instância de WhatsApp separada para prospecção** (`Marinas-Indicadas`): o canal transacional entrega código de login e régua de cobrança, e ban por denúncia de spam é **por número**. Sem `EVOLUTION_INSTANCE_PROSPECCAO` a prospecção não envia — de propósito **não** cai na transacional. Token de instância, não a chave global
-- [x] **REV-05 — Disparo de prospecção sem IA** (`prospeccao_service.py`): template fixo com os números comerciais em constantes, blocklist consultada antes de cada envio (falha fechada), status por lead (não reenvia), lote de 20 e 45s entre envios. **Não está ligado a endpoint nem cron — não dispara sozinho**
-- [x] **REV-05 — Indicação avisa o fundador**: era o **único** fluxo do sistema que gravava e não contava para ninguém (dossiê, cadastro, cobrança e agenda todos avisam). Cinco indicações reais entraram sem que ninguém soubesse — ausência de aviso é indistinguível de "não chegou nada"
-- [x] **REV-05 — `ALERTA_WHATSAPP` sai do próprio número**: era `5512978138934`, o mesmo conectado à instância `Programa-Atlas` — o alerta era mensagem para si mesmo, pelo canal que deveria vigiar. No dia em que a chave da Evolution foi rotacionada, o aviso de que o WhatsApp caiu iria por WhatsApp. Passou para um número de fora
-- [x] **REV-05 — DDI do WhatsApp**: o insert só removia caracteres, gravando `48991234567` sem o `55`. `normalizar_telefone` já existia e era a função certa
-- [x] **REV-05 — Origem da indicação** (`oficial` / `lancamento`), validada contra lista fechada no backend: o campo vem do navegador
-- [x] **REV-05 — Confirmação de envio volta sozinha em 4s** e o formulário se reapresenta limpo; antes a marina ficava presa na tela de sucesso e indicar uma segunda exigia recarregar a página
-- [x] **REV-05 — Opt-out do WhatsApp funciona** (`api/v1/whatsapp.py`): a mensagem promete "responda SAIR" e agora existe o webhook que cumpre. Casa a mensagem **inteira**, não a palavra solta — *"não quero cancelar, quero saber mais"* não bloqueia. Protegido por `WHATSAPP_WEBHOOK_TOKEN`: o endpoint é público e escreve na blocklist; sem segredo qualquer um bloquearia qualquer número, e sem a variável configurada ele fica **desligado**, não aberto. Ignora o que o próprio Atlas envia (volta no webhook). 27 testes
 - [x] **REV-05 — Aviso ao fundador sai pela instância de marinas**, não pela transacional: a transacional entrega o código de acesso, que é autenticação — quanto menos tráfego passar por ela, menor a chance de o login cair junto com outra coisa
+- [x] **REV-06 — As fotos entram no dossiê**: eram 20 imagens no PDF e **19 eram a mesma logo**. A seção "Registro Fotográfico Certificado" dizia "8 imagens seladas e geolocalizadas" e mostrava uma tabela de contagem. Agora entram todas, com data, marca de geo e prefixo do hash. **Desempenho era o risco real**: 102 s para 8 fotos, porque o PDF é montado 2× (cada foto baixava 2×) e cada download abria conexão TLS nova — 11 KB levava os mesmos 4,7 s que 803 KB. Cache + cliente compartilhado: **102 s → 11 s**
+- [x] **REV-06 — Índice de Segurança para de mentir**: dizia 100% num barco que furou a proa. O cálculo olhava 8 categorias e **casco, operação e sinistros ficavam de fora** — justo onde estavam os dois registros em atenção. Agora 12 categorias, e sinistro/casco em atenção valem 0, não 50. Caiu para **86%**
+- [x] **REV-06 — "Investido" separado de "cobertura"**: a apólice de R$ 2,4 mi era somada no mesmo campo de uma revisão de R$ 9.800, e a capa anunciava "R$ 2,5 mi investido no ativo" — o gasto real era **R$ 89,3 mil, inflado 27×**. Três tiles agora: investido, cobertura e **custo médio/mês (R$ 4,7 mil)**
+- [x] **REV-06 — "Classificação GOLD" → "Índice de Custódia: GOLD"**: a fórmula mede abrangência de registro, nada sobre a condição do ativo — o rótulo antigo fazia o comprador ler como estado do barco, contradizendo a FAQ do próprio site ("o Atlas não inspeciona")
+- [x] **REV-06 — QR com polaridade corrigida**: era dourado claro sobre navy escuro; testado com zxing **sobre o PDF real**, leitor sem detecção de inversão (ZXing/ZBar padrão, Android de fabricante, app de vistoria) **não lia**. Agora módulos escuros sobre branco e lê nos dois. Vai para papel impresso — não tem correção retroativa
+- [x] **REV-06 — Card de verificação entrega o que pede**: mandava "informe o protocolo e o código" e mostrava só o código; a API exige **três** dados e a data de emissão nem era citada. Agora PROTOCOLO · CÓDIGO · EMISSÃO lado a lado
+- [x] **REV-06 — Três seções novas, todas de dado já selado**: **Comprovação Fiscal** (21 documentos com hash — as notas fiscais estavam no cofre desde sempre e nunca apareciam), **Perfil de Manutenção** (preventiva × corretiva — o indicador que seguradora usa para precificar risco; o Marlin Sea é 100% preventiva) e **Vencimentos & Conformidade** (o extintor vence em 38 dias e ninguém sabia)
+- [x] **REV-06 — Titular da Custódia**: o campo não existia. `proprietario_email`/`_telefone` são chave de ACESSO ao Portal, não identidade — por isso o dossiê de um ativo de alto valor não dizia de quem era o barco. Nome + documento **mascarado** (`***.456.789-**`); contato NÃO vai ao documento, que circula entre corretor, comprador e seguradora
+- [x] **REV-06 — Especificações e motorização**: dez colunas existiam no banco, **nenhuma** era declarada no schema (`create_ativo` fazia `getattr` num campo inexistente — código morto que parecia vivo), nenhuma era coletada no painel e nenhuma chegava ao dossiê. Tipos conferidos contra `information_schema`: `potencia_motor` é integer e estava declarado texto
+- [x] **REV-06 — Painel contava a tabela errada**: cards de Documentação e Fotos diziam "Sem registro" com 21 PDFs e 8 fotos guardados — a contagem lia só `registros`, e esses dois vivem em `documentos`
+- [x] **REV-06 — Tipografia do dossiê**: +1pt em todos os estilos de corpo e entrelinha de 1,45× para 1,6×. Documento lido impresso, por quem não conhece o conteúdo
+- [x] **REV-06 — Entrada manual da verificação** (`/verificar`): o dossiê impresso manda "sem câmera, acesse o endereço e informe protocolo, código e data" — e esse endereço **não existia**. `App.tsx` só declarava `/verificar/:protocolo`, e a página respondia "Link incompleto. [...] informe o protocolo" **sem um único campo para informar**. Agora há formulário com os três dados, que normaliza o que a pessoa digita (maiúscula no protocolo, minúscula no código, barra → hífen na data) e monta a mesma URL do QR. Quem lê o dossiê é perito e corretor, com papel na mão e leitor que pode não abrir
 
 ## Manutenção Preditiva Semanal
 Rotina de verificação em [CHECKLIST-SEMANAL.md](CHECKLIST-SEMANAL.md), ordenada por criticidade — do que derruba o negócio ao que só previne problema futuro. Existe porque **o sistema falha em silêncio**: webhook que parou, e-mail que virou spam, WhatsApp que desconectou. Nada disso apita, e a marina só descobre quando já custou dinheiro ou confiança.

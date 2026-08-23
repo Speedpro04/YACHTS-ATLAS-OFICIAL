@@ -25,6 +25,7 @@ import Registros from './pages/Registros'
 import NormasTecnicas from './pages/NormasTecnicas'
 import SeoMeta from './components/SeoMeta'
 import TermosFundadores from './pages/TermosFundadores'
+import VerificacaoManual from './pages/VerificacaoManual'
 import Privacidade from './pages/Privacidade'
 import Verificacao from './pages/Verificacao'
 
@@ -48,6 +49,11 @@ function App() {
         <Route path="/termos-fundadores" element={<TermosFundadores />} />
         <Route path="/privacidade" element={<Privacidade />} />
         {/* Pública, sem login: destino do QR impresso no dossiê. */}
+        {/* Sem protocolo: entrada manual. O dossie impresso manda "acesse o
+            endereco e informe protocolo, codigo e data" — ate agora esse
+            endereco nao existia, e quem nao conseguisse ler o QR ficava sem
+            saida. Precisa vir ANTES da rota com parametro. */}
+        <Route path="/verificar" element={<VerificacaoManual />} />
         <Route path="/verificar/:protocolo" element={<Verificacao />} />
         <Route path="/success" element={<SuccessOnboarding />} />
         <Route element={<PrivateRoute />}>

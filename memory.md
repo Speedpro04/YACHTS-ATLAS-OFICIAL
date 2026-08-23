@@ -565,3 +565,94 @@ Esse estado vira automático de graça quando o disparo funcionar (`whatsapp_sta
 
 **Padrão a repetir:** ao criar um fluxo novo, conferir se ele avisa alguém. Gravar no banco não é entregar — é só guardar.
 
+---
+
+## 26. O dossiê falava das fotos e não as mostrava
+**Data:** 23/08/2026
+
+O fundador mandou o PDF real (Marlin Sea, 19 páginas) e pediu "uma olhadinha". A análise achou defeitos que só aparecem lendo o documento como um **comprador** leria — não como quem escreveu o código.
+
+### 20 imagens, 19 eram a mesma logo
+A seção "Registro Fotográfico Certificado" dizia *"8 imagens seladas e geolocalizadas"* e entregava uma **tabela de contagem**. Nenhuma foto. Num produto cujo principal argumento é "até 430 imagens datadas e geolocalizadas", falar delas sem mostrá-las esvazia o argumento inteiro.
+
+Agora entram todas, com data, marca de geo e **prefixo do hash** — é o que separa "uma foto" de "esta foto, selada nesta data, conferível contra o painel".
+
+### O desempenho era o risco, não o layout
+Primeira versão: **102 s para 8 fotos**. Duas causas, as duas invisíveis sem medir:
+
+1. **O PDF é montado duas vezes** (a 1ª mede em que página cai cada seção) e cada foto baixava duas vezes. Com 430 fotos seriam **860 downloads**.
+2. **Cada download abria conexão TLS nova.** Um arquivo de 11 KB levava os mesmos 4,7 s que um de 803 KB — o custo era o aperto de mão, não o tamanho.
+
+Cache entre as passadas + cliente httpx compartilhado: **102 s → 11 s**. Sem isso, a capacidade de 430 fotos que o site anuncia seria impraticável.
+
+### "GOLD · 100%" num barco com a proa furada
+O Índice de Segurança olhava 8 categorias e **casco, operação e sinistros não estavam entre elas**. Os dois registros em atenção do Marlin Sea — *"impacto com objeto submerso — proa bombordo"* e *"saída ao mar — retorno com avaria"* — ficavam fora da conta. Daí 100%.
+
+Agora são 12 categorias, e **sinistro/casco em atenção valem 0, não 50**: casco furado não é meio-termo. O índice caiu para **86%**, que é a verdade.
+
+Saíram `documentacao` e `dossie` da lista: não são categorias de REGISTRO (documento vive em outra tabela), então davam "NÃO AVALIADO" eterno ao lado de "29 documentos selados", parecendo defeito do sistema.
+
+### R$ 2,5 mi que eram R$ 89,3 mil
+A capa somava a **apólice de R$ 2,4 mi** no mesmo campo `valor` de uma revisão de R$ 9.800, e anunciava *"investido no ativo"*. O gasto real era **R$ 89,3 mil — inflado 27 vezes**. Seguro é cobertura, não investimento: viraram dois tiles, mais um terceiro com o custo médio mensal (R$ 4,7 mil), que é a primeira conta que um comprador faz.
+
+### "Classificação GOLD" não significa o que parece
+A fórmula é 50% abrangência de categorias + 25% volume de manutenção + 15% documentos. **Zero sobre a condição do barco** — um casco furado pontua igual a um intacto com o mesmo tanto de registro. Virou **"Índice de Custódia: GOLD"**, que é o que ele mede, e para de contradizer a própria FAQ do site ("o Atlas não inspeciona").
+
+### O QR não lia em metade dos leitores
+Polaridade invertida — dourado claro sobre navy escuro, quando a ISO/IEC 18004 exige módulos escuros sobre fundo claro. Testado com zxing **sobre o PDF real**: leitor sem detecção de inversão (ZXing/ZBar padrão, Android de fabricante, app de vistoria) **não lia**; iPhone e Google Lens liam. Invertido, os dois leem.
+
+Isso vai para **papel impresso**: QR ilegível em dossiê já emitido não tem correção retroativa.
+
+### O card pedia o que não fornecia
+Mandava *"informe o protocolo e o código"* e mostrava **só o código**. A API exige **três** coisas — protocolo, código e data de emissão — e a data não era sequer mencionada. Ninguém conseguiria verificar seguindo a instrução impressa.
+
+**Padrão a repetir:** ler o próprio produto como o cliente lê. Todos esses defeitos passavam em teste, não quebravam nada, e estavam errados.
+
+---
+
+## 27. Quase nada faltava — só não chegava ao documento
+**Data:** 23/08/2026
+
+Perguntado "temos algo a mais para acrescentar?", o método que rendeu foi **procurar o que o sistema já sabe e não diz** — em vez de inventar seções.
+
+O que se achou, tudo já selado no banco:
+
+- **21 documentos PDF** — notas fiscais, laudos, apólices — que **nunca apareciam**. A seção "Documentação Legal e Fiscal" listava só itens de checklist em texto. A capa afirmava um valor investido sem exibir um comprovante sequer. Virou a seção **Comprovação Fiscal e Documental**, com hash por linha.
+- **`natureza_manutencao`** — campo OBRIGATÓRIO na ficha, nunca usado. O Marlin Sea tem **100% preventiva**. É o indicador que seguradora usa para precificar risco e comprador usa para estimar gasto. Virou **Perfil de Manutenção**.
+- **Cinco datas de validade** no JSONB dos registros. O extintor **vence em 38 dias** e ninguém sabia. Virou **Vencimentos & Conformidade**, com faixa de 90 dias — o prazo em que ainda dá para renovar sem correria.
+- **Dez colunas de especificação** (boca, calado, casco, motorização) que existiam no banco, não eram declaradas no schema, não eram coletadas no painel e não chegavam ao dossiê. `create_ativo` fazia `getattr("largura")` num modelo sem o campo: **código morto que parecia vivo**.
+- **Identidade do proprietário** não existia como campo. As duas colunas que havia são chave de ACESSO ao Portal, não identidade — por isso o dossiê de um ativo de alto valor não dizia de quem era o barco.
+
+### O painel dizia "Sem registro" com 21 PDFs guardados
+Os cards de Documentação e Fotos contavam só a tabela `registros`, e esses dois vivem em `documentos`. A marina subia o arquivo, via o painel dizer que não havia nada, e não tinha como saber se o upload funcionou.
+
+### Tipo declarado ≠ tipo do banco
+`potencia_motor` e `capacidade_tanque` são **integer**, e foram declarados como texto. O Postgres recusava com *"invalid input syntax for type integer"* — erro que só apareceria **na hora de a marina salvar**, com ela olhando a tela. Conferir contra `information_schema` antes de declarar deixou de ser opcional.
+
+**Princípio:** antes de projetar campo novo, listar o que a tabela já guarda e o produto não usa. Neste dossiê, a resposta foi "quase tudo".
+
+---
+
+## 28. A instrução impressa mandava para uma porta que não existia
+**Data:** 23/08/2026
+
+O dossiê impresso diz, em letras claras: *"Sem câmera: acesse o endereço e informe protocolo, código e data de emissão"*.
+
+Esse endereço **não existia**. `App.tsx` declarava só `/verificar/:protocolo`, e a página de resultado, faltando qualquer parâmetro, respondia:
+
+> *"Link incompleto. Use o QR Code impresso no dossiê ou informe o protocolo e o código de verificação."*
+
+**Pedindo para "informar" sem oferecer um único campo para informar.**
+
+### Por que isso é pior do que parece
+Quem lê o dossiê é comprador, corretor e perito de seguradora — com o papel na mão e um leitor de QR que pode simplesmente não abrir. A pessoa segue a instrução, digita o endereço, e encontra uma tela que repete o pedido sem atender. Nesse momento ela conclui que a verificação é decorativa — e a verificação **é o produto**.
+
+Mesma família do "responda SAIR" (§25): prometer um caminho e não construí-lo.
+
+### A tela não valida nada
+Ela monta a MESMA URL que o QR carrega e entrega para a página de resultado, que já existia e funcionava. **Uma porta de entrada, não uma segunda implementação** — duas rotas verificando por caminhos diferentes divergiriam no primeiro ajuste.
+
+E normaliza o que a pessoa digita: protocolo para maiúscula, código para minúscula, data de barra para hífen. O PDF imprime `22/08/2026` e o QR usa `22-08-2026`; transformar um detalhe de formato em "documento não localizado" seria a mensagem mais desanimadora possível para quem está justamente conferindo autenticidade.
+
+**Padrão a repetir:** toda instrução impressa num artefato que não se pode corrigir depois precisa ser testada como o leitor a executaria — não como quem a escreveu imagina.
+
