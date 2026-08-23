@@ -38,6 +38,11 @@ export default function Ativos() {
     // nunca a conta da marina, nunca a frota dos outros clientes.
     proprietario_email: '',
     proprietario_telefone: '',
+    proprietario_nome: '',
+    proprietario_documento: '',
+    largura: '', calado: '', material_casco: '', capacidade_passageiros: '',
+    num_cabines: '', capacidade_tanque: '', modelo_motor: '', potencia_motor: '',
+    num_motores: '', tipo_combustivel: '',
   })
   // Galeria inicial organizada por categoria (até 430 fotos por embarcação)
   const MAX_FOTOS = 430
@@ -142,6 +147,10 @@ export default function Ativos() {
         tipo: 'iate', marca: '', modelo: '', comprimento_pes: 0,
         ano_fabricacao: new Date().getFullYear(),
         proprietario_email: '', proprietario_telefone: '',
+        proprietario_nome: '', proprietario_documento: '',
+        largura: '', calado: '', material_casco: '', capacidade_passageiros: '',
+        num_cabines: '', capacidade_tanque: '', modelo_motor: '', potencia_motor: '',
+        num_motores: '', tipo_combustivel: '',
       })
       loadAtivos()
       // Etapa de fotos: galeria inicial organizada da embarcação recém-criada
@@ -266,6 +275,26 @@ export default function Ativos() {
                 { label: 'Modelo', key: 'modelo', type: 'text', placeholder: 'Flybridge 78...' },
                 { label: t('common.length_feet'), key: 'comprimento_pes', type: 'number', min: 0, max: 500, placeholder: 'Ex: 45' },
                 { label: 'Ano de Fabricação', key: 'ano_fabricacao', type: 'number', min: 1900, max: new Date().getFullYear() },
+                // Especificações e motorização. As dez colunas existiam no banco
+                // e não eram coletadas em lugar nenhum: o dossiê de um ativo de
+                // alto valor não dizia a boca, o calado nem quantos motores tem.
+                // É a primeira coisa que seguradora e comprador procuram.
+                { label: 'Boca (largura)', key: 'largura', type: 'number', min: 0, placeholder: 'Ex: 4.2', suffix: 'm', opcional: true },
+                { label: 'Calado', key: 'calado', type: 'number', min: 0, placeholder: 'Ex: 1.1', suffix: 'm', opcional: true },
+                { label: 'Material do Casco', key: 'material_casco', type: 'select', options: ['Fibra de vidro', 'Alumínio', 'Aço', 'Madeira', 'Compósito', 'Outro'], opcional: true },
+                { label: 'Capacidade de Passageiros', key: 'capacidade_passageiros', type: 'number', min: 0, placeholder: 'Ex: 12', opcional: true },
+                { label: 'Cabines', key: 'num_cabines', type: 'number', min: 0, placeholder: 'Ex: 3', opcional: true },
+                { label: 'Capacidade do Tanque', key: 'capacidade_tanque', type: 'number', min: 0, placeholder: 'Ex: 1200', suffix: 'L', opcional: true },
+                { label: 'Modelo do Motor', key: 'modelo_motor', type: 'text', placeholder: 'Ex: Volvo Penta D6', opcional: true },
+                { label: 'Potência (por motor)', key: 'potencia_motor', type: 'number', min: 0, placeholder: 'Ex: 435', suffix: 'HP', opcional: true },
+                { label: 'Nº de Motores', key: 'num_motores', type: 'number', min: 0, max: 8, placeholder: 'Ex: 2', opcional: true },
+                { label: 'Combustível', key: 'tipo_combustivel', type: 'select', options: ['Diesel', 'Gasolina', 'Elétrico', 'Híbrido'], opcional: true },
+                // Identidade do titular — vai IMPRESSA no dossiê. Vem antes do
+                // e-mail de propósito: e-mail e WhatsApp são chave de ACESSO ao
+                // Portal, estes dois são quem o barco é. Sem eles, o dossiê de um
+                // ativo de alto valor mostrava a marina custodiante e nada do dono.
+                { label: 'Nome do Proprietário', key: 'proprietario_nome', type: 'text', placeholder: 'Nome completo ou razão social', opcional: true },
+                { label: 'CPF / CNPJ do Proprietário', key: 'proprietario_documento', type: 'text', placeholder: '000.000.000-00', opcional: true },
                 { label: 'E-mail do Proprietário', key: 'proprietario_email', type: 'email', placeholder: 'dono@email.com', opcional: true },
                 { label: 'WhatsApp do Proprietário', key: 'proprietario_telefone', type: 'text', placeholder: '(12) 99999-9999', opcional: true }
               ].map((field) => (

@@ -421,6 +421,10 @@ const FICHA_CASCO: ServicoConfig = {
     { key: 'video_sala_maquinas', label: 'Vídeo da Sala de Máquinas (Operacional)', hint: 'Vídeo até 3 min (máx 150MB) em funcionamento', accept: VID },
     { key: 'foto_fundo_externo', label: 'Foto do fundo externo / casco no seco *', hint: 'Foto nítida obrigatória do fundo e quilha', accept: IMG, required: true },
     { key: 'laudo_ultrassom_pdf', label: 'Laudo de ultrassom / espessímetro (PDF)', hint: 'Documento técnico de auditoria estrutural', accept: DOC },
+    // Laudo prova a CONDIÇÃO; nota fiscal prova o GASTO. Esta ficha tinha só
+    // os laudos, então um serviço de casco de R$ 7 mil entrava no dossiê sem
+    // comprovante — e casco é o item que seguradora e comprador mais olham.
+    { key: 'nota_fiscal', label: 'Nota fiscal do serviço (PDF)', hint: 'Comprova quem executou e quanto custou', accept: DOC, requiredIf: { key: 'valor', truthy: true } },
     { key: 'video_quilha_externa', label: 'Vídeo da quilha e leme no seco', hint: 'Vídeo até 3 min (máx 150MB) mostrando folga ou movimento', accept: VID }
   ]
 }

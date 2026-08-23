@@ -121,15 +121,17 @@ async def create_ativo(ativo: AtivoCreate, user_id: str = Depends(get_current_us
     if comp:
         data["comprimento"] = comp
 
-    # Campos técnicos opcionais que existem no schema real
-    for attr, col in [
-        ("largura", "largura"),
-        ("calado", "calado"),
-        ("capacidade_passageiros", "capacidade_passageiros"),
-    ]:
+    # Especificações e motorização. A lista anterior tinha só três campos e o
+    # schema não declarava nenhum deles — o getattr lia None e nada era
+    # gravado. Agora são os dez que a tabela realmente tem.
+    for attr in (
+        "largura", "calado", "capacidade_passageiros", "num_cabines",
+        "capacidade_tanque", "modelo_motor", "potencia_motor",
+        "num_motores", "tipo_combustivel",
+    ):
         v = getattr(ativo, attr, None)
-        if v:
-            data[col] = v
+        if v not in (None, "", 0):
+            data[attr] = v
     mat = getattr(ativo, "material_casco", None)
     if mat:
         data["material_casco"] = mat.value if hasattr(mat, "value") else mat
@@ -144,6 +146,13 @@ async def create_ativo(ativo: AtivoCreate, user_id: str = Depends(get_current_us
     zap = (getattr(ativo, "proprietario_telefone", None) or "").strip()
     if zap:
         data["proprietario_telefone"] = zap
+
+    # Identidade do titular. Vai impressa no dossiê — o documento precisa dizer
+    # de quem é o barco, e até agora só dizia quem custodia.
+    for attr in ("proprietario_nome", "proprietario_documento"):
+        v = (getattr(ativo, attr, None) or "").strip()
+        if v:
+            data[attr] = v
 
     try:
         response = supabase.table("ativos").insert(data).execute()
@@ -216,9 +225,14 @@ async def arquivar_ativo(
 
 
 class ProprietarioDoAtivo(BaseModel):
-    """Contato do dono. E-mail vazio desfaz o vínculo — barco vendido."""
+    """Dados do dono. E-mail vazio desfaz o vínculo — barco vendido."""
     proprietario_email: Optional[EmailStr] = None
     proprietario_telefone: Optional[str] = None
+    # Identidade, não acesso. Nome e documento vão IMPRESSOS no dossiê; o
+    # e-mail e o telefone continuam servindo só de porta para o Portal e não
+    # entram no documento, que circula entre corretor, comprador e seguradora.
+    proprietario_nome: Optional[str] = None
+    proprietario_documento: Optional[str] = None
 
 
 @router.patch("/{ativo_id}/proprietario")
@@ -254,15 +268,23 @@ async def definir_proprietario(
     telefone = (data.proprietario_telefone or "").strip() or None
     # Sem e-mail não há dono: o telefone sozinho não abre porta nenhuma, e
     # deixá-lo para trás guardaria o contato de quem já vendeu o barco.
+    nome = (data.proprietario_nome or "").strip() or None
+    documento = (data.proprietario_documento or "").strip() or None
     supabase.table("ativos").update({
         "proprietario_email": email,
         "proprietario_telefone": telefone if email else None,
+        # Nome e documento seguem a mesma regra do telefone: sem dono, some
+        # tudo. Barco vendido não guarda a identidade de quem vendeu.
+        "proprietario_nome": nome if email else None,
+        "proprietario_documento": documento if email else None,
     }).eq("id", ativo_id).execute()
 
     return {
         "ativo_id": ativo_id,
         "proprietario_email": email,
         "proprietario_telefone": telefone if email else None,
+        "proprietario_nome": nome if email else None,
+        "proprietario_documento": documento if email else None,
         "message": "Proprietário definido" if email else "Vínculo do proprietário removido",
     }
 

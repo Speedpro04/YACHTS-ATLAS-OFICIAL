@@ -147,6 +147,38 @@ class AtivoBase(BaseModel):
     # e-mail. Com ele, sai pelos dois canais — e para armador brasileiro o
     # WhatsApp costuma chegar antes.
     proprietario_telefone: Optional[str] = None
+    # Nome e documento do titular. Diferente dos dois acima, que são CHAVE DE
+    # ACESSO: estes são IDENTIDADE, e é o que um dossiê náutico usa para dizer
+    # de quem é o barco. Sem eles, o dossiê de um ativo de alto valor mostrava
+    # a marina custodiante e nada sobre o dono.
+    proprietario_nome: Optional[str] = None
+    proprietario_documento: Optional[str] = None
+
+    # Especificações e motorização.
+    #
+    # As colunas existem no banco desde sempre e NENHUMA era declarada aqui —
+    # `create_ativo` fazia getattr("largura") num modelo que não tinha o campo,
+    # então lia None e o dado nunca era gravado. Código morto que parecia vivo.
+    #
+    # São o que um comprador ou uma seguradora procura primeiro: se o barco
+    # cabe na vaga (boca), se entra no canal (calado), se atende à apólice
+    # (material do casco, motorização) e quanta gente pode levar. Um dossiê de
+    # "conformidade náutica" sem isso está incompleto.
+    largura: Optional[float] = None                 # boca, em metros
+    calado: Optional[float] = None                  # em metros
+    material_casco: Optional[str] = None
+    capacidade_passageiros: Optional[int] = None
+    num_cabines: Optional[int] = None
+    # Tipos espelham o BANCO, conferidos em information_schema: largura e
+    # calado são numeric; tanque, potência, cabines, motores e passageiros são
+    # integer. Declarar potência como texto fazia o Postgres recusar o insert
+    # ("invalid input syntax for type integer") — erro que só aparece na hora
+    # de gravar, com a marina olhando.
+    capacidade_tanque: Optional[int] = None         # litros
+    modelo_motor: Optional[str] = None
+    potencia_motor: Optional[int] = None            # HP por motor
+    num_motores: Optional[int] = None
+    tipo_combustivel: Optional[str] = None
 
 
 class AtivoCreate(AtivoBase):

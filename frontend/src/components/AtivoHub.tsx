@@ -109,17 +109,44 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
   const comprimento = ativo.comprimento_pes || 0
   const dossieExtra = readOnly ? [] : DOSSIE_CATS.filter((c) => DOSSIE_EXTRA_IDS.includes(c.id) && comprimento >= c.porteMinimoPes)
 
-  // Contagem real de registros por categoria (dá vida aos cards)
+  // Contagem real por categoria (dá vida aos cards).
+  //
+  // Lê as DUAS tabelas. Antes contava só `registros`, e por isso os cards de
+  // Documentação e Fotos diziam "Sem registro" mesmo com 21 PDFs e 8 fotos
+  // guardados: esses dois vivem em `documentos`, não em `registros`. A marina
+  // subia o arquivo, via o painel dizer que não havia nada, e não tinha como
+  // saber se o upload tinha funcionado.
   const carregarContagem = async () => {
-    try {
-      const data = await api.registros.list(ativo.id)
-      const arr = Array.isArray(data) ? data : []
-      const c: Record<string, number> = {}
-      arr.forEach((r: any) => { c[r.categoria] = (c[r.categoria] || 0) + 1 })
-      setContagem(c)
-    } catch {
-      setContagem({})
+    const c: Record<string, number> = {}
+    const [regs, docs] = await Promise.allSettled([
+      api.registros.list(ativo.id),
+      api.documentos.list(ativo.id),
+    ])
+
+    if (regs.status === 'fulfilled' && Array.isArray(regs.value)) {
+      regs.value.forEach((r: any) => { c[r.categoria] = (c[r.categoria] || 0) + 1 })
     }
+
+    if (docs.status === 'fulfilled' && Array.isArray(docs.value)) {
+      docs.value.forEach((d: any) => {
+        // Foto entra no card de Fotos qualquer que seja a galeria; a vitrine
+        // fica de fora, como no resto do sistema (é apresentação, não acervo).
+        if (d.tipo === 'foto') {
+          if (d.categoria !== 'vitrine') c.fotos = (c.fotos || 0) + 1
+          return
+        }
+        // Documento conta na própria categoria — a apólice aparece em Seguro,
+        // o laudo em Casco — e todos somam no card de Documentação, que é a
+        // porta de entrada do cofre. O `!==` evita contar duas vezes o que já
+        // é da própria documentação.
+        if (d.categoria && d.categoria !== 'documentacao') {
+          c[d.categoria] = (c[d.categoria] || 0) + 1
+        }
+        c.documentacao = (c.documentacao || 0) + 1
+      })
+    }
+
+    setContagem(c)
   }
 
   useEffect(() => { carregarContagem() /* eslint-disable-next-line */ }, [ativo.id, secao])

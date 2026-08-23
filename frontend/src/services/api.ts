@@ -230,7 +230,8 @@ export const api = {
      * Portal do Proprietário: ele entra digitando este e-mail e vê só o barco
      * dele. E-mail vazio desfaz o vínculo — barco vendido.
      */
-    definirProprietario: (id: string, dados: { proprietario_email?: string | null; proprietario_telefone?: string | null }) =>
+    definirProprietario: (id: string, dados: { proprietario_email?: string | null; proprietario_telefone?: string | null;
+                                               proprietario_nome?: string | null; proprietario_documento?: string | null }) =>
       apiRequest(`/ativos/${id}/proprietario`, { method: 'PATCH', body: JSON.stringify(dados) }),
     /**
      * Arquiva o ativo — NÃO apaga. Um ativo com registros selados não pode ser
