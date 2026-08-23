@@ -906,3 +906,26 @@ Removidas (43 linhas). Ao tirá-las, a tabela sobrou **sozinha numa página inte
 A causa raiz não era a categoria faltando; era o número morar em **quatro** lugares (`coberturaFotos.ts`, `Ativos.tsx` com a lista inteira duplicada, `dossie_data.py`, e o `conhecimento_produto.json` da Solara). `Ativos.tsx` passou a importar da config em vez de manter cópia. O quarto lugar **só apareceu porque um teste quebrou** — `test_conhecimento_esta_em_dia_com_o_codigo`. Sem ele, a Solara ensinaria 430 às marinas enquanto o painel oferecia 460, com convicção e sem ninguém perceber. É o melhor teste do repositório e não é sobre código: é sobre o produto não mentir para si mesmo.
 
 **Registro do estado anterior:** existia foto gravada como `galeria_seguranca`, mas `seguranca` **não estava** em `COBERTURA_CATS` (a lista de 9 do painel, cujos mínimos somam exatamente os 430 de `MAX_FOTOS`). O painel joga essa foto em "Outros" via `normalizarCategoria`; o dossiê a mostrava como "Seguranca", sem cedilha. Mapeei o rótulo no `GALERIA_LABELS` para o documento não imprimir errado, **mas painel e dossiê continuam discordando** — e acertar isso mexe no 430, número que aparece nos dois. Decisão do Marcos, não minha.
+
+---
+
+## 37. Três vias, três linhas idênticas
+**Data:** 23/08/2026
+
+Na página pública de verificação (destino do QR), as impressões digitais dos dossiês emitidos apareciam assim:
+
+```
+EMITIDO EM 23/08/2026    70361d97...
+EMITIDO EM 23/08/2026    48241862...
+EMITIDO EM 23/08/2026    bc56d782...
+```
+
+Três vias legítimas — reemissão é normal, cada nova emissão gera hash novo — mas **nada as distinguia**. Quem estivesse com uma delas na mão sabia apenas que "uma das três deveria bater". Num documento que vai para seguradora e comprador, isso lê como desleixo.
+
+A informação existia o tempo todo: `created_at` guarda 19:48, 10:19 e 09:41. Só o `emitido_em` (que é `DATE`) estava sendo mostrado, cortado em 10 caracteres.
+
+**Cuidado que a correção exigiu:** a hora vem de `created_at`, **nunca** de `emitido_em`. O `emitido_em` é o campo coberto pela assinatura HMAC do QR (`protocolo + data`) — mexer no formato dele quebraria a verificação de todo dossiê já impresso. Aqui é só apresentação.
+
+**Fuso fixo `-03:00` em vez de `ZoneInfo("America/Sao_Paulo")`:** o Brasil não tem horário de verão desde 2019, e o `ZoneInfo` depende do pacote `tzdata`, que existe no contêiner e pode faltar na máquina local. Data de emissão que aparece diferente em dois lugares é o tipo de coisa que faz um perito desconfiar do documento inteiro.
+
+Hora ausente ou corrompida cai na data sozinha, sem quebrar a verificação.

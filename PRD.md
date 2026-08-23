@@ -141,6 +141,12 @@ O 430 vivia em **quatro** lugares, e essa duplicação foi a causa raiz:
 
 O último só apareceu porque `test_conhecimento_esta_em_dia_com_o_codigo` quebrou. Sem esse teste, a Capitã Solara ensinaria "430 fotos" às marinas enquanto o painel oferecia 460 — com convicção e sem ninguém perceber.
 
+### Verificação pública — hora da emissão (23/08/2026)
+
+Reemissão é legítima (o dossiê é atualizado a cada novo registro selado) e cada via tem hash próprio. A página do QR listava todas — mas só com a data, então três vias do mesmo dia apareciam como três linhas idênticas. O portador sabia apenas que "uma das três deveria bater".
+
+Passou a mostrar `DD/MM/AAAA · HH:MM`, com a hora vinda de `created_at`. **Nunca de `emitido_em`**: aquele é o campo coberto pela assinatura HMAC do QR (`protocolo + data de emissão`), e mexer nele invalidaria todo QR já impresso. Fuso fixo `-03:00` em vez de `ZoneInfo`, que depende de `tzdata` e pode faltar fora do contêiner.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

@@ -22,6 +22,7 @@ import hashlib
 import logging
 import hmac
 import os
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -136,6 +137,41 @@ async def verificar_documento(hash_pdf: str):
     }
 
 
+# Fuso fixo em vez de ZoneInfo: o Brasil não tem horário de verão desde 2019,
+# e ZoneInfo("America/Sao_Paulo") depende do pacote tzdata, que existe no
+# contêiner e pode faltar na máquina de quem roda local. Data de emissão que
+# aparece diferente em dois lugares é o tipo de coisa que faz um perito
+# desconfiar do documento inteiro.
+_FUSO_BR = timezone(timedelta(hours=-3))
+
+
+def _emissao_legivel(registro: dict) -> str:
+    """Data da emissão com a hora, quando ela existir.
+
+    Três vias emitidas no mesmo dia apareciam como três linhas idênticas —
+    "EMITIDO EM 23/08/2026" três vezes. Quem estava com uma delas na mão não
+    tinha como saber qual era a sua; sabia apenas que uma das três deveria
+    bater. Num documento que vai para seguradora, isso lê como desleixo.
+
+    A hora vem de `created_at` (o instante em que a emissão foi registrada),
+    não de `emitido_em`, que é DATE e é o campo coberto pela assinatura do QR.
+    Aqui é só apresentação — a assinatura continua sobre protocolo + data.
+    """
+    data = "/".join(reversed(str(registro.get("emitido_em"))[:10].split("-")))
+    bruto = registro.get("created_at")
+    if not bruto:
+        return data
+    try:
+        ts = datetime.fromisoformat(str(bruto).replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        return f"{data} · {ts.astimezone(_FUSO_BR):%H:%M}"
+    except (ValueError, TypeError):
+        # Formato inesperado não pode derrubar a verificação: a data sozinha
+        # já cumpre o essencial.
+        return data
+
+
 @router.get("/{protocolo}")
 async def verificar(
     protocolo: str,
@@ -218,8 +254,7 @@ async def verificar(
             .limit(5).execute()
         )
         emitidos = [
-            {"hash": d.get("hash_pdf"),
-             "emitido_em": "/".join(reversed(str(d.get("emitido_em"))[:10].split("-")))}
+            {"hash": d.get("hash_pdf"), "emitido_em": _emissao_legivel(d)}
             for d in (res.data or []) if d.get("hash_pdf")
         ]
     except Exception as ex:
