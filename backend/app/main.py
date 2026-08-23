@@ -2,11 +2,23 @@
 Yachts Atlas — FastAPI Backend
 Main application entry point
 """
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import router as api_v1
 from app.core.config import settings
 from app.middleware.tracking import RequestTrackingMiddleware
+
+# Sem isto, o logger raiz fica em WARNING e todo `logger.info` da aplicação
+# some — inclusive o "WhatsApp enviado para ..." do envio bem-sucedido. O
+# efeito colateral é cruel: sucesso e "nem tentei" ficam com a MESMA aparência
+# no log de produção (nenhuma linha), e o diagnóstico vira adivinhação. Foi o
+# que aconteceu em 23/08/2026 com o aviso de indicação.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -41,6 +53,16 @@ async def _ligar_agenda() -> None:
     """
     from app.services.agenda import iniciar
     iniciar()
+
+    # Conferência dos canais de aviso, no log, a cada deploy.
+    #
+    # `notificar_fundador` pula canal mal configurado em silêncio — proposital,
+    # porque falhar em avisar não pode derrubar o pagamento que gerou o aviso.
+    # Só que em produção isso deixa "a variável sumiu no deploy" idêntico a
+    # "não havia o que avisar". Perguntar aqui, alto, é o que transforma um dia
+    # de suposição em uma linha no log que já se lê depois de subir.
+    from app.services.diagnostico_avisos import conferir_no_boot
+    conferir_no_boot()
 
 
 @app.on_event("shutdown")

@@ -49,12 +49,25 @@ def normalizar_telefone(telefone: Optional[str]) -> Optional[str]:
     # Zero à esquerda de DDD ("048 99123-4567") não existe em número internacional.
     digitos = digitos.lstrip("0")
 
-    if len(digitos) <= _MAX_SEM_DDI:
-        digitos = f"{settings.DDI_PADRAO}{digitos}"
+    # Já veio com DDI: aceita como está, sem acrescentar outro.
+    if len(digitos) in (12, 13) and digitos.startswith(settings.DDI_PADRAO):
+        return digitos
 
-    # Curto demais para ser telefone de verdade: melhor não enviar do que
-    # entregar na caixa de outra pessoa.
-    return digitos if len(digitos) >= 12 else None
+    # 10 ou 11 dígitos = DDD + número, sem DDI. O DDD brasileiro começa em 11:
+    # não existe DDD 01..10, e é isso que separa "12978138934" (DDD 12, válido)
+    # de "55978138934" (alguém digitou o DDI e esqueceu o DDD).
+    #
+    # O caso de cima aconteceu de verdade: a regra antiga só olhava o TAMANHO,
+    # via 11 dígitos, concluía que faltava o DDI e gravava 5555978138934 — um
+    # número no DDD 55 (Rio Grande do Sul) que ninguém digitou e provavelmente
+    # não existe. Passava sem reclamar, e a mensagem comercial iria para um
+    # estranho.
+    if len(digitos) in (10, 11) and 11 <= int(digitos[:2]) <= 99:
+        return f"{settings.DDI_PADRAO}{digitos}"
+
+    # Fora dessas formas, é malformado. Devolver None faz quem chamou recusar
+    # e avisar — melhor que inventar um DDD e entregar na caixa de outra pessoa.
+    return None
 
 
 def _envia_evolution(telefone: str, texto: str, instancia: str, apikey: str) -> bool:

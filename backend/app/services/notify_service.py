@@ -56,6 +56,15 @@ def notificar_fundador(titulo: str, corpo: str) -> bool:
             ) or entregou
         except Exception as e:
             logger.error(f"Falha ao avisar o fundador por WhatsApp: {e}")
+    else:
+        # O silêncio mais caro do sistema morava exatamente aqui. Sem esta
+        # linha, `ALERTA_WHATSAPP` vazio pulava o canal sem deixar rastro: no
+        # log de produção o aviso que nunca foi tentado ficava idêntico ao
+        # aviso que saiu — nenhuma linha nos dois casos. O e-mail continuava
+        # chegando, o que reforçava a impressão de que estava tudo certo.
+        logger.warning(
+            f"ALERTA_WHATSAPP vazio — aviso NAO sai por WhatsApp: {titulo}"
+        )
 
     destino = _destino_email()
     if destino:

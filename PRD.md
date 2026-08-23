@@ -86,6 +86,19 @@ Estratégia multi-região pensada **desde a arquitetura**: o mesmo DNA (custódi
 - `SUPABASE_URL`, `SUPABASE_KEY` (publishable), `SUPABASE_SERVICE_KEY` (secret), `SUPABASE_JWT_SECRET`, `OPENAI_API_KEY`, `STRIPE_*`.
 - `VERIFICACAO_SECRET` — assina o QR de autenticidade do dossiê. **Sem ela o código cai no literal de desenvolvimento, que está no repositório público.** Trocar depois de emitir o primeiro dossiê invalida todos os QR já impressos.
 - **E-mail (Hostinger, domínio próprio):** `EMAIL_SENDER` (`contato@yachtsatlas.online`), `EMAIL_PASSWORD`, `EMAIL_SMTP_HOST` (`smtp.hostinger.com`), `EMAIL_SMTP_PORT` (465), `EMAIL_REMETENTE_COBRANCA` (alias `cobranca@`).
-- **WhatsApp (Evolution):** `WHATSAPP_PROVIDER`, `EVOLUTION_BASE_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE`, `DDI_PADRAO`.
-- **Avisos ao fundador:** `ALERTA_WHATSAPP` (número que recebe), `ALERTA_EMAIL`.
+- **WhatsApp (Evolution):** `WHATSAPP_PROVIDER`, `EVOLUTION_BASE_URL`, `EVOLUTION_INSTANCE` (transacional: código de acesso e cobrança), `EVOLUTION_API_KEY` (token DA instância transacional), `AUTHENTICATION_API_KEY` (chave global do servidor Evolution — só fallback), `DDI_PADRAO`, `WHATSAPP_WEBHOOK_TOKEN`.
+- **Prospecção/avisos (instância SEPARADA):** `EVOLUTION_INSTANCE_PROSPECCAO` (`Marinas-Indicadas`) e `EVOLUTION_API_KEY_PROSPECCAO`. Número distinto do transacional de propósito: banimento é por número, e disparo comercial não pode derrubar o login do armador junto. Token da instância = **32 caracteres + 3 hífens = 35 no total**; qualquer caractere a mais (um `+` colado por engano, por exemplo) vira 401 silencioso.
+- **Avisos ao fundador:** `ALERTA_WHATSAPP` (número que recebe) e `ALERTA_EMAIL`. **Manter `ALERTA_WHATSAPP` dentro do bloco do WhatsApp**, junto das outras — solta no meio do arquivo ela já se perdeu num deploy (23/08/2026) e ninguém percebeu por horas.
+
+### Por que o aviso não chegou — nunca mais por adivinhação (23/08/2026)
+
+`notificar_fundador` é best-effort por construção: canal mal configurado é **pulado**, não levantado — falhar em avisar não pode derrubar o pagamento que gerou o aviso. O preço disso é um ponto cego: em produção, "a variável sumiu no deploy" fica **idêntico** a "não havia o que avisar". Custou um dia inteiro, com indicações entrando, e-mail chegando e WhatsApp mudo.
+
+Três travas, em `app/services/diagnostico_avisos.py`:
+
+1. **Conferência no boot** — a cada deploy a aplicação confere os dois canais (variáveis + `connectionState` real da instância) e escreve o resultado no log. Falta alguma coisa, sai em **ERROR**, com o nome da variável: o log de deploy é lido de relance, e INFO no meio de cem linhas se perde. Nunca levanta — diagnóstico que derruba o boot é pior que o defeito que ele diagnostica.
+2. **`GET /api/v1/admin/diagnostico-avisos`** — sob demanda, com token de admin. Mesma lógica, um módulo só: duas cópias divergem, e a errada é sempre a que ninguém está olhando. Não envia nada; segredos saem mascarados.
+3. **Fim do pulo mudo** — `ALERTA_WHATSAPP` vazio agora registra WARNING com o título do aviso que não saiu. Era exatamente ali que morava o silêncio.
+
+Junto: `logging.basicConfig(level=INFO)` em `main.py`. Sem isso o logger raiz ficava em WARNING e todo `logger.info` da aplicação sumia — inclusive o `WhatsApp enviado para ...` do envio bem-sucedido. Sucesso e "nem tentei" tinham a **mesma aparência** no log de produção: nenhuma linha.
 - **Links de pagamento:** `STRIPE_LINK_MARINA_FUNDADORA` ($200) e `STRIPE_LINK_MARINA_OFICIAL` ($250) — ambos na conta do CNPJ.

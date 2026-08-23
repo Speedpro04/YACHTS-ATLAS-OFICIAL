@@ -745,3 +745,36 @@ Confirmado contra produção, não suposto:
 
 **Padrão a repetir:** segredo com fallback para literal é bomba-relógio — o app sobe, funciona, e ninguém percebe que a proteção não existe. O aviso no log não basta: ninguém lê log. Onde o fallback for perigoso, o certo é **recusar subir** (foi o que se fez com a instância de prospecção, §23).
 
+
+---
+
+## 32. O dia que se perdeu porque o sistema não sabia dizer o que faltava
+**Data:** 23/08/2026
+
+Indicações entrando, e-mail chegando, WhatsApp mudo. Um dia inteiro de suposição — culpei o hífen, culpei o deploy, culpei a variável, li o log errado (era o do Evolution, não o do Atlas). Nada disso era diagnóstico: era chute com aparência de análise.
+
+Quando finalmente **perguntei em vez de deduzir**, a resposta veio em dois segundos:
+
+```
+Programa-Atlas    -> HTTP 200  state: open
+Marinas-Indicadas -> HTTP 200  state: open
+```
+
+As duas instâncias de pé, os dois tokens válidos. O Evolution nunca foi o problema.
+
+**A causa real do custo não foi a variável perdida — foi o sistema não conseguir dizer que ela faltava.** `notificar_fundador` pula canal mal configurado em silêncio, de propósito: falhar em avisar não pode derrubar o pagamento que gerou o aviso. Mas em produção isso deixa *"a variável sumiu no deploy"* **idêntico** a *"não havia o que avisar"*.
+
+Pior: o logger raiz estava em WARNING, então o `logger.info("WhatsApp enviado para ...")` do envio **bem-sucedido** também não aparecia. Sucesso e "nem tentei" tinham a mesma aparência no log — **nenhuma linha**. Não havia como distinguir os dois, e eu passei horas tentando.
+
+O que mudou (`app/services/diagnostico_avisos.py`):
+
+1. **Conferência no boot** — a cada deploy o app confere variáveis + estado real da instância e escreve no log. Faltou algo, sai em **ERROR** com o nome da variável. Nunca levanta: diagnóstico que derruba o boot é pior que o defeito.
+2. **`/api/v1/admin/diagnostico-avisos`** passou a chamar a mesma função. Duas cópias da mesma checagem divergem, e a errada é sempre a que ninguém olha.
+3. **Fim do pulo mudo** — `ALERTA_WHATSAPP` vazio agora registra WARNING com o título do aviso perdido.
+4. **`logging.basicConfig(level=INFO)`** em `main.py`.
+
+**Detalhe de configuração que ficou:** `ALERTA_WHATSAPP` estava **fora do bloco do WhatsApp** no EasyPanel, solta no meio do arquivo. Todas as irmãs juntas, ela sozinha — e foi ela que se perdeu numa edição. Variável de um mesmo assunto mora junta.
+
+**Token de instância da Evolution:** 32 caracteres + 3 hífens = **35 no total**. Um caractere a mais (o `+` que veio colado junto numa cópia) vira 401 mudo. Conferir tamanho é mais rápido que conferir conteúdo.
+
+**Padrão a repetir:** quando eu me pegar deduzindo pela terceira vez, o defeito não é mais o bug — é a falta de observabilidade. Parar de investigar e **construir o instrumento** sai mais barato que a quarta hipótese. E o instrumento precisa rodar **sozinho**, no caminho que já se percorre (o log do deploy): ferramenta que só responde quando alguém suspeita não serve para o caso em que ninguém suspeitou.

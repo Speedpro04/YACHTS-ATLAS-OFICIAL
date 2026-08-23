@@ -249,7 +249,7 @@ export default function MarinaParceira() {
                       type="tel"
                       name="whatsapp"
                       inputMode="tel"
-                      placeholder="55 48 99999-1234"
+                      placeholder="+55 12 97813-8934"
                       value={form.whatsapp}
                       onChange={handleChange}
                     />
