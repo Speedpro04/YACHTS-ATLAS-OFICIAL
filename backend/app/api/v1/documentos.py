@@ -109,6 +109,13 @@ async def list_documentos(
             else:
                 doc["nome_arquivo"] = filename_part
             documents.append(doc)
+
+        # Link assinado no lugar da URL publica gravada. O balde `media` guarda
+        # documento de cliente e vai ser fechado; a URL do banco so funciona
+        # enquanto ele for publico. Assinado aqui, na leitura, o frontend nao
+        # muda nada — ele le `url_arquivo` como sempre leu.
+        from app.services.s3_service import assinar_documentos
+        documents = assinar_documentos(documents)
             
         # Log document list access
         audit_service.create_audit_log(
@@ -332,6 +339,10 @@ async def get_documento(doc_id: str, user_id: str = Depends(get_current_user_id)
             doc["nome_arquivo"] = filename_part.split("_", 1)[1]
         else:
             doc["nome_arquivo"] = filename_part
+
+        # Idem da listagem: a URL gravada morre junto com o balde publico.
+        from app.services.s3_service import assinar_documentos
+        assinar_documentos([doc])
             
         # Log document view
         audit_service.create_audit_log(

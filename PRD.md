@@ -89,6 +89,27 @@ Corrigido: cliente de serviço + ator textual preservado em `metadata.ator` (com
 
 > Por que importa comercialmente: a trilha é a resposta a *"quem abriu este dossiê, quando, de qual IP"* — a pergunta que uma seguradora faz. É o lastro do **Laudo de Autenticidade (US$ 40)**.
 
+### Cofre privado — o balde `media` (23/08/2026)
+
+O balde `media` do Supabase Storage estava **público**: 51 arquivos, 10 MB, incluindo documento de cliente (nota fiscal, apólice, laudo). Qualquer pessoa com o endereço baixava **sem autenticar**.
+
+A correção não é só virar a chave do balde — as URLs públicas estão gravadas em `documentos.url_arquivo` e quebrariam junto. O desenho:
+
+| Onde | Antes | Depois |
+|---|---|---|
+| Listagem de documentos (painel + portal do armador) | `url_arquivo` gravada | link **assinado na leitura** |
+| Documento único | `url_arquivo` gravada | link assinado |
+| Fotos do dossiê (PDF) | `url_arquivo` gravada | link assinado em lote |
+| Download pelo painel | já era assinado | inalterado |
+
+**Assinar na leitura e não regravar o banco**, por três razões: `storage_path` existe em 100% dos documentos e `url_arquivo` só em parte (36 de 68); link assinado vence, e gravá-lo no banco seria guardar algo que expira num lugar que não expira; e o frontend lê `url_arquivo` em quatro telas — mantendo o nome do campo, ele não muda uma linha.
+
+Validade do link: **8 horas** — cobre uma jornada de trabalho sem recarregar a página, e mesmo assim morre no mesmo dia. Link assinado vazado expõe **um arquivo**; o balde público expõe todos.
+
+**Ordem obrigatória:** o código vai a produção **primeiro**, o balde fecha **depois**. Invertido, o painel para de mostrar documento e o dossiê sai sem foto no instante da mudança.
+
+Sem fallback: `get_presigned_url` não cai mais para URL pública quando a assinatura falha. Com o balde privado, esse fallback devolveria um endereço que responde 400 — um link que parece bom e não abre, descoberto na frente do comprador ou do perito.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

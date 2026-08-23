@@ -282,3 +282,44 @@ class S3Service:
 def get_s3_service() -> S3Service:
     """Factory function to get S3Service instance"""
     return S3Service()
+
+# Validade do link assinado servido ao painel e ao portal do armador.
+#
+# 8 horas: cobre uma jornada de trabalho inteira (a marina abre o painel de
+# manhã e as miniaturas continuam carregando à tarde, sem recarregar a página)
+# e mesmo assim o link morre no mesmo dia. Link assinado que vaza é exposição
+# real enquanto vale — só que limitada a UM arquivo, e não ao balde inteiro,
+# que é o que se tem hoje com o `media` público.
+VALIDADE_LINK_PAINEL = 8 * 3600
+
+
+def assinar_documentos(documentos: list, expires_in: int = VALIDADE_LINK_PAINEL) -> list:
+    """Troca a `url_arquivo` gravada por um link assinado, na hora de servir.
+
+    A URL pública que está no banco só funciona enquanto o balde `media` for
+    público — e ele guarda documento de cliente: nota fiscal, apólice, laudo.
+    Hoje qualquer pessoa com o endereço baixa sem autenticar nenhuma.
+
+    Assinar na LEITURA, e não regravar o banco, é de propósito:
+
+      * `storage_path` existe em 100% dos documentos; `url_arquivo` só em
+        parte deles. O caminho é a fonte confiável, a URL é derivada.
+      * link assinado vence. Gravar um no banco seria gravar algo que expira
+        num lugar que não expira — o defeito voltaria em oito horas.
+      * o frontend não precisa mudar nada: ele lê `url_arquivo` em quatro
+        telas e continua lendo.
+
+    Documento sem caminho, ou que falhe ao assinar, sai com `url_arquivo`
+    vazia — a tela esconde o botão. Melhor do que entregar um link que
+    parece bom e responde 400.
+    """
+    if not documentos:
+        return documentos
+
+    caminhos = [d.get("storage_path") for d in documentos if isinstance(d, dict)]
+    assinadas = get_s3_service().urls_assinadas(caminhos, expires_in)
+
+    for d in documentos:
+        if isinstance(d, dict):
+            d["url_arquivo"] = assinadas.get(d.get("storage_path")) or ""
+    return documentos

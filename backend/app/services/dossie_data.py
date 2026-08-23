@@ -441,6 +441,13 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         or []
     )
 
+    # As fotos do dossie vinham pela URL publica gravada no banco. Com o balde
+    # fechado elas sumiriam do PDF — exatamente o defeito que consertamos em
+    # 22/08. Assinadas em lote: uma chamada, e nao uma por foto no meio da
+    # montagem do documento.
+    from app.services.s3_service import assinar_documentos
+    documentos = assinar_documentos(documentos)
+
     comprimento = ativo.get("comprimento") or 0
 
     # 01 — Identificação (da tabela ativos)

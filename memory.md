@@ -848,3 +848,26 @@ Parar no "girar" dá a sensação exata de resolvido — a tela mostra chave nov
 **Achado de brinde:** o `.gitignore` tinha `.env`, `.env.local`, `.env.*.local` e `*.env` — e **nenhuma** dessas pega `.env.backup-antes-da-troca`. Um backup meu ficou uma hora no diretório com a senha antiga dentro, a um `git add -A` de repetir o vazamento de julho. Corrigido com `.env.*` + `!.env.example`, **testado com nomes reais** — a primeira verificação que escrevi deu falso positivo porque procurou o texto `.env.*` e o encontrou dentro de `.env.*.local`.
 
 **Padrão a repetir:** ler a regra não é testar a regra. Errei nisso duas vezes no mesmo dia (aqui e no `normalizar_telefone`, que eu disse ter consertado um caso que ele não cobre). Quando a conclusão importa, executar vale mais que inspecionar.
+
+---
+
+## 35. O cofre que era vitrine
+**Data:** 23/08/2026
+
+O balde `media` do Supabase Storage estava **público**. 51 arquivos, 10 MB, com documento de cliente dentro — nota fiscal, apólice, laudo. Qualquer um com o endereço baixava sem autenticar nenhuma.
+
+Numa plataforma vendida como **custódia**, isso não é um bug de configuração: é a contradição da proposta.
+
+**O que tornou a correção mais que "virar a chave":** as URLs públicas estavam **gravadas** em `documentos.url_arquivo` (36 de 68 registros). Fechar o balde sem mexer no código quebraria o painel e o dossiê no mesmo instante — desfazendo o conserto das fotos de 22/08.
+
+O que se conferiu antes de escrever qualquer linha:
+
+- **`storage_path` existe nos 68 documentos.** É a fonte confiável; a URL é derivada. Deu para assinar na leitura sem depender do que estava gravado.
+- **As 29 evidências dos registros selados não guardam URL nenhuma.** Era o maior receio: registro selado é imutável, e URL pública dentro dele seria prova visual quebrada sem possibilidade de correção. Não havia.
+- **O frontend não monta URL.** Lê `url_arquivo` em quatro telas e pronto. Mantendo o nome do campo, zero mudança no front.
+
+**Assinar na leitura, nunca regravar o banco.** Link assinado vence; gravá-lo seria guardar algo que expira num lugar que não expira — o defeito voltaria em oito horas, e ninguém ligaria os pontos.
+
+**Ordem obrigatória: código primeiro, balde depois.** Invertido, o sistema quebra no instante da mudança.
+
+**Padrão a repetir:** antes de fechar uma porta que está aberta há tempo, mapear **quem já está passando por ela**. O trabalho do dia foi 80% mapeamento e 20% código — e o mapeamento é que evitou quebrar o dossiê pela segunda vez na mesma semana.
