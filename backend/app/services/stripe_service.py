@@ -488,6 +488,51 @@ class StripeService:
         return email or (metadata or {}).get("email") or getattr(session, "customer_email", None)
 
     @staticmethod
+    def _nome_da_marina(
+        user_id: Optional[str],
+        metadata: Optional[Dict[str, Any]],
+        session: stripe.checkout.Session,
+    ) -> Optional[str]:
+        """
+        O nome que vai no e-mail de boas-vindas, do mais confiavel ao menos.
+
+        1. O CADASTRO — onde a marina digitou o proprio nome. E o unico que
+           vale por cliente, e por isso vem primeiro.
+        2. O metadata do link, se houver. Payment Link e URL fixa: o metadata
+           dele e o MESMO para todo mundo que paga por ali. Serve de rede,
+           nunca de primeira escolha.
+        3. O titular do checkout. Pode ser a pessoa em vez da marina, mas e
+           melhor que um "Ola" pelado.
+
+        So o item 2 era consultado, e ele vem vazio nos Payment Links — por
+        isso o primeiro e-mail depois de US$ 250 chegava sem o nome de quem
+        acabou de pagar. O dado nunca faltou; faltava olhar onde ele estava.
+        """
+        if user_id:
+            try:
+                from app.core.supabase import get_supabase_admin
+                atual = get_supabase_admin().auth.admin.get_user_by_id(user_id)
+                usuario = getattr(atual, "user", None) or atual
+                meta = getattr(usuario, "user_metadata", None) or {}
+                do_cadastro = meta.get("marina") or meta.get("nome")
+                if do_cadastro and str(do_cadastro).strip():
+                    return str(do_cadastro).strip()
+            except Exception as e:
+                logger.error(f"Falha ao ler o nome da marina {user_id}: {e}")
+
+        do_link = (metadata or {}).get("marina_nome") or (metadata or {}).get("nome")
+        if do_link and str(do_link).strip():
+            return str(do_link).strip()
+
+        detalhes = getattr(session, "customer_details", None)
+        if detalhes:
+            do_checkout = (detalhes.get("name") if isinstance(detalhes, dict)
+                           else getattr(detalhes, "name", None))
+            if do_checkout and str(do_checkout).strip():
+                return str(do_checkout).strip()
+        return None
+
+    @staticmethod
     def _atualizar_metadata(
         user_id: str,
         mudancas: Dict[str, Any],
@@ -647,13 +692,24 @@ class StripeService:
             self._marcar_pagamento_confirmado(user_id)
 
         # E-mail de boas-vindas da MARCA (best-effort, nunca derruba o webhook).
-        # O recibo financeiro fica a cargo da processadora; este é o "obrigado"
-        # do Yachts Atlas no exato momento da liberação do acesso.
-        if payment_type != "dossier" and e_assinatura:
+        # E o "obrigado" do Yachts Atlas no momento exato da liberacao do acesso.
+        # Texto NEUTRO quanto a oferta — serve o Lancamento e a Oficial sem
+        # depender de adivinhar qual das duas foi vendida. Ver a nota em
+        # email_service._welcome_html.
+        #
+        # `user_id` e obrigatorio aqui pelo mesmo motivo que na linha acima: a
+        # conta Stripe e da Axos Hub e vende mais de um produto, e o webhook e
+        # POR CONTA — nao da para filtrar por produto. Sem esta trava, um
+        # cliente de outro produto da casa recebia "Bem-vindo ao Yachts Atlas,
+        # seu acesso esta liberado" com botao para um login que nao e dele.
+        # Sem usuario no Atlas, nao ha acesso liberado e nao ha o que saudar.
+        if user_id and payment_type != "dossier" and e_assinatura:
             try:
                 from app.services.email_service import send_welcome_email
-                nome = metadata.get("marina_nome") or metadata.get("nome")
-                send_welcome_email(cliente_email, nome=nome)
+                send_welcome_email(
+                    cliente_email,
+                    nome=self._nome_da_marina(user_id, metadata, session),
+                )
             except Exception as e:
                 logger.error(f"Falha ao enviar e-mail de boas-vindas ({session.id}): {e}")
 
@@ -666,13 +722,23 @@ class StripeService:
         # mandando TODA marina seguinte para o link de US$ 200 — as 20 vagas
         # nunca esgotavam. Por isso o valor pago tambem vale como prova: uma
         # assinatura de US$ 200/mes e, por definicao, preco de fundadora.
+        #
+        # A MOEDA entra na comparacao junto com o valor. Numero solto nao
+        # identifica preco: R$ 200,00 e US$ 200,00 sao o mesmo `200.0`, e
+        # valem coisas bem diferentes. Como a conta e da Axos Hub e o webhook
+        # e por conta, qualquer produto da casa cobrado a R$ 200,00/mes cairia
+        # aqui como marina fundadora. O metadata `programa` continua valendo
+        # sozinho: ali a intencao foi declarada, nao inferida.
         valor_pago = (session.amount_total or 0) / 100
+        moeda = (getattr(session, "currency", None) or "").lower()
         e_fundadora = (
             (metadata or {}).get("programa") == "marina_fundadora"
             or (e_assinatura
                 and payment_type != "dossier"
+                and moeda == settings.PRICE_CURRENCY
                 and valor_pago == float(settings.LAUNCH_PRICE_MONTHLY))
         )
+
         if e_fundadora:
             try:
                 from app.core.supabase import get_supabase_admin

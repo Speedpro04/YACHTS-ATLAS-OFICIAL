@@ -161,9 +161,22 @@ class Settings(BaseSettings):
     LAUNCH_SLOTS: int = 20             # marinas de lançamento a $200 (= 5 UFs x 4)
     LAUNCH_SLOTS_PER_STATE: int = 4    # 4 fundadoras por estado (ver LAUNCH_STATES)
     LAUNCH_PRICE_MONTHLY: int = 200    # preço das 20 de lançamento
+    # Moeda dos dois links de marina. Existe porque o webhook reconhece a
+    # fundadora PELO VALOR, e comparar numero sem moeda e armadilha: a conta
+    # Stripe e da Axos Hub e recebe os eventos de todos os produtos da casa.
+    # Um produto qualquer a R$ 200,00/mes — preco comum — cairia no portao de
+    # US$ 200 e seria tratado como marina fundadora.
+    PRICE_CURRENCY: str = "usd"
     TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
     TRADITIONAL_PRICE_MONTHLY: int = 250
-    LAUNCH_DOSSIER_BONUS_MONTHS: int = 18
+
+    # Meses de dossiê 100% integral de cada oferta. Nenhum código lê estes dois
+    # hoje: eles existem para o modelo de cobrança ficar escrito INTEIRO aqui,
+    # ao lado dos preços, e não metade aqui e metade nos documentos — que era o
+    # caso do prazo da oficial. O e-mail de boas-vindas é neutro de propósito e
+    # não declara oferta (ver email_service._welcome_html).
+    LAUNCH_DOSSIER_BONUS_MONTHS: int = 18      # fundadora ($200)
+    TRADITIONAL_DOSSIER_MONTHS: int = 12       # oficial ($250)
 
     # Quanto tempo a vaga fundadora fica presa no nome da marina entre o
     # cadastro e o pagamento. Eram 60 min, suficiente enquanto o cadastro caía

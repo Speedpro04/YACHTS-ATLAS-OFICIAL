@@ -674,6 +674,12 @@ export default function RegistroMarina() {
                      <br />
                      Sua vaga fica <strong className="text-gold-500/80 font-semibold">reservada por 3 horas</strong> para
                      você concluir com calma.
+                     <br />
+                     {/* Depois de pagar, a marina sai daqui para a Stripe. Sem
+                         dizer o que esperar, ela fica sem saber se deu certo —
+                         e o acesso, que é liberado na hora, passa despercebido. */}
+                     Após o pagamento, você recebe um <strong className="text-white/60 font-semibold">e-mail de
+                     confirmação</strong> e seu acesso é liberado imediatamente.
                    </p>
                 </div>
               </div>

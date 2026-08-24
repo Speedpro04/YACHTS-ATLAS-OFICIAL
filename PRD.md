@@ -269,6 +269,48 @@ Laço **separado** do da cobrança, de propósito: cadências diferentes (dias �
 
 Duas rotas administrativas acompanham: `GET /leads/prospeccao/fila` (quem está na fila, e por que os outros não estão) e `POST /leads/prospeccao/disparar` — esta **em ensaio por padrão**, só `?enviar=true` fala com gente de verdade.
 
+### O e-mail pós-pagamento (24/08/2026)
+
+O e-mail de boas-vindas é a **primeira coisa que a marina recebe depois de pôr o cartão**, e por muito tempo é a única: `_handle_invoice_paid` (renovação) não envia nada. Quem paga US$ 250/mês por doze meses recebia **um e-mail no ano inteiro**.
+
+Ele chegava sem o nome de quem pagou — *"Olá, bem-vindo à Atlas"*. O nome vinha do metadata do Payment Link, e Payment Link é URL fixa: não carrega metadata por cliente. O dado nunca faltou, faltava olhar onde estava. Agora vem em três degraus:
+
+| Ordem | Fonte | Por quê |
+|---|---|---|
+| 1º | **cadastro** (`user_metadata.marina`) | onde a marina digitou o próprio nome; único que vale por cliente |
+| 2º | metadata do link | é o MESMO para todo mundo que paga por ali — rede, não primeira escolha |
+| 3º | titular do checkout | pode ser a pessoa e não a marina, mas é melhor que "Olá" pelado |
+
+**O texto é NEUTRO quanto à oferta — um só serve o Lançamento e a Oficial.**
+
+Chegou a descrever a oferta contratada (preço, prazo travado, meses de dossiê), com a ideia de servir de comprovante do acordo no 13º mês. Foi desfeito no mesmo dia, e a razão vale mais que a economia de código: para escrever a oferta, o e-mail teria de **adivinhar qual das duas foi vendida**. O metadata `programa` vem vazio nos Payment Links, então sobrava o valor pago como pista.
+
+Inferência que erra aqui não deixa o texto vago — deixa o texto **errado, por escrito, no primeiro contato depois do cartão**. Uma fundadora lida como oficial receberia "dossiê 12 meses" tendo comprado 18. Não afirmar é melhor que afirmar errado.
+
+O contrato vive no cadastro e no painel, que sabem a resposta. O e-mail confirma o pagamento e entrega o acesso — que é o que ele tem como saber sozinho.
+
+Os prazos de dossiê das duas ofertas ficaram no `config.py` mesmo sem leitor (`LAUNCH_DOSSIER_BONUS_MONTHS`, `TRADITIONAL_DOSSIER_MONTHS`): o modelo de cobrança fica escrito inteiro ao lado dos preços, em vez de metade no código e metade nos documentos — que era o caso do prazo da oficial.
+
+**Saiu a promessa de recibo.** O rodapé dizia *"o recibo é enviado separadamente pela nossa processadora"*, e o envio automático de recibo estava **desligado** na Stripe. Prometia o que não controlava. Trocado por *"Guarde este e-mail: ele é o registro do que foi contratado"* — e o recibo foi ligado no painel, junto com o de reembolsos.
+
+### A conta Stripe é da Axos Hub, e o webhook é por conta (24/08/2026)
+
+Endpoint de webhook assina **tipos de evento**, não produtos. A conta vende mais de um produto da casa, e o `POST /webhook` do Atlas recebe os eventos de todos eles. Duas travas nasceram daí:
+
+**1. Saudação sem acesso.** A linha que libera o acesso exigia `user_id`; a que mandava o e-mail, não. Cliente de outro produto recebia *"Bem-vindo ao Yachts Atlas — seu acesso está liberado ⚓"*, com botão para um login que não é dele. Agora as duas exigem o mesmo: sem usuário no Atlas, não há acesso liberado e não há o que saudar.
+
+**2. O portão dos US$ 200 ignorava a moeda.** `valor_pago == 200` é verdadeiro para **R$ 200,00** também — preço comum no Brasil. Qualquer produto da casa cobrado nesse valor cairia no reconhecimento de marina fundadora. A moeda entrou na comparação (`PRICE_CURRENCY`). O metadata `programa` continua valendo sozinho: ali a intenção foi **declarada**, não inferida.
+
+### O que a marina vê depois de clicar em pagar (24/08/2026)
+
+Ela sai do site para a Stripe e não volta. O aviso da etapa 4 do cadastro passou a dizer o que esperar:
+
+> Após o pagamento, você recebe um **e-mail de confirmação** e seu acesso é liberado imediatamente.
+
+Fica junto do que já estava ali (o vídeo e as 3 horas de reserva), no mesmo bloco — não em outro lugar da tela.
+
+**Pendente e sabido:** a LP de Lançamento vive em repositório separado (`C:\LANCAMENTO_YACHTS-ATLAS-PROMOCAO`) e ainda não tem esse aviso. É onde importa mais: lá o cadastro fica a um passo do pagamento. A regra de senha já se dividiu assim uma vez (6 aqui, 8 lá, 10 no servidor) — texto de pagamento precisa ir nos dois.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

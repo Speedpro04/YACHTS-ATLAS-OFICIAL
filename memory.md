@@ -1109,3 +1109,57 @@ Marcados como `teste_nao_enviar` — **não apagados**. Apagar seria a única op
 **A carência (5 min em teste, 30 em produção) não é atraso técnico — é a janela de cancelamento.** Mensagem enviada não volta; lead na fila, sim. Formular assim mudou o que ela é: de "espera" para "salvaguarda".
 
 **Padrão a repetir:** ao ligar qualquer rotina que fale com terceiros, olhar primeiro **o que já está na fila**. A fila acumulou durante todo o tempo em que o gatilho não existia, e ninguém a curou — porque enquanto nada disparava, o conteúdo dela não tinha consequência.
+
+---
+
+## 43. O e-mail tinha o nome na mão e foi perguntar para quem não sabia
+**Data:** 24/08/2026
+
+O ensaio ponta a ponta funcionou: cadastro → R$ 1,00 → webhook → acesso liberado → login → auditoria. O que não funcionou foi o que chegou na caixa de entrada: **"Olá, bem-vindo à Atlas."**, sem o nome de quem acabou de pagar.
+
+A causa é o tipo de coisa que só aparece lendo a ordem das linhas:
+
+```
+webhook ACHA o usuario  →  usa so o .id para gravar em payments
+        ↓
+monta o e-mail          →  vai buscar o nome no metadata do LINK
+        ↓
+Payment Link e URL fixa →  metadata vazio  →  "Ola" pelado
+```
+
+Ele tinha a marina na mão e jogou fora tudo menos o `id`. E o lugar onde foi procurar é o único que **não pode** ter a resposta: metadata de Payment Link é o mesmo para todo mundo que paga por aquele link — por definição não é por cliente.
+
+**Padrão a repetir:** quando um dado vem vazio, antes de arranjar outra fonte, perguntar **se a fonte atual poderia ter aquilo**. Campo compartilhado nunca guarda dado individual. Ordenei as três fontes por confiabilidade (cadastro → link → titular do checkout) em vez de trocar uma pela outra.
+
+### O e-mail promete o que não controla
+
+O rodapé dizia *"o recibo é enviado separadamente pela nossa processadora"*. Fui conferir: **estava desligado** na Stripe. O e-mail prometia uma coisa que não ia acontecer, e ninguém saberia — quem não recebe recibo não reclama, só desconfia.
+
+Junto veio o achado maior: `_handle_invoice_paid` **não manda e-mail nenhum**. Renovação é silenciosa. Sem o recibo da Stripe, uma marina de US$ 250/mês recebia **um único e-mail no ano inteiro** — as outras onze cobranças no cartão, sem uma linha.
+
+Ligado o recibo (e o de reembolso). Não conflita com a decisão de 21/08 de desligar os e-mails de cobrança: a régua do Atlas fala quando o pagamento **falha**, o recibo quando **dá certo**. Nunca disparam juntos.
+
+### A conta é da empresa mestre, e o webhook é por conta
+
+Foi o Marcos citar de passagem que existe outro produto na mesma conta Stripe para o buraco aparecer. Endpoint de webhook assina **tipo de evento**, não produto — links separados e endpoints separados não separam nada.
+
+Duas travas saíram daí, e as duas são a mesma lição em roupas diferentes:
+
+- A linha que libera acesso exigia `user_id`; **a que mandava o e-mail, não.** Cliente de outro produto receberia "seu acesso está liberado" com botão para um login que não é dele.
+- `valor_pago == 200` **ignorava a moeda**. R$ 200,00 e US$ 200,00 são o mesmo `200.0` em ponto flutuante. Qualquer produto da casa a R$ 200/mês seria lido como marina fundadora.
+
+**Padrão a repetir:** número sem unidade não identifica coisa nenhuma. Comparação de preço carrega a moeda junto, sempre — e quando duas linhas vizinhas decidem sobre o mesmo evento, elas precisam da **mesma** condição de guarda. Guarda que existe numa e falta na outra é o defeito esperando a ocasião.
+
+### O que eu escrevi e o Marcos mandou desfazer
+
+Pus a oferta contratada no corpo do e-mail — preço, prazo travado, meses de dossiê — argumentando que a campanha sai do ar e o e-mail fica, então ele provaria o acordo no 13º mês. O Marcos respondeu: *"o ideal é deixar o e-mail neutro, para servir para as duas, simples assim."*
+
+Ele estava certo, e por um motivo mais forte que o dele: **para escrever a oferta, o e-mail tem de ADIVINHAR qual das duas foi vendida.** O metadata `programa` vem vazio nos Payment Links, então a única pista é o valor pago. Quando essa inferência erra, o e-mail não fica genérico — fica **errado, por escrito, no primeiro contato depois do cartão**. Fundadora lida como oficial receberia "dossiê 12 meses" tendo comprado 18.
+
+**Padrão a repetir:** antes de pôr um dado num texto que vira comprovante, perguntar **de onde ele vem**. Dado inferido não deveria virar afirmação — vira, no máximo, decisão interna reversível. Não afirmar é melhor que afirmar errado, e o custo dos dois é assimétrico: silêncio se conserta com um segundo e-mail, contrato errado por escrito não.
+
+Os prazos de dossiê ficaram no config mesmo sem leitor, porque o da oficial (12 meses) **não existia em lugar nenhum do código** — o modelo de cobrança escrito pela metade é o defeito que sobra.
+
+### Do painel, no mesmo dia
+
+Descoberto ao conferir o que o cliente vê: o extrato do cartão mostra o nome da **empresa mestre**, não o do produto. Marina que não reconhece a cobrança contesta, e chargeback em recorrente internacional cobra taxa e mancha o índice da conta. Descritor por produto (`AXOSHUB* YACHTSATLAS`) resolve sem tocar na estrutura societária. **Ainda aberto.**

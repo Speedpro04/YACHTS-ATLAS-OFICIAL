@@ -73,6 +73,21 @@ def send_email(
         return False
 
 
+# O e-mail é NEUTRO quanto à oferta, de propósito: um texto só serve o
+# Lançamento e a Oficial.
+#
+# Chegou a descrever a oferta contratada — preço, prazo travado, meses de
+# dossiê. O problema é que ele teria de ADIVINHAR qual das duas foi vendida:
+# o metadata `programa` vem vazio nos Payment Links, então sobrava o valor
+# pago como pista. Inferência que erra aqui não deixa o texto vago, deixa o
+# texto ERRADO — uma fundadora lida como oficial receberia "dossiê 12 meses"
+# tendo comprado 18, por escrito, no primeiro contato depois do cartão.
+#
+# Não afirmar é melhor que afirmar errado. O contrato vive no cadastro e no
+# painel, que sabem a resposta; o e-mail confirma o pagamento e entrega o
+# acesso, que é o que ele tem como saber sozinho.
+
+
 def _welcome_html(nome: str | None) -> str:
     """Template premium de boas-vindas (table-based, inline CSS, à prova de cliente)."""
     saudacao = f"Olá, {nome}" if nome else "Olá"
@@ -140,8 +155,8 @@ def _welcome_html(nome: str | None) -> str:
         <!-- Nota -->
         <tr><td style="padding:24px 40px 8px 40px;">
           <p style="color:rgba(255,255,255,0.35);font-size:12px;line-height:1.6;margin:0;border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">
-            O recibo do pagamento é enviado separadamente pela nossa processadora.
-            Em caso de dúvida, basta responder a este e-mail.
+            Guarde este e-mail: ele confirma seu pagamento e o seu acesso.
+            Em caso de dúvida sobre a cobrança ou a entrada no sistema, basta responder aqui.
           </p>
         </td></tr>
 
@@ -160,11 +175,17 @@ def _welcome_html(nome: str | None) -> str:
 
 
 def send_welcome_email(to_email: str, nome: str | None = None) -> bool:
-    """E-mail premium de boas-vindas — disparado na liberação do acesso (pós-pagamento)."""
+    """
+    E-mail de boas-vindas — disparado na liberação do acesso (pós-pagamento).
+
+    Um texto só, neutro quanto à oferta: serve o Lançamento e a Oficial sem
+    precisar adivinhar qual das duas foi vendida. Ver a nota acima de
+    `_welcome_html`.
+    """
     texto = (
         f"{'Olá, ' + nome if nome else 'Olá'}! Seu pagamento foi confirmado e seu acesso ao "
         f"Yachts Atlas está liberado. Acesse: {settings.FRONTEND_URL}/login\n\n"
-        "O recibo do pagamento é enviado separadamente pela processadora.\n"
+        "Guarde este e-mail: ele confirma seu pagamento e o seu acesso.\n"
         "Yachts Atlas — Custódia Digital de Ativos Náuticos."
     )
     return send_email(
