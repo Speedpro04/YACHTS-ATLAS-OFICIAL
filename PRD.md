@@ -149,6 +149,23 @@ A lista mostra as **5 vias mais recentes**. Passando disso, a página avisa quan
 
 Passou a mostrar `DD/MM/AAAA · HH:MM`, com a hora vinda de `created_at`. **Nunca de `emitido_em`**: aquele é o campo coberto pela assinatura HMAC do QR (`protocolo + data de emissão`), e mexer nele invalidaria todo QR já impresso. Fuso fixo `-03:00` em vez de `ZoneInfo`, que depende de `tzdata` e pode faltar fora do contêiner.
 
+### Cadeia de custódia fechada — imutabilidade nas tabelas de registro (24/08/2026)
+
+Cinco tabelas registravam fato e não tinham proteção nenhuma. A mais grave: **`dossie_saidas`**, que guarda **quem recebeu o dossiê de um cliente** (nome, e-mail, finalidade, IP, quando). Todo o resto da cadeia era imutável e essa ponta ficava solta — justamente a que responde *"para quem foi"*, que numa disputa é a pergunta mais cara.
+
+Aplicado em duas camadas, com gatilho (não RLS: **a chave de serviço passa por cima de RLS e não passa por cima de gatilho**):
+
+| Nível | Tabelas | Por quê |
+|---|---|---|
+| **append-only** (UPDATE + DELETE) | `dossie_saidas`, `integridade_logs` | o fato não muda depois de registrado — uma entrega aconteceu, não se desfaz |
+| **só DELETE bloqueado** | `payments`, `subscriptions`, `lgpd_solicitacoes`, `dossie_solicitacoes` | têm ciclo de vida legítimo (pendente → atendida/liberada) ou dependem do webhook do Stripe, que é território de terceiro |
+
+Sobre `payments`/`subscriptions`: hoje o código só faz INSERT e SELECT nelas, conferido. Ainda assim ficou só o bloqueio de DELETE — travar UPDATE às vésperas de um teste de pagamento real trocaria uma garantia por um risco. O que importa (pagamento não pode ser apagado) está garantido; a trava de UPDATE pode vir depois que o ensaio mostrar o que o webhook faz de verdade.
+
+Todas estavam com **zero linhas** no momento da migração — nenhum dado existente correu risco.
+
+**Estado completo da cadeia:** `registros`, `dossie_emitidos`, `audit_logs`, `dossie_saidas`, `integridade_logs` com UPDATE+DELETE bloqueados; `documentos` e as quatro acima com DELETE bloqueado. As demais tabelas (leads, brokers, profiles, normas, rascunhos) são mutáveis por natureza — travá-las seria errado.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

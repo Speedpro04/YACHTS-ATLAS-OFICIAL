@@ -933,3 +933,25 @@ Hora ausente ou corrompida cai na data sozinha, sem quebrar a verificação.
 **Segunda armadilha na mesma tela, achada porque o Marcos emitiu uma quarta via:** a lista tem `limit(5)`, e o texto diz *"a sua precisa bater com uma delas"*. Passando de cinco, essa frase vira mentira — o portador de uma via antiga não acha a dele e conclui que o documento é falso. A contra-prova (`/verificar/documento/{hash}`) **nunca teve esse limite**: busca por hash em todas as emissões. O que faltava era a página dizer isso. Agora informa quantas existem ao todo e aponta para a conferência automática.
 
 **Padrão a repetir:** limite de exibição em lista é decisão de UI até o momento em que um texto ao lado faz afirmação sobre o conjunto inteiro. Aí vira afirmação falsa — e num documento de custódia, afirmação falsa é o pior defeito possível.
+
+---
+
+## 38. A ponta solta da cadeia: quem recebeu o dossiê
+**Data:** 24/08/2026
+
+`dossie_saidas` registra **quem recebeu o dossiê de um cliente** — nome, e-mail, finalidade, IP, quando. Corretor, comprador, seguradora. É a resposta para *"quem viu o histórico do meu barco?"*, pergunta que um armador ou um advogado faz um dia.
+
+Não tinha proteção nenhuma. Quem tivesse a chave de serviço apagava a linha (o dossiê nunca foi entregue a ninguém) ou trocava o destinatário (passou a ter ido para outra pessoa). Sem deixar rastro. Todo o resto da cadeia era imutável — `registros`, `documentos`, `dossie_emitidos`, `audit_logs` — e essa ponta, a mais cara numa disputa, ficava solta.
+
+Fechada junto com mais quatro, em **dois níveis**, e a distinção é o ponto:
+
+- **append-only** (`dossie_saidas`, `integridade_logs`): o fato não muda. Uma entrega aconteceu; não se desfaz.
+- **só DELETE bloqueado** (`payments`, `subscriptions`, `lgpd_solicitacoes`, `dossie_solicitacoes`): têm ciclo de vida legítimo — pendente → atendida. Travar UPDATE quebraria o fluxo.
+
+**Decisão deliberada em `payments`/`subscriptions`:** o código só faz INSERT e SELECT nelas (conferido por grep). Mesmo assim ficou só o DELETE. O webhook do Stripe é território de terceiro, e o Marcos ia rodar um teste de pagamento real na mesma manhã — travar UPDATE ali trocaria uma garantia por um risco de perder a manhã. A garantia que importa (pagamento não pode ser apagado) ficou de pé; a trava de UPDATE espera o ensaio mostrar o que o webhook realmente faz.
+
+**Momento certo:** as cinco estavam com **zero linhas**. Proteção aplicada antes do primeiro dado real existir.
+
+**Gatilho, nunca RLS:** a chave de serviço passa por cima de RLS e **não** passa por cima de gatilho. Capacidade que não existe não pode ser abusada — o mesmo raciocínio de [[imutabilidade-registros]].
+
+**Padrão a repetir:** imutabilidade não é um interruptor, são dois. Antes de travar uma tabela, perguntar se o que ela guarda é *fato consumado* ou *estado em curso*. Travar estado em curso quebra o produto; deixar fato consumado aberto esvazia a promessa.
