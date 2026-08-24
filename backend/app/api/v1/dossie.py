@@ -21,7 +21,9 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.core.supabase import get_supabase_admin
 from app.core.authz import get_ativo_autorizado
+from app.middleware.tracking import get_client_ip, get_user_agent
 from app.services.dossie_data import montar_dados_dossie
+from app.core.limite_taxa import limite
 import hashlib
 from app.services.dossie_pdf import gerar_pdf_dossie
 from app.services.alert_service import send_email_alert
@@ -142,7 +144,7 @@ class DossieSolicitacao(BaseModel):
     mensagem: Optional[str] = None
 
 
-@router.post("/solicitar")
+@router.post("/solicitar", dependencies=[Depends(limite("form_dossie", 5, 60))])
 async def solicitar_dossie(data: DossieSolicitacao):
     """Coleta um pedido de dossiê (público). Status inicial: pendente."""
     supabase = get_supabase_admin()
@@ -346,8 +348,16 @@ async def acesso_page(solicitacao_id: str):
     return HTMLResponse(_render_acesso_page())
 
 
-@router.post("/acesso/{solicitacao_id}")
-async def acesso_processar(solicitacao_id: str, senha: str = Form(...)):
+@router.post(
+    "/acesso/{solicitacao_id}",
+    # Forca bruta na senha-mestra que devolve o PDF de um cliente.
+    # 5 tentativas por quarto de hora, por IP E por solicitacao: quem
+    # erra de verdade acerta dentro disso; robo nao chega a lugar nenhum.
+    dependencies=[Depends(limite("senha_dossie", 5, 900, por_rota=True))],
+)
+async def acesso_processar(
+    request: Request, solicitacao_id: str, senha: str = Form(...)
+):
     """Valida a senha-mestra e devolve o PDF do dossiê liberado."""
     supabase = get_supabase_admin()
     res = supabase.table("dossie_solicitacoes").select("*").eq("id", solicitacao_id).execute()
@@ -361,6 +371,29 @@ async def acesso_processar(solicitacao_id: str, senha: str = Form(...)):
             "<p class='msg erro'>Este dossiê ainda não foi liberado.</p>"), status_code=403)
 
     if not _check_master(senha):
+        # Senha errada vira registro. O limite de taxa BARRA a força bruta; a
+        # trilha é o que a torna VISÍVEL — sem ela, mil tentativas e nenhuma
+        # tentativa têm a mesma aparência depois do fato. Best-effort: falhar
+        # em auditar não pode virar 500 na cara de quem só errou a senha.
+        try:
+            from app.services.audit_service import (
+                audit_service, AuditAction, AuditSeverity,
+            )
+            audit_service.create_audit_log(
+                action=AuditAction.UNAUTHORIZED_ACCESS,
+                user_id="anonymous",
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                success=False,
+                severity=AuditSeverity.WARNING,
+                details={
+                    "evento": "senha_mestra_incorreta",
+                    "solicitacao_id": solicitacao_id,
+                    "ativo_id": sol.get("ativo_id"),
+                },
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Falha ao auditar senha incorreta: {e}")
         return HTMLResponse(_render_acesso_page(
             "<p class='msg erro'>Senha incorreta. Tente novamente.</p>"), status_code=401)
 

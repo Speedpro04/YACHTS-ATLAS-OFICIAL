@@ -211,20 +211,18 @@ def retrieve(query: str, k: int = 3) -> list[dict]:
 
 
 # ------------------------------------------------------------------
-# Rate limit (anti-abuso/sondagem) via Redis
+# Rate limit (anti-abuso/sondagem)
 # ------------------------------------------------------------------
 def rate_limit_ok(user_key: str) -> bool:
-    redis = get_redis()
-    if redis is None:
-        return True  # sem Redis, não bloqueia (cache é opcional)
-    try:
-        bucket = f"chatbot:rl:{user_key}"
-        count = redis.incr(bucket)
-        if count == 1:
-            redis.expire(bucket, 60)
-        return count <= settings.CHATBOT_RATE_LIMIT_PER_MIN
-    except Exception:  # noqa: BLE001
-        return True
+    """Se esta sessão ainda cabe no teto de perguntas por minuto.
+
+    Era `if redis is None: return True` — e produção nunca teve REDIS_URL, o
+    que fazia deste o único limitador do sistema e, ao mesmo tempo, um
+    limitador desligado. Agora delega para `app.core.limite_taxa`, que conta na
+    memória do processo quando o Redis não está lá.
+    """
+    from app.core.limite_taxa import permitido
+    return permitido(f"chatbot:{user_key}", settings.CHATBOT_RATE_LIMIT_PER_MIN, 60)
 
 
 # ------------------------------------------------------------------

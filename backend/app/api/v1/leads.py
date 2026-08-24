@@ -13,6 +13,7 @@ from app.core.supabase import get_supabase_admin
 from app.core.security import require_platform_admin
 from app.core.config import settings, LAUNCH_STATES
 from app.services.whatsapp_service import normalizar_telefone
+from app.core.limite_taxa import limite
 
 logger = logging.getLogger(__name__)
 
@@ -357,7 +358,7 @@ async def vagas_fundadoras():
         raise HTTPException(status_code=500, detail="Falha ao ler vagas fundadoras")
 
 
-@router.post("/marina")
+@router.post("/marina", dependencies=[Depends(limite("form_indicacao", 5, 60))])
 async def create_marina_lead(data: LeadMarinaCreate):
     """Save marina partner lead to database"""
     try:
@@ -409,7 +410,7 @@ async def create_marina_lead(data: LeadMarinaCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/parceiro")
+@router.post("/parceiro", dependencies=[Depends(limite("form_parceiro", 5, 60))])
 async def create_partner_lead(data: LeadParceiroCreate):
     """Salva solicitação de parceiro (diretório Parceiros Atlas)."""
     try:
@@ -488,7 +489,7 @@ async def reservar_vaga_founder(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/marina/registrar")
+@router.post("/marina/registrar", dependencies=[Depends(limite("cadastro_marina", 3, 60))])
 async def registrar_marina_publica(data: MarinaRegistroPublico):
     """Cadastro público da marina. Se o e-mail estiver pré-autorizado numa das 3
     vagas, cria o acesso GRÁTIS (a marina define a própria senha), dispara a

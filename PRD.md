@@ -166,6 +166,29 @@ Todas estavam com **zero linhas** no momento da migração — nenhum dado exist
 
 **Estado completo da cadeia:** `registros`, `dossie_emitidos`, `audit_logs`, `dossie_saidas`, `integridade_logs` com UPDATE+DELETE bloqueados; `documentos` e as quatro acima com DELETE bloqueado. As demais tabelas (leads, brokers, profiles, normas, rascunhos) são mutáveis por natureza — travá-las seria errado.
 
+### Limite de taxa nas rotas públicas (24/08/2026)
+
+Sete rotas aceitavam POST sem autenticação e **sem limite nenhum**. A mais séria não era spam: `POST /dossie/acesso/{id}` confere a **senha-mestra** e devolve o PDF de um cliente — dava para tentar senha indefinidamente até acertar, sem barreira e sem rastro.
+
+O checklist do piloto apontava "5 policies de INSERT abertas". **Estava errado:** as policies estão corretas (as de `brokers`/`broker_deals`/`insurance_companies` exigem `user_role = 'admin'`; as de `ativos`/`documentos`/`registros` exigem `auth.uid()`; as tabelas de formulário público não têm policy de propósito — só o backend escreve). O buraco era uma camada acima, na API.
+
+Pior: o único limitador que existia, o do chatbot, começava com `if redis is None: return True` — e produção **nunca teve `REDIS_URL`**. Um limitador que se desliga quando a dependência opcional falta é um limitador que não existe justamente no dia em que a dependência cai.
+
+`app/core/limite_taxa.py` — janela deslizante, **Redis quando houver, memória do processo sempre**:
+
+| Rota | Teto | Por quê |
+|---|---|---|
+| `POST /dossie/acesso/{id}` | **5 / 15 min**, por IP **e** por solicitação | senha-mestra; `por_rota` impede diluir tentativas trocando de link |
+| `POST /leads/marina/registrar` | 3 / min | cadastro cria conta |
+| `/leads/marina`, `/leads/parceiro`, `/dossie/solicitar`, `/lgpd/solicitacoes` | 5 / min | formulários |
+| `POST /parceiros/clique` | 30 / min | volume legítimo alto |
+
+Detalhes que importam: o IP vem do `X-Forwarded-For` (atrás do nginx, `request.client.host` é sempre o IP interno — o limitador trataria o mundo como um visitante só e bloquearia todos ao primeiro abuso); há teto de chaves em memória (atacante variando IP não pode virar vazamento); e Redis caindo **cai na memória**, nunca abre o portão.
+
+Junto: **senha-mestra incorreta agora vira linha em `audit_logs`**. O limite *barra* a força bruta; a trilha é o que a torna *visível* — sem ela, mil tentativas e nenhuma tentativa têm a mesma aparência depois do fato.
+
+Coberto por `tests/test_limite_taxa.py` (8 testes), incluindo o caso que originou tudo: **sem Redis, ainda limita**.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

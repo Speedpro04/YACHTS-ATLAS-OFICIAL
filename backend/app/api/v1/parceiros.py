@@ -3,10 +3,11 @@ Yachts Atlas — Parceiros: rastreio de cliques de contato (cobrança futura).
 O Atlas é a ponte: cada clique em WhatsApp/e-mail/site de um parceiro é
 registrado em partner_clicks -> base para cobrança por lead/clique.
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from app.core.supabase import get_supabase_admin
+from app.core.limite_taxa import limite
 
 router = APIRouter()
 
@@ -20,7 +21,9 @@ class CliqueParceiro(BaseModel):
     ativo_id: Optional[str] = None
 
 
-@router.post("/clique")
+# Clique e volume legitimo alto (um visitante clica em varios parceiros),
+# por isso o teto e generoso. O que se barra aqui e robo inflando metrica.
+@router.post("/clique", dependencies=[Depends(limite("clique_parceiro", 30, 60))])
 async def registrar_clique(data: CliqueParceiro, request: Request = None):
     """Registra um clique de contato em um parceiro (fire-and-forget)."""
     if data.tipo_contato not in TIPOS:

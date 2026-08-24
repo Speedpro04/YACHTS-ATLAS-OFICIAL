@@ -955,3 +955,38 @@ Fechada junto com mais quatro, em **dois níveis**, e a distinção é o ponto:
 **Gatilho, nunca RLS:** a chave de serviço passa por cima de RLS e **não** passa por cima de gatilho. Capacidade que não existe não pode ser abusada — o mesmo raciocínio de [[imutabilidade-registros]].
 
 **Padrão a repetir:** imutabilidade não é um interruptor, são dois. Antes de travar uma tabela, perguntar se o que ela guarda é *fato consumado* ou *estado em curso*. Travar estado em curso quebra o produto; deixar fato consumado aberto esvazia a promessa.
+
+---
+
+## 39. O limitador que se desligava sozinho
+**Data:** 24/08/2026
+
+Fui atacar o item "5 policies de INSERT abertas" do checklist do piloto. **O item estava errado** — as policies estão corretas. O buraco era uma camada acima.
+
+Sete rotas aceitavam POST sem autenticação e sem limite nenhum. Seis eram risco de spam. A sétima era outra coisa:
+
+```
+POST /dossie/acesso/{solicitacao_id}    confere a SENHA-MESTRA e devolve o PDF
+```
+
+Força bruta ilimitada na senha que libera o dossiê de um cliente para terceiros. Sem barreira e sem rastro.
+
+**E o detalhe que fecha o quadro:** o único limitador do sistema, o do chatbot, começava assim:
+
+```python
+redis = get_redis()
+if redis is None:
+    return True   # sem Redis, não bloqueia
+```
+
+Produção **nunca teve `REDIS_URL`** — o boot registra "cache desativado" desde sempre. Então o sistema tinha um limitador, ele aparecia no código, tinha até variável de configuração (`CHATBOT_RATE_LIMIT_PER_MIN`)… e nunca limitou nada.
+
+**Padrão a repetir:** dependência opcional não pode desligar controle de segurança. Cache pode degradar em silêncio; limite de taxa, não. Quando a dependência cai é exatamente quando o sistema está sob estresse — e é o pior momento possível para o portão abrir sozinho. `app/core/limite_taxa.py` faz o contrário: Redis quando houver, memória do processo sempre.
+
+Três detalhes que só aparecem fazendo:
+
+1. **IP vem do `X-Forwarded-For`.** Atrás do nginx, `request.client.host` é sempre o IP interno do contêiner — o limitador trataria o mundo inteiro como um visitante só e bloquearia todos ao primeiro abuso.
+2. **Teto de chaves em memória.** Atacante trocando de IP a cada requisição transformaria o limitador em vazamento de memória: trocaria um problema por um pior.
+3. **`por_rota` no formulário de senha.** Sem isso, o atacante dilui as tentativas trocando de link de solicitação e o balde por IP nunca enche.
+
+**Barrar não é o mesmo que enxergar.** O limite impede a força bruta; a auditoria (ligada ontem) é o que a torna visível. Senha-mestra incorreta agora vira `UNAUTHORIZED_ACCESS` em `audit_logs`, com IP e solicitação. Sem isso, mil tentativas e nenhuma tentativa têm a mesma aparência depois do fato — que é o mesmo defeito de §32 e §33, numa terceira roupa.

@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_admin
+from app.core.limite_taxa import limite
 from app.core.security import get_current_user_id
 
 router = APIRouter()
@@ -57,7 +58,7 @@ class RedacaoCreate(BaseModel):
     campos: Optional[list[str]] = None
 
 
-@router.post("/solicitacoes")
+@router.post("/solicitacoes", dependencies=[Depends(limite("form_lgpd", 5, 60))])
 async def abrir_solicitacao(
     data: SolicitacaoCreate, user_id: str = Depends(get_current_user_id)
 ):
