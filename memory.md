@@ -1013,3 +1013,22 @@ digitou 55978138934  →  tela: +55 (55) 97813-8934  →  backend: 5555978138934
 **Furo achado ao aplicar:** nos dois formulários do Lançamento a validação só checava se o campo estava *preenchido*. `(12) 978` está preenchido — passaria no laço de obrigatórios e o envio mandaria string vazia, porque a função de envio recusa incompleto. A indicação chegaria **sem telefone**, e é por ele que a marina indicada é abordada. Preenchido não é o mesmo que completo.
 
 Verificado em navegador real (servidor HTTP, DOM, evento `input`, quatro casos) — o snapshot estático do arquivo local não executa JS e teria dado falsa confiança.
+
+---
+
+## 41. Metade do checklist estava resolvido, e ninguém tinha marcado
+**Data:** 24/08/2026
+
+Fui atacar quatro itens abertos do `CHECKLIST-PILOTO-3-MARINAS.md`. Dois **já estavam feitos** e um estava **errado no diagnóstico**:
+
+- *"5 policies de INSERT abertas"* — **errado**. As policies estão corretas (`user_role='admin'` nas de broker/seguradora, `auth.uid()` nas de ativo/documento/registro, e as tabelas de formulário público sem policy de propósito). O buraco real era falta de limite de taxa na API — outra camada (§39).
+- *"Automatizar build do frontend antes do deploy"* — **já feito**. O Dockerfile tem estágio `frontend-builder` com `npm run build`, e como esse script começa com `tsc`, erro de tipo derruba o deploy em vez de subir frontend quebrado.
+- *"Higiene: duas cópias"* — real, mas inofensivo.
+
+**Padrão a repetir:** checklist envelhece calado. Antes de trabalhar em item antigo, **conferir o estado real** — o custo de verificar é minutos, o de reimplementar algo pronto é uma tarde. E item marcado como aberto pode estar não só resolvido, mas mal diagnosticado desde o começo.
+
+**Sobre verificar o que está publicado:** o bundle em produção embute `sb_publishable_…` (formato novo). Fui olhar o JS servido de verdade, não a variável de ambiente — chave certa no `.env` não prova chave certa no ar.
+
+**Resíduo achado de brinde:** três artefatos de build versionados em `frontend/dist/`, commitados **antes** de `dist/` entrar no `.gitignore`. `.gitignore` não desrastreia o que já está rastreado — regra nova só vale para arquivo novo. Vale lembrar disso toda vez que se acrescenta uma regra de ignore achando que ela limpa o passado.
+
+**A pasta duplicada `C:\YACHTS-ATLAS-OFICIAL`** (com H antes do T, a cópia velha) está 2 meses atrás, sem `.env`, e não tem **nenhum** commit que a viva não tenha. As duas alterações não commitadas eram um `dist/index.html` com diferença só de fim de linha e a exclusão de um `public/sitemap.xml` que ficou obsoleto quando o `prerender.mjs` passou a gerar o sitemap no build, com `lastmod` fresco. Nada a salvar — mas apagar pasta é irreversível e é decisão do Marcos.

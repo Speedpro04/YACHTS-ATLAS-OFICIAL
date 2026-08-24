@@ -24,6 +24,11 @@ Usuario e Senha do ADMINISTRADOR para MANUTEN*/
 
 # Node
 node_modules/
+# O Dockerfile constrói o frontend do zero a cada deploy (`npm run build` no
+# estágio frontend-builder), então dist versionado nunca é usado: só gera
+# ruído de diff e envelhece contradizendo a fonte. Três arquivos tinham
+# escapado desta regra por terem sido commitados ANTES dela existir —
+# .gitignore não desrastreia o que já está rastreado.
 dist/
 dist-ssr/
 *.local

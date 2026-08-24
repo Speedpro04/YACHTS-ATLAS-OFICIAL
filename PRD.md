@@ -210,6 +210,22 @@ Aplicado nas duas páginas: `MarinaParceira.tsx` (Oficial) e os **dois** campos 
 
 Verificado em navegador real (DOM, evento `input`, quatro casos), não só em teste de unidade.
 
+### Higiene do repositório — o que o checklist do piloto errou (24/08/2026)
+
+Três itens do `CHECKLIST-PILOTO-3-MARINAS.md` foram reabertos e **dois já estavam resolvidos**:
+
+| Item do checklist | Realidade conferida |
+|---|---|
+| "5 policies de INSERT abertas" | ❌ **errado** — as policies estão corretas; o buraco era falta de limite de taxa na API |
+| "Automatizar build do frontend antes do deploy" | ✅ **já feito** — o Dockerfile tem estágio `frontend-builder` com `npm run build`, que começa com `tsc`: erro de tipo derruba o deploy |
+| "Higiene de repositório — DUAS cópias" | ⚠️ real, mas inofensiva — ver abaixo |
+
+**Verificado no que está publicado**, não no que se supõe: o bundle em produção (`/assets/index-*.js`) embute `sb_publishable_…` — formato novo, seguro para ser público. Nenhum JWT legado viaja no frontend.
+
+**A pasta duplicada** `C:\YACHTS-ATLAS-OFICIAL` (com H antes do T) está 2 meses atrás (último commit 25/06), sem `.env`, e **não tem nenhum commit que a viva não tenha**. As duas únicas alterações não commitadas eram um `dist/index.html` com diferença só de fim de linha e a exclusão de um `public/sitemap.xml` que virou obsoleto quando o `prerender.mjs` passou a gerar o sitemap no build. Nada a salvar.
+
+**Resíduo encontrado no caminho:** três artefatos de build estavam **versionados** em `frontend/dist/` — commitados antes da regra `dist/` entrar no `.gitignore`, e `.gitignore` não desrastreia o que já está rastreado. Todos existem em `public/`, ninguém referencia `dist/`, e o Docker constrói do zero. Desrastreados.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.
