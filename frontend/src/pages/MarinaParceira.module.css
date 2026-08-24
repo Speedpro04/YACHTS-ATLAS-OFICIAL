@@ -366,3 +366,40 @@
 .backLink:hover {
   color: #C9A84C;
 }
+
+/* Campo de WhatsApp: o +55 fica FIXO na tela, fora do input.
+   A marina digita só DDD + número, e a ambiguidade some na origem — não há
+   como digitar o DDI por engano. Sem isto, "55 97813-8934" (DDI sem DDD) é
+   indistinguível de um número legítimo do DDD 55 (Santa Maria/RS), e nenhum
+   algoritmo resolve: em 23/08/2026 uma indicação foi gravada como
+   5555978138934, um número que ninguém digitou. */
+.telWrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+  transition: border-color 0.3s;
+}
+
+.telWrap:focus-within {
+  border-bottom-color: #C9A84C;
+}
+
+.telWrapError {
+  border-bottom-color: #f87171;
+}
+
+.ddi {
+  color: rgba(240, 237, 230, 0.55);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  padding: 10px 0;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Herda a borda do wrapper — duas linhas embaixo ficariam feias. */
+.inputTel {
+  border-bottom: none;
+}

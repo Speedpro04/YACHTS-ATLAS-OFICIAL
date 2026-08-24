@@ -990,3 +990,26 @@ Três detalhes que só aparecem fazendo:
 3. **`por_rota` no formulário de senha.** Sem isso, o atacante dilui as tentativas trocando de link de solicitação e o balde por IP nunca enche.
 
 **Barrar não é o mesmo que enxergar.** O limite impede a força bruta; a auditoria (ligada ontem) é o que a torna visível. Senha-mestra incorreta agora vira `UNAUTHORIZED_ACCESS` em `audit_logs`, com IP e solicitação. Sem isso, mil tentativas e nenhuma tentativa têm a mesma aparência depois do fato — que é o mesmo defeito de §32 e §33, numa terceira roupa.
+
+---
+
+## 40. A ambiguidade que nenhum algoritmo resolve
+**Data:** 24/08/2026
+
+O `5555978138934` de ontem não tinha conserto no backend, e eu errei ao dizer que tinha. `55978138934` — DDI sem DDD — é **estruturalmente idêntico** a um celular legítimo do DDD 55 (Santa Maria/RS): dois dígitos de DDD + nove começando em 9. As duas leituras são válidas. Não existe regra que escolha certo.
+
+A correção foi de interface: **`+55` virou rótulo fixo ao lado do campo**, fora do input, com máscara `(12) 97813-8934`.
+
+O caso crítico continua produzindo o mesmo número — e isso está certo:
+
+```
+digitou 55978138934  →  tela: +55 (55) 97813-8934  →  backend: 5555978138934
+```
+
+**O que mudou é que a pessoa vê.** Quem quis dizer DDD 12 lê "(55)" e corrige na hora. Antes, o campo mostrava exatamente o que foi digitado e a corrupção acontecia no servidor, calada.
+
+**Padrão a repetir:** quando um dado é genuinamente ambíguo, não invente regra para desempatar — **devolva a ambiguidade para quem sabe a resposta.** Regra que adivinha erra em silêncio; interface que mostra deixa a pessoa corrigir. Vale para telefone, endereço, data, unidade de medida.
+
+**Furo achado ao aplicar:** nos dois formulários do Lançamento a validação só checava se o campo estava *preenchido*. `(12) 978` está preenchido — passaria no laço de obrigatórios e o envio mandaria string vazia, porque a função de envio recusa incompleto. A indicação chegaria **sem telefone**, e é por ele que a marina indicada é abordada. Preenchido não é o mesmo que completo.
+
+Verificado em navegador real (servidor HTTP, DOM, evento `input`, quatro casos) — o snapshot estático do arquivo local não executa JS e teria dado falsa confiança.

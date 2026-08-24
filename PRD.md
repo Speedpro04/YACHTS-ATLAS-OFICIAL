@@ -189,6 +189,27 @@ Junto: **senha-mestra incorreta agora vira linha em `audit_logs`**. O limite *ba
 
 Coberto por `tests/test_limite_taxa.py` (8 testes), incluindo o caso que originou tudo: **sem Redis, ainda limita**.
 
+### WhatsApp: `+55` fixo fora do campo (24/08/2026)
+
+O `5555978138934` gravado em 23/08 não era bug de código — era ambiguidade real. `55978138934` (DDI sem DDD) é **indistinguível** de um número legítimo do DDD 55 (Santa Maria/RS). Nenhum algoritmo resolve isso.
+
+A correção é de interface, não de backend: o **`+55` virou rótulo fixo ao lado do campo**, e a marina digita só DDD + número, com máscara `(12) 97813-8934`.
+
+| | |
+|---|---|
+| Colou `+55 12 97813-8934` | o `55` da frente é removido — senão viraria `+55 55 …` |
+| Digitou `12978138934` | vira `(12) 97813-8934` |
+| **Digitou `55978138934`** | mostra **`(55)`** na tela — quem quis DDD 12 vê e corrige |
+| Incompleto (`12978`) | **recusado** com mensagem própria |
+
+O terceiro caso é o ponto: a ambiguidade não desaparece por algoritmo, ela passa a ser **visível para quem sabe a resposta**. Antes o campo mostrava o que foi digitado e a corrupção acontecia no servidor, muda.
+
+O envio manda `55` + dígitos (13 no total) — a única forma que o backend aceita sem inferir nada.
+
+Aplicado nas duas páginas: `MarinaParceira.tsx` (Oficial) e os **dois** campos do Lançamento (cadastro de fundadora e indicação). Nos dois formulários do Lançamento havia um furo extra: a validação só checava campo *preenchido*, e `(12) 978` está preenchido — passaria e seria enviado vazio. Agora exige completude.
+
+Verificado em navegador real (DOM, evento `input`, quatro casos), não só em teste de unidade.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

@@ -5,6 +5,26 @@ import styles from './MarinaParceira.module.css';
 import Header from '../components/Header';
 import { api } from '../services/api';
 
+
+// O estado guarda só DÍGITOS de DDD + número (10 ou 11). O "+55" é rótulo na
+// tela, não conteúdo do campo, e é isso que mata a ambiguidade na origem.
+function soDDDeNumero(bruto: string): string {
+  let d = bruto.replace(/\D/g, '')
+  // Colou o número inteiro, com DDI? O +55 já está fixo ao lado; manter o 55
+  // digitado produziria "+55 55 978138934" — DDD 55 (Santa Maria/RS), que foi
+  // exatamente o defeito de 23/08/2026: gravou-se 5555978138934, um número
+  // que ninguém digitou e que a prospecção comercial iria abordar.
+  if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
+  return d.slice(0, 11)
+}
+
+function mascaraTelefone(d: string): string {
+  if (d.length <= 2) return d
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
 export default function MarinaParceira() {
   const [form, setForm] = useState({
     marina: '',
@@ -21,7 +41,8 @@ export default function MarinaParceira() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const limpo = name === 'whatsapp' ? soDDDeNumero(value) : value;
+    setForm((prev) => ({ ...prev, [name]: limpo }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: false }));
   };
 
@@ -45,6 +66,15 @@ export default function MarinaParceira() {
     // transforma isso em "Erro ao enviar", que não diz qual campo está errado.
     // Aconteceu de verdade: "marinasolares@gmailcom" (sem o ponto) virou erro
     // genérico, e não havia como a marina descobrir sozinha.
+    // DDD + número: 10 dígitos (fixo) ou 11 (celular). Recusar aqui, com
+    // mensagem própria, é o que evita gravar número incompleto — o backend
+    // também recusa, mas devolve 422 genérico e a marina não sabe qual campo.
+    if (form.whatsapp.length < 10) {
+      setErrors({ whatsapp: true });
+      setSubmitError('WhatsApp incompleto. Informe DDD + número, ex.: (12) 97813-8934.');
+      return;
+    }
+
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) {
       setErrors({ email: true });
       setSubmitError('E-mail inválido. Confira se não falta um ponto ou uma letra.');
@@ -57,7 +87,11 @@ export default function MarinaParceira() {
       // 'oficial' fixo: esta pagina so existe no yachtsatlas.online. O mesmo
       // formulario roda na pagina de Lancamento, e sem isto as duas indicacoes
       // chegam identicas no banco — nao da para saber quem indicou de onde.
-      await api.leads.marina({ ...form, origem: 'oficial' });
+      // Sai com o DDI colado: 13 dígitos começando em 55 é a única forma que
+      // o backend aceita sem precisar inferir nada.
+      await api.leads.marina({
+        ...form, whatsapp: `55${form.whatsapp}`, origem: 'oficial',
+      });
       setSubmitted(true);
     } catch {
       setSubmitError('Erro ao enviar. Tente novamente ou entre em contato por e-mail.');
@@ -244,15 +278,19 @@ export default function MarinaParceira() {
 
                   <div className={styles.field}>
                     <label className={styles.label}>WhatsApp da Marina Indicada</label>
-                    <input
-                      className={`${styles.input} ${errors.whatsapp ? styles.inputError : ''}`}
-                      type="tel"
-                      name="whatsapp"
-                      inputMode="tel"
-                      placeholder="+55 12 97813-8934"
-                      value={form.whatsapp}
-                      onChange={handleChange}
-                    />
+                    <div className={`${styles.telWrap} ${errors.whatsapp ? styles.telWrapError : ''}`}>
+                      <span className={styles.ddi}>+55</span>
+                      <input
+                        className={`${styles.input} ${styles.inputTel}`}
+                        type="tel"
+                        name="whatsapp"
+                        inputMode="numeric"
+                        maxLength={15}
+                        placeholder="(12) 97813-8934"
+                        value={mascaraTelefone(form.whatsapp)}
+                        onChange={handleChange}
+                      />
+                    </div>
                   </div>
 
                   <div className={styles.field}>
