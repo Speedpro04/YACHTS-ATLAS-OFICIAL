@@ -1057,3 +1057,26 @@ Só apareceram porque o Marcos foi mexer no "Confirm email" do Supabase e eu fui
 **Padrão a repetir:** ao varrer, listar por **mecanismo** (o que a rota aceita, quem pode chamar), nunca por assunto. `grep "@router.post"` em tudo e olhar quais não têm `Depends` de auth — leva trinta segundos e não depende de eu lembrar das categorias certas.
 
 **De passagem:** `/auth/signup` não é chamado por nada no frontend. Rota pública que cria conta, sem uso. Limitada a 3/hora por ora; o certo é remover depois de confirmar que nenhum chamador externo depende dela.
+
+---
+
+## 41. Apertar a regra no servidor sem contar para a tela
+**Data:** 24/08/2026
+
+Endurecemos a política de senha no Supabase (mínimo 10, minúscula, maiúscula, dígito). O Marcos, olhando por cima do meu ombro, disse: *"precisa colocar na página de cadastro essa informação"*.
+
+Ele estava certo, e o problema era maior do que informação faltando: a regra vivia em **três lugares com três valores**.
+
+```
+Supabase Auth          6  ->  10 + composicao
+RegistroMarina.tsx     6      (Oficial)
+index.html             8      (Lancamento)
+```
+
+Apertar só o servidor cria o pior dos mundos: a marina digita algo que a tela **aceita**, o servidor **recusa**, e a mensagem que volta é genérica. A pessoa não sabe se errou o e-mail, a senha ou o CNPJ.
+
+No Lançamento isso é pior que suporte — o cadastro acontece **a um passo do pagamento**. Senha recusada ali é venda perdida.
+
+Corrigido nas duas páginas, com os requisitos **à vista, marcando sozinhos** conforme digita. E a regra virou constante única no topo de cada arquivo, com o texto da tela derivando dela.
+
+**Padrão a repetir:** validação existe em camadas (tela, servidor, banco) e elas divergem em silêncio — nada quebra, o sistema só passa a recusar coisas sem explicar. Ao mudar uma, procurar as outras **no mesmo movimento**. É a mesma lição de §40 numa terceira roupa: a classe não era "senha", era "todo lugar que valida senha".

@@ -231,6 +231,24 @@ Três itens do `CHECKLIST-PILOTO-3-MARINAS.md` foram reabertos e **dois já esta
 
 **Resíduo encontrado no caminho:** três artefatos de build estavam **versionados** em `frontend/dist/` — commitados antes da regra `dist/` entrar no `.gitignore`, e `.gitignore` não desrastreia o que já está rastreado. Todos existem em `public/`, ninguém referencia `dist/`, e o Docker constrói do zero. Desrastreados.
 
+### Política de senha — uma regra, três lugares (24/08/2026)
+
+A regra da senha vivia em **três versões diferentes**, e nenhuma delas conversava com as outras:
+
+| Onde | Exigia |
+|---|---|
+| Supabase Auth (servidor) | 6 caracteres, sem exigência de composição |
+| `RegistroMarina.tsx` (Oficial) | 6 caracteres |
+| `index.html` (Lançamento) | 8 caracteres |
+
+Endurecida no Supabase para **mínimo 10 · minúscula · maiúscula · dígito**, mais "exigir senha atual ao trocar" e "troca só com login recente". A proteção contra senha vazada (HaveIBeenPwned) **não foi ligada — é exclusiva do plano Pro**.
+
+Endurecer só o servidor criaria o pior dos mundos: a marina digita algo que a tela aceita e o servidor recusa com erro genérico, sem dizer qual campo. As duas páginas foram alinhadas à mesma regra, e passaram a **mostrar os requisitos marcando sozinhos** enquanto a pessoa digita.
+
+Isso importa mais no Lançamento: lá o cadastro acontece **a um passo do pagamento**, e senha recusada nesse ponto é venda perdida, não suporte.
+
+Em ambas, a regra é uma constante única no topo do arquivo (`SENHA_MINIMO` / `REGRAS_SENHA`) e o texto da tela deriva dela — mudar a regra no Supabase exige mudar um lugar por página, e a interface acompanha.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

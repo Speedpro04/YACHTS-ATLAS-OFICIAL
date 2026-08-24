@@ -20,6 +20,25 @@ import {
 import Header from '../components/Header'
 import { api } from '../services/api'
 
+
+// A regra da senha vive AQUI e em mais nenhum lugar da tela.
+//
+// Ela espelha o que o Supabase Auth exige (mínimo 10 · minúscula · maiúscula ·
+// dígito). Estavam desencontrados: a tela pedia 6 caracteres e o servidor
+// recusava — a marina digitava algo que a página aceitava e levava erro
+// genérico do backend, sem saber qual campo estava errado. Mudou a regra lá?
+// Muda aqui, e o texto da tela acompanha sozinho.
+const SENHA_MINIMO = 10
+
+const REGRAS_SENHA: { texto: string; ok: (s: string) => boolean }[] = [
+  { texto: `Pelo menos ${SENHA_MINIMO} caracteres`, ok: (v) => v.length >= SENHA_MINIMO },
+  { texto: 'Uma letra maiúscula', ok: (v) => /[A-Z]/.test(v) },
+  { texto: 'Uma letra minúscula', ok: (v) => /[a-z]/.test(v) },
+  { texto: 'Um número', ok: (v) => /[0-9]/.test(v) },
+]
+
+const senhaValida = (v: string) => REGRAS_SENHA.every((r) => r.ok(v))
+
 export default function RegistroMarina() {
   const { t } = useTranslation()
   const [step, setStep] = useState(1)
@@ -88,8 +107,10 @@ export default function RegistroMarina() {
     e.preventDefault()
     setSubmitError('')
 
-    if (formData.password.length < 6) {
-      setSubmitError('A senha precisa ter pelo menos 6 caracteres.')
+    if (!senhaValida(formData.password)) {
+      setSubmitError(
+        `A senha precisa de ${SENHA_MINIMO} caracteres, com maiúscula, minúscula e número.`
+      )
       return
     }
     if (formData.password !== formData.passwordConfirm) {
@@ -295,8 +316,8 @@ export default function RegistroMarina() {
                             value={formData.password}
                             onChange={handleChange}
                             required
-                            minLength={6}
-                            placeholder="Mínimo 6 caracteres"
+                            minLength={SENHA_MINIMO}
+                            placeholder={`Mínimo ${SENHA_MINIMO} caracteres`}
                             className="w-full bg-white/5 border-b border-white/10 px-0 py-4 pr-10 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
                           />
                           <button
@@ -308,6 +329,28 @@ export default function RegistroMarina() {
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                           </button>
                         </div>
+
+                        {/* Requisitos à vista, marcando sozinhos conforme a
+                            marina digita. Esconder a regra e só recusar depois
+                            é o que gera "não consigo cadastrar" no telefone. */}
+                        <ul className="space-y-1.5 pt-1">
+                          {REGRAS_SENHA.map((r) => {
+                            const cumprida = r.ok(formData.password)
+                            return (
+                              <li
+                                key={r.texto}
+                                className={`flex items-center gap-2 text-[11px] transition-colors ${
+                                  cumprida ? 'text-emerald-400/80' : 'text-white/30'
+                                }`}
+                              >
+                                <span className="text-[13px] leading-none w-3">
+                                  {cumprida ? '✓' : '·'}
+                                </span>
+                                {r.texto}
+                              </li>
+                            )
+                          })}
+                        </ul>
                       </div>
                       <div className="space-y-4 group">
                         <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
