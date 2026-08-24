@@ -182,6 +182,11 @@ Pior: o único limitador que existia, o do chatbot, começava com `if redis is N
 | `POST /leads/marina/registrar` | 3 / min | cadastro cria conta |
 | `/leads/marina`, `/leads/parceiro`, `/dossie/solicitar`, `/lgpd/solicitacoes` | 5 / min | formulários |
 | `POST /parceiros/clique` | 30 / min | volume legítimo alto |
+| `POST /auth/login` | **20 / 15 min** | força bruta na senha de quem guarda documento de cliente |
+| `POST /auth/maintenance/login` | **5 / 15 min** | a porta de administrador da plataforma |
+| `POST /auth/signup` | **3 / hora** | criar conta é evento raro por IP |
+
+As três de `auth` ficaram de fora na primeira passada — o módulo de autenticação não foi varrido junto com os formulários públicos, e são justamente as mais graves. Corrigido em 24/08/2026, no mesmo dia.
 
 Detalhes que importam: o IP vem do `X-Forwarded-For` (atrás do nginx, `request.client.host` é sempre o IP interno — o limitador trataria o mundo como um visitante só e bloquearia todos ao primeiro abuso); há teto de chaves em memória (atacante variando IP não pode virar vazamento); e Redis caindo **cai na memória**, nunca abre o portão.
 

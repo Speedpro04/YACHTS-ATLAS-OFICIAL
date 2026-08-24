@@ -1032,3 +1032,28 @@ Fui atacar quatro itens abertos do `CHECKLIST-PILOTO-3-MARINAS.md`. Dois **já e
 **Resíduo achado de brinde:** três artefatos de build versionados em `frontend/dist/`, commitados **antes** de `dist/` entrar no `.gitignore`. `.gitignore` não desrastreia o que já está rastreado — regra nova só vale para arquivo novo. Vale lembrar disso toda vez que se acrescenta uma regra de ignore achando que ela limpa o passado.
 
 **A pasta duplicada `C:\YACHTS-ATLAS-OFICIAL`** (com H antes do T, a cópia velha) está 2 meses atrás, sem `.env`, e não tem **nenhum** commit que a viva não tenha. As duas alterações não commitadas eram um `dist/index.html` com diferença só de fim de linha e a exclusão de um `public/sitemap.xml` que ficou obsoleto quando o `prerender.mjs` passou a gerar o sitemap no build, com `lastmod` fresco. Nada a salvar — mas apagar pasta é irreversível e é decisão do Marcos.
+
+---
+
+## 40. Varri metade da classe. De novo.
+**Data:** 24/08/2026
+
+Ontem o Marcos me corrigiu por guardar o achado do `dossie_saidas` em vez de falar na hora. Gravei a lição em `varrer-a-classe-inteira-na-hora`. **Hoje repeti o erro noutra forma:** blindei os formulários públicos com limite de taxa e **não olhei o módulo de autenticação**.
+
+Ficaram sem limite:
+
+```
+POST /auth/login              forca bruta na senha das marinas
+POST /auth/maintenance/login  forca bruta no acesso de admin do fundador
+POST /auth/signup             criacao de conta em massa
+```
+
+São **mais graves** que as sete que eu protegi. `/auth/login` guarda as contas que têm documento de cliente dentro. `/auth/maintenance/login` é a mesma porta que passamos dois dias recuperando.
+
+Só apareceram porque o Marcos foi mexer no "Confirm email" do Supabase e eu fui conferir qual endpoint o cadastro usa. **Achado por acaso, não por método** — que é exatamente o que a lição de ontem existia para evitar.
+
+**A falha do meu método:** eu varri a classe *"formulários públicos"*, que foi como o problema me chegou. A classe certa era *"rotas que aceitam POST sem autenticação"* — e autenticação é a parte mais sensível dela, não uma categoria à parte. Definir a classe pelo enunciado do problema, e não pelo mecanismo, deixa buraco por construção.
+
+**Padrão a repetir:** ao varrer, listar por **mecanismo** (o que a rota aceita, quem pode chamar), nunca por assunto. `grep "@router.post"` em tudo e olhar quais não têm `Depends` de auth — leva trinta segundos e não depende de eu lembrar das categorias certas.
+
+**De passagem:** `/auth/signup` não é chamado por nada no frontend. Rota pública que cria conta, sem uso. Limitada a 3/hora por ora; o certo é remover depois de confirmar que nenhum chamador externo depende dela.

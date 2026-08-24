@@ -4,6 +4,7 @@ Yachts Atlas — Authentication Endpoints
 from fastapi import APIRouter, Header, HTTPException, Depends, Request
 from app.schemas.models import UsuarioCreate, UsuarioResponse, MaintenanceLoginRequest, LoginRequest
 from app.core.supabase import get_supabase_admin
+from app.core.limite_taxa import limite
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.acesso import avaliar_acesso
 from app.core.config import settings
@@ -15,7 +16,12 @@ router = APIRouter()
 audit_service = AuditService()
 
 
-@router.post("/maintenance/login")
+@router.post(
+    "/maintenance/login",
+    # A porta de administrador da plataforma. So o fundador usa, entao o
+    # teto pode ser apertado: quem sabe a senha acerta em duas tentativas.
+    dependencies=[Depends(limite("login_manutencao", 5, 900))],
+)
 async def maintenance_login(data: MaintenanceLoginRequest, request: Request):
     """Owner maintenance login via environment-managed credentials"""
     ip_address = get_client_ip(request)
@@ -67,7 +73,12 @@ async def maintenance_login(data: MaintenanceLoginRequest, request: Request):
     }
 
 
-@router.post("/signup")
+@router.post(
+    "/signup",
+    # Criar conta e evento raro por IP. Teto baixo impede fabricar contas
+    # em massa — cada uma delas dispara e-mail e ocupa linha no banco.
+    dependencies=[Depends(limite("signup", 3, 3600))],
+)
 async def signup(user: UsuarioCreate, request: Request):
     """Register new user with complete audit tracking"""
     supabase = get_supabase_admin()
@@ -146,7 +157,17 @@ async def signup(user: UsuarioCreate, request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    # Forca bruta na senha de quem guarda documento de cliente.
+    #
+    # 20 em 15 minutos e folgado para gente de verdade (erra duas, tres
+    # vezes no maximo) e mesmo um escritorio de marina inteiro atras do
+    # mesmo IP cabe. Para robo e inutil: com senha de 10 caracteres
+    # exigindo maiuscula, minuscula e numero, 1900 tentativas por dia nao
+    # chegam a lugar nenhum.
+    dependencies=[Depends(limite("login", 20, 900))],
+)
 async def login(data: LoginRequest, request: Request):
     """Login with complete audit tracking"""
     supabase = get_supabase_admin()
