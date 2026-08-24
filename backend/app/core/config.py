@@ -244,6 +244,23 @@ class Settings(BaseSettings):
     # DDI usado quando a marina digita o telefone sem ele. As 20 fundadoras são
     # todas brasileiras (SC/SP/RJ/ES/BA); as versões LATAM/USA/EURO rodam em
     # instalações separadas, com o DDI delas.
+    # ── Prospecção automática ──────────────────────────────────────────
+    # Desligada por padrão, e isso é decisão de desenho, não excesso de
+    # cautela: esta é a única rotina do sistema que fala com uma pessoa que
+    # NUNCA pediu contato. Um deploy não pode começar a abordar gente sozinho
+    # — quem liga é o fundador, e desligar tem de ser imediato, sem esperar
+    # build. Por isso vive em variável de ambiente, não em código.
+    PROSPECCAO_AUTOMATICA: bool = os.getenv("PROSPECCAO_AUTOMATICA", "").lower() in ("1", "true", "sim")
+
+    # Carência entre a indicação e a mensagem. Não é atraso técnico: é a
+    # JANELA DE CANCELAMENTO. Lead errado que entrar (número inválido, teste,
+    # marina que não devia ser abordada) pode ser tirado da fila antes de
+    # virar mensagem — e mensagem enviada não volta.
+    PROSPECCAO_CARENCIA_MINUTOS: int = int(os.getenv("PROSPECCAO_CARENCIA_MINUTOS", "30"))
+
+    # De quanto em quanto tempo a agenda olha a fila.
+    PROSPECCAO_INTERVALO_SEGUNDOS: int = int(os.getenv("PROSPECCAO_INTERVALO_SEGUNDOS", "180"))
+
     DDI_PADRAO: str = os.getenv("DDI_PADRAO", "55")
 
     @property

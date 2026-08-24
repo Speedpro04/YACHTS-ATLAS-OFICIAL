@@ -123,7 +123,66 @@ async def _laco() -> None:
         await asyncio.sleep(_INTERVALO_SEGUNDOS)
 
 
+async def _laco_prospeccao() -> None:
+    """Manda as mensagens de prospecção cuja carência já venceu.
+
+    Laço PRÓPRIO, separado da régua de cobrança, por dois motivos:
+
+      * cadência diferente — cobrança olha uma vez por dia, prospecção precisa
+        olhar de minutos em minutos para respeitar a carência;
+      * isolamento — falha numa não pode calar a outra. Cobrança que para é
+        dinheiro que não entra; prospecção que para é venda que não acontece.
+        São perdas diferentes e não devem compartilhar destino.
+
+    Só roda se `PROSPECCAO_AUTOMATICA` estiver ligada. Desligada é o padrão:
+    esta é a única rotina que fala com quem nunca pediu contato, e um deploy
+    não pode começar a abordar gente por conta própria.
+    """
+    from app.core.config import settings
+
+    if not settings.PROSPECCAO_AUTOMATICA:
+        logger.info(
+            "Prospecção automática DESLIGADA (PROSPECCAO_AUTOMATICA). "
+            "Os leads ficam na fila; ninguém é abordado."
+        )
+        return
+
+    await asyncio.sleep(_ESPERA_INICIAL)
+    logger.info(
+        "Prospecção automática LIGADA — carência de %s min, conferindo a cada %ss.",
+        settings.PROSPECCAO_CARENCIA_MINUTOS,
+        settings.PROSPECCAO_INTERVALO_SEGUNDOS,
+    )
+
+    while True:
+        try:
+            from app.services.prospeccao_service import disparar_lote
+
+            # to_thread: o lote faz I/O bloqueante (Supabase e WhatsApp, com
+            # pausa entre envios). No event loop, travaria as requisições da
+            # marina enquanto conversa com o provedor.
+            resumo = await asyncio.to_thread(disparar_lote)
+
+            # Silêncio é o estado normal: na maioria das voltas não há nada
+            # com a carência vencida. Só registra quando algo aconteceu, para
+            # o log não virar ruído que ninguém lê.
+            if resumo.get("enviados") or resumo.get("falharam"):
+                logger.info(
+                    "Prospecção: enviadas=%s falharam=%s bloqueadas=%s sem_numero=%s",
+                    resumo.get("enviados"), resumo.get("falharam"),
+                    resumo.get("bloqueados"), resumo.get("sem_numero"),
+                )
+            if resumo.get("erro"):
+                logger.warning("Prospecção não rodou: %s", resumo["erro"])
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            logger.error("Falha no lote de prospecção: %s", e)
+        await asyncio.sleep(settings.PROSPECCAO_INTERVALO_SEGUNDOS)
+
+
 _tarefa: asyncio.Task | None = None
+_tarefa_prospeccao: asyncio.Task | None = None
 
 
 def iniciar() -> None:
@@ -139,14 +198,18 @@ def iniciar() -> None:
     except RuntimeError:
         logger.debug("Agenda não iniciada: sem event loop (script ou teste).")
         return
+    global _tarefa_prospeccao
     _tarefa = asyncio.create_task(_laco())
+    _tarefa_prospeccao = asyncio.create_task(_laco_prospeccao())
     logger.info("Agenda interna ligada — régua de cobrança a cada %sh.",
                 _INTERVALO_SEGUNDOS // 3600)
 
 
 def parar() -> None:
     """Desliga a agenda no shutdown, para o container encerrar limpo."""
-    global _tarefa
-    if _tarefa and not _tarefa.done():
-        _tarefa.cancel()
+    global _tarefa, _tarefa_prospeccao
+    for tarefa in (_tarefa, _tarefa_prospeccao):
+        if tarefa and not tarefa.done():
+            tarefa.cancel()
     _tarefa = None
+    _tarefa_prospeccao = None

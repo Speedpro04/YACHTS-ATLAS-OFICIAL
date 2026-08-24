@@ -1080,3 +1080,32 @@ No Lançamento isso é pior que suporte — o cadastro acontece **a um passo do 
 Corrigido nas duas páginas, com os requisitos **à vista, marcando sozinhos** conforme digita. E a regra virou constante única no topo de cada arquivo, com o texto da tela derivando dela.
 
 **Padrão a repetir:** validação existe em camadas (tela, servidor, banco) e elas divergem em silêncio — nada quebra, o sistema só passa a recusar coisas sem explicar. Ao mudar uma, procurar as outras **no mesmo movimento**. É a mesma lição de §40 numa terceira roupa: a classe não era "senha", era "todo lugar que valida senha".
+
+---
+
+## 42. A mensagem existia, o envio existia, ninguém puxava o gatilho
+**Data:** 24/08/2026
+
+O Marcos perguntou por que a mensagem de prospecção não chegava na marina indicada. A resposta não era um defeito — era uma ausência.
+
+```
+prospeccao_service.py   MENSAGEM_1, montar_mensagem, disparar_lote,
+                        blocklist, opt-out por "SAIR" — tudo pronto
+        ↓
+disparar_lote()         chamado APENAS de dentro do proprio arquivo,
+                        no bloco `if __name__ == "__main__"`
+        ↓
+agenda.py               roda cobranca e aviso ao fundador. Prospeccao, nao.
+```
+
+Software completo e desconectado. Ninguém tinha percebido porque não havia erro: um serviço que nunca roda não falha.
+
+**O achado que valeu mais que o conserto:** os 7 leads estavam todos em `whatsapp_status = 'pendente'` — ou seja, **na fila**. Ligar o gatilho sem olhar teria mandado abordagem comercial para `5555978138934`, o número fantasma de DDD 55 que a gente identificou no dia anterior. Um estranho no Rio Grande do Sul recebendo mensagem de venda do Yachts Atlas.
+
+Marcados como `teste_nao_enviar` — **não apagados**. Apagar seria a única operação irreversível da mesa, e por nada em troca: marcar tira da fila, preserva o histórico e dá para voltar atrás.
+
+**Decisão do Marcos, contra a minha recomendação:** disparo automático (eu sugeri botão manual, por risco de banimento). Ele escolheu automático com carência. Implementado com três travas em variável de ambiente, e uma delas é a que reconcilia as duas posições: **`PROSPECCAO_AUTOMATICA` começa `false`**. O deploy não abre a torneira; ele abre quando quiser, e fecha na hora se der errado, sem esperar build.
+
+**A carência (5 min em teste, 30 em produção) não é atraso técnico — é a janela de cancelamento.** Mensagem enviada não volta; lead na fila, sim. Formular assim mudou o que ela é: de "espera" para "salvaguarda".
+
+**Padrão a repetir:** ao ligar qualquer rotina que fale com terceiros, olhar primeiro **o que já está na fila**. A fila acumulou durante todo o tempo em que o gatilho não existia, e ninguém a curou — porque enquanto nada disparava, o conteúdo dela não tinha consequência.

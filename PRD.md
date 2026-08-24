@@ -249,6 +249,26 @@ Isso importa mais no Lançamento: lá o cadastro acontece **a um passo do pagame
 
 Em ambas, a regra é uma constante única no topo do arquivo (`SENHA_MINIMO` / `REGRAS_SENHA`) e o texto da tela deriva dela — mudar a regra no Supabase exige mudar um lugar por página, e a interface acompanha.
 
+### Prospecção automática das marinas indicadas (24/08/2026)
+
+A mensagem de abordagem existia, o envio existia, o opt-out existia — e **nada disparava**. `disparar_lote()` só era alcançável rodando o módulo como script; a `agenda.py` cuidava de cobrança e do aviso ao fundador, e nunca de prospecção. Por isso a marina indicada nunca recebia nada.
+
+Ligado agora, com **três travas em variável de ambiente** (mudar não exige deploy):
+
+| Variável | Padrão | O que faz |
+|---|---|---|
+| `PROSPECCAO_AUTOMATICA` | **`false`** | interruptor geral. Desligada, os leads ficam na fila e ninguém é abordado |
+| `PROSPECCAO_CARENCIA_MINUTOS` | `30` | espera entre a indicação e a mensagem |
+| `PROSPECCAO_INTERVALO_SEGUNDOS` | `180` | de quanto em quanto a agenda olha a fila |
+
+**Por que começa desligada:** é a única rotina do sistema que fala com alguém que nunca pediu contato. Um deploy não pode começar a abordar gente por conta própria, e desligar tem de ser imediato — sem esperar build.
+
+**A carência não é atraso técnico, é a janela de cancelamento.** Lead errado que entrar (número inválido, teste, marina que não devia ser abordada) pode sair da fila antes de virar mensagem. Mensagem enviada não volta; lead na fila, sim. Em 24/08/2026 havia **sete leads de teste em fila**, um deles apontando para `5555978138934` — um número no RS que ninguém digitou. Todos marcados como `teste_nao_enviar`.
+
+Laço **separado** do da cobrança, de propósito: cadências diferentes (dias × minutos) e falha numa não pode calar a outra — cobrança parada é dinheiro que não entra, prospecção parada é venda que não acontece.
+
+Duas rotas administrativas acompanham: `GET /leads/prospeccao/fila` (quem está na fila, e por que os outros não estão) e `POST /leads/prospeccao/disparar` — esta **em ensaio por padrão**, só `?enviar=true` fala com gente de verdade.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

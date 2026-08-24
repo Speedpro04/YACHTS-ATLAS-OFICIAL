@@ -410,6 +410,70 @@ async def create_marina_lead(data: LeadMarinaCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/prospeccao/fila")
+async def prospeccao_fila(_admin: dict = Depends(require_platform_admin)):
+    """Quem está na fila de prospecção, e por que os outros não estão.
+
+    Existe porque `disparar_lote` é a única operação do sistema que fala com
+    uma pessoa que nunca pediu contato. Antes de disparar, é preciso poder
+    olhar exatamente para quem vai — e conferir que ali não sobrou lead de
+    teste, como os sete que ficaram em fila em 24/08/2026 (um deles apontando
+    para um número no Rio Grande do Sul que ninguém digitou).
+    """
+    supabase = get_supabase_admin()
+    try:
+        linhas = (
+            supabase.table("marina_leads")
+            .select("marina_name, contact_name, whatsapp, source, whatsapp_status")
+            .order("created_at")
+            .execute()
+        ).data or []
+    except Exception as e:
+        logger.error(f"Falha ao ler a fila de prospecção: {e}")
+        raise HTTPException(status_code=500, detail="Falha ao ler a fila")
+
+    por_status: dict[str, int] = {}
+    for linha in linhas:
+        estado = linha.get("whatsapp_status") or "(nulo)"
+        por_status[estado] = por_status.get(estado, 0) + 1
+
+    return {
+        "por_status": por_status,
+        "na_fila": [linha for linha in linhas
+                    if (linha.get("whatsapp_status") or "") == "pendente"],
+    }
+
+
+@router.post("/prospeccao/disparar")
+async def prospeccao_disparar(
+    enviar: bool = False,
+    _admin: dict = Depends(require_platform_admin),
+):
+    """Dispara o lote de prospecção. **Ensaio por padrão.**
+
+    `enviar` começa em False de propósito, e essa é a decisão de desenho mais
+    importante desta rota: chamá-la sem parâmetro nenhum NÃO manda mensagem
+    para ninguém — monta tudo, devolve o resumo e uma amostra do texto.
+
+    Só `?enviar=true` fala com gente de verdade.
+
+    Por que não entra na agenda automática: disparo comercial que sai sozinho,
+    sem ninguém olhar, é o caminho mais curto para o número ser denunciado e
+    banido. Banido o número da prospecção, perde-se a linha de vendas inteira.
+    Aqui o gatilho é humano, e a lista pode ser conferida antes em
+    `GET /leads/prospeccao/fila`.
+    """
+    from app.services.prospeccao_service import disparar_lote
+
+    resumo = disparar_lote(dry_run=not enviar)
+    if enviar:
+        logger.warning(
+            f"Prospecção DISPARADA DE VERDADE: {resumo.get('enviados')} enviada(s), "
+            f"{resumo.get('falharam')} falha(s)"
+        )
+    return resumo
+
+
 @router.post("/parceiro", dependencies=[Depends(limite("form_parceiro", 5, 60))])
 async def create_partner_lead(data: LeadParceiroCreate):
     """Salva solicitação de parceiro (diretório Parceiros Atlas)."""

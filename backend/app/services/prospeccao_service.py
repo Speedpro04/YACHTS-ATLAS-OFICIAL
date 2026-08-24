@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app.core.config import settings
@@ -170,7 +171,23 @@ def _marcar(supabase, lead_id: str, status: str, erro: Optional[str] = None) -> 
         logger.error(f"Falha ao marcar lead {lead_id} como {status}: {e}")
 
 
-def disparar_lote(limite: int = LOTE_MAXIMO, dry_run: bool = False) -> dict:
+def _limite_de_carencia(minutos: Optional[int]) -> str:
+    """Instante-limite: só entram leads criados ANTES disto.
+
+    A carência não é atraso técnico — é a janela em que um lead errado ainda
+    pode ser tirado da fila. Mensagem enviada não volta; lead na fila, sim.
+    """
+    if minutos is None:
+        minutos = settings.PROSPECCAO_CARENCIA_MINUTOS
+    corte = datetime.now(timezone.utc) - timedelta(minutes=max(0, minutos))
+    return corte.isoformat()
+
+
+def disparar_lote(
+    limite: int = LOTE_MAXIMO,
+    dry_run: bool = False,
+    carencia_minutos: Optional[int] = None,
+) -> dict:
     """Dispara um lote de prospecção. Devolve o resumo do que aconteceu.
 
     `dry_run=True` monta tudo e não envia nada — serve para conferir a
@@ -192,6 +209,7 @@ def disparar_lote(limite: int = LOTE_MAXIMO, dry_run: bool = False) -> dict:
             supabase.table("marina_leads")
             .select("id, marina_name, contact_name, whatsapp, source")
             .eq("whatsapp_status", "pendente")
+            .lte("created_at", _limite_de_carencia(carencia_minutos))
             .order("created_at")
             .limit(limite)
             .execute()
