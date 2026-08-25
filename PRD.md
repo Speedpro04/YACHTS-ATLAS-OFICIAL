@@ -485,6 +485,20 @@ Junto foi a **coordenada**: as colunas `latitude`/`longitude`/`geo_fonte` e o en
 
 **Aberto, e é o que quebraria se feito errado:** o material que chega **não pode cair direto em `documentos`**. Hoje estar naquela tabela significa "está no cofre", e os dois consumidores não filtram nada — `asset_score_service:114` e `dossie_data:441` leem tudo. Material não aceito inflaria a nota da marina e entraria no PDF selado. A forma certa já existe no sistema, nos registros: uma tabela de **entrada** separada, e aceitar move para `documentos`. Assim nenhum consumidor muda — `documentos` continua significando o que sempre significou.
 
+### O login não sabia dizer que o e-mail estava torto (25/08/2026)
+
+`simarkobrasil@gmailcom` — faltando o ponto antes do "com". A tela respondeu **"E-mail ou senha incorretos"**, a mesma mensagem de senha errada. O caminho natural de quem lê isso é ir redefinir uma senha que estava certa.
+
+O `type="email"` do navegador **não pega esse caso**: pelo padrão HTML, `alguem@gmailcom` é válido — domínio sem ponto passa.
+
+A conferência de formato passou a rodar **antes** de chamar a API, no login e na redefinição de senha. Na redefinição o estrago era pior: e-mail torto fazia o link sair para um endereço inexistente e a tela ainda respondia *"link enviado, verifique seu e-mail"* — a pessoa esperando uma mensagem que nunca chegaria.
+
+**Por que conferir formato não abre brecha de segurança:** ela não revela se a conta existe. Isso valeria para "este e-mail não está cadastrado", que é enumeração de usuário — e é justamente por isso que essa mensagem não está lá.
+
+Usa o mesmo `emailValido` dos quatro formulários, de `utils/telefone`. É a sexta tela a herdar a regra, e nenhuma tem cópia própria.
+
+Verificado em navegador real: e-mail malformado para na página sem chamar a API; e-mail válido com senha errada segue para o servidor e recebe o erro de credenciais.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

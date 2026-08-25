@@ -3,6 +3,7 @@ import { Lock, Mail, ArrowLeft, ArrowRight, Shield, Eye, EyeOff, Sparkles } from
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../services/api'
+import { emailValido, MSG_EMAIL_INVALIDO } from '../utils/telefone'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -22,9 +23,28 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Formato do e-mail conferido AQUI, antes de chamar a API.
+    //
+    // Sem isto, endereço malformado e senha errada davam a MESMA mensagem
+    // ("e-mail ou senha incorretos"), e o caminho natural de quem lê isso é ir
+    // redefinir uma senha que estava certa. Aconteceu em 25/08/2026, com
+    // `simarkobrasil@gmailcom` — faltando o ponto antes do "com".
+    //
+    // O `type="email"` do navegador NÃO pega esse caso: pelo padrão HTML,
+    // `alguem@gmailcom` é válido (domínio sem ponto passa).
+    //
+    // Conferir formato não revela se a conta existe, então não abre brecha de
+    // enumeração de usuários — o que valeria para uma mensagem do tipo
+    // "este e-mail não está cadastrado", e é por isso que ela não está aqui.
+    if (!emailValido(email)) {
+      setError(MSG_EMAIL_INVALIDO)
+      return
+    }
+
     setLoading(true)
     setError('')
-    
+
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) {
@@ -45,6 +65,14 @@ export default function Login() {
     setInfo('')
     if (!email) {
       setError(t('auth.forgot_need_email') || 'Informe o e-mail do cofre acima para enviarmos o link de redefinição.')
+      return
+    }
+    // Mesma conferência do login, e aqui ela evita algo pior: e-mail
+    // malformado faz o link de redefinição sair para um endereço que não
+    // existe, e a tela ainda responde "link enviado, verifique seu e-mail".
+    // A pessoa fica esperando uma mensagem que nunca vai chegar.
+    if (!emailValido(email)) {
+      setError(MSG_EMAIL_INVALIDO)
       return
     }
     setLoading(true)

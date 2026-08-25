@@ -1443,3 +1443,30 @@ Ele estava certo, e o dia já tinha dado duas provas: o rodapé do e-mail promet
 `latitude`, `longitude` e `geo_fonte` já existiam na tabela e no endpoint; ninguém mandava. Agora a foto sobe com onde e quando foi tirada — dado que **não tem como ser reconstruído depois** e que vale muito num dossiê de custódia.
 
 Best-effort de propósito: sem permissão, sem sinal ou passando de 5 s, sobe sem coordenada. Registro sem geo é bom; registro que não sobe porque o GPS demorou não serve para nada.
+
+---
+
+## 52. Uma mensagem para dois problemas diferentes
+**Data:** 25/08/2026
+
+O Marcos não conseguiu entrar na Amazon Marina. Tinha digitado `simarkobrasil@gmailcom` — sem o ponto antes do "com". A tela respondeu **"E-mail ou senha incorretos"**, que é a mesma coisa que ela diz para senha errada.
+
+O erro estava no endereço, e a mensagem apontava para a senha. Quem lê isso vai redefinir uma senha que estava certa.
+
+E o `type="email"` do navegador não salva: pelo padrão HTML, `alguem@gmailcom` **é válido** — domínio sem ponto passa. A validação que parecia estar ali não cobria justamente o erro mais comum de digitação.
+
+**Padrão a repetir:** mensagem de erro genérica é dívida que só aparece quando alguém está travado. Se dois problemas diferentes produzem o mesmo texto, o texto não está informando — está encerrando o assunto. Vale perguntar de cada mensagem: *quantas causas distintas chegam aqui?*
+
+**E o limite que a impede de ser específica demais:** dizer "este e-mail não está cadastrado" seria enumeração de usuário, e isso não pode. Conferir **formato** não tem esse problema — não revela se a conta existe. A linha divisória é essa, e ela permite ser útil sem abrir brecha.
+
+A mesma correção foi para a redefinição de senha, onde o estrago era maior: e-mail torto mandava o link para um endereço inexistente e a tela respondia *"link enviado, verifique seu e-mail"*. Ninguém descobre sozinho que está esperando uma mensagem que nunca vai chegar.
+
+Sexta tela a usar o `emailValido` de `utils/telefone`, e nenhuma com cópia própria — que era o objetivo de ter tirado a regra de dentro das páginas hoje de manhã (§45).
+
+### O que veio antes disso, e vale mais que o conserto
+
+Passei três mensagens defendendo uma explicação errada. O Marcos disse que tinha três marinas abertas em abas e eu afirmei que era impossível — sessão do Supabase é uma por navegador. Estava certo sobre as abas e **errado sobre a janela anônima**, que tem armazenamento próprio: lá dava para ter uma segunda conta, e ele já fazia isso há tempo em outros projetos.
+
+Quando ele disse "vc está errado", fui ao banco em vez de insistir. O `last_sign_in_at` mostrou login novo com `bauerwebsites@gmail.com` **um minuto antes** — ou seja, na anônima tinha entrado a Marina Alfa mesmo, por preenchimento automático do navegador. O mecanismo dele funcionava; o e-mail é que não era o esperado.
+
+**Padrão a repetir:** quando o usuário contradiz a explicação, medir antes de argumentar. `last_sign_in_at`, `audit_logs` e `git log -S` resolveram três desacordos hoje, todos em segundos. E prestar atenção ao que ele diz de experiência própria — "sempre faço isso com todas as páginas" era informação, não opinião.
