@@ -116,6 +116,12 @@ async def create_ativo(ativo: AtivoCreate, user_id: str = Depends(get_current_us
         "status": "ativo",
     }
 
+    # Nome da embarcação. Opcional: barco sem nome registrado cai no
+    # `marca + modelo` das telas, que é o comportamento que sempre existiu.
+    nome = (getattr(ativo, "nome_reg", None) or "").strip()
+    if nome:
+        data["nome_reg"] = nome
+
     # Coluna real é 'comprimento'. Aceita comprimento_pes (front) ou metros.
     comp = getattr(ativo, "comprimento_pes", None) or getattr(ativo, "comprimento_metres", None)
     if comp:

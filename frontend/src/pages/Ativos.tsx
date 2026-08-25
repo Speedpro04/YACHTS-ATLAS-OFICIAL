@@ -25,6 +25,10 @@ export default function Ativos() {
     tipo: 'iate',
     marca: '',
     modelo: '',
+    // Nome da embarcação — o que está na popa e no Título de Inscrição. Sete
+    // telas leem `nome_reg` (dossiê, verificação pública, portal do armador),
+    // e nenhuma o coletava: todo barco se apresentava como "marca + modelo".
+    nome_reg: '',
     comprimento_pes: 0,
     ano_fabricacao: new Date().getFullYear(),
     // Contato do dono: é a chave de acesso dele ao Portal do Proprietário.
@@ -136,7 +140,7 @@ export default function Ativos() {
       setVitrineFiles([])
       setShowForm(false)
       setFormData({
-        tipo: 'iate', marca: '', modelo: '', comprimento_pes: 0,
+        tipo: 'iate', marca: '', modelo: '', nome_reg: '', comprimento_pes: 0,
         ano_fabricacao: new Date().getFullYear(),
         proprietario_email: '', proprietario_telefone: '',
         proprietario_nome: '', proprietario_documento: '',
@@ -263,6 +267,9 @@ export default function Ativos() {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
                 { label: 'Tipo de Embarcação', key: 'tipo', type: 'select', options: ['iate', 'lancha', 'veleiro', 'jetski'] },
+                // Vem logo no começo porque é o título do dossiê e da página de
+                // verificação — é por este nome que o comprador reconhece o barco.
+                { label: 'Nome da Embarcação', key: 'nome_reg', type: 'text', placeholder: 'Ex: Lady Cristy', opcional: true },
                 { label: 'Fabricante / Marca', key: 'marca', type: 'text', placeholder: 'Azimut, Sunseeker...' },
                 { label: 'Modelo', key: 'modelo', type: 'text', placeholder: 'Flybridge 78...' },
                 { label: t('common.length_feet'), key: 'comprimento_pes', type: 'number', min: 0, max: 500, placeholder: 'Ex: 45' },

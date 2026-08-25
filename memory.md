@@ -1357,3 +1357,29 @@ Em produção, `marinas_lancamento` tem 20 linhas e **nenhuma** com e-mail. O fi
 Acrescentado o teste do caso real — marina fora do lançamento, banco sem correspondência — que falha com o código antigo (o `update_user_by_id` nunca era chamado).
 
 **Terceiro sintoma da mesma doença desta semana:** comentário que promete (§47), fixture que assume (aqui) e `required` que não valida (§45) são todos "o código diz uma coisa e o sistema faz outra". Nos três casos a documentação era mais confiável que o comportamento — e por isso ninguém foi conferir.
+
+---
+
+## 49. O barco não tinha onde ter nome
+**Data:** 25/08/2026
+
+Fui montar três embarcações de teste com nome próprio ("Lady Cristy") e descobri que **não dá para nomear barco nenhum pela tela**.
+
+```
+nome_reg  lido em 7 telas   dossie · verificacao publica · painel · portal do armador · listagens
+          escrito em        nenhum lugar
+```
+
+A coluna existe no banco. Não estava declarada no `AtivoBase` nem no formulário. Todo barco caía no `marca + modelo` — daí o dossiê de um iate se apresentar como *"Marlin Sea Focus"*, que é fabricante e modelo, não nome. Os únicos ativos com nome eram os de demonstração, inseridos à mão via SQL.
+
+**É a segunda vez que esse defeito exato acontece no mesmo arquivo.** O comentário do próprio `AtivoBase`, escrito quando consertaram largura e calado, descreve:
+
+> *"As colunas existem no banco desde sempre e NENHUMA era declarada aqui — o getattr lia None e o dado nunca era gravado. Código morto que parecia vivo."*
+
+Consertaram as dez colunas de especificação e **não olharam o resto da tabela**. O nome ficou.
+
+**Padrão a repetir:** ao achar coluna do banco que o schema não declara, não consertar só a que apareceu — **listar a tabela inteira** e conferir campo a campo o que é lido, o que é escrito e o que é só exibido. `information_schema.columns` contra o modelo Pydantic responde de uma vez. É a mesma lição de varrer-a-classe-inteira, na dimensão "coluna que existe mas ninguém preenche".
+
+**Sintoma que identifica a família:** dado que aparece bonito nas telas de demonstração e vazio no uso real. A demonstração foi populada à mão, então ela nunca passa pelo caminho que está quebrado — e é justamente ela que todo mundo olha para conferir se está funcionando.
+
+Fechado nas quatro pontas (schema, insert, formulário, reset do formulário). O reset só apareceu porque o `tsc` reclamou de campo faltando — validação de tipo pegando o que revisão de olho não pega.

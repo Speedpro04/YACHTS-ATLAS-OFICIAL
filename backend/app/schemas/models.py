@@ -134,6 +134,16 @@ class AtivoBase(BaseModel):
     tipo: TipoAtivo
     marca: str
     modelo: str
+    # NOME da embarcação — o que está pintado na popa e escrito no Título de
+    # Inscrição. É o título do dossiê, da página pública de verificação e do
+    # Portal do Proprietário: sete telas leem `nome_reg`.
+    #
+    # A coluna existia no banco e não era declarada aqui nem coletada em lugar
+    # nenhum — exatamente o mesmo defeito que largura/calado tiveram, e que o
+    # comentário abaixo descreve. Toda embarcação caía no `marca + modelo`, e um
+    # dossiê de ativo de alto valor se apresentava como "Marlin Sea Focus" em
+    # vez do nome do barco.
+    nome_reg: Optional[str] = None
     ano_fabricacao: int
     comprimento_pes: Optional[float] = None
     comprimento_metres: Optional[float] = None

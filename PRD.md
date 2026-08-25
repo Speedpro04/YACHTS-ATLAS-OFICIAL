@@ -434,6 +434,23 @@ Fica no `_registrar_indicacao` e não no `create_user` de propósito: assim tamb
 
 **O teste que existia passava.** `test_o_que_ela_digitou_fica_guardado` era verde enquanto a produção descartava tudo — porque o cenário dava e-mail à linha de lançamento da marina que se cadastrava. O fixture construía o mundo que o código esperava, em vez do mundo que existe. Acrescentado o teste do caso real: marina fora do lançamento, banco sem correspondência, e o texto tem de estar no cadastro mesmo assim.
 
+### O barco não tinha onde ter nome (25/08/2026)
+
+`nome_reg` é o **nome da embarcação** — o que está pintado na popa e escrito no Título de Inscrição. É o título do dossiê, da página pública de verificação e do Portal do Proprietário.
+
+```
+lido em     7 telas
+escrito em  nenhum lugar
+```
+
+A coluna existia no banco, era exibida em toda parte, e **não era declarada no schema da API nem coletada no formulário**. Toda embarcação caía no `marca + modelo` — por isso o dossiê de um iate se apresentava como *"Marlin Sea Focus"* em vez do nome do barco. Os únicos ativos com nome eram os de demonstração, inseridos à mão.
+
+É o mesmo defeito que largura e calado tiveram, e que o comentário do próprio `AtivoBase` descreve: *"as colunas existem no banco desde sempre e NENHUMA era declarada aqui — o getattr lia None e o dado nunca era gravado. Código morto que parecia vivo."* Corrigiram para as especificações e não notaram que o **nome** tinha o problema idêntico.
+
+Fechado nas quatro pontas: `AtivoBase.nome_reg`, o insert em `create_ativo`, o campo no formulário (logo depois do tipo, antes da marca) e o reset do formulário — este último só apareceu porque o `tsc` reclamou.
+
+Continua **opcional**: barco sem nome registrado segue caindo no `marca + modelo`, que é o comportamento que sempre existiu.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.
