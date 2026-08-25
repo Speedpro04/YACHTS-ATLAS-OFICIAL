@@ -1163,3 +1163,40 @@ Os prazos de dossiê ficaram no config mesmo sem leitor, porque o da oficial (12
 ### Do painel, no mesmo dia
 
 Descoberto ao conferir o que o cliente vê: o extrato do cartão mostra o nome da **empresa mestre**, não o do produto. Marina que não reconhece a cobrança contesta, e chargeback em recorrente internacional cobra taxa e mancha o índice da conta. Descritor por produto (`AXOSHUB* YACHTSATLAS`) resolve sem tocar na estrutura societária. **Ainda aberto.**
+
+---
+
+## 44. Três dias caçando um defeito que era o teste de anteontem
+**Data:** 25/08/2026
+
+O Marcos estava desde sábado atrás de por que a abordagem não chegava na marina indicada. Chegou a perguntar se valia reconstruir o disparo em cima do ATLAS-SHOP.
+
+Não havia defeito. O número que faz papel de cliente em **todos** os ensaios (`5512991187251`) respondeu **SAIR** no teste de opt-out de 23/08 e entrou na blocklist. De lá em diante toda indicação para ele virou `bloqueado`.
+
+```
+23/08  testa opt-out  ->  numero entra na blocklist
+24/08  Marina Omega         -> bloqueado
+24/08  Marina Porto Feliz   -> bloqueado
+25/08  remove da blocklist, lead volta a 'pendente'
+       06:13:54  enviado
+```
+
+Nenhuma linha de código mudou entre "não chega" e "chegou".
+
+**Por que demorou três dias:** o sistema estava **acertando**. Respeitar opt-out não é falha — não levanta erro, não grava `whatsapp_erro`, não dispara alerta. O silêncio do acerto é idêntico ao silêncio da quebra, e foi nesse vão que o fim de semana foi embora. É a mesma família de §32 e §33, com uma diferença cruel: ali o sistema não sabia dizer o que faltava; aqui ele não tinha **por que** dizer nada.
+
+**Padrão a repetir:** antes de procurar defeito num envio, olhar **o que o próprio sistema já decidiu sobre aquele destinatário**. Blocklist, status da fila, marcação de teste — dez segundos de SQL. Estado que suprime ação de propósito precisa ser o primeiro lugar a olhar, não o último, justamente porque ele não reclama.
+
+**Padrão de ensaio:** não testar opt-out com o número que faz papel de cliente. O opt-out é permanente por natureza — é essa a graça dele — então ele envenena todos os testes seguintes daquele número. Ou usa número descartável, ou limpa a blocklist logo depois.
+
+### Onde o agente conversacional tem lugar de verdade
+
+A pergunta do Marcos sobre trazer o ATLAS-SHOP para cá estava mirando o alvo errado, mas o incômodo era legítimo. O disparo não precisa de LLM: precisa de fila, carência e opt-out, que já existem e funcionam — e mais peça conversacional só aumenta risco de banimento, que é por número.
+
+O buraco está **depois**: o webhook de resposta faz `if not _quer_sair(texto): return`. Qualquer resposta que não seja "SAIR" morre ali, sem aviso a ninguém. Marina interessada respondendo "quanto custa?" fala com a parede.
+
+**Primeiro toque simples, resposta inteligente.** É esse o recorte.
+
+### De passagem
+
+`PROSPECCAO_AUTOMATICA` já está ligada em produção — quem escreve `bloqueado` é o próprio `disparar_lote`, então o laço rodava o tempo todo. E o aviso ao fundador já saía pela instância `Marinas-Indicadas`, não pela transacional: restam só o código de acesso do armador e a régua de cobrança na `Programa-Atlas`.

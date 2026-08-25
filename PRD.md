@@ -309,7 +309,35 @@ Ela sai do site para a Stripe e não volta. O aviso da etapa 4 do cadastro passo
 
 Fica junto do que já estava ali (o vídeo e as 3 horas de reserva), no mesmo bloco — não em outro lugar da tela.
 
-**Pendente e sabido:** a LP de Lançamento vive em repositório separado (`C:\LANCAMENTO_YACHTS-ATLAS-PROMOCAO`) e ainda não tem esse aviso. É onde importa mais: lá o cadastro fica a um passo do pagamento. A regra de senha já se dividiu assim uma vez (6 aqui, 8 lá, 10 no servidor) — texto de pagamento precisa ir nos dois.
+O **mesmo texto** entrou na LP de Lançamento, que vive em repositório separado (`C:\LANCAMENTO_YACHTS-ATLAS-PROMOCAO`, commit `e359c35`). Lá importa mais: o cadastro fica a um passo do pagamento. A regra de senha já se dividiu assim uma vez (6 aqui, 8 lá, 10 no servidor) — texto de pagamento vai nos dois, sempre.
+
+### A prospecção funcionava; o ensaio é que estava contaminado (25/08/2026)
+
+Três dias caçando defeito no disparo da mensagem para a marina indicada, e não havia defeito.
+
+O número que faz papel de cliente em todos os ensaios (`5512991187251`) respondeu **SAIR** no teste de opt-out de 23/08 e entrou na `whatsapp_blocklist`. De lá em diante, **toda** indicação para esse número foi marcada `bloqueado` e nenhuma mensagem saiu. Comportamento correto — e silencioso, porque respeitar opt-out não é falha: não gera erro, não gera alerta, não deixa rastro que pareça problema.
+
+A prova foi feita sem tocar em código. Removida a linha da blocklist e o lead devolvido a `pendente`, a mensagem saiu no primeiro ciclo do laço:
+
+```
+Marina Porto Feliz · 5512991187251
+whatsapp_status = enviado · 25/08/2026 06:13:54 BRT · whatsapp_erro: nenhum
+```
+
+De passagem ficou provado que **`PROSPECCAO_AUTOMATICA` já está ligada em produção**: quem escreve `bloqueado` é o próprio `disparar_lote`, então o laço estava rodando o tempo todo. O que faltava não era o gatilho — era o número estar livre.
+
+**Ordem de diagnóstico quando a mensagem não chegar** — dez segundos, antes de abrir qualquer código:
+
+```sql
+select * from public.whatsapp_blocklist;                                  -- alguém pediu SAIR?
+select marina_name, whatsapp_status, whatsapp_erro from public.marina_leads;
+```
+
+`bloqueado` = opt-out respeitado · `teste_nao_enviar` = tirado da fila de propósito · `falhou` = aí sim há defeito, e o motivo está em `whatsapp_erro`.
+
+**Lição de ensaio, não de código:** testar opt-out com o mesmo número que faz papel de cliente envenena todos os testes seguintes, e o sistema não tem como avisar — ele está fazendo o certo. Opt-out precisa de número descartável, ou a blocklist tem de ser limpa logo depois.
+
+**O buraco que sobrou:** o webhook de resposta só age em "SAIR" (`if not _quer_sair(texto): return`). Marina que responder *"quanto custa?"* fala com a parede — a mensagem não vai a lugar nenhum e ninguém é avisado. É o único ponto onde um agente conversacional (ATLAS-SHOP / Vega) tem trabalho real; o primeiro toque não precisa dele.
 
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
