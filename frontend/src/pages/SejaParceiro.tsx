@@ -3,6 +3,15 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import Header from '../components/Header'
 import { CATEGORIAS_PARCEIRO } from '../config/parceirosCategorias'
 import { api } from '../services/api'
+import {
+  soDDDeNumero,
+  mascaraTelefone,
+  telefoneCompleto,
+  comDDI,
+  emailValido,
+  MSG_TELEFONE_INCOMPLETO,
+  MSG_EMAIL_INVALIDO,
+} from '../utils/telefone'
 
 export default function SejaParceiro() {
   const [form, setForm] = useState({
@@ -20,20 +29,31 @@ export default function SejaParceiro() {
   const [erro, setErro] = useState('')
 
   const set = (k: string, v: string) => {
-    setForm((p) => ({ ...p, [k]: v }))
+    // Telefone guardado como dígitos puros; "+55" é rótulo, máscara é só tela.
+    setForm((p) => ({ ...p, [k]: k === 'telefone' ? soDDDeNumero(v) : v }))
     if (errors[k]) setErrors((p) => ({ ...p, [k]: false }))
   }
 
   const enviar = async () => {
-    const obrig = ['categoria', 'empresa', 'responsavel', 'email']
+    const obrig = ['categoria', 'empresa', 'responsavel', 'email', 'telefone']
     const novo: Record<string, boolean> = {}
     obrig.forEach((k) => { if (!String((form as any)[k]).trim()) novo[k] = true })
     if (Object.keys(novo).length) { setErrors(novo); return }
 
+    // Preenchido não é o mesmo que completo: "(12) 978" passa no laço acima e
+    // chegaria como número que não existe. E e-mail sem ponto vira 422
+    // genérico do backend, sem dizer qual campo está errado.
+    if (!emailValido(form.email)) {
+      setErrors({ email: true }); setErro(MSG_EMAIL_INVALIDO); return
+    }
+    if (!telefoneCompleto(form.telefone)) {
+      setErrors({ telefone: true }); setErro(MSG_TELEFONE_INCOMPLETO); return
+    }
+
     setEnviando(true)
     setErro('')
     try {
-      await api.leads.parceiro(form)
+      await api.leads.parceiro({ ...form, telefone: comDDI(form.telefone) })
       setEnviado(true)
     } catch {
       setErro('Não foi possível enviar agora. Tente novamente em instantes.')
@@ -97,7 +117,10 @@ export default function SejaParceiro() {
                 </div>
                 <div>
                   <label className={labelClass}>Telefone / WhatsApp</label>
-                  <input className={inputClass('telefone')} value={form.telefone} onChange={(e) => set('telefone', e.target.value)} placeholder="(00) 00000-0000" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/40 select-none">+55</span>
+                    <input type="tel" inputMode="numeric" className={inputClass('telefone')} value={mascaraTelefone(form.telefone)} onChange={(e) => set('telefone', e.target.value)} placeholder="(12) 97813-8934" />
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>Cidade / Região</label>

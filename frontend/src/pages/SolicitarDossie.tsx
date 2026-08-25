@@ -2,6 +2,15 @@ import { useState } from 'react'
 import { ArrowRight, CheckCircle2, FileCheck } from 'lucide-react'
 import Header from '../components/Header'
 import { api } from '../services/api'
+import {
+  soDDDeNumero,
+  mascaraTelefone,
+  telefoneCompleto,
+  comDDI,
+  emailValido,
+  MSG_TELEFONE_INCOMPLETO,
+  MSG_EMAIL_INVALIDO,
+} from '../utils/telefone'
 
 const FINALIDADES = [
   { id: 'venda', label: 'Compra / Venda do ativo' },
@@ -25,7 +34,10 @@ export default function SolicitarDossie() {
   const [erro, setErro] = useState('')
 
   const set = (k: string, v: string) => {
-    setForm((p) => ({ ...p, [k]: v }))
+    // Telefone guardado como dígitos puros; "+55" é rótulo, máscara é só tela.
+    setForm((p) => ({
+      ...p, [k]: k === 'solicitante_telefone' ? soDDDeNumero(v) : v,
+    }))
     if (errors[k]) setErrors((p) => ({ ...p, [k]: false }))
   }
 
@@ -35,13 +47,23 @@ export default function SolicitarDossie() {
     obrig.forEach((k) => { if (!String((form as any)[k]).trim()) novo[k] = true })
     if (Object.keys(novo).length) { setErrors(novo); return }
 
+    if (!emailValido(form.solicitante_email)) {
+      setErrors({ solicitante_email: true }); setErro(MSG_EMAIL_INVALIDO); return
+    }
+    // Telefone é opcional aqui. Mas se foi digitado, tem de estar completo:
+    // meio número é pior que nenhum — parece que dá para ligar, e não dá.
+    if (form.solicitante_telefone && !telefoneCompleto(form.solicitante_telefone)) {
+      setErrors({ solicitante_telefone: true }); setErro(MSG_TELEFONE_INCOMPLETO); return
+    }
+
     setEnviando(true)
     setErro('')
     try {
       await api.dossie.solicitar({
         solicitante_nome: form.solicitante_nome,
         solicitante_email: form.solicitante_email,
-        solicitante_telefone: form.solicitante_telefone || undefined,
+        solicitante_telefone: form.solicitante_telefone
+          ? comDDI(form.solicitante_telefone) : undefined,
         finalidade: (form.finalidade || 'outro') as 'venda' | 'seguro' | 'outro',
         marina_nome: form.marina_nome || undefined,
         ativo_id: form.ativo_id || undefined,
@@ -102,7 +124,10 @@ export default function SolicitarDossie() {
                 </div>
                 <div>
                   <label className={labelClass}>Telefone / WhatsApp</label>
-                  <input className={inputClass('solicitante_telefone')} value={form.solicitante_telefone} onChange={(e) => set('solicitante_telefone', e.target.value)} placeholder="(00) 00000-0000" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/40 select-none">+55</span>
+                    <input type="tel" inputMode="numeric" className={inputClass('solicitante_telefone')} value={mascaraTelefone(form.solicitante_telefone)} onChange={(e) => set('solicitante_telefone', e.target.value)} placeholder="(12) 97813-8934" />
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>Finalidade *</label>

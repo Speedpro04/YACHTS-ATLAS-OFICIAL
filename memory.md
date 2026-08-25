@@ -1200,3 +1200,43 @@ O buraco está **depois**: o webhook de resposta faz `if not _quer_sair(texto): 
 ### De passagem
 
 `PROSPECCAO_AUTOMATICA` já está ligada em produção — quem escreve `bloqueado` é o próprio `disparar_lote`, então o laço rodava o tempo todo. E o aviso ao fundador já saía pela instância `Marinas-Indicadas`, não pela transacional: restam só o código de acesso do armador e a régua de cobrança na `Programa-Atlas`.
+
+---
+
+## 45. O `required` que o próprio formulário desligou
+**Data:** 25/08/2026
+
+Segunda marina de teste cadastrada e paga — e o `telefone` foi para o banco **vazio**. O Marcos disse "culpa minha, esqueci de preencher". Não era.
+
+O campo tem `required`. Só que o formulário tem quatro etapas e **só a etapa atual existe no DOM**:
+
+```
+input phone  ->  {step === 1 && (...)}
+etapa 4      ->  o campo ja saiu da pagina
+required     ->  o navegador nao valida o que nao esta la
+handleSubmit ->  so conferia a senha
+```
+
+O atributo estava ali, visível no código, parecendo proteção. Não protegia nada desde que o formulário virou multi-etapa.
+
+**Padrão a repetir:** validação de navegador (`required`, `pattern`, `type=email`) só vale enquanto o campo está renderizado. Formulário em etapas com renderização condicional **anula todas elas** no momento do envio. Em multi-etapa, a validação mora no submit — o atributo vira decoração.
+
+**Padrão mais geral, que é o que dói:** "existe no código" não é o mesmo que "roda". Vale para o `required` daqui, para o `disparar_lote` que ninguém chamava (§42) e para a trilha de auditoria que existia e nunca gravou (§33). Três formas do mesmo defeito: código presente, caminho morto.
+
+### Terceira vez que a mesma regra se divide entre telas
+
+A regra do telefone — `+55` como rótulo fixo, máscara, recusa de incompleto — foi escrita em 24/08 e aplicada na `MarinaParceira` e na LP de Lançamento. **Não chegou ao `RegistroMarina`**, que é a página do cadastro PAGO.
+
+Antes disso foi a senha (6 numa tela, 8 na outra, 10 no servidor) e o preço. Sempre o mesmo desenho: a regra nasce dentro da página onde o problema apareceu, e as outras páginas não sabem dela.
+
+Agora vive em `frontend/src/utils/telefone.ts` e as quatro telas importam. **A correção não é "aplicar nos outros lugares" — é tirar a regra de dentro da tela.** Enquanto ela morar na página, a próxima página nasce sem.
+
+### Uma decisão de produto no meio
+
+Mínimo passou de 10 para **11 dígitos**. O número serve para WhatsApp, e fixo não recebe: aceitar 10 grava contato que nunca funciona, e falha em silêncio — a Evolution aceita a chamada e não entrega. O `1299187251` que o Marcos digitou (celular com um dígito a menos) passava como fixo válido.
+
+Custo aceito: marina que só tenha fixo não se cadastra. Toda marina tem celular — é a premissa do produto.
+
+### O que funcionou
+
+O e-mail de boas-vindas chegou **com o nome**: *"Olá, Amazon Marina, bem-vindo à Atlas."* O conserto de ontem está em produção. E o recibo e a fatura da Stripe chegaram separados, como o Marcos queria.

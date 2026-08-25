@@ -4,26 +4,18 @@ import { ArrowLeft } from 'lucide-react';
 import styles from './MarinaParceira.module.css';
 import Header from '../components/Header';
 import { api } from '../services/api';
-
-
-// O estado guarda só DÍGITOS de DDD + número (10 ou 11). O "+55" é rótulo na
-// tela, não conteúdo do campo, e é isso que mata a ambiguidade na origem.
-function soDDDeNumero(bruto: string): string {
-  let d = bruto.replace(/\D/g, '')
-  // Colou o número inteiro, com DDI? O +55 já está fixo ao lado; manter o 55
-  // digitado produziria "+55 55 978138934" — DDD 55 (Santa Maria/RS), que foi
-  // exatamente o defeito de 23/08/2026: gravou-se 5555978138934, um número
-  // que ninguém digitou e que a prospecção comercial iria abordar.
-  if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
-  return d.slice(0, 11)
-}
-
-function mascaraTelefone(d: string): string {
-  if (d.length <= 2) return d
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-}
+// A regra do telefone e do e-mail vive em utils/telefone, e em mais nenhum
+// lugar. Ela morava aqui dentro, e por isso não chegou ao RegistroMarina — a
+// página do cadastro PAGO ficou sem, e uma marina pagou com telefone vazio.
+import {
+  soDDDeNumero,
+  mascaraTelefone,
+  telefoneCompleto,
+  comDDI,
+  emailValido,
+  MSG_TELEFONE_INCOMPLETO,
+  MSG_EMAIL_INVALIDO,
+} from '../utils/telefone';
 
 export default function MarinaParceira() {
   const [form, setForm] = useState({
@@ -69,15 +61,15 @@ export default function MarinaParceira() {
     // DDD + número: 10 dígitos (fixo) ou 11 (celular). Recusar aqui, com
     // mensagem própria, é o que evita gravar número incompleto — o backend
     // também recusa, mas devolve 422 genérico e a marina não sabe qual campo.
-    if (form.whatsapp.length < 10) {
+    if (!telefoneCompleto(form.whatsapp)) {
       setErrors({ whatsapp: true });
-      setSubmitError('WhatsApp incompleto. Informe DDD + número, ex.: (12) 97813-8934.');
+      setSubmitError(MSG_TELEFONE_INCOMPLETO);
       return;
     }
 
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) {
+    if (!emailValido(form.email)) {
       setErrors({ email: true });
-      setSubmitError('E-mail inválido. Confira se não falta um ponto ou uma letra.');
+      setSubmitError(MSG_EMAIL_INVALIDO);
       return;
     }
 
@@ -90,7 +82,7 @@ export default function MarinaParceira() {
       // Sai com o DDI colado: 13 dígitos começando em 55 é a única forma que
       // o backend aceita sem precisar inferir nada.
       await api.leads.marina({
-        ...form, whatsapp: `55${form.whatsapp}`, origem: 'oficial',
+        ...form, whatsapp: comDDI(form.whatsapp), origem: 'oficial',
       });
       setSubmitted(true);
     } catch {

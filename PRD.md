@@ -339,6 +339,38 @@ select marina_name, whatsapp_status, whatsapp_erro from public.marina_leads;
 
 **O buraco que sobrou:** o webhook de resposta só age em "SAIR" (`if not _quer_sair(texto): return`). Marina que responder *"quanto custa?"* fala com a parede — a mensagem não vai a lugar nenhum e ninguém é avisado. É o único ponto onde um agente conversacional (ATLAS-SHOP / Vega) tem trabalho real; o primeiro toque não precisa dele.
 
+### O campo obrigatório que não era obrigatório (25/08/2026)
+
+Uma marina concluiu o cadastro, pagou e ficou com **`telefone` gravado vazio**. O telefone é por onde ela é atendida, recebe o código de acesso do armador e é abordada na prospecção. Nada reclamou.
+
+O `input` do telefone tem `required`. O que não estava à vista:
+
+```
+input phone   vive dentro de  {step === 1 && (...)}
+                              ↓
+etapa 4       onde fica o botão de enviar, o campo NÃO existe mais no DOM
+                              ↓
+required      não valida o que não está na página — o atributo estava inerte
+handleSubmit  só conferia a senha
+```
+
+Formulário em etapas com renderização condicional **desliga o `required` do navegador** sem avisar. A validação tem de estar no `handleSubmit`, não no atributo.
+
+**A regra do telefone virou `utils/telefone.ts`, e some de dentro das páginas.** Ela já existia — `+55` como rótulo fixo, máscara, recusa de incompleto — e foi aplicada em 24/08 na `MarinaParceira` e na LP de Lançamento. Não chegou ao `RegistroMarina`, que é justamente **a página do cadastro pago**. É a terceira vez que uma regra se divide entre telas neste projeto (senha: 6/8/10; preço; agora telefone), e a primeira em que o prejuízo foi um cliente pagante sem contato.
+
+Aplicada nos **quatro** formulários do Oficial:
+
+| Formulário | O que ganhou |
+|---|---|
+| `RegistroMarina` (cadastro pago) | `+55` fixo, máscara, e-mail e telefone conferidos no envio |
+| `MarinaParceira` (indicação) | passou a importar a regra em vez da cópia local |
+| `SejaParceiro` | telefone virou obrigatório e completo; e-mail conferido |
+| `SolicitarDossie` | telefone é opcional, mas se digitado tem de estar completo |
+
+**Mínimo de 11 dígitos**, não 10. O número serve para WhatsApp, e fixo não recebe — aceitar 10 grava um contato que nunca vai funcionar, e o silêncio é total: a Evolution aceita a chamada e não entrega nada. `1299187251` (um celular com um dígito a menos) passava como fixo válido.
+
+Verificado em navegador real: com o telefone vazio na etapa 4, o envio agora **para na página** com "WhatsApp incompleto" em vez de seguir para o Stripe. E `5512991187251` colado com DDI vira `(12) 99118-7251`, sem virar DDD 55.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

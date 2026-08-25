@@ -19,6 +19,15 @@ import {
 } from 'lucide-react'
 import Header from '../components/Header'
 import { api } from '../services/api'
+import {
+  soDDDeNumero,
+  mascaraTelefone,
+  telefoneCompleto,
+  comDDI,
+  emailValido,
+  MSG_TELEFONE_INCOMPLETO,
+  MSG_EMAIL_INVALIDO,
+} from '../utils/telefone'
 
 
 // A regra da senha vive AQUI e em mais nenhum lugar da tela.
@@ -96,7 +105,10 @@ export default function RegistroMarina() {
   }, [formData.zip_code])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    // O telefone é guardado como DÍGITOS puros; o "+55" é rótulo ao lado do
+    // campo e a máscara é só apresentação. Ver utils/telefone.
+    setFormData({ ...formData, [name]: name === 'phone' ? soDDDeNumero(value) : value })
   }
 
   // Fallback quando o cadastro falha antes de o backend dizer a oferta.
@@ -106,6 +118,24 @@ export default function RegistroMarina() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError('')
+
+    // E-mail e telefone conferidos AQUI, e não pelo `required` do input.
+    //
+    // O formulário tem 4 etapas e só a etapa atual existe no DOM. Na etapa 4,
+    // onde fica o botão de enviar, os campos da etapa 1 já saíram da página —
+    // e `required` não valida o que não está lá. O atributo estava inerte.
+    //
+    // Custou caro: em 25/08/2026 uma marina concluiu o cadastro e pagou
+    // US$ 250 com `telefone` gravado vazio. O telefone é por onde ela seria
+    // atendida, e ninguém percebeu porque nada reclamou.
+    if (!emailValido(formData.email)) {
+      setSubmitError(MSG_EMAIL_INVALIDO)
+      return
+    }
+    if (!telefoneCompleto(formData.phone)) {
+      setSubmitError(MSG_TELEFONE_INCOMPLETO)
+      return
+    }
 
     if (!senhaValida(formData.password)) {
       setSubmitError(
@@ -125,7 +155,9 @@ export default function RegistroMarina() {
         email: formData.email,
         password: formData.password,
         cnpj: formData.cnpj,
-        phone: formData.phone,
+        // Sai com o DDI colado: 13 dígitos começando em 55 é a única forma que
+        // o backend aceita sem precisar inferir DDD nenhum.
+        phone: comDDI(formData.phone),
         city: formData.city,
         state: formData.state,
         website: formData.website,
@@ -277,15 +309,22 @@ export default function RegistroMarina() {
                         <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
                           <Phone size={14} /> {t('marina_onboarding.field_phone')}
                         </label>
-                        <input 
-                          type="text" 
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          required
-                          placeholder={t('marina_onboarding.placeholder_phone')}
-                          className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
-                        />
+                        {/* O "+55" é rótulo FIXO, fora do campo. Dentro dele,
+                            "55978138934" é indistinguível de um celular do DDD
+                            55 (Santa Maria/RS) — e nenhuma regra desempata. */}
+                        <div className="flex items-center gap-3 border-b border-white/10 focus-within:border-gold-500 transition-all">
+                          <span className="text-lg font-serif text-white/40 select-none">+55</span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            name="phone"
+                            value={mascaraTelefone(formData.phone)}
+                            onChange={handleChange}
+                            required
+                            placeholder="(12) 97813-8934"
+                            className="w-full bg-white/5 px-0 py-4 text-lg font-serif focus:outline-none transition-all placeholder:text-white/20"
+                          />
+                        </div>
                       </div>
                     </div>
 
