@@ -1408,3 +1408,38 @@ Se o material do armador caísse direto em `documentos`, quebraria duas coisas p
 A forma certa já existe no próprio sistema — `registros_rascunho` × `registros`. Entrada em tabela separada, aceitar move para `documentos`. Assim **nenhum consumidor muda**, porque `documentos` continua significando "está no cofre".
 
 **Padrão a repetir:** quando um novo caminho de escrita aparece, perguntar o que a tabela de destino **significa hoje** para quem já lê dela. Acrescentar linha com sentido diferente na mesma tabela é como acrescentar um segundo vocabulário numa coluna — e hoje já apareceram dois desses (`gold`/`ouro`, `verified`/`validado`).
+
+---
+
+## 51. O quinto componente pronto que ninguém tinha ligado
+**Data:** 25/08/2026
+
+O Marcos perguntou como, no futuro, a foto do celular chegaria ao banco e que ferramentas seriam necessárias. Fui olhar antes de responder e achei `SecureCameraUpload.tsx` — completo, com `capture="environment"` (abre a câmera traseira do celular), preview, tratamento de erro. **Nenhum arquivo o importava.**
+
+Quinto caso do mesmo padrão **no mesmo dia**:
+
+```
+required inerte no formulario multi-etapa   (§45)
+disparar_lote sem chamador                  (§42)
+indicacao com return antes de gravar        (§47)
+nome_reg lido em 7 telas, escrito em zero   (§49)
+SecureCameraUpload sem nenhum import        (aqui)
+```
+
+**Padrão que já dá para nomear:** neste projeto, o defeito dominante não é código errado — é **código certo desconectado**. Construído, testado de perto, e nunca plugado. Não aparece em log, não quebra teste, não gera erro. Só não acontece.
+
+**Como procurar de propósito, em vez de por acaso:** para cada componente em `components/`, `grep -rn "NomeDoComponente" src` e ver quem importa. Para cada função de serviço, o mesmo. Leva minutos e devolve a lista inteira — em vez de descobrir um por vez, sempre por acidente, sempre em cima da hora.
+
+### A ordem que o Marcos corrigiu
+
+Eu propus escrever o texto nas LPs primeiro e ligar a câmera depois. Ele cortou: *"eu digo deixar funcional primeiro e depois ajusta as LPs, pq aí já sabemos que está realmente funcional!"*
+
+Ele estava certo, e o dia já tinha dado duas provas: o rodapé do e-mail prometia um recibo que estava **desligado** na Stripe, e a etapa 4 do cadastro promete um **vídeo que não existe**. Página que afirma antes de existir vira dívida silenciosa — ninguém reclama, e a promessa fica falsa até alguém reparar.
+
+**Padrão a repetir:** construir → verificar → anunciar. Nunca a ordem inversa, e nunca as duas ao mesmo tempo.
+
+### De brinde, a coordenada
+
+`latitude`, `longitude` e `geo_fonte` já existiam na tabela e no endpoint; ninguém mandava. Agora a foto sobe com onde e quando foi tirada — dado que **não tem como ser reconstruído depois** e que vale muito num dossiê de custódia.
+
+Best-effort de propósito: sem permissão, sem sinal ou passando de 5 s, sobe sem coordenada. Registro sem geo é bom; registro que não sobe porque o GPS demorou não serve para nada.

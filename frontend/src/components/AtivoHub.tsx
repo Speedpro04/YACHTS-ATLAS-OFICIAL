@@ -8,6 +8,7 @@ import {
   Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor,
   Droplets, PenLine
 } from 'lucide-react'
+import SecureCameraUpload from './SecureCameraUpload'
 import FichaServicoForm from './FichaServicoForm'
 import CoberturaFotos from './CoberturaFotos'
 import RetificarRegistro from './RetificarRegistro'
@@ -107,6 +108,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
   const [secao, setSecao] = useState<Categoria | null>(null)
   const [dossieAberta, setDossieAberta] = useState<DossieCat | null>(null)
   const [contagem, setContagem] = useState<Record<string, number>>({})
+  const [cameraAberta, setCameraAberta] = useState(false)
   // Somente leitura (Portal do Proprietário): sem card de Dossiê (emissão é ação
   // exclusiva da marina) e sem a seção "Dossiê Completo & Laudos" (só tem formulário
   // de criação, nenhuma visualização de registros existentes).
@@ -201,6 +203,19 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
               <span className="flex items-center gap-2 px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.25em] border border-white/10 text-white/30" title="Registros são imutáveis — não podem ser editados">
                 <Lock size={11} /> Imutável
               </span>
+              {/* Câmera do celular direto para o cofre.
+                  Escondida no Portal do Proprietário (readOnly): a custódia é
+                  da marina, e quem alimenta o cofre é quem responde por ele.
+                  O armador consulta; material dele entra pela mão do gerente. */}
+              {!readOnly && (
+                <button
+                  onClick={() => setCameraAberta(true)}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.25em] border border-[#c5a059]/40 text-[#c5a059] bg-[#c5a059]/[0.08] hover:bg-[#c5a059]/[0.16] transition-colors"
+                  title="Fotografar agora e enviar ao cofre"
+                >
+                  <Camera size={11} /> Fotografar
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -316,6 +331,17 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
           ativoNome={`${ativo.marca} ${ativo.modelo}`}
           onClose={() => setDossieAberta(null)}
           onSaved={carregarContagem}
+        />
+      )}
+
+      {cameraAberta && (
+        <SecureCameraUpload
+          ativoId={ativo.id}
+          onUploadSuccess={() => {
+            setCameraAberta(false)
+            carregarContagem()
+          }}
+          onClose={() => setCameraAberta(false)}
         />
       )}
     </div>

@@ -477,6 +477,12 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
 
+**Feito em 25/08/2026 — a câmera do celular ligada.** O `SecureCameraUpload` existia completo, com `capture="environment"` (abre a câmera traseira), e **nenhum arquivo o importava**. Quinto caso do mesmo padrão no mesmo dia: componente pronto, caminho morto. Plugado no cabeçalho do ativo (`AtivoHub`), como botão **Fotografar**, e escondido quando `readOnly` — que é o Portal do Proprietário. A regra de custódia deixa de ser combinado e passa a ser o que a tela faz.
+
+Junto foi a **coordenada**: as colunas `latitude`/`longitude`/`geo_fonte` e o endpoint já aceitavam geo, e ninguém mandava. Agora a foto sobe com onde e quando — dado que ninguém reconstrói depois. Best-effort de propósito: sem permissão, sem sinal ou passando de 5 s, a foto sobe sem coordenada. Registro sem geo é bom; registro que não sobe porque o GPS demorou não serve para nada.
+
+**Só então as LPs.** O texto sobre custódia entrou nas duas páginas **depois** de a regra existir e ser verificável — não antes. É a lição de duas armadilhas do próprio dia: o rodapé do e-mail prometia um recibo que estava desligado na Stripe, e a etapa 4 do cadastro promete um vídeo que não existe. Página só afirma o que já foi visto funcionando.
+
 **Aberto, e é o que quebraria se feito errado:** o material que chega **não pode cair direto em `documentos`**. Hoje estar naquela tabela significa "está no cofre", e os dois consumidores não filtram nada — `asset_score_service:114` e `dossie_data:441` leem tudo. Material não aceito inflaria a nota da marina e entraria no PDF selado. A forma certa já existe no sistema, nos registros: uma tabela de **entrada** separada, e aceitar move para `documentos`. Assim nenhum consumidor muda — `documentos` continua significando o que sempre significou.
 
 ## Acesso ao Dossiê

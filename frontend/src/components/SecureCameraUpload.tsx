@@ -35,18 +35,41 @@ export default function SecureCameraUpload({ ativoId, onUploadSuccess, onClose }
     }
   }
 
+  /**
+   * Coordenada de onde a foto está sendo enviada — best-effort.
+   *
+   * Vale muito num dossiê de custódia: prova ONDE o registro foi feito, e é o
+   * tipo de dado que ninguém consegue reconstruir depois. As colunas
+   * (`latitude`, `longitude`, `geo_fonte`) e o endpoint já aceitavam; faltava
+   * quem mandasse.
+   *
+   * Nunca bloqueia o envio: sem permissão, sem sinal ou demorando mais de 5s,
+   * a foto sobe sem coordenada. Registro sem geo é bom; registro que não sobe
+   * porque o GPS demorou não serve para nada.
+   */
+  const pegarGeo = (): Promise<{ lat: number; lng: number; acc?: number } | null> =>
+    new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve(null)
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
+        () => resolve(null),
+        { timeout: 5000, maximumAge: 60000 },
+      )
+    })
+
   const handleUpload = async () => {
     if (!file) return
 
     setIsUploading(true)
     setError(null)
-    
+
     const formData = new FormData()
     formData.append('file', file)
-    
+
     try {
+      const geo = await pegarGeo()
       // O backend calcula o SHA-256 real e armazena no Supabase Storage
-      const result = await api.documentos.upload(ativoId, 'Vistoria', 'integridade', formData)
+      const result = await api.documentos.upload(ativoId, 'Vistoria', 'integridade', formData, geo)
       if (!result?.hash) {
         throw new Error('Upload sem hash de integridade')
       }

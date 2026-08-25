@@ -297,6 +297,28 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+
+          {/* A CUSTÓDIA É DA MARINA
+              Texto literal, sem i18n, como o bloco de normas acima — e escrito
+              só depois de a regra existir no sistema: o Portal do Proprietário
+              nasceu somente leitura e a câmera envia pela conta da marina.
+              A página não promete o que ainda não foi visto funcionando. */}
+          <div className="mt-16 max-w-3xl mx-auto text-center p-10 bg-[#021431] border border-[#c5a059]/20 rounded-sm">
+            <p className="text-[#c5a059] text-[10px] font-black uppercase tracking-[0.35em] mb-5">
+              A custódia é da marina
+            </p>
+            <p className="text-white/50 text-base leading-relaxed font-light">
+              Só a sua equipe registra e sela. O proprietário acessa o dossiê do barco dele
+              e <strong className="text-white/80 font-semibold">apenas consulta</strong> — não altera,
+              não apaga, não acrescenta. É isso que dá peso ao documento na hora da venda:
+              o comprador sabe que o histórico foi mantido por quem cuida do barco, não por quem
+              está vendendo.
+            </p>
+            <p className="text-white/30 text-sm leading-relaxed font-light mt-5">
+              E o registro nasce onde o barco está: a foto vai do celular da marina direto para o
+              cofre, selada na hora, com data e local.
+            </p>
+          </div>
         </div>
       </section>
 
