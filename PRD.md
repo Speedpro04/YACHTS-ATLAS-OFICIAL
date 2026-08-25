@@ -451,6 +451,34 @@ Fechado nas quatro pontas: `AtivoBase.nome_reg`, o insert em `create_ativo`, o c
 
 Continua **opcional**: barco sem nome registrado segue caindo no `marca + modelo`, que é o comportamento que sempre existiu.
 
+### Quem pode alimentar o cofre pelo celular (decidido em 25/08/2026)
+
+Foto tirada no píer precisa chegar ao cofre. A pergunta era quem pode mandar — e a resposta separa **entrada** de **custódia**.
+
+```
+gerente da marina        envia e SELA
+encarregado da marina    envia
+dono do ativo            SÓ LÊ
+```
+
+**Não é limitação técnica — é o que dá valor ao selo.** A autoridade do registro não vem de quem paga nem de quem é dono: vem de ser **independente do resultado**. O armador é quem vende o barco, e o dossiê é o que forma o preço. Se ele alimentasse o próprio histórico, o documento viraria declaração do vendedor — exatamente o que o mercado já ignora, e o que o Atlas existe para substituir.
+
+O custo de abrir essa porta não seria caso a caso: **bastaria o comprador saber que o dono podia contribuir para que todo dossiê ficasse sob suspeita**, inclusive os que ele nunca tocou. Credibilidade se avalia pela regra, não pela exceção.
+
+E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina.** Ela assina, fica com 100% do dossiê e é a reputação dela que o selo carrega. Dar escrita ao armador seria suporte sem receita, além de sujar a cadeia de quem é cliente.
+
+**Quando o armador tiver material** — foto de viagem, ocorrência longe do píer — ele manda por fora (WhatsApp, e-mail) e o gerente decide se entra. O filtro humano no meio **é** o produto: é o gerente dizendo "isto eu assumo como registro". Quando entrar, a `observacao` diz de onde veio ("fotos fornecidas pelo proprietário"), e o dossiê fica fiel: distingue o que a marina observou do que recebeu.
+
+**O que existe hoje e o que falta:**
+
+| Papel | Telefone | Escopo |
+|---|---|---|
+| Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
+| Encarregado | — | por marina — **falta** |
+| Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+**Aberto, e é o que quebraria se feito errado:** o material que chega **não pode cair direto em `documentos`**. Hoje estar naquela tabela significa "está no cofre", e os dois consumidores não filtram nada — `asset_score_service:114` e `dossie_data:441` leem tudo. Material não aceito inflaria a nota da marina e entraria no PDF selado. A forma certa já existe no sistema, nos registros: uma tabela de **entrada** separada, e aceitar move para `documentos`. Assim nenhum consumidor muda — `documentos` continua significando o que sempre significou.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

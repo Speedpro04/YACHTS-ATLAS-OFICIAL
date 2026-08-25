@@ -1383,3 +1383,28 @@ Consertaram as dez colunas de especificação e **não olharam o resto da tabela
 **Sintoma que identifica a família:** dado que aparece bonito nas telas de demonstração e vazio no uso real. A demonstração foi populada à mão, então ela nunca passa pelo caminho que está quebrado — e é justamente ela que todo mundo olha para conferir se está funcionando.
 
 Fechado nas quatro pontas (schema, insert, formulário, reset do formulário). O reset só apareceu porque o `tsc` reclamou de campo faltando — validação de tipo pegando o que revisão de olho não pega.
+
+---
+
+## 50. Pagador e custodiante têm de ser pessoas diferentes
+**Data:** 25/08/2026
+
+Conversa de desenho, não de código: quem pode mandar foto do celular para o cofre. Decidido **gerente e encarregado da marina; o dono do ativo só lê.**
+
+O Marcos chegou sozinho na dúvida certa — *"o dono do ativo está correto isso? acho que não, hein!"* — e depois no motivo comercial: *"pq quem paga é a marina"*. Os dois argumentos, o de integridade e o de negócio, chegaram no mesmo lugar. Quando isso acontece, a decisão costuma estar certa.
+
+**O princípio que ficou:** autoridade de selo não vem de quem paga nem de quem é dono — vem de ser **independente do resultado**. O armador vende o barco; o dossiê forma o preço. Ele alimentando o próprio histórico transforma o documento em declaração do vendedor, que é justamente o que o mercado já ignora e o que o Atlas existe para substituir.
+
+Ele testou o princípio: *"se ele arcar com a contratação pessoal aí muda a história, correto?"* Meia resposta — pagar muda os **direitos de cliente** (relatório, portal, suporte), não muda **quem sela**. Pagador e custodiante são papéis distintos, e o produto só funciona enquanto forem pessoas distintas.
+
+**Padrão a repetir:** ao decidir permissão, perguntar não "quem paga?" nem "de quem é a coisa?", mas **"quem perde se o registro for falso?"**. Quem tem interesse no resultado não assina o resultado.
+
+**O custo de abrir a porta não é caso a caso.** Bastaria o comprador saber que o dono *podia* contribuir para que todo dossiê ficasse sob suspeita — inclusive os que ele nunca tocou. Credibilidade se avalia pela regra, não pela exceção. Vale para qualquer decisão futura sobre quem escreve no cofre.
+
+### O risco técnico que a decisão evita
+
+Se o material do armador caísse direto em `documentos`, quebraria duas coisas prontas: `asset_score_service:114` e `dossie_data:441` leem a tabela **sem filtro nenhum**. Ele inflaria a nota da marina (8 fotos levam de Silver a Gold) e entraria no PDF selado sem ninguém aceitar.
+
+A forma certa já existe no próprio sistema — `registros_rascunho` × `registros`. Entrada em tabela separada, aceitar move para `documentos`. Assim **nenhum consumidor muda**, porque `documentos` continua significando "está no cofre".
+
+**Padrão a repetir:** quando um novo caminho de escrita aparece, perguntar o que a tabela de destino **significa hoje** para quem já lê dela. Acrescentar linha com sentido diferente na mesma tabela é como acrescentar um segundo vocabulário numa coluna — e hoje já apareceram dois desses (`gold`/`ouro`, `verified`/`validado`).
