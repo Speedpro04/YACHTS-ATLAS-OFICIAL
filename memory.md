@@ -1240,3 +1240,41 @@ Custo aceito: marina que só tenha fixo não se cadastra. Toda marina tem celula
 ### O que funcionou
 
 O e-mail de boas-vindas chegou **com o nome**: *"Olá, Amazon Marina, bem-vindo à Atlas."* O conserto de ontem está em produção. E o recibo e a fatura da Stripe chegaram separados, como o Marcos queria.
+
+---
+
+## 46. A régua que qualquer cadastro pela metade alcançava
+**Data:** 25/08/2026
+
+O Marcos gerou o primeiro dossiê completo, viu sair **Ouro**, e a reação foi: *"o bronze poderia ser até 60, tá muito baixa essa régua"*. Estava certo — Prata começava em 50, ou seja, metade das categorias preenchidas já valia selo.
+
+```
+antes    Bronze < 50    Prata 50-79    Ouro >= 80
+agora    Bronze < 60    Prata 60-89    Ouro >= 90
+```
+
+**A janela para mexer nisso era hoje.** Nenhum dossiê real foi selado ainda, e o PDF guarda a classificação **impressa**. Depois do primeiro cliente, mudar a régua faz o papel na mão dele contradizer a tela — e não há como recolher PDF emitido. Preço pago: o ativo de teste com 87 deixa de ser Ouro.
+
+**Padrão a repetir:** parâmetro que sai impresso num documento imutável tem janela de ajuste que **fecha** — e ela fecha no primeiro cliente, não no lançamento. Antes de emitir o primeiro documento de verdade, revisar toda constante que vai aparecer nele.
+
+### O que o selo faz com o comportamento
+
+O Marcos resumiu o mecanismo melhor que eu: *"isso forçará a preencher os cadastros"*. É o desenho — a nota sobe conforme alimenta, então alimenta.
+
+O que eu acrescentei, e importa: **incentivo para preencher é também incentivo para inventar.** Marina parada em 85 querendo Ouro pode lançar uma manutenção que nunca houve. Registro falso, selado, imutável, dentro do produto que vende custódia confiável — é o pior estrago possível, e é auto-infligido pelo próprio incentivo.
+
+O que segura é a exigência de **prova** nas fichas (horímetro, peça trocada com foto, nota fiscal, executante). Conclusão prática: **nunca afrouxar upload obrigatório para facilitar a subida do score.** Score fácil de subir é score que o broker para de olhar — e aí o selo inteiro perde a função.
+
+### O jetski não alcança Ouro com folga
+
+Perguntado se jetski merecia tratamento diferente, fui ver. O painel **já** trata: esconde as abas `interior` e `pintura` para jet ski. O score **não** — continua contando as duas nas 10 categorias fixas.
+
+```
+jetski impecavel  ->  abrangencia 8/10  ->  40 + 25 + 15 + 10 = 90
+```
+
+Exatamente na linha do Ouro, sem margem nenhuma, por duas categorias que a própria tela decidiu que não existem para ele.
+
+O veleiro foi resolvido (`CAT_ALIAS = {"velame": "motor"}`). O jetski não. **A mesma regra em dois lugares, terceira vez esta semana** — e o comentário no topo do `asset_score_service` literalmente pede "manter SEMPRE em concordância com o painel". Pedido em comentário não é mecanismo: o que não é uma fonte só, diverge.
+
+Fica anotado para consertar medindo a abrangência contra as categorias **aplicáveis ao tipo**.
