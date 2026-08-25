@@ -66,9 +66,15 @@ const HEALTH_STYLE: Record<Health, { dot: string; label: string; text: string }>
   na: { dot: 'bg-white/20', label: 'Sem registro', text: 'text-white/30' },
 }
 
+// Rótulo do selo em INGLÊS, igual ao valor que o banco guarda e ao que a
+// página pública de verificação mostra. O painel traduzia para "Ouro/Prata"
+// desde 26/06/2026, e a página pública nunca traduziu — mesmo ativo aparecia
+// "Ouro" para a marina e "GOLD" para o comprador que escaneia o QR. Selo é
+// nome de grau, não texto corrido: mantê-lo idêntico nas duas pontas é o que
+// permite a marina e o comprador falarem da mesma coisa.
 const CLASSIF: Record<string, { label: string; cls: string }> = {
-  gold: { label: 'Ouro', cls: 'bg-[#c5a059] text-[#010c20] border-[#c5a059]' },
-  silver: { label: 'Prata', cls: 'bg-white/80 text-[#010c20] border-white' },
+  gold: { label: 'Gold', cls: 'bg-[#c5a059] text-[#010c20] border-[#c5a059]' },
+  silver: { label: 'Silver', cls: 'bg-white/80 text-[#010c20] border-white' },
   bronze: { label: 'Bronze', cls: 'bg-[#a06a3c]/20 text-[#c98b54] border-[#a06a3c]/40' },
 }
 

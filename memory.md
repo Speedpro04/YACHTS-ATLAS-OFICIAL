@@ -1278,3 +1278,20 @@ Exatamente na linha do Ouro, sem margem nenhuma, por duas categorias que a próp
 O veleiro foi resolvido (`CAT_ALIAS = {"velame": "motor"}`). O jetski não. **A mesma regra em dois lugares, terceira vez esta semana** — e o comentário no topo do `asset_score_service` literalmente pede "manter SEMPRE em concordância com o painel". Pedido em comentário não é mecanismo: o que não é uma fonte só, diverge.
 
 Fica anotado para consertar medindo a abrangência contra as categorias **aplicáveis ao tipo**.
+
+### O selo em duas línguas, cada tela na sua
+
+Ao conferir a página pública de verificação num celular, o Marcos viu **"ÍNDICE DE CUSTÓDIA: GOLD"** e perguntou se o Claude tinha trocado para "Ouro" sem permissão. Fui ao git antes de responder, e a resposta é: **não**.
+
+```
+asset_score_service   retorna gold/silver/bronze desde que o score existe
+Verificacao.tsx       nunca teve traducao — sempre mostrou o valor cru
+nenhum codigo         grava "ouro" ou "prata"
+AtivoHub.tsx          traduz gold -> Ouro na TELA, desde 26/06/2026
+```
+
+O dado nunca mudou. O que havia eram **duas apresentações do mesmo valor**: "Ouro" no painel da marina, "GOLD" na página que o comprador abre pelo QR.
+
+**Padrão a repetir:** antes de aceitar ou negar "isso mudou", ir ao histórico. `git log -S"texto"` responde em segundos de onde veio cada string, e evita tanto a defesa injusta quanto a culpa aceita por engano. O Marcos estava certo no fato central — sempre foi inglês — e a divergência era de tela, não de dado.
+
+Decidido: **inglês nas duas pontas** (`Gold` · `Silver` · `Bronze`). Selo é nome de grau; se a marina fala "Ouro" e o comprador lê "GOLD", os dois não estão falando da mesma coisa. Quatro ativos de demonstração com `ouro`/`prata` gravados à mão no banco foram normalizados.
