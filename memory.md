@@ -1295,3 +1295,36 @@ O dado nunca mudou. O que havia eram **duas apresentações do mesmo valor**: "O
 **Padrão a repetir:** antes de aceitar ou negar "isso mudou", ir ao histórico. `git log -S"texto"` responde em segundos de onde veio cada string, e evita tanto a defesa injusta quanto a culpa aceita por engano. O Marcos estava certo no fato central — sempre foi inglês — e a divergência era de tela, não de dado.
 
 Decidido: **inglês nas duas pontas** (`Gold` · `Silver` · `Bronze`). Selo é nome de grau; se a marina fala "Ouro" e o comprador lê "GOLD", os dois não estão falando da mesma coisa. Quatro ativos de demonstração com `ouro`/`prata` gravados à mão no banco foram normalizados.
+
+---
+
+## 47. O painel chamava toda marina pelo mesmo nome
+**Data:** 25/08/2026
+
+A Amazon Marina pagou, entrou no painel pela primeira vez, e foi recebida por **"Marina Hub — Fleet Excellence"**. O Marcos: *"aqui era pra ser Amazon Marina"*.
+
+Não era leitura errada de campo. Era `t('common.marina_hub')` — **string de tradução fixa**. O painel nunca leu o nome de ninguém; toda marina que entrasse veria o mesmo título, desde sempre.
+
+O contraste é o que incomoda: **o e-mail de boas-vindas, enviado minutos antes, já dizia "Olá, Amazon Marina"**. O dado estava em `user_metadata.marina`. O e-mail foi buscar; o painel não. Conserto de ontem numa ponta, defeito de sempre na outra.
+
+**Padrão a repetir:** texto que *parece* nome próprio na interface merece desconfiança — "Marina Hub" lê como nome de cliente e é rótulo genérico. Ao conferir uma tela, perguntar de cada nome exibido: **isso veio do banco ou está escrito no código?** Rótulo disfarçado de dado passa despercebido justamente porque parece certo.
+
+Corrigido em três lugares: o título do painel e as **duas** ocorrências no relatório de frota — que é documento que a marina baixa e manda para terceiro, então lá o nome errado sai da tela e vai para a mão de outra pessoa.
+
+### O achado maior, que continua aberto
+
+Investigando isso, o Marcos disse que tinha indicado pela "Marina Hub" e fui ver onde a indicação era guardada. Não era guardada em lugar nenhum.
+
+```python
+minha = supabase.table("marinas_lancamento").select("slot").ilike("email", data.email)
+if not minha.data:
+    return          # descarta o texto e segue
+```
+
+`marinas_lancamento` tem **20 linhas e zero e-mails preenchidos**. A busca nunca acha ninguém, o `return` cai **sempre** — para toda marina que se cadastra pelo Oficial, não só nos testes.
+
+E o comentário da própria função promete o contrário: *"o texto cru fica guardado como ela digitou (…) nada disso pode ser descartado por não casar com um registro"*. A primeira linha do corpo faz exatamente o descarte que o comentário proíbe.
+
+**Padrão a repetir:** comentário que descreve intenção não prova comportamento — e quando os dois divergem, o comentário é o que engana, porque quem lê para de conferir. Ao auditar função com docstring forte, ler o corpo **primeiro** e a documentação depois.
+
+O peso disso: é o motor de crescimento de 20 → 40 marinas jogando fora o vínculo no **único** momento em que ele existe. Depois do cadastro ninguém lembra quem indicou quem — foi essa a razão de o campo ter sido criado em 21/08 (§15), e ele nasceu sem destino.

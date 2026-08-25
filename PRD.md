@@ -400,6 +400,30 @@ O que cada faixa exige, pela fórmula real (50% abrangência · 25% profundidade
 
 **Aberto e sabido — jetski não alcança Ouro com folga.** O painel esconde as abas `interior` e `pintura` para jet ski (`AtivoHub.tsx`), mas o score continua contando as duas nas 10 categorias-núcleo. Um jet ski impecável bate **exatamente 90**: sem nenhuma margem, por duas categorias que a própria tela decidiu que não existem para ele. O veleiro já foi tratado (`CAT_ALIAS = {"velame": "motor"}`); o jetski não. O conserto é medir a abrangência contra as categorias **aplicáveis ao tipo**, e é a mesma divisão de sempre: a lista de categorias vive no painel e no `asset_score_service`, e o comentário do próprio arquivo pede "manter SEMPRE em concordância com o painel".
 
+### O painel chamava toda marina pelo mesmo nome (25/08/2026)
+
+A marina paga US$ 250, entra no painel pela primeira vez, e é recebida por:
+
+> **Marina Hub** — *Fleet Excellence.*
+
+Não era o nome dela. Era `t('common.marina_hub')`, uma **string de tradução fixa** — o mesmo título para toda marina que entrasse, desde sempre. O painel nunca leu o nome de ninguém.
+
+O contraste é o que dói: o e-mail de boas-vindas, enviado minutos antes, já dizia *"Olá, Amazon Marina"*. O dado estava no cadastro (`user_metadata.marina`), o e-mail foi buscar, o painel não.
+
+Corrigido em três lugares — o título do painel e as duas ocorrências no **relatório de frota**, que é documento que a marina baixa e manda para terceiro. "Marina Hub" continua como último recurso, se o cadastro vier sem nome.
+
+**Aberto — a indicação é descartada em todo cadastro do Oficial.** O formulário pergunta *"Alguma marina indicou o Yachts Atlas para você?"*, e `_registrar_indicacao` procura quem se cadastrou em `marinas_lancamento` pelo e-mail:
+
+```python
+if not minha.data:
+    logger.info(f"... sem vaga de lancamento — texto nao gravado: {texto!r}")
+    return
+```
+
+As 20 linhas de `marinas_lancamento` têm **zero e-mails preenchidos**. A busca nunca acha ninguém, e o `return` cai sempre — para toda marina, não só nos testes. O próprio comentário da função promete o oposto: *"o texto cru fica guardado como ela digitou (…) nada disso pode ser descartado"*. A primeira linha faz o descarte que o comentário proíbe.
+
+É o motor de crescimento (20 → 40 marinas) perdendo o vínculo **no único momento em que ele existe** — depois do cadastro, ninguém lembra quem indicou quem. O conserto é guardar o texto sempre, no cadastro da própria marina; o casamento com uma fundadora continua sendo bônus.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

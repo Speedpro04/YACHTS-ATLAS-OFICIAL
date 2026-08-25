@@ -4,10 +4,22 @@ import { Ativo } from '../types'
 import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileCheck, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { session } = useAuth()
+
+  // O nome de quem está logado. "Marina Hub" era texto fixo de tradução, não
+  // dado: TODA marina via o mesmo título, e a que acabou de pagar US$ 250 era
+  // recebida pelo nome de outra. O cadastro grava `marina` (e `nome` como
+  // segunda via) no metadata — o painel só nunca tinha ido buscar.
+  const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>
+  const marinaNome =
+    (typeof meta.marina === 'string' && meta.marina.trim()) ||
+    (typeof meta.nome === 'string' && meta.nome.trim()) ||
+    ''
   const [ativos, setAtivos] = useState<Ativo[]>([])
   const [dossierCount, setDossierCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -82,7 +94,7 @@ export default function Dashboard() {
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
-<title>Relatório de Frota — Marina Hub</title>
+<title>Relatório de Frota — ${esc(marinaNome || 'Marina Hub')}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Georgia, 'Times New Roman', serif; color: #010c20; padding: 48px 56px; }
@@ -116,7 +128,7 @@ export default function Dashboard() {
 </style>
 </head>
 <body>
-  <div class="eyebrow">Marina Hub · Custódia Digital</div>
+  <div class="eyebrow">${esc(marinaNome || 'Marina Hub')} · Custódia Digital</div>
   <h1>Relatório de <em>Frota</em></h1>
   <div class="sub">Gerado em ${carimbo} · Auditoria e rastreamento em tempo real</div>
   <div class="rule"></div>
@@ -182,7 +194,7 @@ export default function Dashboard() {
                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#c5a059]">{t('auth.personal_security')}</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-serif font-bold text-white mb-6 tracking-tight leading-tight">
-              {t('common.marina_hub')} <br />
+              {marinaNome || t('common.marina_hub')} <br />
               <span className="italic text-[#c5a059]">Fleet Excellence.</span>
             </h1>
             <p className="text-white/40 text-lg max-w-md leading-relaxed font-light">
