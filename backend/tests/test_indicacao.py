@@ -182,3 +182,53 @@ def test_banco_fora_do_ar_nao_derruba_o_cadastro():
             raise RuntimeError("banco fora do ar")
 
     _registrar_indicacao(_Quebrado(), _dados("Marina do Porto"))  # não levanta
+
+
+# --------------------------------------------------------------------------
+# O caso REAL de produção — o que passou despercebido até 25/08/2026
+# --------------------------------------------------------------------------
+
+def test_marina_de_fora_do_lancamento_tem_o_texto_guardado_no_cadastro(monkeypatch):
+    """
+    A marina do Oficial NÃO existe em `marinas_lancamento` — e mesmo assim o
+    que ela digitou tem de ficar guardado.
+
+    Este é o teste que faltava. Os outros rodam num cenário onde a linha do
+    lançamento tem o e-mail da marina que está se cadastrando; a produção tem
+    20 linhas e **nenhum** e-mail preenchido. A busca nunca achava ninguém, a
+    função voltava sem gravar, e o teste chamado "o que ela digitou fica
+    guardado" continuava verde — porque o cenário construía o mundo que o
+    código esperava, em vez do mundo que existe.
+    """
+    import app.core.supabase as core
+
+    gravado = {}
+
+    class _Admin:
+        def update_user_by_id(self, uid, payload):
+            gravado["id"] = uid
+            gravado["meta"] = payload["user_metadata"]
+
+    monkeypatch.setattr(
+        core, "buscar_usuario_por_email",
+        lambda email: types.SimpleNamespace(
+            id="u-1", user_metadata={"marina": "Náutica Bela"}),
+    )
+    monkeypatch.setattr(
+        core, "get_supabase_admin",
+        lambda: types.SimpleNamespace(auth=types.SimpleNamespace(admin=_Admin())),
+    )
+
+    # Banco de lançamento sem nenhuma linha que case — como em produção.
+    _registrar_indicacao(_Banco([]), _dados("Marina Hub"))
+
+    assert gravado["meta"]["indicada_por"] == "Marina Hub"
+    # e sem apagar o que já estava no cadastro
+    assert gravado["meta"]["marina"] == "Náutica Bela"
+
+
+def test_cadastro_nao_encontrado_nao_derruba_o_fluxo(monkeypatch):
+    """Falhar em guardar a indicação não pode impedir a marina de pagar."""
+    import app.core.supabase as core
+    monkeypatch.setattr(core, "buscar_usuario_por_email", lambda email: None)
+    _registrar_indicacao(_Banco([]), _dados("Marina Hub"))   # não levanta

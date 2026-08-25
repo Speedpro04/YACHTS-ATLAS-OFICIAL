@@ -1328,3 +1328,32 @@ E o comentário da própria função promete o contrário: *"o texto cru fica gu
 **Padrão a repetir:** comentário que descreve intenção não prova comportamento — e quando os dois divergem, o comentário é o que engana, porque quem lê para de conferir. Ao auditar função com docstring forte, ler o corpo **primeiro** e a documentação depois.
 
 O peso disso: é o motor de crescimento de 20 → 40 marinas jogando fora o vínculo no **único** momento em que ele existe. Depois do cadastro ninguém lembra quem indicou quem — foi essa a razão de o campo ter sido criado em 21/08 (§15), e ele nasceu sem destino.
+
+---
+
+## 48. O teste estava verde porque construía o mundo que o código esperava
+**Data:** 25/08/2026
+
+Consertada a indicação que era descartada em todo cadastro do Oficial (§47). O conserto em si é trivial — inverter a ordem: gravar o texto cru no cadastro da marina primeiro, tentar casar com fundadora depois. O que vale guardar é **por que ninguém viu antes**.
+
+Existia um teste chamado `test_o_que_ela_digitou_fica_guardado`, com docstring dizendo *"vale inclusive quando não casa com registro nenhum — perder o dado não tem conserto"*. Ele estava **verde**. E a produção descartava 100% das indicações.
+
+O motivo está no cenário:
+
+```python
+def _cenario():
+    return _Banco([
+        {"slot": 1, "email": "fundadora@marina.com", ...},
+        {"slot": 7, "email": "nova@marina.com",  ...},   # <- a marina do teste
+    ])
+```
+
+Em produção, `marinas_lancamento` tem 20 linhas e **nenhuma** com e-mail. O fixture deu e-mail à linha da marina que se cadastra — construiu o mundo em que a função funciona, em vez do mundo que existe. O teste provava a promessa dentro do cenário onde a promessa já valia.
+
+**Padrão a repetir:** um fixture é uma **afirmação sobre a realidade**, e ninguém a revisa. Ao escrever cenário de teste, perguntar de cada campo preenchido: *isso está preenchido em produção?* Uma consulta ao banco real responde em segundos e é a diferença entre teste que protege e teste que decora.
+
+**Sinal de alerta específico:** teste verde + defeito real na mesma função é quase sempre fixture otimista, não lógica errada. Antes de duvidar do código, duvidar do mundo que o teste montou.
+
+Acrescentado o teste do caso real — marina fora do lançamento, banco sem correspondência — que falha com o código antigo (o `update_user_by_id` nunca era chamado).
+
+**Terceiro sintoma da mesma doença desta semana:** comentário que promete (§47), fixture que assume (aqui) e `required` que não valida (§45) são todos "o código diz uma coisa e o sistema faz outra". Nos três casos a documentação era mais confiável que o comportamento — e por isso ninguém foi conferir.

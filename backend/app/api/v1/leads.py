@@ -257,16 +257,25 @@ def _registrar_indicacao(supabase, data) -> None:
     """
     Grava quem indicou a marina que acabou de se cadastrar.
 
-    Duas coisas acontecem, e a primeira nunca falha:
+    Duas coisas acontecem, nesta ordem, e a primeira vale para todo mundo:
 
-    1. o texto cru fica guardado como ela digitou. Marina escreve o que lembra
-       — "Marina do Porto", "falei com o Joao la da nautica", e-mail com typo —
-       e nada disso pode ser descartado por nao casar com um registro;
-    2. se der para casar com uma fundadora (por e-mail ou nome), o vinculo vira
-       `indicada_por_slot` e a contagem da indicante sobe.
+    1. o texto cru vai para o CADASTRO da marina (`user_metadata.indicada_por`),
+       como ela digitou. Marina escreve o que lembra — "Marina do Porto", "falei
+       com o Joao la da nautica", e-mail com typo — e nada disso pode ser
+       descartado por nao casar com um registro;
+    2. se ela for de lancamento, o vinculo tambem vira `indicada_por_slot` e a
+       contagem da indicante sobe. Isso e bonus.
+
+    A ordem importa e nao e detalhe de estilo. Ate 25/08/2026 a funcao comecava
+    pelo passo 2, procurando a marina em `marinas_lancamento` pelo e-mail — e
+    aquela tabela tem 20 linhas com NENHUM e-mail preenchido. A busca nunca
+    achava ninguem, o `return` caia sempre, e o texto ia para o log. Toda
+    marina do Oficial respondeu "quem indicou" para o nada, enquanto este
+    proprio comentario dizia que o dado nunca se perdia.
 
     O que nao casar, o fundador resolve a mao olhando o texto. Com 20 marinas
-    isso e trabalho de minutos; perder o dado nao tem conserto.
+    isso e trabalho de minutos; perder o dado nao tem conserto — o vinculo so
+    existe no momento do cadastro, depois ninguem lembra quem indicou quem.
 
     Best-effort por definicao: falhar aqui nao pode impedir a marina de se
     cadastrar e pagar.
@@ -275,6 +284,38 @@ def _registrar_indicacao(supabase, data) -> None:
     if not texto:
         return
 
+    # 1) O TEXTO CRU, SEMPRE — no cadastro da propria marina.
+    #
+    # Ficava so em `marinas_lancamento`, e a funcao comecava procurando a
+    # marina la pelo e-mail. Essa tabela tem 20 linhas e NENHUMA com e-mail
+    # preenchido: a busca nunca achava ninguem e o `return` caia sempre. Toda
+    # marina que se cadastrou pelo Oficial teve a resposta descartada — o
+    # formulario perguntava quem indicou e a resposta ia para o log.
+    #
+    # O cadastro no Auth e o unico lugar que existe para TODA marina, paga ou
+    # de lancamento. E aqui, e nao no create_user, porque assim tambem vale
+    # para quem volta numa segunda tentativa de checkout: a conta ja existe, o
+    # create_user falha, e a indicacao chegaria depois da porta fechada.
+    try:
+        from app.core.supabase import buscar_usuario_por_email, get_supabase_admin
+        usuario = buscar_usuario_por_email(data.email)
+        user_id = str(getattr(usuario, "id", "")) if usuario else ""
+        if user_id:
+            admin = get_supabase_admin().auth.admin
+            meta = dict(getattr(usuario, "user_metadata", None) or {})
+            meta["indicada_por"] = texto
+            admin.update_user_by_id(user_id, {"user_metadata": meta})
+            logger.info(f"Indicacao de {data.email} guardada no cadastro: {texto!r}")
+        else:
+            logger.error(
+                f"Indicacao de {data.email} NAO guardada — cadastro nao encontrado: {texto!r}"
+            )
+    except Exception as e:
+        logger.error(f"Falha ao guardar a indicacao de {data.email} ({texto!r}): {e}")
+
+    # 2) Bonus: se a marina for de lancamento, o vinculo vira slot e a contagem
+    #    da indicante sobe. Falhar aqui nao perde mais nada — o texto ja esta
+    #    salvo acima.
     try:
         minha = (
             supabase.table("marinas_lancamento")
@@ -284,13 +325,9 @@ def _registrar_indicacao(supabase, data) -> None:
             .execute()
         )
         if not minha.data:
-            logger.info(
-                f"Indicacao de {data.email} sem vaga de lancamento — texto nao gravado: {texto!r}"
-            )
             return
         meu_slot = minha.data[0]["slot"]
 
-        # 1) o texto cru, sempre
         supabase.table("marinas_lancamento").update(
             {"indicada_por_texto": texto}
         ).eq("slot", meu_slot).execute()

@@ -412,7 +412,11 @@ O contraste é o que dói: o e-mail de boas-vindas, enviado minutos antes, já d
 
 Corrigido em três lugares — o título do painel e as duas ocorrências no **relatório de frota**, que é documento que a marina baixa e manda para terceiro. "Marina Hub" continua como último recurso, se o cadastro vier sem nome.
 
-**Aberto — a indicação é descartada em todo cadastro do Oficial.** O formulário pergunta *"Alguma marina indicou o Yachts Atlas para você?"*, e `_registrar_indicacao` procura quem se cadastrou em `marinas_lancamento` pelo e-mail:
+### A indicação era descartada em todo cadastro do Oficial (25/08/2026)
+
+O formulário pergunta *"Alguma marina indicou o Yachts Atlas para você?"*. A resposta ia para o log e para lugar nenhum — **para toda marina, desde sempre**, não só nos testes.
+
+`_registrar_indicacao` começava procurando quem se cadastrou em `marinas_lancamento`, pelo e-mail:
 
 ```python
 if not minha.data:
@@ -420,9 +424,15 @@ if not minha.data:
     return
 ```
 
-As 20 linhas de `marinas_lancamento` têm **zero e-mails preenchidos**. A busca nunca acha ninguém, e o `return` cai sempre — para toda marina, não só nos testes. O próprio comentário da função promete o oposto: *"o texto cru fica guardado como ela digitou (…) nada disso pode ser descartado"*. A primeira linha faz o descarte que o comentário proíbe.
+As 20 linhas dessa tabela têm **zero e-mails preenchidos**. A busca nunca achava ninguém e o `return` caía sempre. E o comentário da própria função prometia o oposto — *"o texto cru fica guardado como ela digitou (…) nada disso pode ser descartado"* — enquanto a primeira linha do corpo fazia o descarte.
 
-É o motor de crescimento (20 → 40 marinas) perdendo o vínculo **no único momento em que ele existe** — depois do cadastro, ninguém lembra quem indicou quem. O conserto é guardar o texto sempre, no cadastro da própria marina; o casamento com uma fundadora continua sendo bônus.
+É o motor de crescimento (20 → 40 marinas) perdendo o vínculo **no único momento em que ele existe**: depois do cadastro, ninguém lembra quem indicou quem, nem a indicante nem a indicada.
+
+**Corrigido invertendo a ordem.** O texto cru agora vai primeiro para o **cadastro da própria marina** (`user_metadata.indicada_por`) — o único lugar que existe para toda marina, paga ou de lançamento. Só depois vem a tentativa de casar com uma fundadora, que virou bônus: falhar ali não perde mais nada.
+
+Fica no `_registrar_indicacao` e não no `create_user` de propósito: assim também vale para quem volta numa **segunda tentativa** de checkout, quando a conta já existe e o `create_user` falha.
+
+**O teste que existia passava.** `test_o_que_ela_digitou_fica_guardado` era verde enquanto a produção descartava tudo — porque o cenário dava e-mail à linha de lançamento da marina que se cadastrava. O fixture construía o mundo que o código esperava, em vez do mundo que existe. Acrescentado o teste do caso real: marina fora do lançamento, banco sem correspondência, e o texto tem de estar no cadastro mesmo assim.
 
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
