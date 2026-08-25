@@ -57,10 +57,22 @@ STATUS_OK = {"registrado", "concluido"}
 STATUS_ALERTA = {"atencao", "pendente"}
 
 
+# Régua do selo. Prata começa em 60, não em 50: metade das categorias
+# preenchidas é o mínimo aceitável, não um diferencial. Selo que qualquer
+# cadastro pela metade alcança não distingue nada — e é ele que o broker e a
+# seguradora vão olhar.
+#
+# Ajustada em 25/08/2026, antes do primeiro dossiê real ser selado. Depois
+# disso o custo seria outro: PDF já emitido guarda a classificação impressa,
+# e mudar a régua faria o papel contradizer a tela.
+SCORE_OURO = 90
+SCORE_PRATA = 60
+
+
 def _classificar(score: int) -> str:
-    if score >= 80:
+    if score >= SCORE_OURO:
         return "gold"
-    if score >= 50:
+    if score >= SCORE_PRATA:
         return "silver"
     return "bronze"
 

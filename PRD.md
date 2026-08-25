@@ -371,6 +371,33 @@ Aplicada nos **quatro** formulários do Oficial:
 
 Verificado em navegador real: com o telefone vazio na etapa 4, o envio agora **para na página** com "WhatsApp incompleto" em vez de seguir para o Stripe. E `5512991187251` colado com DDI vira `(12) 99118-7251`, sem virar DDD 55.
 
+### A régua do selo de saúde subiu (25/08/2026)
+
+O Índice de Saúde do Ativo dá uma nota 0–100 e um selo. A régua era baixa demais: **metade das categorias preenchidas já dava Prata**, e 80 dava Ouro.
+
+```
+antes    Bronze < 50    Prata 50–79    Ouro ≥ 80
+agora    Bronze < 60    Prata 60–89    Ouro ≥ 90
+```
+
+O selo é o que broker e seguradora vão olhar. Se um cadastro pela metade alcança Prata, o selo não distingue nada — e quem olha para de olhar.
+
+**Feito agora porque depois não seria de graça.** Nenhum dossiê real foi selado ainda. O PDF emitido guarda a classificação **impressa**: mexer na régua depois faria o papel na mão da marina contradizer a tela. Custo aceito: o ativo de teste `YA-IATE-2015-3A38` (score 87) deixa de ser Ouro e vira Prata na próxima vez que o score for recalculado.
+
+O que cada faixa exige, pela fórmula real (50% abrangência · 25% profundidade de manutenção · 15% documentos · 10% laudo de casco):
+
+| Perfil | Score | Selo |
+|---|---|---|
+| 10 categorias, 6 manutenções, 8 docs verificados, laudo | 100 | Ouro |
+| 8 categorias, 6 manutenções, 8 docs verificados, laudo | 90 | Ouro |
+| 7 categorias, 6 manutenções, 8 docs verificados, laudo | 85 | Prata |
+| 6 categorias, 4 manutenções, 4 docs (2 verificados), laudo | 62 | Prata |
+| 5 categorias, 3 manutenções, 3 docs | 50 | Bronze |
+
+**Por que a nota é o motor do cadastro:** ela sobe conforme a marina alimenta, então ela alimenta. O contrapeso é que incentivo para preencher também é incentivo para **inventar** — e registro falso, selado e imutável, dentro de um produto que vende custódia é o pior estrago possível. O que protege é a exigência de prova nas fichas de serviço (horímetro, peça trocada com foto, nota fiscal, quem executou). **Não afrouxar os uploads obrigatórios para facilitar a subida do score.**
+
+**Aberto e sabido — jetski não alcança Ouro com folga.** O painel esconde as abas `interior` e `pintura` para jet ski (`AtivoHub.tsx`), mas o score continua contando as duas nas 10 categorias-núcleo. Um jet ski impecável bate **exatamente 90**: sem nenhuma margem, por duas categorias que a própria tela decidiu que não existem para ele. O veleiro já foi tratado (`CAT_ALIAS = {"velame": "motor"}`); o jetski não. O conserto é medir a abrangência contra as categorias **aplicáveis ao tipo**, e é a mesma divisão de sempre: a lista de categorias vive no painel e no `asset_score_service`, e o comentário do próprio arquivo pede "manter SEMPRE em concordância com o painel".
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.
