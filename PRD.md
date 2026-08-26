@@ -491,6 +491,42 @@ Não existe nada dela hoje. O webhook do WhatsApp lê texto e age numa única pa
 
 E há um argumento de sequência: construir antes de ter marina usando é adivinhar como elas vão querer mandar foto. Com duas ou três marinas reais, isso se descobre em uma semana.
 
+### O desenho da entrada de fotos, para quando chegar a hora (26/08/2026)
+
+Desenho fechado com o Marcos, para que construir depois seja executar e não decidir de novo.
+
+**A ideia é dele, e nestas palavras:** *"um separador e tratamento dessas imagens antes de entrar no sistema — identificação de marina, embarcação, transformá-las em URLs e depois entrar no sistema."*
+
+É uma **sala de espera**: a foto chega, é tratada e identificada, e só entra no cofre quando alguém aceita.
+
+**O que a sala resolve**
+
+| Etapa | Quem faz |
+|---|---|
+| Identificar a **marina** | automático — o número de quem enviou pertence a uma marina |
+| Identificar a **embarcação** | o gerente escolhe; uma marina tem muitos barcos e o sistema não adivinha |
+| Encolher a imagem | automático — foto de celular tem 3 a 12 MB, e marina no píer com sinal ruim desiste no meio |
+| Ler data e local | automático — a foto já carrega isso, e é informação que ninguém recria depois |
+| Aceitar ou descartar | o gerente, num clique |
+
+A marina automática e o barco manual é o recorte que economiza mais trabalho: a foto chega já na caixa certa, e sobra um clique. Exigir código na legenda transfere o esforço para quem envia e produz erro de digitação.
+
+**Por que a sala é obrigatória, e não conveniência.** Se a foto caísse direto em `documentos`, ela inflaria a nota da marina e entraria no PDF selado sem ninguém ter conferido — os dois consumidores (`asset_score_service`, `dossie_data`) leem a tabela inteira, sem filtro. A forma já existe no sistema, em `registros_rascunho` × `registros`. Aceitar é que move para `documentos`, e **aceitar é o selo**.
+
+**Qual número recebe**
+
+```
+agora        978138934   o mesmo que envia o código de acesso — já fala só com cliente
+mais tarde   número próprio, quando a foto passar o código em volume
+nunca        997588791   é o da abordagem comercial
+```
+
+O `997588791` faz contato frio com marina que nunca pediu — é o número com maior chance de ser bloqueado, porque bloqueio vem de denúncia de spam. Se a foto entrasse por ele, uma queda levaria junto a prospecção **e** o canal das marinas que já pagam.
+
+O `978138934` é seguro quanto a isso, mas carrega o **login do armador**. O risco lá não é bloqueio, é fila: muita foto ao mesmo tempo pode atrasar um código de acesso. **O gatilho para separar é medível** — quando chegar mais foto do que código por dia.
+
+**Quem pode enviar:** gerente e encarregado da marina, conforme a decisão de custódia acima. Falta no banco o telefone do encarregado — o do gerente já existe.
+
 **Aberto, e é o que quebraria se feito errado:** o material que chega **não pode cair direto em `documentos`**. Hoje estar naquela tabela significa "está no cofre", e os dois consumidores não filtram nada — `asset_score_service:114` e `dossie_data:441` leem tudo. Material não aceito inflaria a nota da marina e entraria no PDF selado. A forma certa já existe no sistema, nos registros: uma tabela de **entrada** separada, e aceitar move para `documentos`. Assim nenhum consumidor muda — `documentos` continua significando o que sempre significou.
 
 ### O login não sabia dizer que o e-mail estava torto (25/08/2026)
