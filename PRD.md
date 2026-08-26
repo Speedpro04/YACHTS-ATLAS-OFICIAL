@@ -483,6 +483,14 @@ Junto foi a **coordenada**: as colunas `latitude`/`longitude`/`geo_fonte` e o en
 
 **Só então as LPs.** O texto sobre custódia entrou nas duas páginas **depois** de a regra existir e ser verificável — não antes. É a lição de duas armadilhas do próprio dia: o rodapé do e-mail prometia um recibo que estava desligado na Stripe, e a etapa 4 do cadastro promete um vídeo que não existe. Página só afirma o que já foi visto funcionando.
 
+**Adiado para depois do lançamento — decisão do Marcos em 26/08/2026:** *"essa função de fotos pelo WhatsApp ficará para depois do lançamento, pq isso requer tempo e trabalho bem tranquilo."*
+
+Não existe nada dela hoje. O webhook do WhatsApp lê texto e age numa única palavra ("SAIR"); foto ele ignora. Para funcionar faltam cinco pedaços: receber a mídia da Evolution, saber de qual embarcação é, guardar numa área de entrada separada, uma tela para o gerente aceitar ou descartar, e a lista de números autorizados a enviar. Um a dois dias — pelo caminho da caixa de entrada, que dispensa o pedaço mais caro (descobrir o barco na hora).
+
+**Não é bloqueio de lançamento.** O botão **Fotografar** já cobre o caso principal: a marina fotografa no píer e a imagem vai direto para o cofre, com data e local. O WhatsApp serve para quem **não tem acesso ao sistema** — armador, terceiro, funcionário sem conta. É comodidade.
+
+E há um argumento de sequência: construir antes de ter marina usando é adivinhar como elas vão querer mandar foto. Com duas ou três marinas reais, isso se descobre em uma semana.
+
 **Aberto, e é o que quebraria se feito errado:** o material que chega **não pode cair direto em `documentos`**. Hoje estar naquela tabela significa "está no cofre", e os dois consumidores não filtram nada — `asset_score_service:114` e `dossie_data:441` leem tudo. Material não aceito inflaria a nota da marina e entraria no PDF selado. A forma certa já existe no sistema, nos registros: uma tabela de **entrada** separada, e aceitar move para `documentos`. Assim nenhum consumidor muda — `documentos` continua significando o que sempre significou.
 
 ### O login não sabia dizer que o e-mail estava torto (25/08/2026)
