@@ -599,6 +599,20 @@ Agora **a caixa acompanha o texto**, medido com `stringWidth`, com teto de 150 m
 
 O mesmo tratamento foi para a página pública de verificação (10px → 12px, rótulo e grau com `whitespace-nowrap`), que tinha o mesmo risco — sétima vez que a mesma regra visual precisa existir em dois lugares neste projeto.
 
+### Quatro acertos na capa do dossiê (26/08/2026)
+
+Ajustes pedidos pelo Marcos olhando o PDF pronto — todos de leitura, nenhum de layout por layout.
+
+**Barras finas e iguais.** As duas com 1,5 de espessura. A diferença entre elas segue existindo pela cor, pelo tamanho do número e pela ordem; espessura era redundância que roubava atenção do texto.
+
+**Barras suaves.** A linha sai misturada ao fundo (`blend(cor, NAVY, 0.72)`) — ela indica, não alarma. **O rótulo continua na cor cheia**: letra suavizada junto ficaria ilegível, e é o texto que informa.
+
+**"1 Dia em custódia", não "1 MESES".** O cálculo era `max(1, round(dias / 30.44))` — um dia virava um mês, e o rótulo saía no plural. Agora conta em dias enquanto não fecha 30, com singular e plural corretos. O dia da entrada conta como o primeiro: "0 dias" está certo pelo relógio e parece defeito na tela.
+
+Junto: **custo médio/mês só aparece depois de fechar um mês.** Antes dividia o gasto total por "1 mês" e anunciava tudo como mensalidade.
+
+**A linha "Nº de Registro" some quando não há dado.** Ela caía no nome da embarcação (`rgp or nome_reg`) e repetia "Netuno II (TESTE)" logo abaixo do campo NOME. Num documento que cita LESTA e NORMAM, campo legal preenchido com valor de outro tipo é pior que campo vazio.
+
 ### Dois números que se contradiziam na mesma página (26/08/2026)
 
 O dossiê do Netuno II — selo **BRONZE** — trazia logo abaixo **"ÍNDICE DE SEGURANÇA 100%"**, com a barra verde cheia. E, mais abaixo, cinco de oito sistemas marcados **NÃO AVALIADO**.

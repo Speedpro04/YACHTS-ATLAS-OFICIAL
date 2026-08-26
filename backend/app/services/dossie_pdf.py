@@ -184,11 +184,20 @@ class GaugeBar(Flowable):
 
     def draw(self):
         c = self.canv
-        bar_h = 2.4 * mm if self.principal else 1.8 * mm
+        # Mesma espessura nas duas, fina. A diferença entre elas continua
+        # existindo pela COR (escala de risco × dourado discreto), pelo tamanho
+        # do número e pela ordem na página — não precisa também da espessura,
+        # e barra grossa rouba atenção do texto que explica o número.
+        bar_h = 1.5
         # A barra que VARIA usa a escala de cor; a que é quase sempre 100% sai
         # em dourado discreto, para não gritar "tudo certo" sem contexto.
         col = (EMERALD if self.pct >= 80 else (AMBER if self.pct >= 50 else ROSE)) \
             if self.principal else GOLD_LIGHT
+        # A LINHA sai suavizada contra o fundo; o RÓTULO fica na cor cheia.
+        # A linha é indicativa, não alarme — em cor sólida ela puxava o olho
+        # antes do número e do texto que o explica. Já a letra precisa de
+        # contraste para ser lida, então não pode levar a mesma suavização.
+        col_linha = blend(col, NAVY, 0.72)
         base = 3 * mm if self.legenda else 0
         c.saveState()
         if self.legenda:
@@ -197,7 +206,7 @@ class GaugeBar(Flowable):
         c.setStrokeColor(blend(WHITE, NAVY, 0.10))
         c.setLineWidth(0.4)
         c.roundRect(0, base, self.width, bar_h, bar_h / 2, fill=1, stroke=1)
-        c.setFillColor(col)
+        c.setFillColor(col_linha)
         c.roundRect(0, base, self.width * self.pct / 100.0, bar_h, bar_h / 2, fill=1, stroke=0)
         draw_tracked(c, 0, base + bar_h + 2.4 * mm, self.rotulo, SANS_B,
                      6 if self.principal else 5.5, col, tracking=1.2)
@@ -1001,7 +1010,10 @@ def _capa(dados: dict, ident: dict) -> list:
         (r.get("custo_mensal"), "Custo médio / mês", WHITE),
         (r.get("registros"), "Registros selados", WHITE),
         (r.get("imagens"), "Documentos selados", WHITE),
-        (r.get("meses_custodia") and f"{r['meses_custodia']}", "Meses de custódia", WHITE),
+        # Valor e rótulo vêm juntos de dossie_data: "12 · Dias em custódia" ou
+        # "3 · Meses de custódia". O rótulo era fixo no plural e saía "1 MESES"
+        # num barco com um dia de custódia.
+        (r.get("custodia_valor"), r.get("custodia_rotulo") or "Tempo em custódia", WHITE),
     ]
     tiles = [(n, l, c) for n, l, c in tiles if n]
     if tiles:

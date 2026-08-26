@@ -315,15 +315,37 @@ def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str
         if v is not None
     ]
     datas = sorted(r.get("created_at") for r in registros if r.get("created_at"))
-    meses = None
+    # Tempo em custódia — em DIAS enquanto não fecha um mês.
+    #
+    # Era `max(1, round(dias / 30.44))`, que transformava um dia em "1 mês".
+    # Num documento cujo valor é justamente o tempo de histórico, arredondar
+    # um dia para um mês é exagero que um comprador atento pega — e o rótulo
+    # ainda saía "1 MESES", no plural.
+    meses = dias = None
     if datas:
         from datetime import datetime, timezone as _tz
         try:
             ini = datetime.fromisoformat(str(datas[0]).replace("Z", "+00:00"))
-            delta = datetime.now(_tz.utc) - ini
-            meses = max(1, round(delta.days / 30.44))
+            dias = max(0, (datetime.now(_tz.utc) - ini).days)
+            meses = round(dias / 30.44)
         except (ValueError, TypeError):
-            meses = None
+            meses = dias = None
+
+    # Valor e rótulo andam juntos: "12 · DIAS EM CUSTÓDIA" ou "3 · MESES DE
+    # CUSTÓDIA". Sem isso o rótulo era fixo no plural e mentia no singular.
+    if dias is None:
+        custodia_valor = custodia_rotulo = None
+    elif dias < 30:
+        # O dia da entrada conta como o primeiro: "0 dias em custódia" está
+        # certo pelo relógio e parece defeito na tela. Isto NÃO é o arredonda-
+        # mento antigo — ali um dia virava um mês; aqui o dia é a menor unidade
+        # honesta que existe.
+        d = max(1, dias)
+        custodia_valor = str(d)
+        custodia_rotulo = "Dia em custódia" if d == 1 else "Dias em custódia"
+    else:
+        custodia_valor = str(meses)
+        custodia_rotulo = "Mês de custódia" if meses == 1 else "Meses de custódia"
 
     com_hash = sum(1 for r in registros if r.get("hash_sha256"))
     pendencias = sum(1 for r in registros if r.get("status") in ("pendente", "atencao"))
@@ -334,10 +356,15 @@ def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str
         # Custo de propriedade: a primeira conta que um comprador faz, e o
         # dado já estava todo aqui. Só de manutenção e reparo — seguro fora,
         # pelo mesmo motivo que ele saiu do "investido".
-        "custo_mensal": (_brl(investido / meses) if investido > 0 and meses else None),
+        # Custo por mês só faz sentido depois de fechar um mês. Antes disso a
+        # conta dividia tudo por "1 mês" e anunciava o gasto inteiro como se
+        # fosse mensalidade.
+        "custo_mensal": (_brl(investido / meses) if investido > 0 and meses and meses >= 1 else None),
         "registros": len(registros) or None,
         "imagens": len(documentos) or None,
         "meses_custodia": meses,
+        "custodia_valor": custodia_valor,
+        "custodia_rotulo": custodia_rotulo,
         "horimetro": f"{max(horimetros):.0f} h" if horimetros else None,
         "pendencias": pendencias,
         "integridade": (
@@ -487,7 +514,12 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         "comprimento": (
             f"{float(comprimento):g} pés".replace(".", ",") if comprimento else None
         ),
-        "registro": ativo.get("rgp") or ativo.get("nome_reg"),
+        # Nº de inscrição na Capitania. SEM cair no nome da embarcação: o campo
+        # se chama "Nº de Registro" e saía preenchido com "Netuno II (TESTE)",
+        # repetindo o nome que já aparece na linha de cima. Num documento que
+        # cita LESTA e NORMAM, campo legal com valor de outro tipo é pior que
+        # campo vazio — e a linha some sozinha quando não há dado.
+        "registro": ativo.get("rgp") or None,
         "vin": ativo.get("vin"),
     }
 

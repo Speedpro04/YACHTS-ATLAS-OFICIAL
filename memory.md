@@ -1590,3 +1590,16 @@ Apliquei o mesmo raciocínio na cor: a de baixo saiu **dourada, não verde**, e 
 **Padrão a repetir:** em documento que sustenta decisão de compra, **hierarquia visual é conteúdo**. Antes de escolher a ordem de dois indicadores, perguntar qual deles alguém leria se lesse **um só** — esse vai em cima. E indicador que quase nunca varia não merece a cor mais forte da paleta, porque cor forte promete notícia.
 
 **E o padrão de processo:** ele chegou nas duas melhorias — a segunda barra e a ordem — depois de eu ter dado o assunto por resolvido. Quando ele questiona uma solução que já parece pronta, vale reabrir de verdade em vez de defender. Ver [[marcos-trabalha-com-pausas]].
+
+### O que quatro ajustes de capa ensinaram
+
+Todos vieram do Marcos olhando o PDF pronto, e nenhum era estética por estética:
+
+- **barra grossa** roubava atenção do texto que explica o número
+- **cor cheia** na linha fazia dela alarme, não indicação — mas suavizar o rótulo junto apagaria a letra: **linha e texto têm exigências opostas de contraste**
+- **"1 MESES"** vinha de `max(1, round(dias/30.44))`, que transformava um dia num mês, num documento cujo valor É o tempo de histórico
+- **"Nº de Registro"** caía no nome do barco quando não havia o número da Capitania
+
+**Padrão a repetir:** `A or B` como valor padrão só serve quando A e B são a **mesma espécie de coisa**. Nome e número de registro não são — o fallback preencheu um campo legal com valor de outro tipo, e ninguém percebeu porque a tela ficou "completa". **Campo vazio é honesto; campo preenchido com outra coisa, não.**
+
+**E o mesmo vale para mínimos artificiais:** `max(1, meses)` existia para não mostrar zero, e mentia. `max(1, dias)` também existe para não mostrar zero e **não** mente — porque o dia da entrada é o primeiro dia, e dia é a menor unidade honesta ali. A diferença entre os dois é se o piso corresponde a algo real.
