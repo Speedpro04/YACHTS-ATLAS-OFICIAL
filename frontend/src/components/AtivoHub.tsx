@@ -351,7 +351,12 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
 /* ===== Gerador de Dossiê - Controle de 4/Ano + Design Premium ===== */
 function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void }) {
   const [loading, setLoading] = useState(false)
-  const [limite, setLimite] = useState<{ allowed: boolean; remaining: number; resetDate?: Date }>({ allowed: true, remaining: 4 })
+  // Nasce SEM número: o saldo vem do servidor. Começava em `remaining: 4`, e
+  // isso fazia a tela afirmar "4 restantes" por um instante antes de saber —
+  // que é exatamente a mentira que estamos consertando, só que mais curta.
+  const [limite, setLimite] = useState<{ allowed: boolean; remaining: number; limiteAnual: number; resetDate?: Date }>(
+    { allowed: true, remaining: 0, limiteAnual: 0 },
+  )
 
   // O saldo vem do SERVIDOR, não do navegador.
   //
@@ -370,12 +375,13 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
       setLimite({
         allowed: !!s.permitido,
         remaining: s.restantes ?? 0,
+        limiteAnual: s.limite ?? 0,
         resetDate: s.reset_em ? new Date(s.reset_em) : undefined,
       })
     } catch {
       // Falhar aqui não pode travar a marina: o servidor recusa a emissão de
       // qualquer forma, então o botão segue habilitado e o erro aparece lá.
-      setLimite({ allowed: true, remaining: 0 })
+      setLimite({ allowed: true, remaining: 0, limiteAnual: 0 })
     }
   }
 
@@ -426,12 +432,16 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/5">
           <div className="bg-[#010c20]/50 border border-white/5 rounded-sm p-4 text-center">
             <p className="text-[9px] font-black uppercase tracking-widest text-white/40">Limite por Ativo</p>
-            <p className="text-2xl font-serif font-bold text-white mt-1">4 / Ano</p>
+            <p className="text-2xl font-serif font-bold text-white mt-1">
+              {limite.limiteAnual ? `${limite.limiteAnual} / Ano` : '—'}
+            </p>
           </div>
           <div className="bg-[#010c20]/50 border border-white/5 rounded-sm p-4 text-center">
             <p className="text-[9px] font-black uppercase tracking-widest text-white/40">Saldo Disponível</p>
+            {/* Enquanto o servidor não respondeu, "—". Número antes da resposta
+                seria chute, e chute na tela é o que gerou este conserto. */}
             <p className={`text-2xl font-serif font-bold mt-1 ${limite.remaining > 0 ? 'text-[#c5a059]' : 'text-rose-400'}`}>
-              {limite.remaining} dossiês
+              {limite.limiteAnual ? `${limite.remaining} dossiês` : '—'}
             </p>
           </div>
           <div className="bg-[#010c20]/50 border border-white/5 rounded-sm p-4 text-center">

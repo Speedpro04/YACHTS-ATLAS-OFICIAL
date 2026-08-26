@@ -62,7 +62,11 @@ export default function SolicitacoesDossie() {
     setLoadingAtivos(true)
     try {
       const data = await api.ativos.list()
-      setAtivos(Array.isArray(data) ? data : [])
+      const lista = Array.isArray(data) ? data : []
+      setAtivos(lista)
+      // Saldo de cada um, em paralelo. Sem isto os cards nasceriam sem número
+      // e voltariam a depender de um palpite local.
+      lista.forEach((a: any) => carregarSaldo(a.id))
     } catch {
       console.error('Falha ao carregar ativos')
     } finally {
@@ -109,41 +113,52 @@ export default function SolicitacoesDossie() {
     try { return new Date(iso).toLocaleString('pt-BR') } catch { return iso }
   }
 
-  // Limit manager
-  const checkLimit = (ativoId: string) => {
-    const key = `dossie_generations_${ativoId}`
-    const historyRaw = localStorage.getItem(key)
-    const history: number[] = historyRaw ? JSON.parse(historyRaw) : []
-    const now = Date.now()
-    const oneYearMs = 365 * 24 * 60 * 60 * 1000
-    const validHistory = history.filter(ts => now - ts < oneYearMs)
+  // Saldo por ativo, vindo do SERVIDOR.
+  //
+  // Esta tela tinha a MESMA regra do `AtivoHub`, escrita de novo e lendo o
+  // `localStorage`. Em 26/08/2026 a tela de detalhe foi corrigida e esta
+  // continuou mostrando "4/4 restantes" logo depois de emitir — a mesma regra
+  // em dois lugares, um consertado e o outro não. É o padrão que já custou a
+  // senha (6/8/10), o preço, o telefone e as categorias.
+  //
+  // Agora as duas leem `GET /dossie/{id}/saldo`, e não existe cópia da conta.
+  type Saldo = { allowed: boolean; remaining: number; limite: number; resetDate?: Date }
+  const [saldos, setSaldos] = useState<Record<string, Saldo>>({})
 
-    if (validHistory.length < 4) {
-      return { allowed: true, remaining: 4 - validHistory.length }
-    } else {
-      const oldestTs = Math.min(...validHistory)
-      return { allowed: false, remaining: 0, resetDate: new Date(oldestTs + oneYearMs) }
+  const carregarSaldo = async (ativoId: string) => {
+    try {
+      const s = await api.dossie.saldo(ativoId)
+      setSaldos((prev) => ({
+        ...prev,
+        [ativoId]: {
+          allowed: !!s.permitido,
+          remaining: s.restantes ?? 0,
+          // O teto também vem do servidor: está em variável de ambiente, e
+          // number escrito na tela envelhece calado quando a regra muda.
+          limite: s.limite ?? 0,
+          resetDate: s.reset_em ? new Date(s.reset_em) : undefined,
+        },
+      }))
+    } catch {
+      // Sem saldo conhecido o botão segue habilitado: quem recusa de verdade é
+      // o servidor, no momento da emissão.
+      setSaldos((prev) => ({ ...prev, [ativoId]: { allowed: true, remaining: 0, limite: 0 } }))
     }
   }
 
-  const registerGeneration = (ativoId: string) => {
-    const key = `dossie_generations_${ativoId}`
-    const historyRaw = localStorage.getItem(key)
-    const history: number[] = historyRaw ? JSON.parse(historyRaw) : []
-    history.push(Date.now())
-    localStorage.setItem(key, JSON.stringify(history))
-  }
+  const checkLimit = (ativoId: string): Saldo =>
+    saldos[ativoId] ?? { allowed: true, remaining: 0, limite: 0 }
 
   const handleGerarDossie = async (ativo: any) => {
     const lim = checkLimit(ativo.id)
     if (!lim.allowed) {
-      alert(`Limite anual de 4 dossiês atingido para esta embarcação. Próxima emissão disponível em: ${lim.resetDate?.toLocaleDateString('pt-BR')}`)
+      alert(`Limite anual de dossiês atingido para esta embarcação. Próxima emissão disponível em: ${lim.resetDate?.toLocaleDateString('pt-BR')}`)
       return
     }
     setGeneratingAtivoId(ativo.id)
     try {
       const url = await api.dossie.pdfUrl(ativo.id)
-      registerGeneration(ativo.id)
+      await carregarSaldo(ativo.id)
       const a = document.createElement('a')
       a.href = url
       a.download = `dossie_${ativo.marca.toLowerCase()}_${ativo.modelo.toLowerCase()}_${ativo.id.slice(0, 8)}.pdf`
@@ -263,7 +278,7 @@ export default function SolicitacoesDossie() {
                       <div className="text-left">
                         <p className="text-[9px] font-black uppercase tracking-wider text-white/30">Saldo de Dossiês</p>
                         <p className={`text-sm font-bold ${lim.remaining > 0 ? 'text-[#c5a059]' : 'text-rose-400'}`}>
-                          {lim.remaining} / 4 restantes
+                          {lim.remaining} / {lim.limite} restantes
                         </p>
                         {!lim.allowed && lim.resetDate && (
                           <p className="text-[8px] text-[#c5a059] uppercase tracking-widest font-black mt-1">

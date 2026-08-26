@@ -533,6 +533,16 @@ Conferido contra o banco real: os três ativos da Marina Alfa com 1 usado e 3 re
 
 **O teste achou um defeito enquanto era escrito:** `get_supabase_admin()` estava fora do `try`. Cliente falhando ao ser criado derrubava a **emissão inteira**, não só a contagem — apurar saldo é acessório, gerar o dossiê é o que a marina veio fazer.
 
+**E a regra estava em DUAS telas.** Corrigido o detalhe do ativo (`AtivoHub`), a **listagem** (`SolicitacoesDossie`) continuou mostrando "4/4 restantes" logo depois de emitir — tinha sua própria cópia do mesmo `localStorage`. Sexta vez que a mesma regra vive em dois lugares neste projeto (senha 6/8/10, preço, telefone, categorias, selo em duas línguas, agora o limite). As duas passaram a ler `GET /dossie/{id}/saldo`, e o teto (`4 / Ano`) também vem do servidor — número escrito na tela envelhece calado quando a regra muda.
+
+Enquanto o servidor não responde, os cards mostram **"—"**. O estado inicial era `remaining: 4`, o que fazia a tela afirmar "4 restantes" por um instante antes de saber — a mesma mentira que o conserto elimina, só que mais curta.
+
+### O selo partia a palavra ao meio (26/08/2026)
+
+Na página pública de verificação, no celular: **"ÍNDICE DE CUSTÓDIA: SILV / ER"**. O `tracking` alarga o texto, não sobrava linha, e a palavra quebrava no meio — na tela que o comprador abre pelo QR, que é onde o selo precisa ser lido sem tropeço.
+
+Rótulo e grau viraram dois pedaços, cada um com `whitespace-nowrap`: a quebra passa a acontecer **entre** eles, nunca dentro. E o grau saiu 2px maior que o rótulo — é ele que o comprador procura, e é ele que deve saltar.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

@@ -1504,3 +1504,22 @@ Certo. **O que decide o comportamento é o número exibido**, não o número arm
 O caso "banco fora do ar não trava a marina" falhou de primeira: `get_supabase_admin()` estava **fora** do `try`. Cliente falhando ao ser criado derrubaria a **emissão inteira**, não só a contagem.
 
 **Padrão a repetir:** escrever o teste do caminho de falha *antes* de considerar a função pronta. O caminho feliz eu já tinha conferido contra o banco real e estava certo; o defeito estava exatamente onde eu não tinha olhado.
+
+### Sexta vez: a mesma regra em duas telas
+
+O conserto do limite (§53) foi feito no `AtivoHub` e **não** na `SolicitacoesDossie`, que tinha a própria cópia do mesmo `localStorage`. O Marcos deu F5 na listagem e voltou "4/4 restantes". Ele: *"isso não é bom, concorda?"*
+
+Concordo — e a lista já está longa:
+
+```
+senha        6 numa tela, 8 na outra, 10 no servidor
+preco        idem
+telefone     regra em MarinaParceira e no Lancamento, faltando no cadastro pago
+categorias   painel esconde interior/pintura no jetski, o score continua contando
+selo         "Ouro" no painel, "GOLD" na verificacao publica
+limite       AtivoHub consertado, SolicitacoesDossie nao
+```
+
+**Padrão a repetir, e desta vez como procedimento:** ao consertar uma regra, `grep` pela **marca dela** — a chave do storage, o número mágico, o nome da constante — antes de considerar o trabalho feito. Aqui bastava `grep -rn "dossie_generations_"` para achar as duas em dois segundos. Consertar a que apareceu e parar é o erro que se repete.
+
+E o estado inicial também mentia: `remaining: 4` fazia a tela afirmar "4 restantes" antes de saber. Trocado por "—". **Valor padrão que parece resposta é a mesma mentira, só mais curta.**

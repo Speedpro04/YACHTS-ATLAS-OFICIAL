@@ -160,17 +160,30 @@ export default function Verificacao() {
               <div className="text-white/45 text-sm mt-1">{embarcacao.ficha}</div>
             )}
           </div>
+          {/* "Índice de Custódia", não "Classificação". O número mede
+              abrangência de registro (50% categorias preenchidas, 25% volume de
+              manutenção, 15% documentos) — nada sobre a condição da embarcação.
+              Um barco com o casco furado pontua igual a um intacto com o mesmo
+              tanto de registro. Chamar de "Classificação" fazia o comprador ler
+              como estado do ativo, o que contradiz a própria FAQ do site: o
+              Atlas não inspecciona.
+
+              Rótulo e grau são DOIS pedaços, cada um sem quebra. Num só, o
+              celular partia a palavra no meio — "SILV / ER" — porque o
+              `tracking` alarga o texto e não sobrava linha. Nome de grau
+              partido ao meio, na tela que o comprador abre pelo QR, é o pior
+              lugar possível para um detalhe desses.
+
+              O grau sai 2px maior que o rótulo: é ele que o comprador procura
+              na tela, e é ele que precisa saltar. */}
           {embarcacao.classificacao && (
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ffcf8a]
+            <span className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 self-start
+                             text-[10px] font-black uppercase tracking-[0.2em] text-[#ffcf8a]
                              bg-[#c5a059]/[0.14] border border-[#c5a059]/40 px-4 py-2 rounded-sm">
-              {/* "Índice de Custódia", não "Classificação". O número mede
-                  abrangência de registro (50% categorias preenchidas, 25%
-                  volume de manutenção, 15% documentos) — nada sobre a condição
-                  da embarcação. Um barco com o casco furado pontua igual a um
-                  intacto com o mesmo tanto de registro. Chamar de
-                  "Classificação" fazia o comprador ler como estado do ativo, o
-                  que contradiz a própria FAQ do site: o Atlas não inspecciona. */}
-              Índice de Custódia: {embarcacao.classificacao}
+              <span className="whitespace-nowrap">Índice de Custódia:</span>
+              <span className="whitespace-nowrap text-[12px] text-[#ffd9a0]">
+                {embarcacao.classificacao}
+              </span>
             </span>
           )}
         </div>
