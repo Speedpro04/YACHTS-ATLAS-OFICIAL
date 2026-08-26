@@ -499,6 +499,40 @@ Usa o mesmo `emailValido` dos quatro formulários, de `utils/telefone`. É a sex
 
 Verificado em navegador real: e-mail malformado para na página sem chamar a API; e-mail válido com senha errada segue para o servidor e recebe o erro de credenciais.
 
+### O limite de 4 dossiês morava no navegador (26/08/2026)
+
+A regra é **4 emissões por ano, por embarcação**. Ela vivia inteira no `localStorage`, numa chave por ativo — e por isso não era regra.
+
+Apareceu assim: a Marina Alfa emitiu três dossiês, e as três telas abertas continuaram mostrando **"4/4 restantes"**. Cada navegador conta sozinho.
+
+```
+Chrome   emitiu 3   →  anotou   →  mostrou 3 restantes
+Edge     nada       →  em branco →  mostra 4 restantes
+banco    3 emissões, com hash e hora  ←  ninguém perguntava a ele
+```
+
+**Duas consequências, e a segunda é a grave:**
+
+1. O número na tela não era confiável — mudava conforme a janela.
+2. **O limite não existia.** Trocar de navegador, limpar os dados do site ou apagar uma chave no console liberava emissão sem fim. `GET /dossie/{id}/pdf` gerava sem perguntar quantos já tinham saído.
+
+**Por que a tela é o conserto, e não só o banco.** O Marcos resumiu: *"internamente pode até ser, mas o gerente sempre verá que ainda tem possibilidade de gerar mais um dossiê"*. Quem decide o que a marina faz é o número exibido — ela lê "ainda pode" e promete o dossiê ao cliente. Banco certo com tela errada é, para quem usa, um sistema errado.
+
+Fechado nas duas pontas:
+
+```
+GET /dossie/{id}/saldo   a tela pergunta ao servidor         → o número vira verdade
+GET /dossie/{id}/pdf     recusa com 429 acima do limite      → o pedido vira limite
+DOSSIE_LIMITE_ANUAL      variável de ambiente (padrão 4)     → sobe durante ensaios,
+                                                                sem deploy
+```
+
+A recusa diz **até quando**: a vaga abre 12 meses depois da emissão mais antiga ainda na janela. Recusar sem data é pior que recusar — a marina precisa responder ao cliente.
+
+Conferido contra o banco real: os três ativos da Marina Alfa com 1 usado e 3 restantes; os da Amazon Marina com 4/4, porque nunca emitiram. Mesmo número em qualquer navegador.
+
+**O teste achou um defeito enquanto era escrito:** `get_supabase_admin()` estava fora do `try`. Cliente falhando ao ser criado derrubava a **emissão inteira**, não só a contagem — apurar saldo é acessório, gerar o dossiê é o que a marina veio fazer.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

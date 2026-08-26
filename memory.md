@@ -1470,3 +1470,37 @@ Passei três mensagens defendendo uma explicação errada. O Marcos disse que ti
 Quando ele disse "vc está errado", fui ao banco em vez de insistir. O `last_sign_in_at` mostrou login novo com `bauerwebsites@gmail.com` **um minuto antes** — ou seja, na anônima tinha entrado a Marina Alfa mesmo, por preenchimento automático do navegador. O mecanismo dele funcionava; o e-mail é que não era o esperado.
 
 **Padrão a repetir:** quando o usuário contradiz a explicação, medir antes de argumentar. `last_sign_in_at`, `audit_logs` e `git log -S` resolveram três desacordos hoje, todos em segundos. E prestar atenção ao que ele diz de experiência própria — "sempre faço isso com todas as páginas" era informação, não opinião.
+
+---
+
+## 53. A regra comercial morava no navegador do cliente
+**Data:** 26/08/2026
+
+A Marina Alfa emitiu três dossiês e as três telas abertas continuaram dizendo **"4/4 restantes"**. O Marcos: *"não foi registrado nenhuma saída."*
+
+Foi registrado — `dossie_emitidos` tinha os três, com hash, tamanho e hora. O que não funcionava era o contador, e o motivo é onde ele morava:
+
+```js
+const key = `dossie_generations_${ativo.id}`
+localStorage.getItem(key)      // a regra comercial inteira, dentro do navegador
+```
+
+Cada janela contava sozinha. E como a trava era só ali, **o limite não era limite**: trocar de navegador, limpar dados do site ou apagar uma chave no console liberava emissão sem fim. O endpoint do PDF gerava sem perguntar nada.
+
+**Padrão a repetir:** regra de negócio no cliente é sugestão, não regra. O navegador é do usuário — ele apaga, troca, edita. Qualquer limite que valha dinheiro ou reputação mora no servidor. E o servidor **já tinha o dado**: cada emissão estava gravada desde sempre; ninguém perguntava.
+
+### A frase do Marcos que endereça o conserto
+
+Eu ia consertar só a contagem no banco. Ele cortou:
+
+> *"internamente pode até ser! Mas deveria aparecer aqui na tela do sistema. Internamente não resolve a dor, pq o gerente sempre verá que ainda tem possibilidade de gerar mais um dossiê, certo?"*
+
+Certo. **O que decide o comportamento é o número exibido**, não o número armazenado. O gerente lê "ainda pode gerar", promete ao cliente, e a promessa é feita sobre uma informação falsa. Banco certo com tela errada é, para quem usa, um sistema errado.
+
+**Padrão a repetir:** ao consertar um dado errado, perguntar **quem age com base nele**. Se alguém decide olhando a tela, a tela faz parte do conserto — não é "detalhe de interface" a ser feito depois.
+
+### O teste achou defeito enquanto era escrito
+
+O caso "banco fora do ar não trava a marina" falhou de primeira: `get_supabase_admin()` estava **fora** do `try`. Cliente falhando ao ser criado derrubaria a **emissão inteira**, não só a contagem.
+
+**Padrão a repetir:** escrever o teste do caminho de falha *antes* de considerar a função pronta. O caminho feliz eu já tinha conferido contra o banco real e estava certo; o defeito estava exatamente onde eu não tinha olhado.

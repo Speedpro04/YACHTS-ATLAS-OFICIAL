@@ -353,23 +353,29 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
   const [loading, setLoading] = useState(false)
   const [limite, setLimite] = useState<{ allowed: boolean; remaining: number; resetDate?: Date }>({ allowed: true, remaining: 4 })
 
-  const verificarLimite = () => {
-    const key = `dossie_generations_${ativo.id}`
-    const historyRaw = localStorage.getItem(key)
-    const history: number[] = historyRaw ? JSON.parse(historyRaw) : []
-    const now = Date.now()
-    const oneYearMs = 365 * 24 * 60 * 60 * 1000
-    const validHistory = history.filter(ts => now - ts < oneYearMs)
-
-    if (validHistory.length !== history.length) {
-      localStorage.setItem(key, JSON.stringify(validHistory))
-    }
-
-    if (validHistory.length < 4) {
-      setLimite({ allowed: true, remaining: 4 - validHistory.length })
-    } else {
-      const oldestTs = Math.min(...validHistory)
-      setLimite({ allowed: false, remaining: 0, resetDate: new Date(oldestTs + oneYearMs) })
+  // O saldo vem do SERVIDOR, não do navegador.
+  //
+  // Ficava no `localStorage`, numa chave por ativo. A marina emitia três no
+  // Chrome e o Edge continuava mostrando "4 restantes" — cada janela contava
+  // sozinha, e o banco, que registra cada emissão com hash e hora, não era
+  // consultado. Pior: como a trava era só aqui, trocar de navegador liberava
+  // emissão sem fim.
+  //
+  // O que decide o que o gerente faz é o número NA TELA: ele lê "ainda pode
+  // gerar" e promete o dossiê ao cliente. Por isso o conserto não é só gravar
+  // certo — é a tela perguntar a quem sabe.
+  const verificarLimite = async () => {
+    try {
+      const s = await api.dossie.saldo(ativo.id)
+      setLimite({
+        allowed: !!s.permitido,
+        remaining: s.restantes ?? 0,
+        resetDate: s.reset_em ? new Date(s.reset_em) : undefined,
+      })
+    } catch {
+      // Falhar aqui não pode travar a marina: o servidor recusa a emissão de
+      // qualquer forma, então o botão segue habilitado e o erro aparece lá.
+      setLimite({ allowed: true, remaining: 0 })
     }
   }
 
@@ -377,21 +383,12 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
     verificarLimite()
   }, [ativo.id])
 
-  const registrarGeracao = () => {
-    const key = `dossie_generations_${ativo.id}`
-    const historyRaw = localStorage.getItem(key)
-    const history: number[] = historyRaw ? JSON.parse(historyRaw) : []
-    history.push(Date.now())
-    localStorage.setItem(key, JSON.stringify(history))
-    verificarLimite()
-  }
-
   const gerarPdf = async () => {
     if (!limite.allowed) return
     setLoading(true)
     try {
       const url = await api.dossie.pdfUrl(ativo.id)
-      registrarGeracao()
+      await verificarLimite()
       const a = document.createElement('a')
       a.href = url
       a.download = `dossie_${ativo.marca.toLowerCase()}_${ativo.modelo.toLowerCase()}_${ativo.id.slice(0, 8)}.pdf`

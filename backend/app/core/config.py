@@ -178,6 +178,13 @@ class Settings(BaseSettings):
     LAUNCH_DOSSIER_BONUS_MONTHS: int = 18      # fundadora ($200)
     TRADITIONAL_DOSSIER_MONTHS: int = 12       # oficial ($250)
 
+    # Quantos dossiês cada ativo pode emitir por ano.
+    #
+    # Em variável de ambiente porque durante os ensaios o mesmo barco é usado
+    # dezenas de vezes: sobe o número, testa, baixa de novo — sem deploy. O
+    # padrão 4 é a regra comercial; mexer nele é exceção, não rotina.
+    DOSSIE_LIMITE_ANUAL: int = int(os.getenv("DOSSIE_LIMITE_ANUAL", "4"))
+
     # Quanto tempo a vaga fundadora fica presa no nome da marina entre o
     # cadastro e o pagamento. Eram 60 min, suficiente enquanto o cadastro caía
     # direto no checkout; com o vídeo de apresentação no meio, quem sai para

@@ -10,7 +10,7 @@ Dois caminhos de acesso ao dossiê:
 """
 import logging
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Response, Request, Form
@@ -52,6 +52,40 @@ def _check_master(senha: str) -> bool:
 # ----------------------------------------------------------------------------
 # 1) Dono / marina (autenticado)
 # ----------------------------------------------------------------------------
+
+@router.get("/emitidos/contagem")
+async def contar_emitidos(user: dict = Depends(get_current_user)):
+    """
+    Quantos dossiês esta marina já emitiu.
+
+    Existe porque o painel mostrava **0** mesmo depois de emitir: ele pedia o
+    número ao endpoint de TABELA DE PREÇOS (`/payments/plans`), lendo um campo
+    `dossier_count` que não existe em lugar nenhum do backend. Vinha `undefined`
+    todas as vezes, e o card ficava zerado desde sempre.
+
+    Conta por `emitido_por` — quem emitiu. A tabela `dossie_emitidos` é o
+    livro-razão das emissões e já registra hash do PDF, tamanho e canal; aqui só
+    se pergunta quantas foram.
+
+    Declarado ANTES de `/{ativo_id}/dados` por clareza de leitura: rota fixa
+    antes de rota com parâmetro, para ninguém precisar conferir se colidem.
+    """
+    supabase = get_supabase_admin()
+    usuario_id = user.get("sub") if user else None
+    if not usuario_id:
+        return {"total": 0}
+    try:
+        res = (
+            supabase.table("dossie_emitidos")
+            .select("id", count="exact")
+            .eq("emitido_por", usuario_id)
+            .execute()
+        )
+        return {"total": res.count or 0}
+    except Exception as e:  # noqa: BLE001 — contador não derruba o painel
+        logger.error(f"Falha ao contar dossiês emitidos de {usuario_id}: {e}")
+        return {"total": 0}
+
 
 @router.get("/{ativo_id}/dados")
 async def dados_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
@@ -108,10 +142,85 @@ def _registrar_emissao(ativo_id: str, pdf: bytes, dados: dict,
     return digest
 
 
+def _saldo_dossie(ativo_id: str) -> dict:
+    """
+    Quantos dossiês este ativo ainda pode emitir nos próximos 12 meses.
+
+    A conta vivia SÓ no `localStorage` do navegador, numa chave por ativo. Duas
+    consequências, e a segunda é a grave:
+
+    1. o número na tela mudava conforme o navegador — a marina emitia três num
+       e o outro continuava mostrando "4 restantes", porque cada janela contava
+       sozinha;
+    2. e o limite não era limite: trocar de navegador, limpar dados do site ou
+       apagar uma chave no console liberava emissão sem fim.
+
+    O banco sempre soube — `dossie_emitidos` registra cada emissão com hash e
+    hora. Faltava a tela perguntar a ele, e o servidor recusar.
+
+    O que decide o comportamento do gerente é o que ESTÁ NA TELA: ele vê "ainda
+    pode gerar" e promete o dossiê ao cliente. Banco certo com tela errada é,
+    para quem usa, um sistema errado.
+    """
+    limite_anual = settings.DOSSIE_LIMITE_ANUAL
+    desde = (datetime.now(timezone.utc) - timedelta(days=365)).date().isoformat()
+    try:
+        # Dentro do try junto com a consulta: se o cliente falhar ao ser criado,
+        # a exceção escapava e derrubava a EMISSÃO, não só a contagem. Apurar
+        # saldo é acessório; gerar o dossiê é o que a marina veio fazer.
+        supabase = get_supabase_admin()
+        res = (
+            supabase.table("dossie_emitidos")
+            .select("emitido_em", count="exact")
+            .eq("ativo_id", ativo_id)
+            .gte("emitido_em", desde)
+            .order("emitido_em", desc=False)
+            .execute()
+        )
+        usados = res.count or 0
+        linhas = res.data or []
+    except Exception as e:  # noqa: BLE001 — saldo não derruba a emissão
+        logger.error(f"Falha ao apurar saldo de dossiês de {ativo_id}: {e}")
+        return {"limite": limite_anual, "usados": 0, "restantes": limite_anual,
+                "permitido": True, "reset_em": None}
+
+    restantes = max(0, limite_anual - usados)
+    # Quando esgota, o próximo lugar abre 12 meses depois da emissão MAIS ANTIGA
+    # ainda dentro da janela — é ela que sai da contagem primeiro.
+    reset_em = None
+    if restantes == 0 and linhas:
+        mais_antiga = linhas[0].get("emitido_em")
+        if mais_antiga:
+            reset_em = (datetime.fromisoformat(str(mais_antiga)) + timedelta(days=365)).date().isoformat()
+
+    return {"limite": limite_anual, "usados": usados, "restantes": restantes,
+            "permitido": restantes > 0, "reset_em": reset_em}
+
+
+@router.get("/{ativo_id}/saldo")
+async def saldo_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
+    """Saldo de emissões do ativo — é o número que a tela mostra ao gerente."""
+    _assert_acesso_ativo(ativo_id, user)
+    return _saldo_dossie(ativo_id)
+
+
 @router.get("/{ativo_id}/pdf")
 async def pdf_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     """Gera o PDF do dossiê do dono/marina (só seções com dado)."""
     _assert_acesso_ativo(ativo_id, user)
+
+    # A recusa acontece AQUI, no servidor, e não na tela. Enquanto morou só no
+    # navegador, o limite era um pedido: bastava outra janela para ignorá-lo.
+    saldo = _saldo_dossie(ativo_id)
+    if not saldo["permitido"]:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Limite de {saldo['limite']} dossiês por ano atingido para este ativo. "
+                f"Nova emissão a partir de {saldo['reset_em']}."
+            ),
+        )
+
     try:
         dados = montar_dados_dossie(ativo_id)
         pdf = gerar_pdf_dossie(dados)

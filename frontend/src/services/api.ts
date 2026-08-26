@@ -302,6 +302,14 @@ export const api = {
       ativo_id?: string
       mensagem?: string
     }) => apiRequest('/dossie/solicitar', { method: 'POST', body: JSON.stringify(data) }),
+    /**
+     * Saldo de emissões do ativo — quantos dossiês ainda cabem no ano.
+     *
+     * A conta ficava no `localStorage`, por navegador: a marina emitia três no
+     * Chrome e o Edge continuava mostrando "4 restantes". Quem decide o que o
+     * gerente faz é o número na tela, então ele precisa vir do servidor.
+     */
+    saldo: (ativoId: string) => apiRequest(`/dossie/${ativoId}/saldo`),
     // Painel (autenticado): listar / liberar / recusar pedidos
     listSolicitacoes: (status?: string) =>
       apiRequest(`/dossie/solicitacoes${status ? `?status=${status}` : ''}`),
