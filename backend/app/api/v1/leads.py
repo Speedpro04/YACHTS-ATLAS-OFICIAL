@@ -12,6 +12,7 @@ from app.schemas.models import LeadMarinaCreate
 from app.core.supabase import get_supabase_admin
 from app.core.security import require_platform_admin
 from app.core.config import settings, LAUNCH_STATES
+from app.core.precos import UFS_DO_BRASIL, link_de_checkout
 from app.services.whatsapp_service import normalizar_telefone
 from app.core.limite_taxa import limite
 
@@ -47,41 +48,9 @@ MINUTOS_DE_RESERVA = settings.MINUTOS_DE_RESERVA_VAGA
 ORIGENS_DE_LANCAMENTO = frozenset({"lancamento", "lançamento", "lp-fundadoras", "lp-lancamento"})
 # Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
 # links para mandar a marina bloqueada ao checkout do preço que ela contratou.
-LINK_MARINA_FUNDADORA = settings.STRIPE_LINK_MARINA_FUNDADORA
-LINK_MARINA_OFICIAL = settings.STRIPE_LINK_MARINA_OFICIAL
-LINK_MARINA_FUNDADORA_BRL = settings.STRIPE_LINK_MARINA_FUNDADORA_BRL
-LINK_MARINA_OFICIAL_BRL = settings.STRIPE_LINK_MARINA_OFICIAL_BRL
-
-UFS_DO_BRASIL = frozenset({
-    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS",
-    "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC",
-    "SE", "SP", "TO",
-})
-
-
-def _checkout(fundadora: bool, uf: str | None) -> tuple[str, str]:
-    """
-    Qual link de pagamento abrir, e em que moeda. Devolve (url, moeda).
-
-    Marina brasileira vai para o link em real. Nao e desconto: e o mesmo preco
-    sem os 4,38% de IOF e sem o spread do banco, que nao vao para nos — vao
-    para o governo e para o cartao dela. E cartao Elo e Hipercard, comuns em
-    conta empresarial brasileira, sao NACIONAIS: em dolar nao passam de jeito
-    nenhum, nem liberando compra internacional. Em 19/08/2026 um Visa recusou
-    uma cobranca de US$ 250 com "moeda nao aceita" — foi o que trouxe isto aqui.
-
-    O preco anunciado nas paginas continua em dolar. O real e forma de
-    pagamento, nao oferta diferente.
-
-    Link em real vazio (ainda nao criado) cai no dolar: melhor cobrar na moeda
-    de sempre que mandar a marina para uma URL que nao existe.
-    """
-    estado = (uf or "").strip().upper()
-    brasileira = estado in UFS_DO_BRASIL
-    em_real = LINK_MARINA_FUNDADORA_BRL if fundadora else LINK_MARINA_OFICIAL_BRL
-    if brasileira and em_real.strip():
-        return em_real.strip(), "brl"
-    return (LINK_MARINA_FUNDADORA if fundadora else LINK_MARINA_OFICIAL), "usd"
+# A escolha do link mora em app/core/precos.py — mesma regra que a tela de
+# acesso bloqueado usa. Reexportado aqui porque os testes importam por este nome.
+_checkout = link_de_checkout
 
 
 def _oferta_oficial(uf: str | None = None) -> dict:

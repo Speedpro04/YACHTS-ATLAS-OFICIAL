@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from app.core.config import settings
+from app.core.precos import link_de_checkout
 
 # Valores de `pagamento` que impedem o uso do sistema. Qualquer outro valor —
 # inclusive um que ainda não exista — libera: ver FAIL-OPEN acima.
@@ -57,10 +58,23 @@ class Bloqueio:
 
 
 def _link_do_checkout(metadata: dict) -> str:
-    """Link do preço que ESTA marina contratou — $200 se fundadora, senão $250."""
-    if (metadata or {}).get("oferta") == "fundadora":
-        return settings.STRIPE_LINK_MARINA_FUNDADORA
-    return settings.STRIPE_LINK_MARINA_OFICIAL
+    """
+    Link do preço que ESTA marina contratou — fundadora ou oficial.
+
+    Na moeda dela: o `uf` gravado no cadastro decide, mesma regra do cadastro
+    novo (app/core/precos.py). Marina bloqueada querendo voltar não pode topar
+    com uma cobrança em dólar que o cartão dela recusa — ela já está sem acesso,
+    e essa é a única porta de volta.
+
+    Devolve "" quando não há link vivo; quem mostra a tela omite o botão em vez
+    de oferecer uma porta fechada.
+    """
+    meta = metadata or {}
+    url, _moeda = link_de_checkout(
+        fundadora=meta.get("oferta") == "fundadora",
+        uf=meta.get("uf"),
+    )
+    return url
 
 
 def _dias_desde(iso: Any) -> Optional[int]:

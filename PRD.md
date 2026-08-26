@@ -509,7 +509,7 @@ Números redondos de propósito, decisão dele: *"multiplica por 5"* é conta qu
 **Duas coisas que ninguém tinha contado na decisão:**
 
 - **O IOF não é taxa do Stripe.** São 4,38% de imposto federal, cobrados pelo banco do cliente. Um "$250" vira ~R$ 1.450 na fatura, e a marina não pensa "IOF" — pensa que foi cobrada a mais. Primeira fatura é onde a confiança nasce ou morre.
-- **Bandeiras.** O checkout em dólar mostrava duas bandeiras; o em real mostra cinco. **Elo e Hipercard só existem em real** — marina com cartão Elo não conseguia comprar de jeito nenhum, nem liberando compra internacional. É argumento melhor que os 3% de câmbio, e não estava na conta.
+- **Bandeiras — corrigido.** Eu afirmei, olhando uma prévia em baixa resolução, que o checkout em real mostrava cinco bandeiras contra duas do dólar. **Estava errado**: nas capturas em tamanho real os dois mostram só **Visa e Mastercard**. O que continua verdade é o motivo — **Elo e Hipercard são bandeiras nacionais e só funcionam em real** —, mas elas **não estão habilitadas** na conta. Vira ação, não benefício já obtido: **Configurações → Pagamentos → Formas de pagamento**, habilitar Elo e Hipercard. Cartão empresarial de banco brasileiro é Elo com frequência.
 
 #### O defeito que a venda em real teria criado
 
@@ -534,6 +534,30 @@ Campo vazio nas duas significa que **nenhuma veio de pagamento**. O caminho *pag
 **Agora o programa vem do link de origem** (`stripe_service._programa_do_checkout`), em duas provas: primeiro `metadata.programa`, se o link tiver sido marcado no painel; depois de qual link o checkout veio, resolvido pela API e guardado em memória. A segunda existe porque a primeira depende de quatro links marcados à mão — e um esquecido significa marina que paga e não vira fundadora, em silêncio.
 
 O `usd 200` virou último recurso, só para checkout que não vem de Payment Link. Continua exigindo dólar: `R$ 200` e `US$ 200` são o mesmo `200.0` e valem coisas bem diferentes, e a conta é da Axos Hub, que vende outros produtos no mesmo webhook.
+
+#### Os links em dólar morreram — e três caminhos apontavam para eles
+
+Criados os preços em real, os produtos em dólar foram **desativados no painel**. As URLs continuam existindo e respondem:
+
+```
+The link is no longer active.
+```
+
+Pior que não existir, porque parecem funcionar: quem clica não recebe erro do nosso lado, recebe uma página branca do Stripe. Conferido nos quatro links — os dois em dólar mortos, os dois em real vivos.
+
+**Três lugares mandavam gente para lá**, e nenhum sabia:
+
+| Onde | Quem cai lá |
+|---|---|
+| `leads._checkout` | marina de fora do Brasil |
+| `acesso._link_do_checkout` | marina bloqueada querendo voltar |
+| `index.html` da Lançamento (3 cópias) | quem está sem JavaScript |
+
+O terceiro tinha o link escrito **três vezes** no mesmo arquivo: dois `href` de botão e uma constante no JS. Terceira aparição do padrão "uma regra, N cópias" no projeto.
+
+**A escolha do link virou peça única** — `app/core/precos.py`. Regra: marina brasileira prefere real, o resto prefere dólar, mas **link vazio nunca é oferecido**. Sem nada configurado devolve `("", "")` e quem monta a tela omite o botão. URL vazia é ruim; URL morta é pior.
+
+Os dois links em dólar estão **vazios na configuração** — é a verdade de hoje. Recriar quando houver venda fora do Brasil; enquanto isso, todo caminho cai no que está vivo. Decisão do Marcos ao ver a lista: *"não tem fora do Brasil hj"*.
 
 #### Aberto
 

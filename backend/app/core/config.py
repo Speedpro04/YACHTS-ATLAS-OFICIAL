@@ -209,14 +209,13 @@ class Settings(BaseSettings):
 
     # Links de pagamento. Ficam em env para trocar de conta Stripe sem rebuild,
     # e aqui no config para não existirem dois links do mesmo preço no sistema.
-    STRIPE_LINK_MARINA_FUNDADORA: str = os.getenv(
-        "STRIPE_LINK_MARINA_FUNDADORA",
-        "https://buy.stripe.com/28EeVdb9jf6c8cx7QA1wY00",
-    )
-    STRIPE_LINK_MARINA_OFICIAL: str = os.getenv(
-        "STRIPE_LINK_MARINA_OFICIAL",
-        "https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01",
-    )
+    # DESATIVADOS no painel em 26/08/2026, quando os precos em real entraram.
+    # As URLs continuam existindo e respondem "The link is no longer active" —
+    # pior que nao existir, porque parecem funcionar. Vazio e a verdade, e
+    # link_de_checkout nunca oferece caminho vazio. Recriar aqui quando houver
+    # venda fora do Brasil.
+    STRIPE_LINK_MARINA_FUNDADORA: str = os.getenv("STRIPE_LINK_MARINA_FUNDADORA", "")
+    STRIPE_LINK_MARINA_OFICIAL: str = os.getenv("STRIPE_LINK_MARINA_OFICIAL", "")
 
     # Os mesmos dois programas cobrados em real. A marina brasileira paga sem
     # IOF, sem taxa de compra internacional, e com bandeira nacional (Elo,

@@ -39,7 +39,12 @@ def _com_link(servico, plink_id: str, url: str) -> SessaoFalsa:
 
 # ------------------------------------------------- reconhecer pelo link
 
-def test_link_em_dolar_e_fundadora(servico):
+def test_link_em_dolar_e_fundadora(servico, monkeypatch):
+    """
+    Os links em dólar estão vazios desde 26/08/2026 (desativados no painel),
+    então o teste põe um: o que se verifica é a regra, não o estado de hoje.
+    """
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA", "https://buy.stripe.com/usd-fu")
     s = _com_link(servico, "plink_usd", settings.STRIPE_LINK_MARINA_FUNDADORA)
     assert servico._programa_do_checkout(s, {}) == "marina_fundadora"
 
@@ -51,7 +56,7 @@ def test_link_em_real_tambem_e_fundadora(servico):
 
 
 def test_link_do_oficial_nao_e_fundadora(servico):
-    s = _com_link(servico, "plink_of", settings.STRIPE_LINK_MARINA_OFICIAL)
+    s = _com_link(servico, "plink_of", settings.STRIPE_LINK_MARINA_OFICIAL_BRL)
     assert servico._programa_do_checkout(s, {}) == "marina_oficial"
 
 
@@ -65,7 +70,7 @@ def test_link_desconhecido_nao_vira_programa(servico):
 
 def test_metadata_ganha_do_link(servico):
     """Intenção declarada no painel vale mais que inferência."""
-    s = _com_link(servico, "plink_of", settings.STRIPE_LINK_MARINA_OFICIAL)
+    s = _com_link(servico, "plink_of", settings.STRIPE_LINK_MARINA_OFICIAL_BRL)
     assert servico._programa_do_checkout(s, {"programa": "marina_fundadora"}) == "marina_fundadora"
 
 
@@ -112,7 +117,7 @@ def test_link_e_consultado_uma_vez_so(servico, monkeypatch):
         @staticmethod
         def retrieve(plink_id):
             chamadas.append(plink_id)
-            return type("L", (), {"url": settings.STRIPE_LINK_MARINA_FUNDADORA})()
+            return type("L", (), {"url": settings.STRIPE_LINK_MARINA_FUNDADORA_BRL})()
 
     monkeypatch.setattr(mod.stripe, "PaymentLink", LinkContado)
     s = SessaoFalsa(payment_link="plink_conta")

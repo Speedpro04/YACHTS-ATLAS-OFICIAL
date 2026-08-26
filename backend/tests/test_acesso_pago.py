@@ -56,8 +56,18 @@ def test_link_do_bloqueio_e_o_preco_que_a_marina_contratou():
     fundadora = avaliar_acesso({"pagamento": "pendente", "oferta": "fundadora"})
     oficial = avaliar_acesso({"pagamento": "pendente", "oferta": "oficial"})
 
-    assert fundadora.link_pagamento == settings.STRIPE_LINK_MARINA_FUNDADORA
-    assert oficial.link_pagamento == settings.STRIPE_LINK_MARINA_OFICIAL
+    assert fundadora.link_pagamento
+    assert oficial.link_pagamento
+    assert fundadora.link_pagamento != oficial.link_pagamento
+
+
+def test_link_do_bloqueio_sai_na_moeda_da_marina():
+    """
+    Marina bloqueada querendo voltar não pode topar com uma cobrança em dólar
+    que o cartão dela recusa: ela já está sem acesso, e essa é a única porta.
+    """
+    br = avaliar_acesso({"pagamento": "pendente", "oferta": "oficial", "uf": "SC"})
+    assert br.link_pagamento == settings.STRIPE_LINK_MARINA_OFICIAL_BRL
 
 
 # --------------------------------------------------------------------------

@@ -11,7 +11,8 @@ diferente.
 """
 import pytest
 
-from app.api.v1.leads import UFS_DO_BRASIL, _checkout, _oferta_oficial
+from app.api.v1.leads import _oferta_oficial
+from app.core.precos import UFS_DO_BRASIL, link_de_checkout as _checkout
 from app.core.config import settings
 
 
@@ -42,7 +43,10 @@ def test_fundadora_e_oficial_vao_para_links_diferentes():
 # ------------------------------------------------------------ o resto do mundo
 
 @pytest.mark.parametrize("uf", ["FL", "CA", "XX", "", None, "  "])
-def test_fora_do_brasil_continua_em_dolar(uf):
+def test_fora_do_brasil_prefere_o_dolar(uf, monkeypatch):
+    """Preferência, não obrigação — sem link em dólar vivo, vai para o que existe."""
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL", "https://buy.stripe.com/usd-oficial")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA", "https://buy.stripe.com/usd-fundadora")
     assert _checkout(fundadora=False, uf=uf)[1] == "usd"
     assert _checkout(fundadora=True, uf=uf)[1] == "usd"
 
@@ -54,23 +58,43 @@ def test_as_27_ufs_estao_na_lista():
 
 # ------------------------------------------------------------ as armadilhas
 
-def test_sem_link_em_real_cai_no_dolar(monkeypatch):
+def test_link_vazio_nunca_e_oferecido(monkeypatch):
     """
-    Melhor cobrar na moeda de sempre do que mandar a marina para uma URL que
-    não existe. Vale para a janela entre criar o preço e publicar o link.
+    Em 26/08/2026 os dois links em dólar foram desativados no painel, e as URLs
+    continuaram respondendo "The link is no longer active" — pior que não
+    existir, porque parecem funcionar. Vazio na configuração significa "este
+    caminho não existe hoje", e a marina vai para a outra moeda.
     """
-    import app.api.v1.leads as mod
-    monkeypatch.setattr(mod, "LINK_MARINA_OFICIAL_BRL", "")
-    monkeypatch.setattr(mod, "LINK_MARINA_FUNDADORA_BRL", "   ")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL", "https://buy.stripe.com/usd-of")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA", "https://buy.stripe.com/usd-fu")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA_BRL", "   ")
     assert _checkout(fundadora=False, uf="SC")[1] == "usd"
     assert _checkout(fundadora=True, uf="SC")[1] == "usd"
 
 
-def test_oferta_oficial_leva_a_uf_ate_o_checkout():
+def test_estrangeiro_sem_link_em_dolar_vai_para_o_real(monkeypatch):
+    """É o estado de hoje: só existem os links em real."""
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL", "")
+    assert _checkout(fundadora=False, uf="FL") == (settings.STRIPE_LINK_MARINA_OFICIAL_BRL, "brl")
+
+
+def test_sem_link_nenhum_devolve_vazio(monkeypatch):
+    """
+    URL vazia é ruim; URL morta é pior, porque parece que funcionou. Quem
+    mostra a tela omite o botão.
+    """
+    for nome in ("STRIPE_LINK_MARINA_OFICIAL", "STRIPE_LINK_MARINA_OFICIAL_BRL"):
+        monkeypatch.setattr(settings, nome, "")
+    assert _checkout(fundadora=False, uf="SC") == ("", "")
+
+
+def test_oferta_oficial_leva_a_uf_ate_o_checkout(monkeypatch):
     """
     Sem isto a rota morre no meio: a oferta oficial não recebia estado nenhum,
     e toda marina brasileira que chegasse por fora da campanha ia para o dólar.
     """
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL", "https://buy.stripe.com/usd-of")
     assert _oferta_oficial("RJ")["moeda_cobranca"] == "brl"
     assert _oferta_oficial(None)["moeda_cobranca"] == "usd"
 
