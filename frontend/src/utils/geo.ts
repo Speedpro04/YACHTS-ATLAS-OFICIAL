@@ -1,7 +1,18 @@
 /**
- * Yachts Atlas — Captura de geolocalização do dispositivo no momento do upload.
- * Pede permissão ao navegador; em caso de negação, indisponibilidade ou timeout,
- * resolve `null` (o upload segue normalmente, apenas sem coordenada).
+ * Yachts Atlas — Onde o aparelho está, para foto tirada NA HORA.
+ *
+ * Serve só ao botão Fotografar, que abre a câmera: ali a posição do aparelho é
+ * a posição da foto, porque ela está sendo tirada naquele lugar, naquele
+ * instante.
+ *
+ * NÃO usar em envio de arquivo. Arquivo vem do disco — baixado, recebido por
+ * e-mail, mandado pelo armador — e onde está quem clica em enviar não diz nada
+ * sobre o barco. Nesse caso o servidor lê a coordenada de dentro da própria
+ * imagem, que é a que descreve a foto. Gravar a do aparelho ali punha o
+ * endereço de um funcionário num dossiê, afirmando ser o lugar do registro.
+ *
+ * Nunca bloqueia o envio: sem permissão, sem sinal ou passando do tempo,
+ * resolve `null` e a foto sobe sem coordenada.
  */
 export interface GeoPonto {
   lat: number

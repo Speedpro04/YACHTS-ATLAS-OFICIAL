@@ -1,3 +1,4 @@
+- [x] **REV-07 — GEO no dossiê passa a significar o que o leitor entende**: a marca GEO vinha da posição do NAVEGADOR no instante do envio, não da foto. No teste do Dom Rafael, 14 imagens baixadas da internet foram seladas em **-22.9206, -45.4517** — o escritório de quem as enviou — e o PDF marcava GEO ao lado delas. Agora o servidor lê a coordenada de dentro da própria imagem (EXIF, Pillow); a do aparelho só entra na câmera ao vivo, onde as duas são a mesma coisa. Sem coordenada confiável, **nenhuma** — `documentos` é append-only, e o errado ficaria selado para sempre. Some junto um dado pessoal que ninguém pediu: o endereço do funcionário em todo arquivo que ele subisse
 - [x] **REV-05 — Aviso ao fundador sai pela instância de marinas**, não pela transacional: a transacional entrega o código de acesso, que é autenticação — quanto menos tráfego passar por ela, menor a chance de o login cair junto com outra coisa
 - [x] **REV-06 — As fotos entram no dossiê**: eram 20 imagens no PDF e **19 eram a mesma logo**. A seção "Registro Fotográfico Certificado" dizia "8 imagens seladas e geolocalizadas" e mostrava uma tabela de contagem. Agora entram todas, com data, marca de geo e prefixo do hash. **Desempenho era o risco real**: 102 s para 8 fotos, porque o PDF é montado 2× (cada foto baixava 2×) e cada download abria conexão TLS nova — 11 KB levava os mesmos 4,7 s que 803 KB. Cache + cliente compartilhado: **102 s → 11 s**
 - [x] **REV-06 — Índice de Segurança para de mentir**: dizia 100% num barco que furou a proa. O cálculo olhava 8 categorias e **casco, operação e sinistros ficavam de fora** — justo onde estavam os dois registros em atenção. Agora 12 categorias, e sinistro/casco em atenção valem 0, não 50. Caiu para **86%**
@@ -479,7 +480,27 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 
 **Feito em 25/08/2026 — a câmera do celular ligada.** O `SecureCameraUpload` existia completo, com `capture="environment"` (abre a câmera traseira), e **nenhum arquivo o importava**. Quinto caso do mesmo padrão no mesmo dia: componente pronto, caminho morto. Plugado no cabeçalho do ativo (`AtivoHub`), como botão **Fotografar**, e escondido quando `readOnly` — que é o Portal do Proprietário. A regra de custódia deixa de ser combinado e passa a ser o que a tela faz.
 
-Junto foi a **coordenada**: as colunas `latitude`/`longitude`/`geo_fonte` e o endpoint já aceitavam geo, e ninguém mandava. Agora a foto sobe com onde e quando — dado que ninguém reconstrói depois. Best-effort de propósito: sem permissão, sem sinal ou passando de 5 s, a foto sobe sem coordenada. Registro sem geo é bom; registro que não sobe porque o GPS demorou não serve para nada.
+Junto foi a **coordenada**: as colunas `latitude`/`longitude`/`geo_fonte` e o endpoint já aceitavam geo, e ninguém mandava. Best-effort de propósito: sem permissão, sem sinal ou passando de 5 s, a foto sobe sem coordenada. Registro sem geo é bom; registro que não sobe porque o GPS demorou não serve para nada.
+
+**Corrigido em 26/08/2026 — o que a coordenada descrevia estava errado.** O parágrafo acima dizia "a foto sobe com onde e quando". Não era a foto: era **o navegador**, no instante do envio. Para foto tirada no píer os dois valores coincidem e ninguém nota. Para arquivo vindo do disco, o que ia para o selo era o endereço de quem clicou em enviar.
+
+Apareceu no teste do Dom Rafael: 14 imagens baixadas da internet, todas seladas em **-22.9206, -45.4517**, e o PDF marcando **GEO** ao lado de cada uma. Mesma família do `100%` ao lado do `BRONZE` e do `Nº de Registro` com o nome do barco — o dado existe, e significa outra coisa para quem lê. Num documento que se vende como custódia, é a pior espécie de defeito: não parece defeito.
+
+**A regra agora** (toda em `exif_service.geo_para_selar`, com teste):
+
+| Origem | O que vai para o selo | `geo_fonte` |
+|---|---|---|
+| Imagem com coordenada dentro (EXIF) | a da imagem — descreve a foto | `exif` |
+| Botão **Fotografar** (câmera ao vivo) | a do aparelho — ali é o mesmo lugar | `captura` |
+| Arquivo do disco sem EXIF | **nada** | — |
+
+Três decisões que sustentam isso. **A leitura é no servidor**, não no navegador: pega os quatro caminhos de upload de uma vez, e o cliente não consegue mentir sobre o que estava na foto. **A fonte declarada pelo cliente é lista fechada** — só `captura`; o `dispositivo` das versões antigas é descartado, inclusive na janela de deploy, onde uma captura pode perder a coordenada. Perder é barato; selar errado não tem volta, porque `documentos` não aceita UPDATE nem DELETE. **Na dúvida, vazio**: `(0,0)`, latitude fora do mapa, arquivo corrompido, PDF — tudo cai em nada, e nada derruba o upload.
+
+Efeito colateral bom: some um dado pessoal que ninguém pediu. Antes, um funcionário que subisse dez fotos de casa deixava dez registros do endereço dele numa tabela append-only. Agora fica gravado onde a **foto** foi tirada, não onde a **pessoa** estava.
+
+**As 14 linhas erradas continuam lá**, com `geo_fonte = 'dispositivo'` — append-only vale também para o que eu mesmo escrevi errado. São de embarcação de teste (`Dom Rafael (TESTE)`), então não vão para nenhum dossiê real. O rótulo antigo, aliás, ficou útil: distingue o que foi gravado sob a regra velha.
+
+**Aberto:** a **data** tem o mesmo problema em escala menor. O dossiê mostra `uploaded_at` — quando o arquivo subiu, não quando a foto foi tirada. O EXIF traz isso (`DateTimeOriginal`) e a leitura já está feita; falta uma coluna `data_captura`, que é migração. Menor porque a data de upload é uma afirmação verdadeira sobre o arquivo; a coordenada não era.
 
 **Só então as LPs.** O texto sobre custódia entrou nas duas páginas **depois** de a regra existir e ser verificável — não antes. É a lição de duas armadilhas do próprio dia: o rodapé do e-mail prometia um recibo que estava desligado na Stripe, e a etapa 4 do cadastro promete um vídeo que não existe. Página só afirma o que já foi visto funcionando.
 

@@ -13,6 +13,9 @@ passlib[bcrypt]>=1.7.4
 python-dotenv>=1.0.0
 stripe>=7.0.0,<8.0.0
 reportlab>=4.0.0
+# Vinha de carona no reportlab, mas o codigo importa direto:
+# gera as fotos do dossie e le a coordenada de dentro da imagem.
+pillow>=10.0.0
 qrcode>=7.4.2
 polars>=0.20.0
 pytest>=8.0.0

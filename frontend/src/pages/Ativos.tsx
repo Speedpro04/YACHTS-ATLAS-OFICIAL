@@ -5,7 +5,6 @@ import { Ship, Plus, Archive, Anchor, Filter, Search, ChevronRight, X, Upload, C
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import AtivoHub from '../components/AtivoHub'
-import { obterGeo } from '../utils/geo'
 import { COBERTURA_CATS, MAX_FOTOS } from '../config/coberturaFotos'
 
 // Categorias e capacidade vêm da MESMA fonte que a Cobertura Fotográfica usa.
@@ -130,11 +129,13 @@ export default function Ativos() {
       // Fotos de apresentação (vitrine) — enviadas com categoria 'vitrine',
       // separadas da galeria documental de 430.
       if (created?.id && vitrineFiles.length) {
-        const geo = await obterGeo() // GPS do dispositivo (com permissão); null se negado
+        // Sem coordenada do aparelho, de propósito: aqui o arquivo vem do disco,
+        // e onde está quem envia não é onde a foto foi tirada. O servidor lê a
+        // coordenada de dentro da própria imagem, que é a que vale no dossiê.
         for (const file of vitrineFiles) {
           const fd = new FormData()
           fd.append('file', file)
-          await api.documentos.upload(created.id, 'foto', 'vitrine', fd, geo)
+          await api.documentos.upload(created.id, 'foto', 'vitrine', fd)
         }
       }
       setVitrineFiles([])
@@ -184,11 +185,13 @@ export default function Ativos() {
     const lote = files.slice(0, espaco)
     setUploadingFotos(true)
     try {
-      const geo = await obterGeo() // GPS do dispositivo (com permissão); null se negado
+      // Sem coordenada do aparelho, de propósito: aqui o arquivo vem do disco,
+      // e onde está quem envia não é onde a foto foi tirada. O servidor lê a
+      // coordenada de dentro da própria imagem, que é a que vale no dossiê.
       for (const file of lote) {
         const fd = new FormData()
         fd.append('file', file)
-        await api.documentos.upload(novoAtivo.id, 'foto', `galeria_${catKey}`, fd, geo)
+        await api.documentos.upload(novoAtivo.id, 'foto', `galeria_${catKey}`, fd)
       }
       await recarregarGaleria(novoAtivo.id)
     } catch {

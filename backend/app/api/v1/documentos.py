@@ -8,6 +8,7 @@ from app.core.security import get_current_user_id
 from app.core.authz import get_ativo_autorizado
 from app.services.vision_service import classificar_foto, CATEGORIAS as GALERIA_CATS
 from app.services.s3_service import get_s3_service
+from app.services.exif_service import geo_para_selar
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
 import re
@@ -234,12 +235,9 @@ async def upload_documento(
             "status": "verified"
         }
 
-        # Geolocalização do dispositivo no momento do upload (opcional)
-        if latitude is not None and longitude is not None:
-            doc_data["latitude"] = latitude
-            doc_data["longitude"] = longitude
-            doc_data["geo_precisao"] = geo_precisao
-            doc_data["geo_fonte"] = geo_fonte or "dispositivo"
+        # Geolocalização: o lugar da FOTO, não o de quem a enviou.
+        # A regra inteira (e o porquê) está em exif_service.geo_para_selar.
+        doc_data.update(geo_para_selar(contents, latitude, longitude, geo_precisao, geo_fonte))
 
         # Descrição livre do que está catalogado (opcional)
         if descricao and descricao.strip():

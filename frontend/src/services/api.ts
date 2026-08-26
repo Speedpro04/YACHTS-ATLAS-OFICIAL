@@ -259,7 +259,10 @@ export const api = {
         params.set('latitude', String(geo.lat))
         params.set('longitude', String(geo.lng))
         if (typeof geo.acc === 'number' && Number.isFinite(geo.acc)) params.set('geo_precisao', String(geo.acc))
-        params.set('geo_fonte', 'dispositivo')
+        // "captura" = foto tirada na hora pela câmera, e só. O servidor tem
+        // lista fechada e descarta qualquer outro valor — inclusive o
+        // "dispositivo" antigo, que marcava GEO com o endereço de quem enviava.
+        params.set('geo_fonte', 'captura')
       }
       const response = await fetch(`${API_URL}/documentos/upload/${ativoId}?${params.toString()}`, {
         method: 'POST',

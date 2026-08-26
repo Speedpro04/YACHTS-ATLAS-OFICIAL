@@ -3,7 +3,6 @@ import { Ativo } from '../types'
 import { api } from '../services/api'
 import { ArrowLeft, Camera, Upload, Loader2, Lock, Download, ShieldCheck, MapPin } from 'lucide-react'
 import { COBERTURA_CATS, MAX_FOTOS, COBERTURA_PREMIUM, normalizarCategoria } from '../config/coberturaFotos'
-import { obterGeo } from '../utils/geo'
 
 /* Cobertura fotográfica do dossiê — galeria organizada por categoria.
    Barra geral (total/400) + barra por categoria (count/mínimo). */
@@ -46,11 +45,13 @@ export default function CoberturaFotos({ ativo, onBack, readOnly = false }: { at
     const lote = files.slice(0, espaco)
     setUploadingCat(catKey)
     try {
-      const geo = await obterGeo() // GPS do dispositivo (com permissão); null se negado
+      // Sem coordenada do aparelho, de propósito: aqui o arquivo vem do disco,
+      // e onde está quem envia não é onde a foto foi tirada. O servidor lê a
+      // coordenada de dentro da própria imagem, que é a que vale no dossiê.
       for (const file of lote) {
         const fd = new FormData()
         fd.append('file', file)
-        await api.documentos.upload(ativo.id, 'foto', `galeria_${catKey}`, fd, geo)
+        await api.documentos.upload(ativo.id, 'foto', `galeria_${catKey}`, fd)
       }
       await carregar()
     } catch {
