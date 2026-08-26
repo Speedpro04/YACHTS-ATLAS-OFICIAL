@@ -561,9 +561,28 @@ O dossiê do Netuno II — selo **BRONZE** — trazia logo abaixo **"ÍNDICE DE 
 
 O número está certo pela fórmula: `_prontidao` tira da média as categorias sem dado (`if st == "na": continue`), então quatro sistemas conformes de quatro avaliados dão 100%. **Certo pela definição e falso para quem lê.** É a mesma armadilha que motivou renomear "Classificação" para "Índice de Custódia": o número dizia uma coisa e era entendido como outra.
 
-Agora o percentual sai **com o denominador**, logo abaixo da barra: `4 DE 11 SISTEMAS AVALIADOS`. Em cinza e menor que o rótulo — é ressalva, não manchete, mas quem lê o número esbarra nela.
+A primeira tentativa foi pôr o denominador como legenda da mesma barra. O Marcos propôs melhor: **duas barras**, porque são duas perguntas diferentes.
 
-**Regra que fica:** percentual sem denominador promete mais do que mediu. Num documento que sustenta preço de ativo, isso não é detalhe de layout.
+```
+COBERTURA DE VERIFICAÇÃO                     36%     ← varia, escala de cor, mais grossa
+4 DE 11 SISTEMAS COM REGISTRO
+
+CONFORMIDADE                                100%     ← quase sempre 100%, dourada, fina
+4 SISTEMAS VERIFICADOS
+```
+
+A de cima responde *"quanto foi olhado?"*; a de baixo, *"o que foi olhado está bom?"*.
+
+**A ordem é deliberada, e o argumento é dele:** o olho pousa primeiro no topo, e verde é lido como "está tudo bem" antes de qualquer texto ser processado. Com o 100% em cima, o leitor conclui que o barco está íntegro e só depois descobre que sete sistemas nunca foram olhados. A barra que **varia** vem primeiro porque é ela que carrega a informação.
+
+Pelo mesmo motivo a de baixo saiu **dourada em vez de verde** e mais fina: ela é quase sempre 100% — só entra na conta o que tem registro — então não informa nada sozinha e não pode competir por atenção.
+
+```
+Netuno II     36%  vermelha   4 de 11
+Dom Rafael    73%  âmbar      8 de 11
+```
+
+**Regra que fica:** percentual sem denominador promete mais do que mediu. E quando o denominador é informação própria, ele merece indicador próprio — não legenda. Num documento que sustenta preço de ativo, hierarquia visual é conteúdo, não layout.
 
 ### O dossiê não olhava o tipo da embarcação (26/08/2026)
 

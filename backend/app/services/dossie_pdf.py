@@ -174,39 +174,35 @@ class GaugeBar(Flowable):
     denominador promete mais do que mediu.
     """
 
-    def __init__(self, pct, avaliados=None, total=None, width=176 * mm):
+    def __init__(self, pct, rotulo, legenda=None, principal=True, width=176 * mm):
         super().__init__()
         self.pct, self.width = pct, width
-        self.avaliados, self.total = avaliados, total
-
-    def _legenda(self):
-        if self.avaliados is None or not self.total:
-            return None
-        return f"{self.avaliados} DE {self.total} SISTEMAS AVALIADOS"
+        self.rotulo, self.legenda, self.principal = rotulo, legenda, principal
 
     def wrap(self, aw, ah):
-        return self.width, (10 * mm if self._legenda() else 7 * mm)
+        return self.width, (10 * mm if self.legenda else 7 * mm)
 
     def draw(self):
         c = self.canv
-        col = EMERALD if self.pct >= 80 else (AMBER if self.pct >= 50 else ROSE)
-        bar_h = 2.4 * mm
-        legenda = self._legenda()
-        base = 3 * mm if legenda else 0
+        bar_h = 2.4 * mm if self.principal else 1.8 * mm
+        # A barra que VARIA usa a escala de cor; a que é quase sempre 100% sai
+        # em dourado discreto, para não gritar "tudo certo" sem contexto.
+        col = (EMERALD if self.pct >= 80 else (AMBER if self.pct >= 50 else ROSE)) \
+            if self.principal else GOLD_LIGHT
+        base = 3 * mm if self.legenda else 0
         c.saveState()
-        if legenda:
-            # Em cinza e menor que o rótulo: é ressalva, não manchete. Quem
-            # lê o número precisa esbarrar nela, não caçá-la.
-            draw_tracked(c, 0, 0, legenda, SANS_B, 5.5, WHITE_DIM, tracking=1.0)
+        if self.legenda:
+            draw_tracked(c, 0, 0, self.legenda, SANS_B, 5.5, WHITE_DIM, tracking=1.0)
         c.setFillColor(blend(WHITE, NAVY, 0.05))
         c.setStrokeColor(blend(WHITE, NAVY, 0.10))
         c.setLineWidth(0.4)
         c.roundRect(0, base, self.width, bar_h, bar_h / 2, fill=1, stroke=1)
         c.setFillColor(col)
         c.roundRect(0, base, self.width * self.pct / 100.0, bar_h, bar_h / 2, fill=1, stroke=0)
-        draw_tracked(c, 0, base + bar_h + 2.4 * mm, "ÍNDICE DE SEGURANÇA", SANS_B, 6, col, tracking=1.2)
-        c.setFont(SERIF, 13)
-        c.setFillColor(WHITE)
+        draw_tracked(c, 0, base + bar_h + 2.4 * mm, self.rotulo, SANS_B,
+                     6 if self.principal else 5.5, col, tracking=1.2)
+        c.setFont(SERIF, 13 if self.principal else 10)
+        c.setFillColor(WHITE if self.principal else WHITE_DIM)
         c.drawRightString(self.width, base + bar_h + 2.0 * mm, f"{self.pct}%")
         c.restoreState()
 
@@ -1014,11 +1010,31 @@ def _capa(dados: dict, ident: dict) -> list:
         st.append(_kpi_row(tiles))
         st.append(sp(6))
 
+    # DUAS barras, e a ORDEM é deliberada.
+    #
+    # Cobertura em cima porque é ela que varia — e é a primeira coisa em que o
+    # olho pousa que ancora o julgamento. Uma barra verde de 100% no topo faria
+    # o leitor concluir "está tudo bem" antes de processar qualquer texto, e só
+    # depois descobrir que sete sistemas nunca foram olhados.
+    #
+    # Conformidade embaixo, mais fina e em dourado em vez da escala de cor:
+    # ela é quase sempre 100% (só entra na conta o que tem registro), então não
+    # informa nada sozinha e não pode ter o peso visual da outra.
     pront = dados.get("prontidao")
+    avaliados = dados.get("prontidao_avaliados")
+    total = dados.get("prontidao_total")
     if pront is not None:
-        st.append(GaugeBar(pront,
-                           avaliados=dados.get("prontidao_avaliados"),
-                           total=dados.get("prontidao_total")))
+        if avaliados is not None and total:
+            cobertura = round(avaliados / total * 100)
+            st.append(GaugeBar(
+                cobertura, "COBERTURA DE VERIFICAÇÃO",
+                legenda=f"{avaliados} DE {total} SISTEMAS COM REGISTRO",
+                principal=True))
+            st.append(sp(7))
+        st.append(GaugeBar(
+            pront, "CONFORMIDADE",
+            legenda=(f"{avaliados} SISTEMAS VERIFICADOS" if avaliados else None),
+            principal=False))
         st.append(sp(11))
 
     saude = dados.get("saude") or []

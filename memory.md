@@ -1574,3 +1574,19 @@ E o dano não é estético: categoria que nunca poderá ser preenchida vira bura
 **Padrão a repetir:** quando o painel tem uma regra de apresentação por tipo/perfil, perguntar quem MAIS renderiza a mesma informação — dossiê, PDF, página pública, e-mail. A lista de "quem mais mostra isso" é curta e dá para conferir em minutos; descobrir pelo cliente custa muito mais.
 
 Fica aberto o mesmo conserto no `asset_score_service`, que continua contando as 10 categorias fixas — é por isso que um jet ski impecável bate exatamente 90 e nunca tem folga para o Ouro (§46).
+
+### Duas barras, e a ordem foi decisão do Marcos
+
+Eu tinha resolvido o "100% ao lado de BRONZE" pondo o denominador como legenda da mesma barra. Ele propôs melhor: **duas barras**, uma para cobertura e outra para conformidade — porque são duas perguntas diferentes, e uma barra só nunca daria conta.
+
+E depois corrigiu a ordem que eu ia usar, com um argumento que eu não tinha:
+
+> *"deixe a 100% embaixo pq sempre estará verde e o cérebro entende como boa. A amarela, vermelha ou até mesmo verde ficam acima, dando aquela enganada no córtex frontal da pessoa."*
+
+Está certo. O olho pousa primeiro no topo e a cor é processada antes do texto — 100% verde em cima ancoraria "está tudo bem" antes de o leitor descobrir que sete sistemas nunca foram olhados. A barra que **varia** vai primeiro porque é ela que carrega a informação.
+
+Apliquei o mesmo raciocínio na cor: a de baixo saiu **dourada, não verde**, e mais fina. Ela é quase sempre 100% (só entra na conta o que tem registro), então não informa nada sozinha e não pode competir por atenção.
+
+**Padrão a repetir:** em documento que sustenta decisão de compra, **hierarquia visual é conteúdo**. Antes de escolher a ordem de dois indicadores, perguntar qual deles alguém leria se lesse **um só** — esse vai em cima. E indicador que quase nunca varia não merece a cor mais forte da paleta, porque cor forte promete notícia.
+
+**E o padrão de processo:** ele chegou nas duas melhorias — a segunda barra e a ordem — depois de eu ter dado o assunto por resolvido. Quando ele questiona uma solução que já parece pronta, vale reabrir de verdade em vez de defender. Ver [[marcos-trabalha-com-pausas]].
