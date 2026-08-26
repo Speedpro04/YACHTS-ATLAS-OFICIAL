@@ -1,3 +1,4 @@
+- [x] **REV-08 — WEBP entra, e as oito listas de arquivo viram uma**: cada tela decidia sozinha o que aceitava, e elas discordavam — a Documentação e a ficha de serviço recusavam WEBP, a galeria recusava, o cadastro de categoria aceitava qualquer imagem. A mesma foto subia numa tela e era barrada na outra, sem explicação. Agora tudo vem de `utils/arquivos.ts`, e o texto da tela deriva da lista (não dá para prometer um formato que o seletor recusa). Duas exceções ficaram, ditas no código: o botão **Fotografar** (`capture` — quem decide é a câmera do celular) e a conferência de dossiê (só PDF, porque é o que ela confere)
 - [x] **REV-07 — GEO no dossiê passa a significar o que o leitor entende**: a marca GEO vinha da posição do NAVEGADOR no instante do envio, não da foto. No teste do Dom Rafael, 14 imagens baixadas da internet foram seladas em **-22.9206, -45.4517** — o escritório de quem as enviou — e o PDF marcava GEO ao lado delas. Agora o servidor lê a coordenada de dentro da própria imagem (EXIF, Pillow); a do aparelho só entra na câmera ao vivo, onde as duas são a mesma coisa. Sem coordenada confiável, **nenhuma** — `documentos` é append-only, e o errado ficaria selado para sempre. Some junto um dado pessoal que ninguém pediu: o endereço do funcionário em todo arquivo que ele subisse
 - [x] **REV-05 — Aviso ao fundador sai pela instância de marinas**, não pela transacional: a transacional entrega o código de acesso, que é autenticação — quanto menos tráfego passar por ela, menor a chance de o login cair junto com outra coisa
 - [x] **REV-06 — As fotos entram no dossiê**: eram 20 imagens no PDF e **19 eram a mesma logo**. A seção "Registro Fotográfico Certificado" dizia "8 imagens seladas e geolocalizadas" e mostrava uma tabela de contagem. Agora entram todas, com data, marca de geo e prefixo do hash. **Desempenho era o risco real**: 102 s para 8 fotos, porque o PDF é montado 2× (cada foto baixava 2×) e cada download abria conexão TLS nova — 11 KB levava os mesmos 4,7 s que 803 KB. Cache + cliente compartilhado: **102 s → 11 s**
@@ -477,6 +478,35 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### Que arquivo o cofre aceita — 26/08/2026
+
+Marcos, testando o envio: *"WEBP TMB NÃO PODE"*. Não era só o WEBP — era que **ninguém mandava** na regra. Havia **oito** listas de tipo de arquivo espalhadas, cada tela com a sua:
+
+| Tela | Aceitava | WEBP |
+|---|---|---|
+| Documentação | `.pdf,.jpg,.jpeg,.png` | não |
+| Galeria de cobertura | `image/png,image/jpeg` | não |
+| Vitrine e galeria do cadastro | `image/png,image/jpeg` | não |
+| Cofre do ativo | `.pdf,.jpg,.jpeg,.png` | não |
+| Ficha de serviço (`DOC` e `IMG`) | `.pdf,image/png,image/jpeg` | não |
+| Cadastro de categoria | `image/*,.pdf` | sim |
+
+Mesmo arquivo, resposta diferente conforme a porta. A marina não tinha como entender: subia a foto num lugar e era recusada no outro, sem mensagem nenhuma — o seletor simplesmente não mostrava o arquivo.
+
+**WEBP entra porque é foto como qualquer outra.** Mostra o documento igual a um JPG, e é o que celular e site mais produzem hoje. Recusar não protegia nada: fazia a marina converter arquivo à mão.
+
+Agora tudo sai de `utils/arquivos.ts`, e **o texto da tela deriva da lista** — não dá mais para a tela prometer um formato que o seletor recusa, que é o defeito de origem. Vai tipo E extensão juntos: seletor do Windows e de Android antigo às vezes ignora o tipo e só olha o final do nome.
+
+Duas listas ficaram de fora, e agora está dito no código por quê: o botão **Fotografar** usa `image/*` porque com `capture` quem decide o formato é a câmera do celular, e a **conferência de dossiê** aceita só PDF porque é o que ela confere.
+
+**Segunda vez que o mesmo padrão aparece**, depois das cinco validações de telefone: uma regra de negócio copiada em N telas, divergindo em silêncio. Vale procurar as irmãs sempre que uma dessas for corrigida.
+
+**Aberto, achado na varredura:**
+
+- **`RegistroForm` tem duas caixas de upload que não são upload.** Dizem "Clique para adicionar fotos" e "Clique para adicionar recibos", com borda tracejada e cursor de mão — e o componente **não tem nenhum `<input type="file">`**. Clicar não faz nada. Está montado em `Registros.tsx:219`
+- **O limite de 10 MB é só texto.** A tela promete "até 10MB" e nada no navegador confere tamanho
+- **O servidor não valida tipo nenhum**: `documentos.py` grava o `content_type` que chegar. A lista do navegador é conforto, não segurança
 
 **Feito em 25/08/2026 — a câmera do celular ligada.** O `SecureCameraUpload` existia completo, com `capture="environment"` (abre a câmera traseira), e **nenhum arquivo o importava**. Quinto caso do mesmo padrão no mesmo dia: componente pronto, caminho morto. Plugado no cabeçalho do ativo (`AtivoHub`), como botão **Fotografar**, e escondido quando `readOnly` — que é o Portal do Proprietário. A regra de custódia deixa de ser combinado e passa a ser o que a tela faz.
 

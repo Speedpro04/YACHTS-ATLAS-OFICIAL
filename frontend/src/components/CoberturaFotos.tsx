@@ -3,6 +3,7 @@ import { Ativo } from '../types'
 import { api } from '../services/api'
 import { ArrowLeft, Camera, Upload, Loader2, Lock, Download, ShieldCheck, MapPin } from 'lucide-react'
 import { COBERTURA_CATS, MAX_FOTOS, COBERTURA_PREMIUM, normalizarCategoria } from '../config/coberturaFotos'
+import { ACEITA_IMAGEM } from '../utils/arquivos'
 
 /* Cobertura fotográfica do dossiê — galeria organizada por categoria.
    Barra geral (total/400) + barra por categoria (count/mínimo). */
@@ -143,7 +144,7 @@ export default function CoberturaFotos({ ativo, onBack, readOnly = false }: { at
                     subindo ? 'border-[#c5a059]/40 bg-[#c5a059]/5 text-[#c5a059] cursor-default' :
                     'border-[#c5a059]/30 text-[#c5a059] hover:bg-[#c5a059] hover:text-[#010c20] cursor-pointer'
                   }`}>
-                    <input type="file" className="hidden" multiple accept="image/png,image/jpeg" disabled={lotado || subindo} onChange={(e) => handleUpload(c.key, e)} />
+                    <input type="file" className="hidden" multiple accept={ACEITA_IMAGEM} disabled={lotado || subindo} onChange={(e) => handleUpload(c.key, e)} />
                     {subindo ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                     {subindo ? 'Enviando' : 'Adicionar'}
                   </label>

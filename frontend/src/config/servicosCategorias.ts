@@ -10,6 +10,8 @@
  * Fase 1: Manutenção (piloto). Demais abas entram no mesmo molde.
  */
 
+import { ACEITA_DOCUMENTO, ACEITA_IMAGEM } from '../utils/arquivos'
+
 export type ServicoFieldType = 'text' | 'number' | 'date' | 'time' | 'select' | 'textarea' | 'checkbox'
 
 export interface ServicoField {
@@ -51,8 +53,8 @@ export interface ServicoConfig {
   uploads: ServicoUploadSlot[]
 }
 
-const DOC = '.pdf,image/png,image/jpeg'
-const IMG = 'image/png,image/jpeg'
+const DOC = ACEITA_DOCUMENTO
+const IMG = ACEITA_IMAGEM
 const VID = 'video/mp4,video/quicktime,video/webm,.mov,.qt'
 
 // ── FICHA PADRÃO ────────────────────────────────────────────────────

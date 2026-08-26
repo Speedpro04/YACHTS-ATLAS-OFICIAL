@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import AtivoHub from '../components/AtivoHub'
 import { COBERTURA_CATS, MAX_FOTOS } from '../config/coberturaFotos'
+import { ACEITA_IMAGEM } from '../utils/arquivos'
 
 // Categorias e capacidade vêm da MESMA fonte que a Cobertura Fotográfica usa.
 // Esta lista era uma CÓPIA, com o MAX_FOTOS chumbado logo abaixo — e foi assim
@@ -375,7 +376,7 @@ export default function Ativos() {
               <label className={`block border border-dashed rounded-sm p-8 text-center transition-all ${
                 vitrineFiles.length >= MAX_VITRINE ? 'border-white/10 opacity-40 pointer-events-none' : 'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'
               }`}>
-                <input type="file" className="hidden" multiple accept="image/png,image/jpeg" disabled={vitrineFiles.length >= MAX_VITRINE} onChange={handleVitrineSelect} />
+                <input type="file" className="hidden" multiple accept={ACEITA_IMAGEM} disabled={vitrineFiles.length >= MAX_VITRINE} onChange={handleVitrineSelect} />
                 {vitrineFiles.length >= MAX_VITRINE ? (
                   <p className="text-white/50 text-xs font-black uppercase tracking-widest">Limite de {MAX_VITRINE} fotos de apresentação atingido</p>
                 ) : (
@@ -463,7 +464,7 @@ export default function Ativos() {
               cheio ? 'border-white/10 opacity-40 pointer-events-none' :
               'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'
             }`}>
-              <input type="file" className="hidden" multiple accept="image/png,image/jpeg" disabled={uploadingFotos || cheio} onChange={(e) => handleFotos(catAtiva, e)} />
+              <input type="file" className="hidden" multiple accept={ACEITA_IMAGEM} disabled={uploadingFotos || cheio} onChange={(e) => handleFotos(catAtiva, e)} />
               {uploadingFotos ? (
                 <div className="flex flex-col items-center">
                   <Loader2 size={26} className="text-[#c5a059] animate-spin mb-3" />

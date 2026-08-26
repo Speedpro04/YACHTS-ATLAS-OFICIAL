@@ -7,6 +7,7 @@ import {
 import { supabase, api } from '../services/api'
 import ConfirmarSelo from './ConfirmarSelo'
 import type { Categoria, CategoriaField } from '../config/dossieCategorias'
+import { ACEITA_DOCUMENTO } from '../utils/arquivos'
 
 // Mapa nome (config) -> ícone lucide
 const ICONES: Record<string, React.ElementType> = {
@@ -211,7 +212,7 @@ export default function CategoriaForm({ categoria, ativoId, ativoNome, onClose, 
                   {arquivos.length > 0 ? <span className="text-[#c5a059] font-bold">{arquivos.length} arquivo(s) selado(s)</span> : 'PDF, JPG ou PNG — datado e selado com SHA-256'}
                 </p>
               </div>
-              <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf" onChange={handleUpload} />
+              <input ref={fileRef} type="file" className="hidden" accept={ACEITA_DOCUMENTO} onChange={handleUpload} />
 
               {arquivos.length > 0 && (
                 <div className="mt-4 space-y-2">

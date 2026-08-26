@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { Ativo, Documento } from '../types'
 import { FileText, Upload, Shield, Download, CheckCircle, Search, FileCheck } from 'lucide-react'
+import { ACEITA_DOCUMENTO, ROTULO_DOCUMENTO, TAMANHO_MAXIMO_MB } from '../utils/arquivos'
 
 export default function Documentos() {
   const [ativos, setAtivos] = useState<Ativo[]>([])
@@ -132,7 +133,7 @@ export default function Documentos() {
                 onChange={handleUpload}
                 disabled={uploading || !selectedAtivo}
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept={ACEITA_DOCUMENTO}
               />
               {uploading ? (
                 <div className="flex flex-col items-center">
@@ -143,7 +144,7 @@ export default function Documentos() {
                 <>
                   <Upload size={32} className="mx-auto text-white/10 group-hover:text-[#c5a059] transition-all mb-4" />
                   <p className="text-white text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-[#c5a059] transition-all">Enviar Documento</p>
-                  <p className="text-white/20 text-[10px] uppercase tracking-widest">PDF, JPG, PNG até 10MB</p>
+                  <p className="text-white/20 text-[10px] uppercase tracking-widest">{ROTULO_DOCUMENTO} até {TAMANHO_MAXIMO_MB}MB</p>
                 </>
               )}
             </label>

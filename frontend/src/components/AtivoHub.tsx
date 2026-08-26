@@ -15,6 +15,7 @@ import RetificarRegistro from './RetificarRegistro'
 import CategoriaForm from './CategoriaForm'
 import { SERVICOS } from '../config/servicosCategorias'
 import { CATEGORIAS as DOSSIE_CATS, type Categoria as DossieCat } from '../config/dossieCategorias'
+import { ACEITA_DOCUMENTO, ROTULO_DOCUMENTO, TAMANHO_MAXIMO_MB } from '../utils/arquivos'
 
 type Health = 'ok' | 'warning' | 'critical' | 'info' | 'na'
 
@@ -569,7 +570,7 @@ function UploadSecao({ categoria, ativo, onBack, readOnly = false }: { categoria
       <label className={`block border border-dashed rounded-sm p-10 text-center transition-all ${
         uploading ? 'border-[#c5a059]/40 bg-[#c5a059]/5 pointer-events-none cursor-default'
         : 'border-white/10 hover:border-[#c5a059]/50 bg-white/[0.02] cursor-pointer'}`}>
-        <input type="file" className="hidden" multiple accept=".pdf,.jpg,.jpeg,.png" disabled={uploading} onChange={handleFiles} />
+        <input type="file" className="hidden" multiple accept={ACEITA_DOCUMENTO} disabled={uploading} onChange={handleFiles} />
         {uploading ? (
           <div className="flex flex-col items-center">
             <div className="animate-spin w-8 h-8 border-2 border-[#c5a059] border-t-transparent rounded-full mb-4" />
@@ -579,7 +580,7 @@ function UploadSecao({ categoria, ativo, onBack, readOnly = false }: { categoria
           <>
             <Upload size={32} className="mx-auto text-white/15 mb-4" />
             <p className="text-white text-xs font-black uppercase tracking-widest mb-1">Enviar Documento</p>
-            <p className="text-white/25 text-[10px] uppercase tracking-widest">PDF, PNG, JPG até 10MB · pode selecionar várias</p>
+            <p className="text-white/25 text-[10px] uppercase tracking-widest">{ROTULO_DOCUMENTO} até {TAMANHO_MAXIMO_MB}MB · pode selecionar várias</p>
           </>
         )}
       </label>

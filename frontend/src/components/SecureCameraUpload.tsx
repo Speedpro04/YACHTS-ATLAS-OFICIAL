@@ -150,9 +150,11 @@ export default function SecureCameraUpload({ ativoId, onUploadSuccess, onClose }
               </div>
 
               {/* Input escondido mágico que aciona a câmera no mobile */}
+              {/* accept fora da lista comum de propósito: com capture, quem decide
+                  o formato é a câmera do próprio celular, não nós. */}
               <input 
                 type="file" 
-                accept="image/*" 
+                accept="image/*"
                 capture="environment" 
                 ref={fileInputRef}
                 className="hidden"

@@ -115,6 +115,8 @@ export default function ConferirDocumento() {
                 )}
               </>
             )}
+            {/* Só PDF de propósito: esta tela confere o dossiê emitido,
+                que é sempre PDF. Imagem aqui não teria o que conferir. */}
             <input ref={inputRef} type="file" accept="application/pdf,.pdf" className="hidden"
                    onChange={(ev) => { const f = ev.target.files?.[0]; if (f) conferir(f) }} />
           </div>
