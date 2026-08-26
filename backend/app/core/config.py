@@ -170,6 +170,12 @@ class Settings(BaseSettings):
     TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
     TRADITIONAL_PRICE_MONTHLY: int = 250
 
+    # Os mesmos precos cobrados em real, travados em 5,00 (ver BRL_TAXA_TRAVADA).
+    # Numero redondo de proposito: "multiplica por 5" e conta que o gerente faz
+    # de cabeca, e clareza numa venda de 20 vagas vale mais que 3% de cambio.
+    LAUNCH_PRICE_MONTHLY_BRL: int = 1000
+    TRADITIONAL_PRICE_MONTHLY_BRL: int = 1250
+
     # Meses de dossiê 100% integral de cada oferta. Nenhum código lê estes dois
     # hoje: eles existem para o modelo de cobrança ficar escrito INTEIRO aqui,
     # ao lado dos preços, e não metade aqui e metade nos documentos — que era o
@@ -211,6 +217,28 @@ class Settings(BaseSettings):
         "STRIPE_LINK_MARINA_OFICIAL",
         "https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01",
     )
+
+    # Os mesmos dois programas cobrados em real. A marina brasileira paga sem
+    # IOF, sem taxa de compra internacional, e com bandeira nacional (Elo,
+    # Hipercard) — que em dolar simplesmente nao passa. O preco anunciado nas
+    # paginas continua sendo o dolar; o real e forma de pagamento, nao oferta.
+    #
+    # Vazio enquanto o link nao existir: link vazio nao identifica programa
+    # nenhum (ver _programa_do_checkout), entao a ausencia e inofensiva.
+    STRIPE_LINK_MARINA_FUNDADORA_BRL: str = os.getenv(
+        "STRIPE_LINK_MARINA_FUNDADORA_BRL",
+        "https://buy.stripe.com/8x2bJ10uFe281O9eeY1wY0b",   # R$ 1.000/mes
+    )
+    STRIPE_LINK_MARINA_OFICIAL_BRL: str = os.getenv(
+        "STRIPE_LINK_MARINA_OFICIAL_BRL",
+        "https://buy.stripe.com/fZu9ATcdn0bi2Sd5Is1wY0c",   # R$ 1.250/mes
+    )
+
+    # Cambio travado no link em real. Congela por 12 meses (o prazo do preco de
+    # fundadora), entao nao acompanha o dolar. Acima de 5,50 a defasagem passa
+    # de 10% e vale criar preco novo — ninguem avisa, tem que olhar.
+    BRL_TAXA_TRAVADA: float = 5.00
+    BRL_TAXA_REVISAR_ACIMA_DE: float = 5.50
 
     # Inadimplência: 20 dias após a primeira cobrança recusada o acesso é
     # cortado. Pagou, volta sozinho — ver app/core/acesso.py.

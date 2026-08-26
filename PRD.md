@@ -1,3 +1,4 @@
+- [x] **REV-09 — A marina brasileira paga em real, e a vaga de fundadora para de depender do valor**: em 19/08/2026 um Visa recusou uma cobrança de US$ 250 com **"moeda não aceita"** — cartão brasileiro costuma vir com compra internacional bloqueada, e Elo/Hipercard são nacionais, em dólar não passam de jeito nenhum. O preço anunciado continua em dólar; o servidor escolhe o link em real quando a UF é brasileira. Junto foi o defeito que isso teria criado: a vaga de fundadora era reconhecida por `moeda == usd E valor == 200`, então pagamento em real entraria **sem ocupar vaga e sem os 18 meses de dossiê**. Agora vem do **link de origem**
 - [x] **REV-08 — WEBP entra, e as oito listas de arquivo viram uma**: cada tela decidia sozinha o que aceitava, e elas discordavam — a Documentação e a ficha de serviço recusavam WEBP, a galeria recusava, o cadastro de categoria aceitava qualquer imagem. A mesma foto subia numa tela e era barrada na outra, sem explicação. Agora tudo vem de `utils/arquivos.ts`, e o texto da tela deriva da lista (não dá para prometer um formato que o seletor recusa). Duas exceções ficaram, ditas no código: o botão **Fotografar** (`capture` — quem decide é a câmera do celular) e a conferência de dossiê (só PDF, porque é o que ela confere)
 - [x] **REV-07 — GEO no dossiê passa a significar o que o leitor entende**: a marca GEO vinha da posição do NAVEGADOR no instante do envio, não da foto. No teste do Dom Rafael, 14 imagens baixadas da internet foram seladas em **-22.9206, -45.4517** — o escritório de quem as enviou — e o PDF marcava GEO ao lado delas. Agora o servidor lê a coordenada de dentro da própria imagem (EXIF, Pillow); a do aparelho só entra na câmera ao vivo, onde as duas são a mesma coisa. Sem coordenada confiável, **nenhuma** — `documentos` é append-only, e o errado ficaria selado para sempre. Some junto um dado pessoal que ninguém pediu: o endereço do funcionário em todo arquivo que ele subisse
 - [x] **REV-05 — Aviso ao fundador sai pela instância de marinas**, não pela transacional: a transacional entrega o código de acesso, que é autenticação — quanto menos tráfego passar por ela, menor a chance de o login cair junto com outra coisa
@@ -478,6 +479,68 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### Moeda: o preço é em dólar, a cobrança da marina brasileira é em real — 26/08/2026
+
+**A evidência que abriu o assunto.** Em 19/08/2026, uma cobrança real de **US$ 250,00** foi recusada com o motivo **"Moeda não aceita"**. Dois minutos depois, o mesmo cartão pagou **R$ 1,00** sem problema. Não é o Stripe nem a conta: é o banco emissor recusando cobrança em moeda estrangeira — cartão brasileiro costuma vir com compra internacional **bloqueada por padrão**, e quem desbloqueia é o titular, no app do banco. Gerente de marina não faz isso no meio do checkout; ele fecha a aba.
+
+**E venda perdida assim não aparece em lugar nenhum.** Não chega e-mail, não entra no painel. Some.
+
+**O diagnóstico levou duas hipóteses erradas antes da certa.** Primeiro achei que Adaptive Pricing não valia para assinatura — a própria tela do Stripe desmentiu, mostrando "Adaptive Pricing: Ativado" num preço recorrente. A resposta estava num dado que eu já tinha na tela e não tinha lido:
+
+```
+USD 200.00   outras moedas: nenhuma
+USD 250.00   outras moedas: nenhuma
+```
+
+**Não existia real cadastrado para converter.** Os dois preços do Atlas eram os únicos em dólar de uma conta cheia de preços em real — por isso eram os únicos que apareciam em dólar.
+
+**A decisão do Marcos:** o projeto é em dólar desde o início e continua. O real é **forma de pagamento, não oferta diferente** — as páginas seguem anunciando US$ 200 e US$ 250.
+
+| | dólar | real | trava |
+|---|---|---|---|
+| Lançamento | US$ 200/mês | R$ 1.000/mês | 5,00 |
+| Oficial | US$ 250/mês | R$ 1.250/mês | 5,00 |
+
+Números redondos de propósito, decisão dele: *"multiplica por 5"* é conta que o gerente faz de cabeça, e clareza numa venda de 20 vagas vale mais que os 3% de câmbio. Travar em 5,00 com o dólar a 5,15 custa cerca de **$1.400** nas 20 fundadoras ao longo dos 12 meses — e a resposta dele encerrou o assunto: *"cara hj eu não ganho nada"*. 3% de zero é zero.
+
+**A marina não escolhe moeda.** O formulário já coleta a UF (preenchida pelo CEP), e o servidor escolhe o link — `leads._checkout`. Escolha é onde a pessoa erra ou desiste; e a explicação do valor já está escrita na descrição do próprio link do Stripe. Link em real ainda não criado cai no dólar: melhor cobrar na moeda de sempre que mandar a marina para uma URL que não existe.
+
+**Duas coisas que ninguém tinha contado na decisão:**
+
+- **O IOF não é taxa do Stripe.** São 4,38% de imposto federal, cobrados pelo banco do cliente. Um "$250" vira ~R$ 1.450 na fatura, e a marina não pensa "IOF" — pensa que foi cobrada a mais. Primeira fatura é onde a confiança nasce ou morre.
+- **Bandeiras.** O checkout em dólar mostrava duas bandeiras; o em real mostra cinco. **Elo e Hipercard só existem em real** — marina com cartão Elo não conseguia comprar de jeito nenhum, nem liberando compra internacional. É argumento melhor que os 3% de câmbio, e não estava na conta.
+
+#### O defeito que a venda em real teria criado
+
+A vaga de fundadora era reconhecida assim:
+
+```
+metadata.programa == "marina_fundadora"    OU    moeda == usd E valor == 200
+```
+
+Pagamento em real chega como `brl 1000`. **Falha nos dois.** A marina pagaria, entraria no sistema, e não ocuparia vaga nem ganharia os 18 meses de dossiê — sem erro nenhum em lugar algum. Pagou e não recebeu.
+
+**E o sintoma já estava no banco desde 19/08, visível, sem ninguém ter lido:**
+
+```
+marinas_fundadoras
+  Marina Pereira            20/08    stripe_checkout: null
+  Marco Henrique Pereira    19/08    stripe_checkout: null
+```
+
+Campo vazio nas duas significa que **nenhuma veio de pagamento**. O caminho *pagar → ocupar vaga* nunca rodou inteiro, nem uma vez, em nenhuma moeda.
+
+**Agora o programa vem do link de origem** (`stripe_service._programa_do_checkout`), em duas provas: primeiro `metadata.programa`, se o link tiver sido marcado no painel; depois de qual link o checkout veio, resolvido pela API e guardado em memória. A segunda existe porque a primeira depende de quatro links marcados à mão — e um esquecido significa marina que paga e não vira fundadora, em silêncio.
+
+O `usd 200` virou último recurso, só para checkout que não vem de Payment Link. Continua exigindo dólar: `R$ 200` e `US$ 200` são o mesmo `200.0` e valem coisas bem diferentes, e a conta é da Axos Hub, que vende outros produtos no mesmo webhook.
+
+#### Aberto
+
+- **O câmbio congela.** O valor em real não acompanha o dólar. Enquanto estiver abaixo de **5,50** a defasagem é pequena; acima disso já são 10% e vale criar preço novo. **Ninguém avisa** — preço congelado não reclama, só vai ficando defasado em silêncio. Régua em `config.BRL_TAXA_REVISAR_ACIMA_DE`. Trocar o preço **não mexe em quem já assinou**, e para as fundadoras isso está certo: o preço delas é fixo por 12 meses, é o que foi prometido.
+- **Um Payment Link errado, em Avulso**, foi criado durante os testes e precisa ser desativado no painel. Ele cobra R$ 1.250 **uma vez** — quem comprar por ele fica com acesso vitalício por um pagamento só, e a descrição diz "Assinatura mensal", então a razão seria dela.
+- **As cinco faixas de dossiê avulso** (US$ 100 a 400, do dono do ativo) continuam só em dólar. Não urge: as fundadoras têm dossiê 100% incluso por 18 meses, então esses links quase não são usados no começo.
+- **Marcar os quatro links** com `programa` no painel. Não é mais obrigatório — o reconhecimento pelo link cobre —, mas é a prova mais forte das duas.
 
 ### Que arquivo o cofre aceita — 26/08/2026
 

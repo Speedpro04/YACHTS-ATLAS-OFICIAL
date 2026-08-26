@@ -612,6 +612,73 @@ class StripeService:
             logger.error(f"Falha ao achar o dono da assinatura {subscription_id}: {e}")
             return None
 
+    # plink -> url. Payment Link nao troca de URL depois de criado, entao uma
+    # consulta por link basta para a vida do processo.
+    _URL_DO_LINK: Dict[str, str] = {}
+
+    def _url_do_payment_link(self, session) -> Optional[str]:
+        """
+        A URL do Payment Link que originou este checkout, ou None.
+
+        O evento traz so o id (`plink_...`), e o que temos guardado na
+        configuracao sao as URLs. Best-effort: falhando a consulta, devolve None
+        e quem chama cai nas outras provas.
+        """
+        plink = getattr(session, "payment_link", None)
+        if not plink:
+            return None
+        plink_id = plink if isinstance(plink, str) else getattr(plink, "id", None)
+        if not plink_id:
+            return None
+        if plink_id in self._URL_DO_LINK:
+            return self._URL_DO_LINK[plink_id]
+        try:
+            url = stripe.PaymentLink.retrieve(plink_id).url
+        except Exception as e:
+            logger.warning(f"Nao consegui ler o Payment Link {plink_id}: {e}")
+            return None
+        self._URL_DO_LINK[plink_id] = url
+        return url
+
+    @staticmethod
+    def _programas_por_link() -> Dict[str, str]:
+        """
+        De qual link veio -> qual programa.
+
+        Link nao configurado fica de fora: string vazia como chave casaria com
+        qualquer coisa e daria vaga de fundadora para quem nao comprou.
+        """
+        pares = (
+            (settings.STRIPE_LINK_MARINA_FUNDADORA, "marina_fundadora"),
+            (settings.STRIPE_LINK_MARINA_FUNDADORA_BRL, "marina_fundadora"),
+            (settings.STRIPE_LINK_MARINA_OFICIAL, "marina_oficial"),
+            (settings.STRIPE_LINK_MARINA_OFICIAL_BRL, "marina_oficial"),
+        )
+        return {u.strip(): programa for u, programa in pares if u and u.strip()}
+
+    def _programa_do_checkout(self, session, metadata: Optional[dict]) -> Optional[str]:
+        """
+        Qual programa foi comprado — sem depender de moeda nem de valor.
+
+        Duas provas, nesta ordem:
+
+        1. `metadata.programa`, se o Payment Link foi marcado no painel. E
+           intencao declarada, ganha de tudo.
+        2. De qual link o checkout veio. Funciona sem ninguem configurar nada,
+           e sobrevive a troca de preco e de moeda.
+
+        A segunda existe porque a primeira depende de quatro links marcados a
+        mao no painel — e um esquecido significa marina que paga e nao vira
+        fundadora, sem erro nenhum aparecendo.
+        """
+        declarado = (metadata or {}).get("programa")
+        if declarado:
+            return declarado
+        url = self._url_do_payment_link(session)
+        if url:
+            return self._programas_por_link().get(url.strip())
+        return None
+
     def _handle_checkout_completed(self, session: stripe.checkout.Session) -> Dict[str, Any]:
         """Handle checkout session completed"""
         metadata = session.metadata
@@ -716,24 +783,24 @@ class StripeService:
         # Programa Marinas Fundadoras: cadastra/ocupa a vaga automaticamente,
         # keyado pelo e-mail do cliente. Best-effort — nunca derruba o webhook.
         #
-        # O metadata `programa` so chega se o Payment Link tiver sido configurado
-        # com ele no painel do Stripe. Faltando ele, a vaga nunca era ocupada,
-        # marinas_fundadoras ficava em zero e _oferta_marina continuaria
-        # mandando TODA marina seguinte para o link de US$ 200 — as 20 vagas
-        # nunca esgotavam. Por isso o valor pago tambem vale como prova: uma
-        # assinatura de US$ 200/mes e, por definicao, preco de fundadora.
-        #
-        # A MOEDA entra na comparacao junto com o valor. Numero solto nao
-        # identifica preco: R$ 200,00 e US$ 200,00 sao o mesmo `200.0`, e
-        # valem coisas bem diferentes. Como a conta e da Axos Hub e o webhook
-        # e por conta, qualquer produto da casa cobrado a R$ 200,00/mes cairia
-        # aqui como marina fundadora. O metadata `programa` continua valendo
-        # sozinho: ali a intencao foi declarada, nao inferida.
+        # QUEM comprou vem do link de origem, nao do valor pago — ver
+        # _programa_do_checkout. Foi o que a venda em real quebrou: a marina
+        # brasileira paga R$ 1.000, a regra procurava `usd 200`, e ela entrava
+        # no sistema sem ocupar vaga nem ganhar os 18 meses de dossie. Pagou e
+        # nao recebeu, sem erro nenhum aparecendo em lugar algum.
+        programa = self._programa_do_checkout(session, metadata)
+
+        # Ultimo recurso, so para checkout que nao veio de Payment Link (sessao
+        # criada pela API). Continua exigindo dolar: numero solto nao identifica
+        # preco — R$ 200,00 e US$ 200,00 sao o mesmo `200.0` e valem coisas bem
+        # diferentes, e a conta e da Axos Hub, que vende outros produtos no
+        # mesmo webhook.
         valor_pago = (session.amount_total or 0) / 100
         moeda = (getattr(session, "currency", None) or "").lower()
         e_fundadora = (
-            (metadata or {}).get("programa") == "marina_fundadora"
-            or (e_assinatura
+            programa == "marina_fundadora"
+            or (programa is None
+                and e_assinatura
                 and payment_type != "dossier"
                 and moeda == settings.PRICE_CURRENCY
                 and valor_pago == float(settings.LAUNCH_PRICE_MONTHLY))

@@ -720,6 +720,16 @@ export default function RegistroMarina() {
                      Após o pagamento, você recebe um <strong className="text-white/60 font-semibold">e-mail de
                      confirmação</strong> e seu acesso é liberado imediatamente.
                    </p>
+
+                   {/* O preço é em dólar, mas marina brasileira é cobrada em real —
+                       o servidor escolhe o link pela UF (ver leads._checkout). Sem
+                       dizer isso aqui, ela vê US$ 250 na tela e R$ 1.250 no checkout
+                       e acha que trocaram o preço no meio do caminho. */}
+                   <p className="mt-4 text-center text-[11px] leading-relaxed text-white/30 max-w-md mx-auto">
+                     Marina no Brasil? A cobrança é feita em <strong className="text-white/50 font-semibold">reais
+                     — R$ 1.250/mês</strong>, valor equivalente, <strong className="text-white/50 font-semibold">sem
+                     IOF</strong> nem taxa de compra internacional.
+                   </p>
                 </div>
               </div>
             </form>

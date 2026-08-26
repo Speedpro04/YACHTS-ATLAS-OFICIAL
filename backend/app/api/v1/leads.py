@@ -49,17 +49,52 @@ ORIGENS_DE_LANCAMENTO = frozenset({"lancamento", "lançamento", "lp-fundadoras",
 # links para mandar a marina bloqueada ao checkout do preço que ela contratou.
 LINK_MARINA_FUNDADORA = settings.STRIPE_LINK_MARINA_FUNDADORA
 LINK_MARINA_OFICIAL = settings.STRIPE_LINK_MARINA_OFICIAL
+LINK_MARINA_FUNDADORA_BRL = settings.STRIPE_LINK_MARINA_FUNDADORA_BRL
+LINK_MARINA_OFICIAL_BRL = settings.STRIPE_LINK_MARINA_OFICIAL_BRL
+
+UFS_DO_BRASIL = frozenset({
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS",
+    "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC",
+    "SE", "SP", "TO",
+})
 
 
-def _oferta_oficial() -> dict:
+def _checkout(fundadora: bool, uf: str | None) -> tuple[str, str]:
+    """
+    Qual link de pagamento abrir, e em que moeda. Devolve (url, moeda).
+
+    Marina brasileira vai para o link em real. Nao e desconto: e o mesmo preco
+    sem os 4,38% de IOF e sem o spread do banco, que nao vao para nos — vao
+    para o governo e para o cartao dela. E cartao Elo e Hipercard, comuns em
+    conta empresarial brasileira, sao NACIONAIS: em dolar nao passam de jeito
+    nenhum, nem liberando compra internacional. Em 19/08/2026 um Visa recusou
+    uma cobranca de US$ 250 com "moeda nao aceita" — foi o que trouxe isto aqui.
+
+    O preco anunciado nas paginas continua em dolar. O real e forma de
+    pagamento, nao oferta diferente.
+
+    Link em real vazio (ainda nao criado) cai no dolar: melhor cobrar na moeda
+    de sempre que mandar a marina para uma URL que nao existe.
+    """
+    estado = (uf or "").strip().upper()
+    brasileira = estado in UFS_DO_BRASIL
+    em_real = LINK_MARINA_FUNDADORA_BRL if fundadora else LINK_MARINA_OFICIAL_BRL
+    if brasileira and em_real.strip():
+        return em_real.strip(), "brl"
+    return (LINK_MARINA_FUNDADORA if fundadora else LINK_MARINA_OFICIAL), "usd"
+
+
+def _oferta_oficial(uf: str | None = None) -> dict:
     """Oferta do site oficial: US$ 250/mês, sem vaga fundadora envolvida."""
+    url, moeda = _checkout(fundadora=False, uf=uf)
     return {
         "oferta": "oficial",
         "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
         "uf": None,
         "vagas_restantes": None,
         "motivo": "fora_da_campanha_de_lancamento",
-        "checkout_url": LINK_MARINA_OFICIAL,
+        "checkout_url": url,
+        "moeda_cobranca": moeda,
         "reserva_minutos": None,
         "reserva_expira_em": None,
     }
@@ -86,7 +121,7 @@ def _oferta_marina(supabase, data) -> dict:
     # em SC/SP/RJ/ES/BA e mesmo havendo vaga livre — senao as 20 vagas somem
     # para quem nunca viu a campanha, e a exclusividade da LP nao vale nada.
     if (getattr(data, "origem", None) or "").strip().lower() not in ORIGENS_DE_LANCAMENTO:
-        return _oferta_oficial()
+        return _oferta_oficial(getattr(data, "state", None))
 
     try:
         res = supabase.rpc("reservar_vaga_fundadora", {
@@ -118,6 +153,7 @@ def _oferta_marina(supabase, data) -> dict:
             datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_DE_RESERVA)
         ).isoformat()
 
+    url, moeda = _checkout(fundadora, data.state)
     return {
         "oferta": "fundadora" if fundadora else "oficial",
         "preco_mensal": (settings.LAUNCH_PRICE_MONTHLY if fundadora
@@ -125,7 +161,8 @@ def _oferta_marina(supabase, data) -> dict:
         "uf": reserva.get("uf") or (data.state or "").strip().upper() or None,
         "vagas_restantes": reserva.get("vagas_restantes"),
         "motivo": reserva.get("motivo"),
-        "checkout_url": LINK_MARINA_FUNDADORA if fundadora else LINK_MARINA_OFICIAL,
+        "checkout_url": url,
+        "moeda_cobranca": moeda,
         "reserva_minutos": MINUTOS_DE_RESERVA if expira_em else None,
         "reserva_expira_em": expira_em,
     }
