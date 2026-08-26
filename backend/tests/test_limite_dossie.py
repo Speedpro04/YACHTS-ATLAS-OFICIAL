@@ -109,3 +109,44 @@ def test_banco_fora_do_ar_nao_trava_a_marina(monkeypatch):
     s = dossie._saldo_dossie("YA-IATE-2020-XXXX")
     assert s["permitido"] is True
     assert s["usados"] == 0
+
+
+# --------------------------------------------------------------------------
+# Categorias de saúde por tipo de embarcação
+# --------------------------------------------------------------------------
+
+def test_barco_a_motor_nao_tem_velame():
+    """
+    Um Fibrafort Focker saiu com "VELAME & RIGGING · NÃO AVALIADO" no relatório
+    entregue ao comprador. Categoria que nunca poderá ser preenchida entra na
+    conta como buraco permanente e faz o barco parecer incompleto por algo que
+    não existe nele.
+    """
+    from app.services.dossie_data import categorias_do_tipo
+    for tipo in ("lancha", "iate", "barco_pesca"):
+        chaves = [c for c, _ in categorias_do_tipo(tipo)]
+        assert "velame" not in chaves, tipo
+        assert "motor" in chaves, tipo
+
+
+def test_veleiro_tem_velame_no_lugar_do_motor():
+    from app.services.dossie_data import categorias_do_tipo
+    chaves = [c for c, _ in categorias_do_tipo("veleiro")]
+    assert "velame" in chaves
+    assert "motor" not in chaves
+
+
+def test_jetski_nao_tem_interior_nem_pintura():
+    """O painel já escondia as duas abas; o dossiê continuava cobrando."""
+    from app.services.dossie_data import categorias_do_tipo
+    chaves = [c for c, _ in categorias_do_tipo("jetski")]
+    assert "interior" not in chaves
+    assert "pintura" not in chaves
+    assert "velame" not in chaves
+
+
+def test_tipo_desconhecido_cai_no_barco_a_motor():
+    """Sem tipo, o padrão é o caso comum — nunca inventar velame."""
+    from app.services.dossie_data import categorias_do_tipo
+    for tipo in (None, "", "coisa_nova"):
+        assert "velame" not in [c for c, _ in categorias_do_tipo(tipo)]

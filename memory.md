@@ -1542,3 +1542,35 @@ O `track()` faz letter-spacing com espaço **não-quebrável**. Então o ReportL
 Medido depois: os **três** graus estouravam os 62 mm (65,0 / 69,1 / 71,0). Não era um caso isolado do SILVER — era todo dossiê emitido.
 
 **Padrão a repetir:** largura fixa em elemento que contém texto variável é defeito esperando o texto certo. A caixa acompanha o conteúdo (`stringWidth` + teto), não o contrário. E medir os **três** casos, não só o que apareceu.
+
+---
+
+## 54. Dois números se contradizendo na mesma página
+**Data:** 26/08/2026
+
+Apontei dois problemas no dossiê do Netuno II e o Marcos mandou consertar os dois com uma frase que resume o dia: *"estamos justamente acertando essas coisas, para que fique mais coerente possível nosso sistema — a finalidade não é essa?"*
+
+É.
+
+### "100%" ao lado de "BRONZE"
+
+O dossiê trazia **ÍNDICE DE SEGURANÇA 100%**, barra verde cheia, logo abaixo de um selo **BRONZE** — e mais abaixo, cinco de oito sistemas em **NÃO AVALIADO**.
+
+O número estava certo pela fórmula: `_prontidao` tira da média quem não tem dado. Quatro conformes de quatro avaliados = 100%.
+
+**Padrão a repetir:** percentual sem denominador promete mais do que mediu. Antes de exibir uma média, perguntar *"média de quantos, de um total de quantos?"* — e mostrar os dois. A ressalva vai perto do número, não numa nota de rodapé: quem lê o número tem que esbarrar nela.
+
+Vale notar que este projeto **já tinha aprendido isso uma vez**: foi por esse motivo que "Classificação" virou "Índice de Custódia" — o número medi
+a abrangência de registro e era lido como condição do barco. A lição não tinha sido generalizada para os outros indicadores da mesma página.
+
+### Velame numa lancha
+
+O mesmo dossiê listava **"VELAME & RIGGING · NÃO AVALIADO"** num Fibrafort Focker, que é lancha a motor.
+
+`SAUDE_CATEGORIAS` era lista fixa de 12 para todo mundo. O painel **já** tratava o tipo (`AtivoHub.categorias()`) e o dossiê não — **oitava** ocorrência da mesma regra em dois lugares neste projeto.
+
+E o dano não é estético: categoria que nunca poderá ser preenchida vira buraco permanente e faz o barco parecer incompleto por algo que ele não tem.
+
+**Padrão a repetir:** quando o painel tem uma regra de apresentação por tipo/perfil, perguntar quem MAIS renderiza a mesma informação — dossiê, PDF, página pública, e-mail. A lista de "quem mais mostra isso" é curta e dá para conferir em minutos; descobrir pelo cliente custa muito mais.
+
+Fica aberto o mesmo conserto no `asset_score_service`, que continua contando as 10 categorias fixas — é por isso que um jet ski impecável bate exatamente 90 e nunca tem folga para o Ouro (§46).

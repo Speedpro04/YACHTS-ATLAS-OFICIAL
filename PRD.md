@@ -555,6 +555,33 @@ Agora **a caixa acompanha o texto**, medido com `stringWidth`, com teto de 150 m
 
 O mesmo tratamento foi para a página pública de verificação (10px → 12px, rótulo e grau com `whitespace-nowrap`), que tinha o mesmo risco — sétima vez que a mesma regra visual precisa existir em dois lugares neste projeto.
 
+### Dois números que se contradiziam na mesma página (26/08/2026)
+
+O dossiê do Netuno II — selo **BRONZE** — trazia logo abaixo **"ÍNDICE DE SEGURANÇA 100%"**, com a barra verde cheia. E, mais abaixo, cinco de oito sistemas marcados **NÃO AVALIADO**.
+
+O número está certo pela fórmula: `_prontidao` tira da média as categorias sem dado (`if st == "na": continue`), então quatro sistemas conformes de quatro avaliados dão 100%. **Certo pela definição e falso para quem lê.** É a mesma armadilha que motivou renomear "Classificação" para "Índice de Custódia": o número dizia uma coisa e era entendido como outra.
+
+Agora o percentual sai **com o denominador**, logo abaixo da barra: `4 DE 11 SISTEMAS AVALIADOS`. Em cinza e menor que o rótulo — é ressalva, não manchete, mas quem lê o número esbarra nela.
+
+**Regra que fica:** percentual sem denominador promete mais do que mediu. Num documento que sustenta preço de ativo, isso não é detalhe de layout.
+
+### O dossiê não olhava o tipo da embarcação (26/08/2026)
+
+O mesmo Netuno II — um Fibrafort Focker 305, **lancha a motor** — saía com a linha **"VELAME & RIGGING · NÃO AVALIADO"**.
+
+`SAUDE_CATEGORIAS` era uma lista fixa de 12, igual para todo mundo. O painel já tratava disso (`AtivoHub.categorias()`: veleiro troca motor por velame, jet ski esconde interior e pintura) e o dossiê não — **oitava vez que a mesma regra existe em dois lugares neste projeto.**
+
+Não é só estética: categoria que nunca poderá ser preenchida vira buraco permanente na conta e faz o barco parecer incompleto por algo que não existe nele.
+
+```
+iate · lancha · barco_pesca    11 categorias   sem velame
+veleiro                        11 categorias   velame no lugar de motor
+jetski                          9 categorias   sem velame, interior nem pintura
+tipo desconhecido              cai no barco a motor — nunca inventa velame
+```
+
+`categorias_do_tipo()` é agora a fonte única, com quatro testes de regressão. **Fica aberto o mesmo conserto no `asset_score_service`**, que continua contando as 10 fixas — é por isso que um jet ski impecável bate exatamente 90 e nunca sobra folga para o Ouro.
+
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).
 - **Armador (Portal do Proprietário)**: entra com o **próprio e-mail** + código de uso único (e-mail e WhatsApp), enxerga **somente os barcos com o e-mail dele** e **apenas lê**. Nunca usa a conta da marina — do contrário veria a frota inteira dela. O primeiro contato é feito **pela marina**, não pelo sistema.

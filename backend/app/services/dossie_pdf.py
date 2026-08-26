@@ -161,30 +161,53 @@ S = {
 # FLOWABLES
 # ─────────────────────────────────────────────────────────────
 class GaugeBar(Flowable):
-    """Espelha a barra 'Índice de Segurança' do AssetHealthDashboard."""
+    """Espelha a barra 'Índice de Segurança' do AssetHealthDashboard.
 
-    def __init__(self, pct, width=176 * mm):
+    Mostra SEMPRE o denominador — "3 de 8 sistemas avaliados" — logo abaixo da
+    barra. Sem ele, um Netuno II com três sistemas conformes e cinco NÃO
+    AVALIADOS exibia "ÍNDICE DE SEGURANÇA 100%" com a barra verde cheia,
+    ao lado de um selo BRONZE. O número está certo pela própria definição
+    (média do que foi avaliado), mas quem lê entende "este barco está 100%".
+
+    É a mesma armadilha que motivou renomear "Classificação" para "Índice de
+    Custódia": o número dizia uma coisa e era lido como outra. Percentual sem
+    denominador promete mais do que mediu.
+    """
+
+    def __init__(self, pct, avaliados=None, total=None, width=176 * mm):
         super().__init__()
         self.pct, self.width = pct, width
+        self.avaliados, self.total = avaliados, total
+
+    def _legenda(self):
+        if self.avaliados is None or not self.total:
+            return None
+        return f"{self.avaliados} DE {self.total} SISTEMAS AVALIADOS"
 
     def wrap(self, aw, ah):
-        return self.width, 7 * mm
+        return self.width, (10 * mm if self._legenda() else 7 * mm)
 
     def draw(self):
         c = self.canv
         col = EMERALD if self.pct >= 80 else (AMBER if self.pct >= 50 else ROSE)
         bar_h = 2.4 * mm
+        legenda = self._legenda()
+        base = 3 * mm if legenda else 0
         c.saveState()
+        if legenda:
+            # Em cinza e menor que o rótulo: é ressalva, não manchete. Quem
+            # lê o número precisa esbarrar nela, não caçá-la.
+            draw_tracked(c, 0, 0, legenda, SANS_B, 5.5, WHITE_DIM, tracking=1.0)
         c.setFillColor(blend(WHITE, NAVY, 0.05))
         c.setStrokeColor(blend(WHITE, NAVY, 0.10))
         c.setLineWidth(0.4)
-        c.roundRect(0, 0, self.width, bar_h, bar_h / 2, fill=1, stroke=1)
+        c.roundRect(0, base, self.width, bar_h, bar_h / 2, fill=1, stroke=1)
         c.setFillColor(col)
-        c.roundRect(0, 0, self.width * self.pct / 100.0, bar_h, bar_h / 2, fill=1, stroke=0)
-        draw_tracked(c, 0, bar_h + 2.4 * mm, "ÍNDICE DE SEGURANÇA", SANS_B, 6, col, tracking=1.2)
+        c.roundRect(0, base, self.width * self.pct / 100.0, bar_h, bar_h / 2, fill=1, stroke=0)
+        draw_tracked(c, 0, base + bar_h + 2.4 * mm, "ÍNDICE DE SEGURANÇA", SANS_B, 6, col, tracking=1.2)
         c.setFont(SERIF, 13)
         c.setFillColor(WHITE)
-        c.drawRightString(self.width, bar_h + 2.0 * mm, f"{self.pct}%")
+        c.drawRightString(self.width, base + bar_h + 2.0 * mm, f"{self.pct}%")
         c.restoreState()
 
 
@@ -993,7 +1016,9 @@ def _capa(dados: dict, ident: dict) -> list:
 
     pront = dados.get("prontidao")
     if pront is not None:
-        st.append(GaugeBar(pront))
+        st.append(GaugeBar(pront,
+                           avaliados=dados.get("prontidao_avaliados"),
+                           total=dados.get("prontidao_total")))
         st.append(sp(11))
 
     saude = dados.get("saude") or []

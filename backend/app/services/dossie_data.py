@@ -216,13 +216,38 @@ SAUDE_CATEGORIAS: list[tuple[str, str]] = [
 SAUDE_CRITICAS: frozenset[str] = frozenset({"sinistros", "casco"})
 
 
-def _saude_por_categoria(registros: list[dict]) -> list[tuple[str, str]]:
+# Categorias que NÃO se aplicam a cada tipo de embarcação.
+#
+# Espelha o que o painel já faz (`AtivoHub.categorias()`): veleiro troca motor
+# por velame, e jet ski não tem interior nem pintura. O dossiê não olhava o
+# tipo, e por isso um Fibrafort Focker — lancha a motor — saía com uma linha
+# "VELAME & RIGGING · NÃO AVALIADO" no relatório entregue ao comprador.
+#
+# Não é só estética: categoria que nunca poderá ser preenchida entra na conta
+# como buraco permanente e faz o barco parecer incompleto por algo que não
+# existe nele.
+NAO_SE_APLICA: dict[str, frozenset[str]] = {
+    "veleiro": frozenset({"motor"}),                            # registra em velame
+    "jetski": frozenset({"velame", "interior", "pintura"}),
+}
+# Barco a motor não tem velame — é o caso da maioria (iate, lancha, pesca).
+_SEM_VELAME = frozenset({"velame"})
+
+
+def categorias_do_tipo(tipo: Optional[str]) -> list[tuple[str, str]]:
+    """As categorias de saúde que fazem sentido para este tipo de embarcação."""
+    fora = NAO_SE_APLICA.get((tipo or "").strip().lower(), _SEM_VELAME)
+    return [(c, l) for c, l in SAUDE_CATEGORIAS if c not in fora]
+
+
+def _saude_por_categoria(registros: list[dict], tipo: Optional[str] = None) -> list[tuple[str, str]]:
     """Status por categoria, com a MESMA semântica do painel.
 
     Sem registro na categoria => 'na' (não avaliado). Nunca inventa 'ok'.
+    Categoria que não se aplica ao tipo não aparece — ver `categorias_do_tipo`.
     """
     out = []
-    for cat, label in SAUDE_CATEGORIAS:
+    for cat, label in categorias_do_tipo(tipo):
         regs = _por_categoria(registros, cat)
         if not regs:
             out.append((label, "na"))
@@ -633,7 +658,15 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
                 custodiante = None
 
     # Sumário executivo + saúde — tudo derivado dos registros reais.
-    saude = _saude_por_categoria(registros)
+    #
+    # A saúde depende do TIPO: veleiro tem velame e não motor, jet ski não tem
+    # interior nem pintura. Sem isso, uma lancha saía com "Velame & Rigging ·
+    # NÃO AVALIADO" no relatório entregue ao comprador.
+    saude = _saude_por_categoria(registros, ativo.get("tipo"))
+
+    # O percentual vem acompanhado do denominador. "100%" com cinco sistemas
+    # NÃO AVALIADOS é verdade pela fórmula e mentira para quem lê.
+    avaliados = sum(1 for _, st in saude if st != "na")
 
     return {
         "ativo_id": ativo_id,
@@ -643,6 +676,8 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         "resumo": _resumo_executivo(registros, documentos),
         "saude": saude,
         "prontidao": _prontidao(saude),
+        "prontidao_avaliados": avaliados,
+        "prontidao_total": len(saude),
         "identificacao": identificacao,
         "titular": titular,
         "comprovacao": comprovacao,
