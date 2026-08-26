@@ -539,9 +539,21 @@ Enquanto o servidor não responde, os cards mostram **"—"**. O estado inicial 
 
 ### O selo partia a palavra ao meio (26/08/2026)
 
-Na página pública de verificação, no celular: **"ÍNDICE DE CUSTÓDIA: SILV / ER"**. O `tracking` alarga o texto, não sobrava linha, e a palavra quebrava no meio — na tela que o comprador abre pelo QR, que é onde o selo precisa ser lido sem tropeço.
+**"ÍNDICE DE CUSTÓDIA: SILV / ER"** — na primeira página do PDF, logo abaixo do nome da embarcação.
 
-Rótulo e grau viraram dois pedaços, cada um com `whitespace-nowrap`: a quebra passa a acontecer **entre** eles, nunca dentro. E o grau saiu 2px maior que o rótulo — é ele que o comprador procura, e é ele que deve saltar.
+A caixa era um `Table` de **62 mm fixos**. Nenhum dos três graus cabia:
+
+| Selo | Largura necessária | Na caixa de 62 mm |
+|---|---|---|
+| GOLD | 65,0 mm | 2 linhas |
+| SILVER | 69,1 mm | 2 linhas |
+| BRONZE | 71,0 mm | 2 linhas |
+
+E a quebra saiu **dentro da palavra** por um motivo contraintuitivo: `track()` usa espaço não-quebrável para produzir o letter-spacing, então o ReportLab não podia quebrar entre as letras — sem ponto de quebra legítimo e sem largura, ele partiu no meio.
+
+Agora **a caixa acompanha o texto**, medido com `stringWidth`, com teto de 150 mm. E o grau sai **2 pt maior** que o rótulo (7 → 9): é ele que se procura na página.
+
+O mesmo tratamento foi para a página pública de verificação (10px → 12px, rótulo e grau com `whitespace-nowrap`), que tinha o mesmo risco — sétima vez que a mesma regra visual precisa existir em dois lugares neste projeto.
 
 ## Acesso ao Dossiê
 - **Marina (autenticada)**: opera, edita e sela; acessa o dossiê dos próprios ativos (dados + PDF).

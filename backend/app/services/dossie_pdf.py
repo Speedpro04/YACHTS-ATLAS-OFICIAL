@@ -916,9 +916,30 @@ def _capa(dados: dict, ident: dict) -> list:
         st.append(sp(9))
         # "Índice de Custódia", não "Classificação": o número mede abrangência
         # de registro, não a condição da embarcação. Ver Verificacao.tsx.
-        badge = Table([[Paragraph(track(f"ÍNDICE DE CUSTÓDIA: {classif}"), ParagraphStyle(
-            "cg", fontName=SANS_B, fontSize=7, textColor=GOLD_LIGHT, leading=11))]],
-            colWidths=[62 * mm], hAlign="LEFT")
+        #
+        # A CAIXA ACOMPANHA O TEXTO, e não o contrário. Era `colWidths=[62*mm]`
+        # fixo, e "ÍNDICE DE CUSTÓDIA: SILVER" com tracking passa disso. Como o
+        # `track()` usa espaço não-quebrável, o ReportLab não podia quebrar
+        # entre as letras — então quebrou DENTRO da palavra: "SILV / ER". Nome
+        # de grau partido ao meio, na primeira página do documento que o
+        # comprador recebe.
+        #
+        # O grau sai 2pt maior que o rótulo: é ele que se procura na página.
+        FONTE_ROTULO, FONTE_GRAU = 7, 9
+        rotulo = track("ÍNDICE DE CUSTÓDIA: ")
+        grau = track(str(classif))
+        texto_badge = (
+            f'{rotulo}<font size="{FONTE_GRAU}">{grau}</font>'
+        )
+        largura = (
+            stringWidth(rotulo, SANS_B, FONTE_ROTULO)
+            + stringWidth(grau, SANS_B, FONTE_GRAU)
+            + 24  # padding (10+10) e uma folga, em pontos
+        )
+        badge = Table([[Paragraph(texto_badge, ParagraphStyle(
+            "cg", fontName=SANS_B, fontSize=FONTE_ROTULO, textColor=GOLD_LIGHT,
+            leading=FONTE_GRAU + 4))]],
+            colWidths=[min(largura, 150 * mm)], hAlign="LEFT")
         badge.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, -1), blend(GOLD, NAVY, 0.14)),
             ("BOX", (0, 0), (-1, -1), 0.6, blend(GOLD, NAVY, 0.45)),

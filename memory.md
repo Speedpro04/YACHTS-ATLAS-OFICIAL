@@ -1523,3 +1523,22 @@ limite       AtivoHub consertado, SolicitacoesDossie nao
 **Padrão a repetir, e desta vez como procedimento:** ao consertar uma regra, `grep` pela **marca dela** — a chave do storage, o número mágico, o nome da constante — antes de considerar o trabalho feito. Aqui bastava `grep -rn "dossie_generations_"` para achar as duas em dois segundos. Consertar a que apareceu e parar é o erro que se repete.
 
 E o estado inicial também mentia: `remaining: 4` fazia a tela afirmar "4 restantes" antes de saber. Trocado por "—". **Valor padrão que parece resposta é a mesma mentira, só mais curta.**
+
+### O selo quebrado estava no PDF, não na tela
+
+O Marcos mostrou "ÍNDICE DE CUSTÓDIA: SILV / ER" e eu consertei a **página de verificação** — porque o print anterior dele tinha vindo de lá. Era o **PDF**. Ele voltou: *"continua quebrado"*.
+
+**Padrão a repetir:** antes de consertar, confirmar **de qual superfície** veio o print. Mesma informação aparece em várias — painel, PDF, página pública — e o texto idêntico não diz qual é. Custou um ciclo inteiro de deploy.
+
+A causa é contraintuitiva e vale guardar:
+
+```python
+def track(text, spaces=1):
+    """Usa NBSP porque o Paragraph colapsa espaços normais repetidos."""
+```
+
+O `track()` faz letter-spacing com espaço **não-quebrável**. Então o ReportLab não podia quebrar entre as letras — e como a caixa era `colWidths=[62*mm]` fixo e o texto não cabia, ele partiu **dentro** da palavra. Sem ponto de quebra legítimo e sem largura, o renderizador quebra onde não devia.
+
+Medido depois: os **três** graus estouravam os 62 mm (65,0 / 69,1 / 71,0). Não era um caso isolado do SILVER — era todo dossiê emitido.
+
+**Padrão a repetir:** largura fixa em elemento que contém texto variável é defeito esperando o texto certo. A caixa acompanha o conteúdo (`stringWidth` + teto), não o contrário. E medir os **três** casos, não só o que apareceu.
