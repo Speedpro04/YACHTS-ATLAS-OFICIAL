@@ -1,3 +1,4 @@
+- [x] **REV-11 — Duas caixas que pareciam upload e não eram**: no formulário de Novo Registro de Serviço havia duas áreas com borda tracejada, ícone e cursor de mão — "Clique para adicionar fotos" e "Clique para adicionar recibos" — e o componente **não tinha nenhum `<input type="file">`**. Clicar não fazia nada, nem dava erro. Está atrás do login (rota `registros/:ativoId`), então quem esbarrava era a marina **já paga**, no primeiro serviço que fosse registrar. Numa tela que promete cofre imutável, botão que não responde é pior que botão ausente. Trocadas por uma linha que diz onde o upload funciona de verdade
 - [x] **REV-10 — A marina pagou e ficou sem a vaga**: no teste de 27/08 a Antioquia Marina preencheu o cadastro, o sistema reservou uma das 4 vagas de SP no nome dela, ela pagou — e a vaga continuou `reservado`, vencendo em 3 horas. Pagamento, acesso e e-mail saíram certos; **só a vaga ficou para trás, sem erro em lugar nenhum**. O código só sabia perguntar "veio do link certo?" e "o valor bate?", e nenhuma das duas responde nada num link de teste. Agora existe uma terceira pergunta que não depende de configuração: **"tem vaga reservada nesse e-mail?"** — a reserva foi criada pelo próprio cadastro, minutos antes
 - [x] **REV-09 — A marina brasileira paga em real, e a vaga de fundadora para de depender do valor**: em 19/08/2026 um Visa recusou uma cobrança de US$ 250 com **"moeda não aceita"** — cartão brasileiro costuma vir com compra internacional bloqueada, e Elo/Hipercard são nacionais, em dólar não passam de jeito nenhum. O preço anunciado continua em dólar; o servidor escolhe o link em real quando a UF é brasileira. Junto foi o defeito que isso teria criado: a vaga de fundadora era reconhecida por `moeda == usd E valor == 200`, então pagamento em real entraria **sem ocupar vaga e sem os 18 meses de dossiê**. Agora vem do **link de origem**
 - [x] **REV-08 — WEBP entra, e as oito listas de arquivo viram uma**: cada tela decidia sozinha o que aceitava, e elas discordavam — a Documentação e a ficha de serviço recusavam WEBP, a galeria recusava, o cadastro de categoria aceitava qualquer imagem. A mesma foto subia numa tela e era barrada na outra, sem explicação. Agora tudo vem de `utils/arquivos.ts`, e o texto da tela deriva da lista (não dá para prometer um formato que o seletor recusa). Duas exceções ficaram, ditas no código: o botão **Fotografar** (`capture` — quem decide é a câmera do celular) e a conferência de dossiê (só PDF, porque é o que ela confere)
@@ -480,6 +481,23 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### As caixas que pareciam upload — 27/08/2026
+
+`RegistroForm` mostrava duas áreas de upload que não eram upload:
+
+```
+Fotos do Serviço (Antes/Depois)     "Clique para adicionar fotos"     JPG, PNG - Máx 10MB
+Recibos e Comprovantes              "Clique para adicionar recibos"   PDF, JPG - Máx 10MB
+```
+
+Borda tracejada, ícone, `cursor-pointer`, efeito de hover. E **nenhum `<input type="file">` no componente inteiro** — clicar não abria nada e não dava erro. A `interface` do componente até declarava `fotos?: string[]` e `recibos?: string[]`, campos que o `handleSubmit` nunca enviou: alguém previu o upload e parou no meio.
+
+Mesmo padrão de sempre — código correto que nunca foi ligado —, só que aqui a parte que faltou era a que o usuário toca.
+
+**Onde aparecia:** rota `registros/:ativoId`, atrás do login. Não é a marina prospectando que esbarrava; é a marina **já paga**, no primeiro serviço que fosse registrar. Gravidade menor que uma página de venda, mas pior em outro sentido: numa tela que promete cofre imutável, botão que não responde é o tipo de coisa que faz duvidar do resto.
+
+**Por que não ligar em vez de remover:** o hash é por documento, não por registro, então o arquivo precisaria subir antes de o registro existir. É obra maior que o prazo. As duas caixas viraram uma linha que diz onde o upload funciona de verdade — a ficha do ativo, em Documentação.
 
 ### A vaga de fundadora que ninguém ativava — 27/08/2026
 

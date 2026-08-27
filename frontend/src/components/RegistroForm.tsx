@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Camera, Upload, Save, X } from 'lucide-react'
+import { Save, X } from 'lucide-react'
 
 interface RegistroFormProps {
   onClose: () => void
-  onSave: (data: { categoria: string; titulo: string; descricao: string; fotos?: string[]; recibos?: string[] }) => void
+  onSave: (data: { categoria: string; titulo: string; descricao: string }) => void
 }
 
 export default function RegistroForm({ onClose, onSave }: RegistroFormProps) {
@@ -95,28 +95,21 @@ export default function RegistroForm({ onClose, onSave }: RegistroFormProps) {
             />
           </div>
 
-          {/* Upload de Fotos */}
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">
-              Fotos do Serviço (Antes/Depois)
-            </label>
-            <div className="border-2 border-dashed border-white/10 rounded-sm p-8 text-center hover:border-[#c5a059]/50 transition-colors cursor-pointer">
-              <Camera className="mx-auto text-white/20 mb-4" size={48} />
-              <p className="text-white/40 text-sm mb-2">Clique para adicionar fotos</p>
-              <p className="text-white/20 text-[10px] uppercase tracking-widest">JPG, PNG - Máx 10MB</p>
-            </div>
-          </div>
+          {/* Havia aqui duas caixas de upload que NAO eram upload: borda tracejada,
+              cursor de mao, "clique para adicionar fotos" — e nenhum
+              <input type="file"> no componente inteiro. Clicar nao fazia nada, e
+              a tela ja estava no ar. Numa tela que promete cofre imutavel, botao
+              que nao responde e pior que botao ausente.
 
-          {/* Upload de Recibos */}
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">
-              Recibos e Comprovantes
-            </label>
-            <div className="border-2 border-dashed border-white/10 rounded-sm p-8 text-center hover:border-[#c5a059]/50 transition-colors cursor-pointer">
-              <Upload className="mx-auto text-white/20 mb-4" size={48} />
-              <p className="text-white/40 text-sm mb-2">Clique para adicionar recibos</p>
-              <p className="text-white/20 text-[10px] uppercase tracking-widest">PDF, JPG - Máx 10MB</p>
-            </div>
+              Ligar de verdade exigiria subir arquivo antes de o registro existir
+              (o hash e por documento, nao por registro). Enquanto isso, a tela
+              diz a verdade e aponta onde o upload funciona. */}
+          <div className="border border-white/10 rounded-sm p-6 bg-white/[0.02]">
+            <p className="text-white/50 text-sm leading-relaxed">
+              <strong className="text-white/70">Fotos e recibos</strong> deste serviço entram pela
+              ficha do ativo, em <strong className="text-white/70">Documentação</strong> — é lá que
+              cada arquivo recebe hash e data, e passa a valer no dossiê.
+            </p>
           </div>
 
           {/* Ações */}
