@@ -509,7 +509,7 @@ Números redondos de propósito, decisão dele: *"multiplica por 5"* é conta qu
 **Duas coisas que ninguém tinha contado na decisão:**
 
 - **O IOF não é taxa do Stripe.** São 4,38% de imposto federal, cobrados pelo banco do cliente. Um "$250" vira ~R$ 1.450 na fatura, e a marina não pensa "IOF" — pensa que foi cobrada a mais. Primeira fatura é onde a confiança nasce ou morre.
-- **Bandeiras — corrigido.** Eu afirmei, olhando uma prévia em baixa resolução, que o checkout em real mostrava cinco bandeiras contra duas do dólar. **Estava errado**: nas capturas em tamanho real os dois mostram só **Visa e Mastercard**. O que continua verdade é o motivo — **Elo e Hipercard são bandeiras nacionais e só funcionam em real** —, mas elas **não estão habilitadas** na conta. Vira ação, não benefício já obtido: **Configurações → Pagamentos → Formas de pagamento**, habilitar Elo e Hipercard. Cartão empresarial de banco brasileiro é Elo com frequência.
+- **Bandeiras — o que se sabe e o que não.** **Elo e Hipercard são bandeiras nacionais e só funcionam em real**: isso é fato, e é um ganho que a cobrança em real destrava — cartão empresarial de banco brasileiro é Elo com frequência. **Se estão habilitadas na conta, não foi verificado.** Tentei concluir pelos ícones do checkout e errei nas duas direções — a fileira de ícones é amostra, não a lista de bandeiras aceitas. Conferir em **Configurações → Pagamentos → Formas de pagamento**, que é onde a resposta mora.
 
 #### O defeito que a venda em real teria criado
 
