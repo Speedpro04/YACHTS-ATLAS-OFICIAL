@@ -482,6 +482,28 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
 
+### "E se eu quiser sair, meus dados vão comigo?" — a resposta — 28/08/2026
+
+É a primeira pergunta que um gestor cauteloso faz antes de colocar anos de papel no sistema de outra pessoa. A resposta tem três partes, e elas são diferentes entre si.
+
+**Levar os dados: sim.** Hoje não existe botão de exportação — dá para montar à mão consultando o banco, o que resolve um caso isolado em meia hora. Virar rotina exige a exportação de verdade: ativos, registros, documentos e os links dos arquivos. **Um dia de trabalho, primeira coisa depois do lançamento.** Enquanto não existir, a frase "você pode sair quando quiser" vale pela metade: a assinatura ela cancela sozinha, os dados não vêm junto.
+
+**Apagar dado pessoal: sim.** Nome do condutor, habilitação, CHA. Existe o mecanismo (`fn_lgpd_redigir`): apaga o campo de uma lista fechada, preserva o hash original em `hash_pre_redacao`, e **o dossiê declara que houve redação**. Apagar em silêncio seria adulterar o histórico — o oposto do que o produto promete.
+
+**Apagar o histórico das embarcações: não.** `registros` e `documentos` são append-only; o banco recusa DELETE até para o service_role.
+
+E o motivo que vale ter na ponta da língua não é técnico:
+
+> **O registro do barco não é só da marina.** O dono do iate tem um dossiê na mão, com QR, e aquele QR confere contra esses registros. Se a marina sai e o histórico é apagado, o dossiê que o armador pagou vira papel morto — e ele não teve nada a ver com a briga. A marina é a **guardiã** do histórico, não a dona dele.
+
+A frase do Marcos, na conversa que originou isto: *"ela é cliente sim, ela pode sair a qualquer momento."*
+
+E a resposta completa, para a reunião:
+
+> Seus dados você leva quando quiser. Dado pessoal, a gente apaga se você pedir. O histórico das embarcações fica — porque ele é dos donos dos barcos, e o dossiê que eles têm na mão precisa continuar valendo.
+
+**Por que isso vende melhor que trava.** Retenção por dado preso funciona por um tempo e vira mágoa: marina que fica porque sair dói é refém, não cliente. Dizer "leve seus dados" tira o medo de assinar, e sobra a retenção que interessa — ela continua porque o dossiê rende.
+
 ### As caixas que pareciam upload — 27/08/2026
 
 `RegistroForm` mostrava duas áreas de upload que não eram upload:
