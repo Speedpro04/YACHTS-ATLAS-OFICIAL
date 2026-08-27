@@ -656,27 +656,135 @@ class StripeService:
         )
         return {u.strip(): programa for u, programa in pares if u and u.strip()}
 
-    def _programa_do_checkout(self, session, metadata: Optional[dict]) -> Optional[str]:
+    @staticmethod
+    def _tem_reserva_de_fundadora(email: Optional[str]) -> bool:
+        """
+        Existe vaga de fundadora reservada em nome deste e-mail?
+
+        E a prova mais forte das tres, e a unica que nao depende de configuracao:
+        a reserva foi criada pelo NOSSO cadastro, minutos antes, com este mesmo
+        e-mail. Nao e inferencia sobre o pagamento — e um fato que ja esta no
+        banco.
+
+        Foi o que faltou em 27/08/2026: a Antioquia Marina pagou, recebeu acesso,
+        e a vaga dela continuou "reservado" — vencendo em tres horas. O sistema
+        tinha a linha na frente dele e nao olhou, porque so sabia perguntar
+        "veio do link certo?" e "o valor bate?".
+
+        Best-effort: banco fora do ar devolve False e o pagamento segue. Perder a
+        ativacao e ruim; derrubar o webhook e pior, porque ai nem o acesso sai.
+        """
+        if not email or not email.strip():
+            return False
+        try:
+            from app.core.supabase import get_supabase_admin
+            res = (
+                get_supabase_admin()
+                .table("marinas_fundadoras")
+                .select("id,status,uf,reservado_ate")
+                .ilike("email", email.strip())
+                .neq("status", "ativo")
+                .limit(1)
+                .execute()
+            )
+        except Exception as e:
+            logger.error(f"Falha ao checar reserva de fundadora de {email}: {e}")
+            return False
+
+        linha = (res.data or [None])[0]
+        if not linha:
+            return False
+
+        # Prazo vencido: a vaga ja voltou para a fila (fn_vagas_fundadoras_ocupadas
+        # so conta reserva dentro do prazo), mas a LINHA continua aqui. As 3 horas
+        # existem justamente para ninguem parar em cima de uma das 20 vagas sem
+        # pagar — honrar reserva vencida sem olhar o estado furaria isso.
+        #
+        # Sao 20 vagas e ponto: 4 por estado, anunciadas na pagina. Nao existe 5a.
+        # Entao reserva vencida so vale se o estado ainda tiver espaco. Encheu, ela
+        # NAO vira fundadora — e o sistema grita, porque aquele pagamento veio a
+        # preco de fundadora e a diferenca tem que ser devolvida por gente, nao
+        # resolvida no escuro.
+        if not StripeService._reserva_ainda_de_pe(linha, email):
+            return False
+        return True
+
+    @staticmethod
+    def _reserva_ainda_de_pe(linha: dict, email: str) -> bool:
+        """Reserva dentro do prazo, ou vencida mas com vaga sobrando no estado."""
+        from datetime import datetime, timezone
+
+        prazo_txt = str(linha.get("reservado_ate") or "")
+        if not prazo_txt:
+            return True
+        try:
+            prazo = datetime.fromisoformat(prazo_txt.replace("Z", "+00:00"))
+        except ValueError:
+            # Data ilegivel nao pode tirar a vaga de quem pagou dentro do prazo.
+            return True
+        if prazo >= datetime.now(timezone.utc):
+            return True
+
+        uf = (linha.get("uf") or "").upper()
+        try:
+            from app.core.supabase import get_supabase_admin
+            ocupadas = (
+                get_supabase_admin()
+                .rpc("fn_vagas_fundadoras_ocupadas", {"p_uf": uf})
+                .execute()
+            ).data or 0
+        except Exception as e:
+            # Sem saber quantas estao ocupadas, nao arrisca a 5a vaga.
+            logger.error(f"VAGA FUNDADORA: nao consegui contar as vagas de {uf} ({e}). "
+                         f"{email} pagou com reserva vencida e NAO foi ativada.")
+            return False
+
+        if int(ocupadas) >= settings.LAUNCH_SLOTS_PER_STATE:
+            logger.error(
+                f"VAGA FUNDADORA PERDIDA: {email} pagou depois de {prazo.isoformat()} "
+                f"e as {settings.LAUNCH_SLOTS_PER_STATE} vagas de {uf} ja estavam "
+                "ocupadas. NAO foi ativada como fundadora — devolver a diferenca "
+                "para o preco oficial."
+            )
+            return False
+
+        logger.warning(
+            f"VAGA FUNDADORA FORA DO PRAZO: {email} pagou depois de {prazo.isoformat()}, "
+            f"mas {uf} ainda tinha vaga. Ativada."
+        )
+        return True
+
+    def _programa_do_checkout(self, session, metadata: Optional[dict],
+                              email: Optional[str] = None) -> Optional[str]:
         """
         Qual programa foi comprado — sem depender de moeda nem de valor.
 
-        Duas provas, nesta ordem:
+        Tres provas, nesta ordem:
 
         1. `metadata.programa`, se o Payment Link foi marcado no painel. E
            intencao declarada, ganha de tudo.
         2. De qual link o checkout veio. Funciona sem ninguem configurar nada,
            e sobrevive a troca de preco e de moeda.
+        3. Vaga de fundadora reservada em nome deste e-mail. Nao depende de
+           configuracao nenhuma: quem criou a reserva foi o nosso proprio
+           cadastro, minutos antes.
 
-        A segunda existe porque a primeira depende de quatro links marcados a
-        mao no painel — e um esquecido significa marina que paga e nao vira
-        fundadora, sem erro nenhum aparecendo.
+        Cada uma existe porque a anterior pode faltar. A 1 depende de quatro
+        links marcados a mao. A 2 depende de o link estar na configuracao — e
+        um link de teste, ou um link novo que ninguem registrou, passa batido.
+        A 3 e a rede embaixo das duas, e foi ela que faltou quando a Antioquia
+        Marina pagou e ficou sem vaga.
         """
         declarado = (metadata or {}).get("programa")
         if declarado:
             return declarado
         url = self._url_do_payment_link(session)
         if url:
-            return self._programas_por_link().get(url.strip())
+            do_link = self._programas_por_link().get(url.strip())
+            if do_link:
+                return do_link
+        if self._tem_reserva_de_fundadora(email):
+            return "marina_fundadora"
         return None
 
     def _handle_checkout_completed(self, session: stripe.checkout.Session) -> Dict[str, Any]:
@@ -788,7 +896,7 @@ class StripeService:
         # brasileira paga R$ 1.000, a regra procurava `usd 200`, e ela entrava
         # no sistema sem ocupar vaga nem ganhar os 18 meses de dossie. Pagou e
         # nao recebeu, sem erro nenhum aparecendo em lugar algum.
-        programa = self._programa_do_checkout(session, metadata)
+        programa = self._programa_do_checkout(session, metadata, cliente_email)
 
         # Ultimo recurso, so para checkout que nao veio de Payment Link (sessao
         # criada pela API). Continua exigindo dolar: numero solto nao identifica

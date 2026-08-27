@@ -1,3 +1,4 @@
+- [x] **REV-10 — A marina pagou e ficou sem a vaga**: no teste de 27/08 a Antioquia Marina preencheu o cadastro, o sistema reservou uma das 4 vagas de SP no nome dela, ela pagou — e a vaga continuou `reservado`, vencendo em 3 horas. Pagamento, acesso e e-mail saíram certos; **só a vaga ficou para trás, sem erro em lugar nenhum**. O código só sabia perguntar "veio do link certo?" e "o valor bate?", e nenhuma das duas responde nada num link de teste. Agora existe uma terceira pergunta que não depende de configuração: **"tem vaga reservada nesse e-mail?"** — a reserva foi criada pelo próprio cadastro, minutos antes
 - [x] **REV-09 — A marina brasileira paga em real, e a vaga de fundadora para de depender do valor**: em 19/08/2026 um Visa recusou uma cobrança de US$ 250 com **"moeda não aceita"** — cartão brasileiro costuma vir com compra internacional bloqueada, e Elo/Hipercard são nacionais, em dólar não passam de jeito nenhum. O preço anunciado continua em dólar; o servidor escolhe o link em real quando a UF é brasileira. Junto foi o defeito que isso teria criado: a vaga de fundadora era reconhecida por `moeda == usd E valor == 200`, então pagamento em real entraria **sem ocupar vaga e sem os 18 meses de dossiê**. Agora vem do **link de origem**
 - [x] **REV-08 — WEBP entra, e as oito listas de arquivo viram uma**: cada tela decidia sozinha o que aceitava, e elas discordavam — a Documentação e a ficha de serviço recusavam WEBP, a galeria recusava, o cadastro de categoria aceitava qualquer imagem. A mesma foto subia numa tela e era barrada na outra, sem explicação. Agora tudo vem de `utils/arquivos.ts`, e o texto da tela deriva da lista (não dá para prometer um formato que o seletor recusa). Duas exceções ficaram, ditas no código: o botão **Fotografar** (`capture` — quem decide é a câmera do celular) e a conferência de dossiê (só PDF, porque é o que ela confere)
 - [x] **REV-07 — GEO no dossiê passa a significar o que o leitor entende**: a marca GEO vinha da posição do NAVEGADOR no instante do envio, não da foto. No teste do Dom Rafael, 14 imagens baixadas da internet foram seladas em **-22.9206, -45.4517** — o escritório de quem as enviou — e o PDF marcava GEO ao lado delas. Agora o servidor lê a coordenada de dentro da própria imagem (EXIF, Pillow); a do aparelho só entra na câmera ao vivo, onde as duas são a mesma coisa. Sem coordenada confiável, **nenhuma** — `documentos` é append-only, e o errado ficaria selado para sempre. Some junto um dado pessoal que ninguém pediu: o endereço do funcionário em todo arquivo que ele subisse
@@ -479,6 +480,59 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### A vaga de fundadora que ninguém ativava — 27/08/2026
+
+O teste que a gente vinha adiando finalmente rodou, e achou o buraco na primeira tentativa.
+
+**O que aconteceu.** A Antioquia Marina preencheu o cadastro da Lançamento. O sistema criou o login, reservou uma das 4 vagas de SP no nome dela e mandou para o checkout em real. Ela pagou R$ 1,00 pelo link de teste. Resultado:
+
+```
+pagamento registrado        sim
+acesso liberado             sim
+e-mail de boas-vindas       sim, com o nome da marina
+vaga de fundadora           NÃO — continuou "reservado", vencendo em 3h
+```
+
+Do ponto de vista do sistema, **tinha sido um sucesso**. Nenhum erro, nenhum log, nada. Numa venda real: a marina paga preço de fundadora, entra no sistema, e a vaga dela volta para a fila algumas horas depois. Ela só descobre quando for cobrar os 18 meses de dossiê.
+
+**A causa era estreiteza de vista.** O código sabia fazer duas perguntas:
+
+```
+metadata.programa está marcado?     depende de 4 links marcados à mão no painel
+veio de um link conhecido?          depende do link estar na configuração
+```
+
+O link de teste não tinha metadata (chegou `{}`) e não estava na configuração. As duas responderam "não sei", e o código — corretamente — **não chutou**. Chutar ali daria vaga de fundadora para qualquer compra da casa.
+
+**Mas havia uma terceira prova, na frente dele.** Existia uma linha em `marinas_fundadoras` com aquele e-mail e status `reservado`, criada pelo próprio cadastro minutos antes. Não é inferência sobre o pagamento — é um fato já gravado.
+
+```
+1. metadata.programa                 intenção declarada, ganha de tudo
+2. link de origem                    sobrevive a troca de preço e de moeda
+3. reserva neste e-mail              não depende de configuração nenhuma   ← nova
+```
+
+Cada uma existe porque a anterior pode faltar. A terceira é a rede embaixo das outras duas.
+
+#### Não existe a 21ª vaga
+
+São 20, sendo 4 por estado, anunciadas na página. Eram 7 e o Marcos subiu para 20 — mas subir o número é decisão dele, não algo que o sistema faz no calor de um pagamento. As palavras dele: *"são apenas 20 vagas, não dá pra ficar abrindo vagas."*
+
+Isso decide o caso da **reserva vencida**. As 3 horas existem para ninguém parar em cima de uma vaga sem pagar; passado o prazo, ela volta para a fila (`fn_vagas_fundadoras_ocupadas` só conta reserva dentro do prazo) — **mas a linha continua no banco**. Honrar essa linha sem olhar o estado criaria a quinta fundadora de SP.
+
+| Situação | O que acontece |
+|---|---|
+| Reserva no prazo | ativa |
+| Vencida, estado com espaço | ativa e registra em WARNING |
+| Vencida, estado lotado | **não ativa** e registra em ERROR — devolver a diferença |
+| Não consegue contar as vagas | **não ativa** — na dúvida, não arrisca a quinta |
+
+O último caso é deliberado: sem saber quantas estão ocupadas, o silêncio é mais barato que a quinta vaga. Vale a regra que já estava escrita no código desde antes: *"cobrar US$ 200 de quem não tem vaga cria uma obrigação impossível"*.
+
+**Nada disso derruba o pagamento.** Banco fora do ar, data ilegível, e-mail vazio — tudo cai em "não é fundadora" e o acesso sai do mesmo jeito. Perder a ativação é ruim; derrubar o webhook é pior, porque aí nem o acesso a marina recebe.
+
+11 testes cobrem o caso do defeito, a ordem das três provas, o prazo vencido nas duas direções, a contagem indisponível, o banco fora do ar e data ilegível.
 
 ### Moeda: o preço é em dólar, a cobrança da marina brasileira é em real — 26/08/2026
 
