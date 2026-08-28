@@ -1,3 +1,6 @@
+- [x] **REV-12 — O DOSSIÊ-ATLAS para de imprimir quadrado preto no nome do dono**: o gerador usava as fontes base-14 do PDF (Helvetica, Times-Bold), que só conhecem Latin-1. Fora dele o ReportLab troca o caractere **sem erro e sem log** — `Dvořák` saía `Dvo■ák`, `Łukasz` saía `■ukasz`, num documento selado por SHA-256 que afirma integridade. Agora Arial e Times New Roman (mesmas medidas: **+0,01%** de largura no pior texto real, layout intacto) e `fonts-liberation` no Dockerfile, porque produção é Debian e não tem fonte da Microsoft. Junto: **`logger` era usado e nunca importado** — `NameError` dentro do próprio `except` derrubava a emissão inteira quando uma foto falhava, justo o caso que o "Imagem indisponível" existia para tratar
+- [x] **REV-12 — O critério do Índice sai do código e entra no documento**: o dossiê estampava CONFORME / ATENÇÃO / CRÍTICO / NÃO AVALIADO e um percentual, e **em nenhum lugar dizia como aquilo foi decidido**. Nova seção **"Como Ler Este Índice"** com a tabela de pesos, o cálculo, os agravamentos (casco, sinistros, EPIRB sem ANATEL) e as retificações — mais uma linha curta sob a grade, porque quem lê no celular não vai à página 12. Ideia do Marcos
+- [x] **REV-12 — CONFORMIDADE deixa de ser barra**: ela é quase sempre 100% (só entra na conta o que tem registro) e a linha cheia de ponta a ponta afirmava "completo" antes de a legenda ser lida. Deixá-la fina e dourada (REV-06) não bastou — **forma vence cor**. Virou número e frase: *"Calculado sobre 3 de 11 sistemas — 8 sistemas sem registro não entram na conta."* Barra fica só para a cobertura, que é o que varia
 - [x] **REV-11 — Duas caixas que pareciam upload e não eram**: no formulário de Novo Registro de Serviço havia duas áreas com borda tracejada, ícone e cursor de mão — "Clique para adicionar fotos" e "Clique para adicionar recibos" — e o componente **não tinha nenhum `<input type="file">`**. Clicar não fazia nada, nem dava erro. Está atrás do login (rota `registros/:ativoId`), então quem esbarrava era a marina **já paga**, no primeiro serviço que fosse registrar. Numa tela que promete cofre imutável, botão que não responde é pior que botão ausente. Trocadas por uma linha que diz onde o upload funciona de verdade
 - [x] **REV-10 — A marina pagou e ficou sem a vaga**: no teste de 27/08 a Antioquia Marina preencheu o cadastro, o sistema reservou uma das 4 vagas de SP no nome dela, ela pagou — e a vaga continuou `reservado`, vencendo em 3 horas. Pagamento, acesso e e-mail saíram certos; **só a vaga ficou para trás, sem erro em lugar nenhum**. O código só sabia perguntar "veio do link certo?" e "o valor bate?", e nenhuma das duas responde nada num link de teste. Agora existe uma terceira pergunta que não depende de configuração: **"tem vaga reservada nesse e-mail?"** — a reserva foi criada pelo próprio cadastro, minutos antes
 - [x] **REV-09 — A marina brasileira paga em real, e a vaga de fundadora para de depender do valor**: em 19/08/2026 um Visa recusou uma cobrança de US$ 250 com **"moeda não aceita"** — cartão brasileiro costuma vir com compra internacional bloqueada, e Elo/Hipercard são nacionais, em dólar não passam de jeito nenhum. O preço anunciado continua em dólar; o servidor escolhe o link em real quando a UF é brasileira. Junto foi o defeito que isso teria criado: a vaga de fundadora era reconhecida por `moeda == usd E valor == 200`, então pagamento em real entraria **sem ocupar vaga e sem os 18 meses de dossiê**. Agora vem do **link de origem**
@@ -43,6 +46,10 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 17. **Vínculo da indicação depende de digitação** — quem indica escreve o nome da própria marina em campo livre (`marina_leads.source`). O casamento com a indicante é manual, como já era no cadastro. Vira problema quando o volume passar de algumas dezenas.
 18. **Scheduler de 24/48h para indicação não contatada** — proposto e adiado por ordem, não por mérito: ele precisa saber se a marina **já foi contatada**, e contato manual não registra nada hoje. Alarme que cobra por lead já resolvido é alarme que se aprende a ignorar. O estado vira automático quando o disparo funcionar (`whatsapp_status = 'enviado'`) — fazer depois do item 16.
 19. **Oficial não valida formato de e-mail no navegador** — só checa se está preenchido; quem recusa é o `EmailStr` do backend, e a marina vê "Erro ao enviar" sem saber que o problema é o e-mail. O Lançamento já valida com mensagem específica.
+20. **Três fórmulas diferentes chamadas de "saúde"** — o selo do painel (`AtivoHub`: *Saúde 78%*) usa `asset_score_service`, que é nota ponderada (50% abrangência, 25% manutenção, 15% documentos, 10% laudo de casco). O dossiê usa `dossie_data._prontidao`, que é média simples. O `AssetHealthDashboard` tem uma terceira implementação. **A marina vê um número na tela e entrega outro ao comprador, os dois chamados de saúde** — e o topo do `asset_score_service` manda "manter SEMPRE em concordância com o painel e o dossiê". Decidir qual é o oficial ANTES de publicar o critério no painel: critério publicado errado é pior que critério não publicado.
+21. **`AssetHealthDashboard.tsx` não é renderizado em lugar nenhum** — zero imports no projeto. Três arquivos do backend o citam como a referência que espelham (`dossie_pdf`, `dossie_data`, `asset_score_service`), mas o painel vivo é o `AtivoHub`. O "saiba mais" do Índice foi implementado nele em 28/08 e **ninguém vê** — junto com o conserto de um `return 100` que exibia *"Índice de Segurança 100%"* com barra verde cheia num ativo sem nenhum registro. Decidir: montar o componente, ou levar as duas coisas para o `AtivoHub` (depende do item 20).
+22. **Classificação do serviço deveria ser exigida no painel** — hoje o dossiê imprime *"natureza não classificada em N registro(s)"*. O relatório de terceiro pediu travar a emissão; **não fazer isso** — contradiz o princípio de mostrar a lacuna com honestidade e joga o problema no suporte. Exigir na criação do registro, e deixar o dossiê contar a verdade sobre o passado.
+23. **Curadoria do registro fotográfico** — panfleto de fornecedor e arte promocional com texto sobreposto entram no dossiê hoje. Cada foto sai com data, GEO e hash: o selo afirma *"isto é evidência"*, e quando aparece embaixo de um folder ele deixa de valer para **todas** as fotos. Fazer a parte barata (diretriz no upload + campo dizendo o que a foto é); **não** tentar detecção automática agora — o erro caro é o inverso, barrar a foto legítima do casco às 18h de sexta.
 
 ## Contra-prova de Autenticidade
 
@@ -481,6 +488,80 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### O relatório de melhorias, e o defeito que ele não viu — 28/08/2026
+
+O Marcos trouxe um **Relatório de Melhorias** de terceiro sobre o dossiê, com cinco itens. Conferi um por um contra o código e contra três PDFs já gerados, antes de mexer em qualquer coisa. **Três dos cinco não existem** — e os dois marcados como prioridade Alta estão entre eles:
+
+| # | apontado | verificação |
+|---|---|---|
+| 1 | CNPJ divergente (`/0001-10` × `/0001-50`) | **não procede** — uma única string em 7 arquivos, e o PDF extrai `/0001-50` |
+| 2 | Protocolo corrompido: `"ProtocolЬ ХАНАТЕ-2020-ECDD"` | **não procede** — sai `Protocolo YA-EXEMPLO-2026-0001`, limpo. Os caracteres cirílicos são assinatura de OCR ruim |
+| 3 | Imagens esticadas → aplicar `object-fit: cover` | **não procede** — o gerador é ReportLab, não HTML; e `_celula_foto` já calcula `alt = larg * (ph/pw)` |
+| 4 | Travar emissão sem classificação de serviço | procede o fato, **não a solução** — ver abaixo |
+| 5 | Panfleto de fornecedor no registro fotográfico | **procede**, e vale mais do que "Baixa" |
+
+**Padrão a repetir:** relatório de terceiro é hipótese, não diagnóstico — conferir contra o código **e** contra o artefato real antes de abrir editor. Mexer em código que está certo é como se criam defeitos, e três consertos aqui teriam custado tempo para não corrigir nada.
+
+**Sobre o item 4:** o dossiê inteiro é construído sobre mostrar a lacuna com honestidade — é o mesmo princípio do "NÃO AVALIADO" e do "3 de 11 sistemas". Travar a emissão contradiz isso e joga o problema no suporte. O lugar certo é o **painel**, exigindo a classificação na criação do registro; o dossiê continua contando a verdade sobre o passado. Fica em Pendências.
+
+### O quadrado preto no nome do proprietário — 28/08/2026
+
+Investigando o item 2 (que não existia), apareceu um defeito real e maior, em outro lugar.
+
+O gerador usava as fontes **base-14** do formato PDF — Helvetica e Times-Bold. Elas não exigem arquivo, e é por isso que estavam ali. Só conhecem **Latin-1**. Fora dele o ReportLab substitui o caractere **sem lançar exceção e sem escrever no log**:
+
+```
+Dvořák            →  Dvo■ák
+Łukasz Wałęsa     →  ■ukasz Wa■■sa
+İstanbul Yıldız   →  ■stanbul Y■ld■z
+```
+
+Atinge nome do barco, do proprietário, da marina e a descrição digitada pelo técnico. O `SERIF` — que imprime o **nome da embarcação**, o maior texto do documento — tinha o mesmo problema, e quase passou despercebido por estar em outra constante.
+
+O que torna isso pior do que um erro de exibição: o documento sai **selado por SHA-256 e com QR de verificação**, ou seja, afirmando integridade. O selo não protege a verdade; carimba o erro.
+
+**A escolha da fonte foi medida, não opinada.** Arial cobre todos os casos e tem as **mesmas medidas** da Helvetica — `+0,01%` de largura no pior texto real do dossiê, layout intacto. Verdana (+10,5%) e Tahoma (−3,5%) moveriam quebras de linha; DejaVu nem cobre tudo.
+
+O Marcos decidiu **Arial**, e que a troca fica **só no dossiê** — o frontend não encosta. Como produção é um container Debian sem fonte da Microsoft, existe uma cadeia: **Arial** (dev, Windows) → **Liberation Sans** (produção, mesmas medidas, licença livre, instalada via `fonts-liberation` no Dockerfile) → base-14 como último recurso, **gritando em `logger.error`** — se cair ali, o quadrado preto volta. Emoji fica de fora: nenhuma fonte de texto tem `⚓`, e o gerador agora **avisa antes de emitir** quando encontra um caractere sem glifo.
+
+**Padrão a repetir:** quando o relatório aponta a categoria certa pelo motivo errado, a categoria ainda merece investigação. "Falha de codificação de caracteres" estava certo; o lugar não.
+
+**E o achado de tabela:** `logger` era chamado no `except` de download de foto e **nunca tinha sido importado**. Uma foto que não baixasse levantava `NameError` dentro do próprio tratamento de erro e derrubava a emissão do dossiê inteiro — exatamente o caso que a mensagem *"Imagem indisponível no momento da emissão — registro selado permanece íntegro"*, logo abaixo, existia para tratar com elegância. Tratamento de erro que nunca foi exercitado não é tratamento de erro.
+
+### Critério invisível é opinião; critério publicado é metodologia — 28/08/2026
+
+Pergunta do Marcos: *"sobre a saúde da embarcação, pq não colocar um saiba mais explicando como é analisado a saúde do ATIVO"*.
+
+O dossiê estampava oito caixas coloridas — CONFORME, ATENÇÃO, CRÍTICO, NÃO AVALIADO — e um percentual, e **em nenhum lugar dizia como aquilo foi decidido**. A regra existe em `dossie_data._saude_por_categoria` e é boa: conforme 100, atenção 50, crítico 0; sinistro aberto e casco em atenção valem zero; EPIRB com ANATEL pendente idem; categoria sem registro sai da média. **Só que ela vivia apenas no código.**
+
+Nasceu a seção **"Como Ler Este Índice"** (não numerada, junto ao Termo de Custódia), que abre delimitando o que o índice **não** é — não é vistoria, não é laudo pericial, não é avaliação de valor de mercado — e segue com a tabela de pesos, o cálculo, os agravamentos e as retificações. Sob a grade da primeira página ficou uma linha curta com o essencial e a remissão, porque o comprador que olha no celular não vai à página 12.
+
+**Padrão a repetir:** número que sustenta decisão de compra precisa vir com o critério **dentro do mesmo documento**. É o que permite à marina defender o número na frente do comprador em vez de telefonar para a plataforma. E o texto publicado **espelha código** — está anotado nas duas pontas que mexer na regra obriga a corrigir a seção, porque **critério publicado errado é pior do que critério não publicado**.
+
+### A segunda barra ainda enganava — 28/08/2026
+
+Observação do Marcos sobre o desenho de REV-06: *"a segunda barra do dossiê-atlas que indica 100%, pode ser que traga alguma confusão"*.
+
+Ele está certo, e a correção anterior tinha ficado no meio do caminho. A `CONFORMIDADE` já era fina e dourada em vez de verde, com legenda embaixo — mas continuava sendo **uma barra cheia de ponta a ponta com "100%" ao lado**. Num barco com 3 de 11 sistemas avaliados, a coisa visualmente mais afirmativa da página era ela.
+
+**Forma vence cor.** Uma linha cheia comunica "completo" antes de qualquer legenda de 5,5pt ser lida, e o leitor típico é o comprador no celular, com pressa. Suavizar a cor não resolve o que a forma promete.
+
+A barra saiu. Virou número e frase:
+
+```
+COBERTURA DE VERIFICAÇÃO   ▬▬▬───────────────   27%
+3 DE 11 SISTEMAS COM REGISTRO
+
+CONFORMIDADE                                    100%
+Calculado sobre 3 de 11 sistemas — 8 sistemas sem registro não entram na conta.
+```
+
+A frase foi escrita para ser verdadeira em **qualquer** percentual — testados 100% sobre 3 de 11, 100% sobre 10 de 11 (singular: *"1 sistema sem registro não entra"*), 100% com tudo avaliado, e **38%** sobre 4 de 11. Dizer *"os 3 sistemas estão conformes"* seria a mesma armadilha entrando por outra porta: frase que só funciona no caso bom.
+
+Com a segunda barra fora, `GaugeBar` ficou com um parâmetro `principal` sem uso — removido junto com os ramos de cor e tamanho que dependiam dele. Está escrito na docstring **por que** a conformidade não tem barra e que já se tentou resolver com cor, para ninguém "consertar de volta" daqui a seis meses.
+
+**Padrão a repetir:** quando um indicador engana, checar se a correção mexeu na **forma** ou só na cor. Cor é modificador; forma é afirmação.
 
 ### "E se eu quiser sair, meus dados vão comigo?" — a resposta — 28/08/2026
 

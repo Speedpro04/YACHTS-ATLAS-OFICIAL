@@ -1603,3 +1603,62 @@ Todos vieram do Marcos olhando o PDF pronto, e nenhum era estética por estétic
 **Padrão a repetir:** `A or B` como valor padrão só serve quando A e B são a **mesma espécie de coisa**. Nome e número de registro não são — o fallback preencheu um campo legal com valor de outro tipo, e ninguém percebeu porque a tela ficou "completa". **Campo vazio é honesto; campo preenchido com outra coisa, não.**
 
 **E o mesmo vale para mínimos artificiais:** `max(1, meses)` existia para não mostrar zero, e mentia. `max(1, dias)` também existe para não mostrar zero e **não** mente — porque o dia da entrada é o primeiro dia, e dia é a menor unidade honesta ali. A diferença entre os dois é se o piso corresponde a algo real.
+
+## 55. O relatório apontou cinco coisas; três não existiam, e a de verdade estava em outro lugar
+**Data:** 28/08/2026
+
+O Marcos trouxe um relatório de melhorias de terceiro sobre o dossiê — que a partir de hoje se chama **DOSSIÊ-ATLAS** — e pediu análise antes de qualquer conserto.
+
+### Conferir antes de consertar
+
+Cinco itens. Conferi contra o código e contra três PDFs já emitidos. **Três não existiam**, incluindo os dois de prioridade Alta: o CNPJ é uma única string em sete arquivos e o PDF extrai o valor certo; o protocolo sai limpo (`"ProtocolЬ ХАНАТЕ-2020-ECDD"` tem caracteres **cirílicos** — assinatura de OCR ruim, não de gerador); e `object-fit: cover` foi recomendado para um gerador que é ReportLab, não HTML, e que já preserva proporção.
+
+**Padrão a repetir:** relatório de terceiro é hipótese, não diagnóstico. Conferir contra o código **e** contra o artefato real antes de abrir o editor. Os três consertos teriam custado tempo para não corrigir nada — e mexer em código que está certo é como se criam defeitos.
+
+### A categoria certa pelo motivo errado
+
+O item 2 dizia "falha de codificação de caracteres (UTF-8)". O sintoma era falso; **a categoria era verdadeira**, em outro lugar.
+
+O gerador usava as fontes base-14 do PDF, que só conhecem Latin-1. Fora dele o ReportLab troca o caractere **sem exceção e sem log**: `Dvořák` → `Dvo■ák`. Atinge nome do barco, do dono, da marina e o texto que o técnico digita — num documento selado por SHA-256, que afirma integridade. O selo carimba o erro.
+
+**Padrão a repetir:** quando o relatório erra o sintoma mas nomeia uma categoria plausível, investigar a categoria. Foi o que separou "três itens fantasma" de "o defeito mais grave do documento".
+
+### Medir antes de escolher
+
+A troca de fonte parecia arriscada — tipografia é identidade do documento. Em vez de opinar, medi a largura de textos reais do dossiê em quatro candidatas: **Arial +0,01%** (mesmas medidas da Helvetica: layout intacto), Tahoma −3,5%, Verdana +10,5%, DejaVu nem cobre tudo. A decisão virou trivial, e o Marcos escolheu Arial em uma palavra.
+
+**Padrão a repetir:** decisão que parece de gosto muitas vezes tem um número por trás. Medir custa dez minutos e transforma discussão em escolha.
+
+### O aviso que existia e nunca funcionou
+
+`logger` era chamado no `except` do download de foto e **nunca tinha sido importado**. Uma foto que falhasse levantava `NameError` dentro do próprio tratamento de erro e derrubava a emissão inteira — justo o caso que a mensagem *"Imagem indisponível no momento da emissão"*, três linhas abaixo, existia para tratar com elegância.
+
+**Padrão a repetir:** caminho de erro que nunca foi exercitado não é caminho de erro, é decoração. Vale exercitar o `except` de propósito quando se passa por perto.
+
+### Critério invisível é opinião
+
+O Marcos pediu um "saiba mais" explicando como a saúde do ativo é analisada. O dossiê mostrava oito caixas coloridas e um percentual, e **não dizia como aquilo foi decidido** — a regra vivia só no código.
+
+Nasceu a seção **"Como Ler Este Índice"**, que começa delimitando o que o índice **não** é (não é vistoria, não é laudo pericial, não é avaliação de mercado) antes de dizer o que ele é.
+
+**Padrão a repetir:** número que sustenta decisão de compra vai acompanhado do critério **no mesmo documento** — é o que deixa a marina defender o número sozinha. E o texto publicado espelha código: anotar nas duas pontas, porque **critério publicado errado é pior do que critério não publicado**.
+
+### Forma vence cor
+
+Ele voltou numa decisão que nós dois tínhamos dado por encerrada em 26/08 (§54): *"a segunda barra do dossiê-atlas que indica 100%, pode ser que traga alguma confusão"*.
+
+Certo de novo. A `CONFORMIDADE` já tinha sido suavizada — fina, dourada em vez de verde, com legenda. Mas continuava **uma barra cheia de ponta a ponta**, e numa embarcação com 3 de 11 sistemas avaliados era o elemento mais afirmativo da página. Cor é modificador; **forma é afirmação**. A barra saiu e virou número e frase.
+
+A frase foi escrita para ser verdadeira em qualquer percentual, e testada em cinco cenários — inclusive **38%** e o singular *"1 sistema sem registro não entra"*. Escrever *"os 3 sistemas estão conformes"* seria a mesma armadilha entrando por outra porta.
+
+**Padrão a repetir:** quando um indicador engana, perguntar se a correção mexeu na **forma** ou só na cor. E quando o texto explica um número, testá-lo no caso ruim — frase que só funciona quando a notícia é boa é propaganda, não legenda.
+
+**Segunda vez que ele reabre este mesmo indicador e acerta.** Ver [[marcos-trabalha-com-pausas]]: solução que já parece pronta merece ser reaberta de verdade, não defendida.
+
+### O achado que ficou aberto
+
+Ao implementar o "saiba mais" descobri que o `AssetHealthDashboard` — o componente que **três arquivos do backend citam como a referência que espelham** — não é renderizado em lugar nenhum. O painel vivo é o `AtivoHub`, e ele mostra *"Saúde 78%"* de uma **terceira** fórmula.
+
+São três contas diferentes chamadas de saúde: nota ponderada no painel, média simples no dossiê, e uma terceira implementação no componente morto. A marina vê um número na tela e entrega outro ao comprador.
+
+Parei ali em vez de escolher sozinho qual explicar — pelo princípio da seção anterior. **Padrão a repetir:** antes de publicar um critério, verificar se existe **um** critério. Documentar a divergência é trabalho; documentar por cima dela é dano.
