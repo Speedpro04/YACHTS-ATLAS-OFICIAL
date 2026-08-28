@@ -119,10 +119,25 @@ def _vencimentos(registros: list[dict]) -> list[dict[str, Any]]:
     Mantém só a data MAIS RECENTE de cada item: o extintor inspecionado duas
     vezes tem duas datas, e a que vale é a última. Mostrar as duas faria o
     dossiê parecer contraditório.
+
+    MAS a chave é o CAMPO, e o mesmo campo carrega objetos e pessoas
+    diferentes: `extintor_validade` num barco com seis extintores, e
+    principalmente `cha_validade`, preenchido no Diário de Bordo uma vez por
+    viagem, por condutor diferente. Guardando sempre a data mais distante, o
+    viés é SEMPRE para o lado favorável: se três condutores navegaram e dois
+    estavam com a habilitação vencida, a tabela imprimia uma única linha,
+    "Em dia", com a validade do único regular.
+
+    Descartar em silêncio o que está vencido é omissão num documento que
+    circula numa negociação. A escolha continua sendo a mais recente — que é
+    o certo para reinspeção do mesmo objeto — mas o que foi descartado E
+    estava vencido passa a ser contado e dito na seção.
     """
     from datetime import date, datetime
 
     achados: dict[str, dict] = {}
+    # `date.today()` é usado dentro do laço para saber se o que está sendo
+    # substituído já tinha vencido.
     for r in registros:
         d = r.get("dados") or {}
         for campo, rotulo in CAMPOS_DE_VALIDADE.items():
@@ -135,12 +150,19 @@ def _vencimentos(registros: list[dict]) -> list[dict[str, Any]]:
                 continue
             anterior = achados.get(campo)
             if anterior is None or venc > anterior["_data"]:
+                # O que sai de cena ainda conta, se estava vencido.
+                omitidos = anterior["_omitidos_vencidos"] if anterior else 0
+                if anterior is not None and anterior["_data"] < date.today():
+                    omitidos += 1
                 achados[campo] = {
                     "item": rotulo,
                     "vence_em": "/".join(reversed(bruto[:10].split("-"))),
                     "_data": venc,
                     "origem": r.get("titulo") or None,
+                    "_omitidos_vencidos": omitidos,
                 }
+            elif venc < date.today():
+                anterior["_omitidos_vencidos"] += 1
 
     hoje = date.today()
     saida = []
@@ -148,6 +170,7 @@ def _vencimentos(registros: list[dict]) -> list[dict[str, Any]]:
         dias = (v["_data"] - hoje).days
         v.pop("_data")
         v["dias"] = dias
+        v["omitidos_vencidos"] = v.pop("_omitidos_vencidos", 0)
         # Três faixas, e o limiar de 90 dias não é arbitrário: é o prazo em que
         # ainda dá para renovar sem correria, e o que uma seguradora considera
         # "a vencer" numa renovação de apólice.
@@ -246,6 +269,13 @@ def _saude_por_categoria(registros: list[dict], tipo: Optional[str] = None) -> l
     Sem registro na categoria => 'na' (não avaliado). Nunca inventa 'ok'.
     Categoria que não se aplica ao tipo não aparece — ver `categorias_do_tipo`.
     """
+    # Registro RETIFICADO sai da conta: quem vale é a correção que o
+    # substituiu. `vw_registros_situacao` devolve os dois — o original e o
+    # retificador — e sem este filtro um problema já corrigido continuava
+    # puxando a categoria para ATENÇÃO para sempre. A seção "Como Ler Este
+    # Índice", no PDF, publica esta regra; ela precisa ser verdade aqui.
+    registros = [r for r in registros
+                 if (r.get("situacao") or "vigente") != "retificado"]
     out = []
     for cat, label in categorias_do_tipo(tipo):
         regs = _por_categoria(registros, cat)
@@ -298,7 +328,16 @@ def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str
     #
     # A cobertura continua aparecendo, em tile próprio: ela é informação
     # valiosa, só não é dinheiro gasto no barco.
-    CATEGORIAS_NAO_INVESTIMENTO = {"seguro"}
+    #
+    # CASCO e SINISTROS entram pelo mesmo motivo, descoberto em 28/08/2026: o
+    # campo `valor` nessas duas fichas não é dinheiro gasto, é dano ESTIMADO —
+    # "Estimativa de custo de reparo estrutural" (servicosCategorias.ts, casco)
+    # e "Estimativa inicial de prejuízo" (sinistros). Um barco que bateu e teve
+    # prejuízo estimado em R$ 300 mil imprimia na capa "Investido no ativo:
+    # R$ 300,0 mil" — dinheiro que ninguém gastou, anunciado como benfeitoria.
+    # É o mesmo defeito da apólice reaparecendo por outro campo, e a lição é
+    # que excluir POR CATEGORIA não basta: o que decide é a natureza do valor.
+    CATEGORIAS_NAO_INVESTIMENTO = {"seguro", "casco", "sinistros"}
     investido = sum(
         v for v in (
             _valor_registro(r) for r in registros
@@ -310,10 +349,27 @@ def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str
             _valor_registro(r) for r in registros if r.get("categoria") == "seguro"
         ) if v is not None
     )
-    horimetros = [
-        v for v in (_num((r.get("dados") or {}).get("horimetro")) for r in registros)
-        if v is not None
+    # Horímetro: a leitura mais RECENTE, não a maior.
+    #
+    # Era `max()` de todos os registros. Mas `horimetro` é preenchido em várias
+    # fichas com sentidos diferentes — motor principal, motor de bombordo, de
+    # boreste, geradores — e o Ferretti 780 tem quatro leituras distintas
+    # (1.480 h, 1.476 h, 1.120 h, 1.095 h). O tile escolhia a maior de todas e
+    # a chamava de "Horímetro atual", no singular, sem dizer de qual máquina.
+    # Pior: `max()` é o MAIOR, não o mais recente — um dígito a mais digitado
+    # uma vez ficava sendo o horímetro do barco para sempre.
+    #
+    # Agora vale a última leitura pela data do registro, e o rótulo diz que é
+    # leitura de máquina, não um número único do barco.
+    _com_hora = [
+        (str(r.get("created_at") or ""), _num((r.get("dados") or {}).get("horimetro")))
+        for r in registros
     ]
+    horimetros = [v for _, v in _com_hora if v is not None]
+    _ultima_hora = None
+    for _dt, _v in sorted(_com_hora, key=lambda x: x[0]):
+        if _v is not None:
+            _ultima_hora = _v
     datas = sorted(r.get("created_at") for r in registros if r.get("created_at"))
     # Tempo em custódia — em DIAS enquanto não fecha um mês.
     #
@@ -347,6 +403,32 @@ def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str
         custodia_valor = str(meses)
         custodia_rotulo = "Mês de custódia" if meses == 1 else "Meses de custódia"
 
+    # Este número conta quantos registros TÊM selo gravado — não recalcula
+    # hash nenhum. O selo é escrito por trigger no INSERT
+    # (fn_registro_hash), então a coluna nunca é nula e a conta dá 100%
+    # sempre. Continuava útil como "todo registro está selado", mas o rótulo
+    # "HASHES ÍNTEGROS" prometia uma conferência que a emissão não faz: não
+    # há uma única chamada de hash no caminho montar_dados -> gerar_pdf.
+    # Renomeado no PDF para "REGISTROS COM SELO". A conferência de verdade
+    # é a do leitor, contra a impressão digital do PDF.
+    # Intervalo REAL coberto pelos serviços — base do custo mensal.
+    _datas_servico = sorted(
+        d for d in (
+            (r.get("dados") or {}).get("data") or (r.get("dados") or {}).get("data_servico")
+            for r in registros
+        ) if d
+    )
+    _meses_de_servico = None
+    if len(_datas_servico) >= 2:
+        from datetime import datetime as _dt2
+        try:
+            _a = _dt2.fromisoformat(str(_datas_servico[0])[:10])
+            _b = _dt2.fromisoformat(str(_datas_servico[-1])[:10])
+            _m = round((_b - _a).days / 30.44)
+            _meses_de_servico = _m if _m >= 1 else None
+        except (ValueError, TypeError):
+            _meses_de_servico = None
+
     com_hash = sum(1 for r in registros if r.get("hash_sha256"))
     pendencias = sum(1 for r in registros if r.get("status") in ("pendente", "atencao"))
 
@@ -359,13 +441,35 @@ def _resumo_executivo(registros: list[dict], documentos: list[dict]) -> dict[str
         # Custo por mês só faz sentido depois de fechar um mês. Antes disso a
         # conta dividia tudo por "1 mês" e anunciava o gasto inteiro como se
         # fosse mensalidade.
-        "custo_mensal": (_brl(investido / meses) if investido > 0 and meses and meses >= 1 else None),
+        # Custo médio / mês — só quando há período de SERVIÇO para dividir.
+        #
+        # Dividia `investido` por `meses`, que é a idade do CADASTRO (contada
+        # do `created_at` do primeiro registro). No onboarding normal a marina
+        # sobe anos de histórico na primeira semana: trinta dias depois o
+        # dossiê imprimia o gasto acumulado de uma década como se fosse
+        # mensalidade. Numerador de dez anos, denominador de um mês.
+        #
+        # Agora o denominador é o intervalo coberto pelas datas dos serviços.
+        # Sem essas datas o tile não aparece — não há como afirmar o número.
+        "custo_mensal": (_brl(investido / _meses_de_servico)
+                         if investido > 0 and _meses_de_servico else None),
         "registros": len(registros) or None,
-        "imagens": len(documentos) or None,
+        # SÓ documentos — foto tem seção e contagem próprias.
+        #
+        # Era `len(documentos)`: a tabela inteira, fotos junto. No dossiê do
+        # Ferretti 780 a capa anunciava "28 DOCUMENTOS SELADOS" enquanto a
+        # página 4 listava 10 documentos e a página 14 falava em 18 imagens —
+        # 10 + 18 = 28. Quem contasse os documentos listados concluiria que a
+        # capa inflou o número em quase três vezes. E a chave ainda se chamava
+        # `imagens` enquanto o rótulo impresso dizia "Documentos".
+        "documentos": sum(1 for d in documentos if d.get("tipo") != "foto") or None,
         "meses_custodia": meses,
         "custodia_valor": custodia_valor,
         "custodia_rotulo": custodia_rotulo,
-        "horimetro": f"{max(horimetros):.0f} h" if horimetros else None,
+        "horimetro": f"{_ultima_hora:.0f} h" if _ultima_hora is not None else None,
+        # Quantas máquinas têm leitura própria: com mais de uma, o rótulo do
+        # tile deixa de prometer um horímetro único para a embarcação.
+        "horimetro_leituras": len({round(v) for v in horimetros}) or None,
         "pendencias": pendencias,
         "integridade": (
             f"{round(com_hash / len(registros) * 100)}%" if registros else None

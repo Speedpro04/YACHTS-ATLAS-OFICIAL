@@ -50,10 +50,17 @@ SURFACE     = colors.HexColor("#021a3d")   # bg-[#021a3d] do painel
 SURFACE_2   = colors.HexColor("#04122b")
 GOLD        = colors.HexColor("#c5a059")
 GOLD_LIGHT  = colors.HexColor("#ffcf8a")
-GOLD_DIM    = colors.HexColor("#8a7038")
+# Clareados em 28/08/2026 por reclamação de legibilidade no dossiê impresso.
+# Medido em contraste WCAG contra a superfície do documento (#021a3d), que é
+# o pior caso dos dois fundos: GOLD_DIM estava em 3,66:1 e WHITE_FAINT em
+# 2,88:1 — abaixo do mínimo de 4,5:1 para corpo de texto, e eles carregam
+# justamente o texto MIÚDO (5,5 a 7 pt): rótulos de tabela, selo de foto
+# (data · GEO · hash) e rodapé. Texto pequeno e apagado ao mesmo tempo é o
+# que não se lê. Agora os dois estão em 4,6:1, com o mesmo matiz.
+GOLD_DIM    = colors.HexColor("#9e8040")
 WHITE       = colors.HexColor("#f0ede6")
 WHITE_DIM   = colors.HexColor("#9aa0aa")
-WHITE_FAINT = colors.HexColor("#5b6472")
+WHITE_FAINT = colors.HexColor("#7a8595")
 BORDER      = colors.HexColor("#1a2740")
 
 # Status — valores Tailwind exatos do AssetHealthDashboard
@@ -220,8 +227,33 @@ def track(text, spaces=1):
     return (NB * spaces).join([NB * 3 if ch == " " else ch for ch in text])
 
 
-def draw_tracked(c, x, y, text, font, size, color, tracking=0.0, align="left"):
-    """Texto com letter-spacing no canvas (Canvas não tem setCharSpace)."""
+# Acima desta razão (tracking ÷ corpo da fonte) o extrator de texto do PDF
+# desiste de juntar as letras e devolve "P r o t o c o l o Y A - I A T E".
+# Medido em 28/08/2026 nos quatro tamanhos usados no dossiê — o ponto de
+# ruptura ficou em 0,151 / 0,164 / 0,154 / 0,158. 0.14 fica abaixo dos quatro.
+#
+# Não é preciosismo tipográfico: no dossiê emitido do Ferretti 780, o rodapé
+# saía "C N P J 2 6 . 9 9 8 . 5 7 1 / 0 0 0 1 - 5 0" e o cabeçalho
+# "Y A - I A T E", que lido corrido vira "YA HATE" — foi assim que um
+# revisor externo relatou "CNPJ divergente" e "protocolo corrompido" num
+# documento que estava impresso corretamente.
+#
+# Quem depende disto: o comprador que COPIA o protocolo para colar na página
+# de verificação, o Ctrl+F dentro do PDF, o leitor de tela e qualquer
+# sistema de corretora ou seguradora que processe o arquivo.
+TRACKING_MAX_RATIO = 0.14
+
+
+def draw_tracked(c, x, y, text, font, size, color, tracking=0.0, align="left",
+                 decorativo=False):
+    """Texto com letter-spacing no canvas (Canvas não tem setCharSpace).
+
+    `decorativo=True` libera o tracking cheio — só para texto que NÃO é dado:
+    a marca e a assinatura da capa, que ninguém copia e que ninguém busca.
+    Todo o resto é aparado ao teto para continuar copiável.
+    """
+    if not decorativo:
+        tracking = min(tracking, size * TRACKING_MAX_RATIO)
     w = stringWidth(text, font, size) + tracking * max(len(text) - 1, 0)
     if align == "right":
         x -= w
@@ -392,6 +424,12 @@ def _natureza(ficha: dict):
     return None
 
 
+def _pluralizar(n, singular, plural):
+    """"1 dias" e "1 MESES" já custaram caro a este documento — o segundo saiu
+    num dossiê real. Número e substantivo andam juntos, sempre."""
+    return f"{n} {singular if abs(n) == 1 else plural}"
+
+
 def _section_title(num_txt, indexar=True):
     t = Table([[Paragraph(num_txt, S["section"])]], colWidths=[176 * mm])
     t.setStyle(TableStyle([
@@ -517,7 +555,7 @@ def _health_grid(items, total_w=176 * mm, cols=4):
 
 
 def _como_ler_indice():
-    """Publica o critério do Índice de Custódia dentro do próprio documento.
+    """Publica o critério de Cobertura e Conformidade dentro do documento.
 
     O dossiê estampava CONFORME / ATENÇÃO / CRÍTICO / NÃO AVALIADO em caixas
     coloridas e um percentual ao lado, e em nenhum lugar dizia como aquilo foi
@@ -532,12 +570,21 @@ def _como_ler_indice():
     Mexeu na regra lá, corrige aqui — critério publicado errado é pior do que
     critério não publicado.
     """
-    st = [_section_title("Como Ler Este Índice", indexar=False)]
+    st = [_section_title("Como Ler Cobertura e Conformidade", indexar=False)]
     st.append(Paragraph(
-        "O Índice de Custódia resume o estado dos sistemas da embarcação a partir "
-        "<b>exclusivamente</b> dos registros selados neste Dossiê. Não é vistoria, laudo "
-        "pericial nem avaliação de valor de mercado: mede o que foi registrado e verificado, "
-        "não o que existe a bordo.", S["body_j"]))
+        "<b>Cobertura de Verificação</b> e <b>Conformidade</b>, na primeira página, resumem o "
+        "estado dos sistemas da embarcação a partir <b>exclusivamente</b> dos registros selados "
+        "neste Dossiê. Não são vistoria, laudo pericial nem avaliação de valor de mercado: medem "
+        "o que foi registrado e verificado, não o que existe a bordo.", S["body_j"]))
+    st.append(sp(4))
+    st.append(Paragraph(
+        "<b>Não confundir com o selo <i>Índice de Custódia</i></b>, na capa (Bronze, Silver, "
+        "Gold). Aquele mede outra coisa: <b>quanto</b> da embarcação está documentado — "
+        "abrangência das categorias com registro, volume de manutenção, documentos e presença "
+        "de laudo de casco. Ele descreve o trabalho de custódia da marina; os dois indicadores "
+        "abaixo descrevem o estado do que foi registrado. São perguntas diferentes e podem "
+        "divergir: uma embarcação bem documentada com avaria em aberto tem selo alto e "
+        "conformidade baixa.", S["body_j"]))
     st.append(sp(4))
     st.append(_data_table(
         ["Estado", "O que significa", "Peso"],
@@ -615,7 +662,23 @@ def _data_table(header, linhas, col_widths):
 # consertar.
 FOTO_COLS = 3
 FOTO_LARGURA_MM = 56
+
+# Proporção fixa das celas da galeria (4:3).
+#
+# Antes cada foto entrava com a altura que tinha. Uma imagem em retrato no
+# meio da linha empurrava as vizinhas e abria um buraco: nas páginas 15 e 16
+# do dossiê do Ferretti 780 sobrava de um terço a 40% de página em branco, e
+# as legendas de uma mesma linha ficavam em alturas diferentes.
+#
+# A imagem é encaixada INTEIRA na cela (contain), centralizada sobre o fundo
+# do documento — nunca recortada. Num dossiê de custódia a foto é evidência:
+# cortar para preencher pode cortar justamente a avaria que ela registra.
+FOTO_AR = 4 / 3
 FOTO_PX_MAX = 520
+# Cor do letterbox da galeria: a mesma superfície do documento, para a faixa
+# não aparecer como moldura em volta da foto.
+FOTO_FUNDO_RGB = (int(SURFACE.red * 255), int(SURFACE.green * 255),
+                  int(SURFACE.blue * 255))
 FOTO_JPEG_Q = 72
 FOTO_TIMEOUT = 12.0
 
@@ -669,6 +732,21 @@ def _baixar_foto(url: str):
     return buf, tam
 
 
+def _encaixar(img, _novo):
+    """Encaixa a imagem numa cela 4:3 sem recortar (contain), sobre o fundo
+    do documento. Ver FOTO_AR: uniformiza a grade sem sacrificar evidência."""
+    lw, lh = img.size
+    if lh <= 0 or lw <= 0:
+        return img
+    alvo_w = max(lw, int(round(lh * FOTO_AR)))
+    alvo_h = max(lh, int(round(lw / FOTO_AR)))
+    if (alvo_w, alvo_h) == (lw, lh):
+        return img
+    fundo = _novo("RGB", (alvo_w, alvo_h), FOTO_FUNDO_RGB)
+    fundo.paste(img, ((alvo_w - lw) // 2, (alvo_h - lh) // 2))
+    return fundo
+
+
 def _baixar_foto_sem_cache(url: str, cliente=None):
     """Baixa e reduz uma foto. Devolve None se não der — nunca levanta.
 
@@ -695,6 +773,7 @@ def _baixar_foto_sem_cache(url: str, cliente=None):
         else:
             img = img.convert("RGB")
         img.thumbnail((FOTO_PX_MAX, FOTO_PX_MAX), Image.LANCZOS)
+        img = _encaixar(img, Image.new)
         buf = BytesIO()
         img.save(buf, format="JPEG", quality=FOTO_JPEG_Q, optimize=True)
         buf.seek(0)
@@ -718,8 +797,27 @@ def _celula_foto(foto: dict, larg_mm: float):
         alt = larg * (ph / pw)
         corpo = RLImage(buf, width=larg, height=alt)
 
+    # "SELADO EM", não a data nua.
+    #
+    # A data é `uploaded_at` — o relógio do servidor quando a marina enviou o
+    # arquivo — e vinha impressa ao lado de GEO e do hash. Lado a lado, o
+    # leitor entende as três como propriedades da FOTO: quando foi tirada,
+    # onde, e o selo. Só que GEO foi consertado em 26/08 e passou a sair do
+    # EXIF da imagem, e a data não: uma foto do casco tirada em 2019 e enviada
+    # hoje saía "2026-08-26", num documento cujo argumento é justamente provar
+    # a condição do ativo ao longo do tempo. Metade do par foi corrigida e a
+    # outra metade ficou prometendo o mesmo.
+    #
+    # Ler a data de captura do EXIF exige coluna nova e backfill — está em
+    # Pendências. Até lá o rótulo diz o que o dado é, em vez de deixá-lo
+    # passar por outra coisa.
+    _d = foto.get("data")
+    if _d and len(_d) == 10 and _d[4] == "-":
+        _d = "SELADO EM " + "/".join(reversed(_d.split("-")))
+    elif _d:
+        _d = "SELADO EM " + _d
     selo = " · ".join(x for x in [
-        foto.get("data"),
+        _d,
         "GEO" if foto.get("geo") else None,
         foto.get("hash"),
     ] if x)
@@ -871,11 +969,14 @@ class _DossieCanvas(pdfcanvas.Canvas):
             except Exception:
                 pass
 
+        # Marca e assinatura: decorativas de propósito — o tracking largo é a
+        # identidade da capa, e ninguém copia nem busca por elas.
         draw_tracked(self, x, base, "YACHTS ATLAS", SANS_B, 14 if hero else 9.5,
-                     GOLD, tracking=2.2)
+                     GOLD, tracking=2.2, decorativo=True)
         draw_tracked(self, x, base - (5.2 * mm if hero else 3.6 * mm),
                      "CURADORIA DE ATIVOS NÁUTICOS DE ALTO VALOR",
-                     SANS, 6.5 if hero else 5.3, GOLD_DIM, tracking=1.3)
+                     SANS, 6.5 if hero else 5.3, GOLD_DIM, tracking=1.3,
+                     decorativo=True)
 
         rs = 6.5 if hero else 5.3
         gap = 4.2 * mm if hero else 3.3 * mm
@@ -1212,7 +1313,9 @@ def _capa(dados: dict, ident: dict) -> list:
         # A primeira conta que um comprador faz. O dado sempre esteve aqui.
         (r.get("custo_mensal"), "Custo médio / mês", WHITE),
         (r.get("registros"), "Registros selados", WHITE),
-        (r.get("imagens"), "Documentos selados", WHITE),
+        # Conta SÓ documentos. Antes era a tabela `documentos` inteira, com as
+        # fotos dentro: a capa dizia 28 e a seção listava 10.
+        (r.get("documentos"), "Documentos selados", WHITE),
         # Valor e rótulo vêm juntos de dossie_data: "12 · Dias em custódia" ou
         # "3 · Meses de custódia". O rótulo era fixo no plural e saía "1 MESES"
         # num barco com um dia de custódia.
@@ -1258,7 +1361,7 @@ def _capa(dados: dict, ident: dict) -> list:
         st.append(sp(2))
         st.append(Paragraph(
             "Conforme = 100 · Atenção = 50 · Crítico = 0. Categoria sem registro fica fora "
-            "da média. Critério completo em “Como Ler Este Índice”, ao final deste Dossiê.",
+            "da média. Critério completo em “Como Ler Cobertura e Conformidade”, ao final.",
             S["small"]))
 
     return st
@@ -1354,9 +1457,16 @@ def _montar(dados: dict, indice):
     # ── Sumário executivo: 2ª linha de KPIs + pendências reais ──
     r = dados.get("resumo") or {}
     tiles2 = [
-        (r.get("horimetro"), "Horímetro atual", WHITE),
+        # "Atual" prometia a leitura mais recente de um horímetro único; a
+        # embarcação tem vários (motores e geradores). Com mais de uma leitura
+        # o rótulo diz isso em vez de escolher uma e chamá-la de a do barco.
+        (r.get("horimetro"),
+         "Horímetro · última leitura" if (r.get("horimetro_leituras") or 0) > 1
+         else "Horímetro", WHITE),
         (r.get("pendencias") if r.get("pendencias") else None, "Pendências abertas", AMBER),
-        (r.get("integridade"), "Hashes íntegros", EMERALD),
+        # "Hashes íntegros" prometia conferência; o número mede quantos
+        # registros têm selo gravado. O rótulo agora diz o que a conta faz.
+        (r.get("integridade"), "Registros com selo", EMERALD),
         (r.get("custodia_desde"), "Custódia desde", WHITE),
     ]
     tiles2 = [(n, l, c) for n, l, c in tiles2 if n]
@@ -1565,19 +1675,31 @@ def _montar(dados: dict, indice):
         alertas = [v for v in venc if v["situacao"] in ("vencido", "a_vencer")]
         if alertas:
             story.append(Paragraph(
-                f"<b>{len(alertas)} item(ns)</b> vencido(s) ou a vencer nos "
-                "próximos 90 dias. Datas conferidas contra os registros selados "
-                "na data de emissão deste dossiê.", S["body"]))
+                f"<b>{_pluralizar(len(alertas), 'item vencido', 'itens vencidos')}</b> "
+                "ou a vencer nos próximos 90 dias. Datas conferidas contra os "
+                "registros selados na data de emissão deste dossiê.", S["body"]))
         else:
             story.append(Paragraph(
                 "Nenhum item vencido ou a vencer nos próximos 90 dias. Datas "
                 "conferidas contra os registros selados.", S["body"]))
+        # A tabela guarda UMA data por campo, a mais recente — correto para
+        # reinspeção do mesmo objeto. Mas o mesmo campo serve seis extintores e
+        # a habilitação de vários condutores: o que foi substituído E estava
+        # vencido é dito aqui, para a omissão não passar por "em dia".
+        _omitidos = sum(v.get("omitidos_vencidos") or 0 for v in venc)
+        if _omitidos:
+            story.append(_alert(
+                "warn", "Leituras vencidas não listadas:",
+                f"{_pluralizar(_omitidos, 'outra leitura vencida foi substituída', 'outras leituras vencidas foram substituídas')} "
+                "por uma posterior no mesmo campo. Um mesmo campo cobre vários "
+                "itens (extintores, habilitação de condutores diferentes): a "
+                "tabela mostra a data mais recente de cada um."))
         story.append(sp(4))
         story.append(_data_table(
             ["Item", "Vence em", "Prazo", "Situação"],
             [[v["item"], v["vence_em"],
-              (f"{v['dias']} dias" if v["dias"] >= 0
-               else f"vencido há {abs(v['dias'])} dias"),
+              (_pluralizar(v["dias"], "dia", "dias") if v["dias"] >= 0
+               else "vencido há " + _pluralizar(abs(v["dias"]), "dia", "dias")),
               {"vencido": "VENCIDO", "a_vencer": "A VENCER",
                "em_dia": "Em dia"}[v["situacao"]]]
              for v in venc],
@@ -1592,7 +1714,21 @@ def _montar(dados: dict, indice):
     if secoes_tecnicas is None:
         secoes_tecnicas = [{"titulo": "Histórico de Manutenção", "categoria": "manutencao",
                             "fichas": dados.get("manutencao") or []}]
-    categorias_tratadas = {"proprietarios", "documentacao"}
+    # `documentacao` NÃO entra aqui de saída.
+    #
+    # A seção "Documentação Legal e Fiscal" imprime apenas os itens de
+    # `checklist` (dossie_data: `documentacao.extend(r.get("checklist"))`) —
+    # nunca o título, os dados, a observação ou as evidências do registro. Com
+    # "documentacao" nesta lista, o laço de "Demais categorias" também pulava
+    # esses registros, e um registro de documentação SEM checklist marcado
+    # desaparecia por inteiro do corpo do dossiê — continuando a contar no tile
+    # "Registros selados" da capa. No Ferretti 780 a capa prometia 13 e o corpo
+    # detalhava 12: o que faltava era "Renovação do Título de Inscrição",
+    # justamente um documento da Capitania.
+    #
+    # Agora só é considerado tratado o registro que de fato contribuiu com
+    # checklist; o resto cai no fallback e aparece.
+    categorias_tratadas = {"proprietarios"}
 
     for sec in secoes_tecnicas:
         fichas = sec.get("fichas") or []
@@ -1708,6 +1844,10 @@ def _montar(dados: dict, indice):
         c = r.get("categoria")
         if c in categorias_tratadas:
             continue
+        # Documentação com checklist já saiu na seção 03; sem checklist, não
+        # saiu em lugar nenhum — e é esse que precisa aparecer aqui.
+        if c == "documentacao" and (r.get("checklist") or []):
+            continue
         outras.setdefault(c, []).append(r)
     for cat, regs in outras.items():
         titulo = TITULOS_DOSSIE.get(cat, str(cat).replace("_", " ").title())
@@ -1739,14 +1879,28 @@ def _montar(dados: dict, indice):
         dd = reg.get("dados") or {}
         # `data` (ficha técnica) ou `data_servico` (form rápido do painel).
         # created_at é só fallback — é a data do cadastro, não a do serviço.
-        d = dd.get("data") or dd.get("data_servico") or str(reg.get("created_at") or "")[:10]
+        d = dd.get("data") or dd.get("data_servico")
+        # As duas espécies de data NÃO podem dividir a coluna sem aviso.
+        #
+        # Quando a ficha não traz a data do serviço, o único carimbo que existe
+        # é o do cadastro. Antes as duas saíam iguais, e no dossiê do Ferretti
+        # 780 os treze marcos apareceram todos em "08/2026" — uma cronologia
+        # sugerindo que revisão de 500 h, docagem anual, laudo estrutural e
+        # apólice aconteceram no mesmo mês. Num documento cujo produto É o
+        # histórico, esse é o gráfico que o comprador olha primeiro.
+        de_cadastro = not d
+        if de_cadastro:
+            d = str(reg.get("created_at") or "")[:10]
         if not d:
             continue
         # ISO (2024-03-12) -> 03/2024
         partes = str(d)[:10].split("-")
         rotulo = f"{partes[1]}/{partes[0]}" if len(partes) == 3 else str(d)[:10]
         st = {"atencao": "crit", "pendente": "warn"}.get(reg.get("status"), "ok")
-        eventos.append((str(d)[:10], rotulo, reg.get("titulo") or "Registro", st))
+        titulo = reg.get("titulo") or "Registro"
+        if de_cadastro:
+            titulo += "  <font size=6 color='#7a8595'>(data de cadastro)</font>"
+        eventos.append((str(d)[:10], rotulo, titulo, st, de_cadastro))
     eventos.sort(key=lambda e: e[0])
     if eventos:
         story.append(_section_title(f"{n:02d} — Linha do Tempo da Custódia"))
@@ -1754,7 +1908,15 @@ def _montar(dados: dict, indice):
             "Cronologia dos eventos selados. Cada marco corresponde a um registro imutável "
             "com data, autoria e hash.", S["body"]))
         story.append(sp(4))
-        story.append(_timeline([(rot, tit, st) for _, rot, tit, st in eventos]))
+        _sem_data_de_servico = sum(1 for e in eventos if e[4])
+        if _sem_data_de_servico:
+            story.append(_alert(
+                "na", "Datas de execução ausentes:",
+                f"{_pluralizar(_sem_data_de_servico, 'marco usa', 'marcos usam')} a data em "
+                "que o registro foi cadastrado, porque a ficha não trouxe a data do serviço. "
+                "Estão assinalados na lista. Data de cadastro não é data de execução."))
+            story.append(sp(3))
+        story.append(_timeline([(rot, tit, st) for _, rot, tit, st, _c in eventos]))
         n += 1
         story.append(PageBreak())
 
