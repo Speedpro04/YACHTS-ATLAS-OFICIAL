@@ -11,6 +11,7 @@ Regras que este módulo respeita:
 
 Consome o pacote de montar_dados_dossie() (dossie_data.py).
 """
+import logging
 import os
 from io import BytesIO
 from datetime import datetime
@@ -26,7 +27,11 @@ from reportlab.platypus import (
     PageBreak, KeepTogether, Flowable, Image as RLImage, NextPageTemplate,
 )
 from reportlab.pdfgen import canvas as pdfcanvas
+from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfbase.ttfonts import TTFont
+
+logger = logging.getLogger(__name__)
 
 # Data de emissão no fuso do Brasil. Com utcnow() o dossiê gerado das 21h à
 # meia-noite (BRT) saía com a data do dia seguinte.
@@ -58,9 +63,105 @@ ROSE    = colors.HexColor("#f43f5e")
 BLUE    = colors.HexColor("#3b82f6")
 ZINC    = colors.HexColor("#71717a")
 
-SERIF  = "Times-Bold"       # espelha font-serif do painel nos números grandes
-SANS   = "Helvetica"
-SANS_B = "Helvetica-Bold"
+# ─────────────────────────────────────────────────────────────
+# FONTES
+# ─────────────────────────────────────────────────────────────
+# Helvetica e Times-Bold são fontes base-14 do PDF: não exigem arquivo, mas
+# só conhecem Latin-1. Fora dele o ReportLab troca o caractere por um QUADRADO
+# PRETO — sem erro, sem log. "Dvořák" saía "Dvo■ák" no nome do proprietário,
+# num documento selado por SHA-256 que afirma integridade. Medido em
+# 28/08/2026, junto com romeno (Ștefan), polonês (Łukasz) e turco (Yıldız).
+#
+# Arial tem as MESMAS MEDIDAS da Helvetica, e Times New Roman as de Times-Bold:
+# a troca não move uma quebra de linha do dossiê. Medido nos textos reais do
+# documento: +0,01% de largura no pior caso.
+#
+# A cadeia existe porque o servidor NÃO é o Windows — em produção o dossiê sai
+# de um container Debian (`python:3.11-slim-bookworm`), que instala
+# `fonts-liberation` no Dockerfile: mesmas medidas da Arial, licença livre.
+# As base-14 ficam como último recurso; se a execução cair nelas o quadrado
+# preto volta, e é exatamente por isso que o log abaixo grita em ERROR.
+_DIRS_FONTES = (
+    r"C:\Windows\Fonts",                          # dev (Windows)
+    "/usr/share/fonts/truetype/msttcorefonts",     # Arial, se instalada
+    "/usr/share/fonts/truetype/liberation",        # produção (Debian)
+    "/usr/share/fonts/truetype/liberation2",
+    "/usr/share/fonts/truetype/dejavu",
+)
+
+# Ordem de preferência por papel. O nome interno é fixo para que os estilos
+# não precisem saber qual arquivo venceu.
+_FAMILIAS = {
+    "AtlasSans":   (["arial.ttf", "Arial.ttf", "LiberationSans-Regular.ttf"],
+                    "Helvetica"),
+    "AtlasSansB":  (["arialbd.ttf", "Arial_Bold.ttf", "LiberationSans-Bold.ttf"],
+                    "Helvetica-Bold"),
+    "AtlasSerifB": (["timesbd.ttf", "Times_New_Roman_Bold.ttf",
+                     "LiberationSerif-Bold.ttf"], "Times-Bold"),
+}
+
+
+def _achar_fonte(nomes):
+    for d in _DIRS_FONTES:
+        for nome in nomes:
+            caminho = os.path.join(d, nome)
+            if os.path.exists(caminho):
+                return caminho
+    return None
+
+
+def _registrar_fontes():
+    """Registra a melhor fonte disponível para cada papel.
+
+    SANS regular e bold são registradas em conjunto: se uma faltar, as duas
+    caem para a base-14. Meia troca deixaria o documento com dois desenhos
+    de letra diferentes na mesma linha.
+    """
+    escolhidas, faltando = {}, []
+    for papel, (candidatas, base14) in _FAMILIAS.items():
+        caminho = _achar_fonte(candidatas)
+        if not caminho:
+            faltando.append(papel)
+            escolhidas[papel] = base14
+            continue
+        try:
+            pdfmetrics.registerFont(TTFont(papel, caminho))
+            escolhidas[papel] = papel
+        except Exception as e:                      # fonte corrompida, sem permissão
+            logger.warning(f"Fonte {caminho} não pôde ser registrada: {e}")
+            faltando.append(papel)
+            escolhidas[papel] = base14
+
+    # Meia troca no par SANS é pior que troca nenhuma.
+    if "AtlasSans" in faltando or "AtlasSansB" in faltando:
+        escolhidas["AtlasSans"] = _FAMILIAS["AtlasSans"][1]
+        escolhidas["AtlasSansB"] = _FAMILIAS["AtlasSansB"][1]
+
+    if any(escolhidas[p] != p for p in _FAMILIAS):
+        logger.error(
+            "DOSSIÊ-ATLAS sem fonte Unicode — caindo para as base-14 do PDF. "
+            "Nome com caractere fora de Latin-1 (Dvořák, Łukasz, Ștefan) sairá "
+            "com QUADRADO PRETO no lugar da letra. Instale `fonts-liberation` "
+            "no ambiente. Papéis afetados: "
+            + ", ".join(p for p in _FAMILIAS if escolhidas[p] != p))
+    return escolhidas
+
+
+_FONTES = _registrar_fontes()
+SERIF  = _FONTES["AtlasSerifB"]   # espelha font-serif do painel nos números grandes
+SANS   = _FONTES["AtlasSans"]
+SANS_B = _FONTES["AtlasSansB"]
+
+
+def _glifos_ausentes(texto, fonte):
+    """Caracteres que a fonte NÃO desenha — viram quadrado preto no PDF."""
+    try:
+        mapa = pdfmetrics.getFont(fonte).face.charToGlyph
+    except Exception:
+        # base-14 não expõe charToGlyph: o critério lá é caber em Latin-1.
+        return {c for c in texto
+                if c.encode("cp1252", errors="replace") == b"?"}
+    return {c for c in texto if ord(c) > 127 and ord(c) not in mapa}
 
 STATUS_COR = {"ok": EMERALD, "warn": AMBER, "crit": ROSE, "info": BLUE, "na": ZINC}
 STATUS_TXT = {"ok": "CONFORME", "warn": "ATENÇÃO", "crit": "CRÍTICO",
@@ -161,7 +262,7 @@ S = {
 # FLOWABLES
 # ─────────────────────────────────────────────────────────────
 class GaugeBar(Flowable):
-    """Espelha a barra 'Índice de Segurança' do AssetHealthDashboard.
+    """Barra do Índice de Custódia. UMA só, e de propósito.
 
     Mostra SEMPRE o denominador — "3 de 8 sistemas avaliados" — logo abaixo da
     barra. Sem ele, um Netuno II com três sistemas conformes e cinco NÃO
@@ -169,30 +270,32 @@ class GaugeBar(Flowable):
     ao lado de um selo BRONZE. O número está certo pela própria definição
     (média do que foi avaliado), mas quem lê entende "este barco está 100%".
 
+    Aqui existe barra só para a COBERTURA, que varia de barco para barco.
+    A conformidade sai como número e frase (`_conformidade_texto`): ela é
+    quase sempre 100% e uma linha cheia de ponta a ponta afirma "completo"
+    antes de qualquer legenda ser lida — forma vence cor, e o leitor típico é
+    o comprador olhando no celular, com pressa. Tentou-se antes deixá-la fina
+    e em dourado apagado; não bastou. Não devolver a barra para cá.
+
     É a mesma armadilha que motivou renomear "Classificação" para "Índice de
     Custódia": o número dizia uma coisa e era lido como outra. Percentual sem
     denominador promete mais do que mediu.
     """
 
-    def __init__(self, pct, rotulo, legenda=None, principal=True, width=176 * mm):
+    def __init__(self, pct, rotulo, legenda=None, width=176 * mm):
         super().__init__()
         self.pct, self.width = pct, width
-        self.rotulo, self.legenda, self.principal = rotulo, legenda, principal
+        self.rotulo, self.legenda = rotulo, legenda
 
     def wrap(self, aw, ah):
         return self.width, (10 * mm if self.legenda else 7 * mm)
 
     def draw(self):
         c = self.canv
-        # Mesma espessura nas duas, fina. A diferença entre elas continua
-        # existindo pela COR (escala de risco × dourado discreto), pelo tamanho
-        # do número e pela ordem na página — não precisa também da espessura,
-        # e barra grossa rouba atenção do texto que explica o número.
+        # Fina de propósito: barra grossa rouba atenção do texto que explica
+        # o número, e é o texto que sustenta o número.
         bar_h = 1.5
-        # A barra que VARIA usa a escala de cor; a que é quase sempre 100% sai
-        # em dourado discreto, para não gritar "tudo certo" sem contexto.
-        col = (EMERALD if self.pct >= 80 else (AMBER if self.pct >= 50 else ROSE)) \
-            if self.principal else GOLD_LIGHT
+        col = EMERALD if self.pct >= 80 else (AMBER if self.pct >= 50 else ROSE)
         # A LINHA sai suavizada contra o fundo; o RÓTULO fica na cor cheia.
         # A linha é indicativa, não alarme — em cor sólida ela puxava o olho
         # antes do número e do texto que o explica. Já a letra precisa de
@@ -209,11 +312,51 @@ class GaugeBar(Flowable):
         c.setFillColor(col_linha)
         c.roundRect(0, base, self.width * self.pct / 100.0, bar_h, bar_h / 2, fill=1, stroke=0)
         draw_tracked(c, 0, base + bar_h + 2.4 * mm, self.rotulo, SANS_B,
-                     6 if self.principal else 5.5, col, tracking=1.2)
-        c.setFont(SERIF, 13 if self.principal else 10)
-        c.setFillColor(WHITE if self.principal else WHITE_DIM)
+                     6, col, tracking=1.2)
+        c.setFont(SERIF, 13)
+        c.setFillColor(WHITE)
         c.drawRightString(self.width, base + bar_h + 2.0 * mm, f"{self.pct}%")
         c.restoreState()
+
+
+def _conformidade_texto(pct, avaliados, total):
+    """Conformidade sem barra: rótulo, número e a frase que o qualifica.
+
+    Ver GaugeBar — barra cheia aqui era lida como "barco completo" mesmo com a
+    maioria dos sistemas sem registro. Sem forma cheia não há o que ler errado,
+    e o denominador vira texto em vez de legenda de 5,5pt.
+
+    A frase NÃO afirma conformidade: diz sobre quantos sistemas o percentual
+    foi calculado. Vale para 100% e para 40% igualmente — frase que só serve
+    para o caso bom é a armadilha de novo, por outro caminho.
+    """
+    def plural(n, sing, plur):
+        return f"{n} {sing if n == 1 else plur}"
+
+    linha = Table(
+        [[Paragraph(track("CONFORMIDADE"), ParagraphStyle(
+            "cfl", fontName=SANS_B, fontSize=6, textColor=GOLD_LIGHT, leading=9)),
+          Paragraph(f"{pct}%", ParagraphStyle(
+              "cfn", fontName=SERIF, fontSize=11, textColor=WHITE_DIM, leading=14,
+              alignment=TA_RIGHT))]],
+        colWidths=[130 * mm, 46 * mm])
+    linha.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+        ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+    ]))
+
+    if avaliados and total and total > avaliados:
+        faltam = total - avaliados
+        frase = (f"Calculado sobre {avaliados} de {total} sistemas — "
+                 f"{plural(faltam, 'sistema sem registro não entra', 'sistemas sem registro não entram')} "
+                 "na conta.")
+    elif avaliados and total:
+        frase = f"Calculado sobre os {total} sistemas aplicáveis, todos com registro."
+    else:
+        frase = "Calculado apenas sobre os sistemas com registro selado."
+
+    return [linha, Paragraph(frase, S["small"])]
 
 
 class Rule(Flowable):
@@ -371,6 +514,66 @@ def _health_grid(items, total_w=176 * mm, cols=4):
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
     ]))
     return t
+
+
+def _como_ler_indice():
+    """Publica o critério do Índice de Custódia dentro do próprio documento.
+
+    O dossiê estampava CONFORME / ATENÇÃO / CRÍTICO / NÃO AVALIADO em caixas
+    coloridas e um percentual ao lado, e em nenhum lugar dizia como aquilo foi
+    decidido. A regra existe em `dossie_data._saude_por_categoria` e é boa —
+    mas só vivia no código, onde quem lê o PDF não alcança.
+
+    Critério invisível é opinião; critério publicado é metodologia. É o que
+    permite à marina defender o número quando o comprador contestar, em vez de
+    ter que ligar para a plataforma e explicar de memória.
+
+    ESTE TEXTO ESPELHA `dossie_data._saude_por_categoria` E `_prontidao`.
+    Mexeu na regra lá, corrige aqui — critério publicado errado é pior do que
+    critério não publicado.
+    """
+    st = [_section_title("Como Ler Este Índice", indexar=False)]
+    st.append(Paragraph(
+        "O Índice de Custódia resume o estado dos sistemas da embarcação a partir "
+        "<b>exclusivamente</b> dos registros selados neste Dossiê. Não é vistoria, laudo "
+        "pericial nem avaliação de valor de mercado: mede o que foi registrado e verificado, "
+        "não o que existe a bordo.", S["body_j"]))
+    st.append(sp(4))
+    st.append(_data_table(
+        ["Estado", "O que significa", "Peso"],
+        [["CONFORME", "Todos os registros da categoria estão concluídos, sem "
+                      "pendência ou ressalva.", "100"],
+         ["ATENÇÃO", "Há registro pendente ou com ressalva técnica na categoria.", "50"],
+         ["CRÍTICO", "Há ressalva em categoria de risco direto à segurança "
+                     "(ver agravamento, abaixo).", "0"],
+         ["NÃO AVALIADO", "A categoria não possui nenhum registro selado.",
+          "fora da média"]],
+        [30 * mm, 116 * mm, 30 * mm]))
+    st.append(sp(5))
+    st.append(Paragraph(
+        "<b>Cálculo.</b> O Índice é a média aritmética dos pesos das categorias avaliadas. "
+        "Categoria sem registro não entra na conta — não soma nem penaliza. Por isso o Índice "
+        "deve ser lido sempre junto da <b>Cobertura de Verificação</b>, que informa quantas "
+        "categorias possuem registro: um índice alto sobre poucas categorias avaliadas descreve "
+        "uma amostra pequena, não uma embarcação em ordem.", S["body_j"]))
+    st.append(sp(4))
+    st.append(Paragraph(
+        "<b>Agravamento para CRÍTICO.</b> Ressalva em <b>Casco</b> ou <b>Sinistros</b> não é "
+        "meio-termo: casco avariado e sinistro em aberto valem zero, não cinquenta. Em "
+        "<b>Segurança</b>, ressalva acompanhada de EPIRB com homologação ANATEL pendente recebe "
+        "o mesmo tratamento — sem homologação válida, o sinal de socorro não é atendido.",
+        S["body_j"]))
+    st.append(sp(4))
+    st.append(Paragraph(
+        "<b>Categorias que não se aplicam.</b> A lista varia conforme o tipo de embarcação: "
+        "veleiro registra em Velame &amp; Rigging no lugar de Motor; embarcação a motor não "
+        "possui Velame. Categoria que não existe no tipo não é exibida nem contabilizada, para "
+        "não figurar como lacuna permanente.", S["body_j"]))
+    st.append(sp(4))
+    st.append(Paragraph(
+        "<b>Retificações.</b> Registro retificado sai das métricas: quem vale é a correção. "
+        "O registro original permanece visível no Dossiê, ao lado dela.", S["body_j"]))
+    return st
 
 
 def _alert(kind, titulo, texto):
@@ -1022,16 +1225,16 @@ def _capa(dados: dict, ident: dict) -> list:
         st.append(_kpi_row(tiles))
         st.append(sp(6))
 
-    # DUAS barras, e a ORDEM é deliberada.
+    # UMA barra, e a ORDEM é deliberada.
     #
-    # Cobertura em cima porque é ela que varia — e é a primeira coisa em que o
-    # olho pousa que ancora o julgamento. Uma barra verde de 100% no topo faria
-    # o leitor concluir "está tudo bem" antes de processar qualquer texto, e só
-    # depois descobrir que sete sistemas nunca foram olhados.
+    # Cobertura tem barra porque é ela que varia — e é a primeira coisa em que
+    # o olho pousa que ancora o julgamento. Uma barra verde de 100% no topo
+    # faria o leitor concluir "está tudo bem" antes de processar qualquer
+    # texto, e só depois descobrir que sete sistemas nunca foram olhados.
     #
-    # Conformidade embaixo, mais fina e em dourado em vez da escala de cor:
-    # ela é quase sempre 100% (só entra na conta o que tem registro), então não
-    # informa nada sozinha e não pode ter o peso visual da outra.
+    # Conformidade vem embaixo SEM barra: ela é quase sempre 100% (só entra na
+    # conta o que tem registro), e uma linha cheia de ponta a ponta afirmava
+    # "completo" com força maior do que a legenda que a desmentia.
     pront = dados.get("prontidao")
     avaliados = dados.get("prontidao_avaliados")
     total = dados.get("prontidao_total")
@@ -1040,13 +1243,9 @@ def _capa(dados: dict, ident: dict) -> list:
             cobertura = round(avaliados / total * 100)
             st.append(GaugeBar(
                 cobertura, "COBERTURA DE VERIFICAÇÃO",
-                legenda=f"{avaliados} DE {total} SISTEMAS COM REGISTRO",
-                principal=True))
+                legenda=f"{avaliados} DE {total} SISTEMAS COM REGISTRO"))
             st.append(sp(7))
-        st.append(GaugeBar(
-            pront, "CONFORMIDADE",
-            legenda=(f"{avaliados} SISTEMAS VERIFICADOS" if avaliados else None),
-            principal=False))
+        st.extend(_conformidade_texto(pront, avaliados, total))
         st.append(sp(11))
 
     saude = dados.get("saude") or []
@@ -1054,6 +1253,13 @@ def _capa(dados: dict, ident: dict) -> list:
         st.append(Paragraph("PRONTIDÃO OPERACIONAL POR SISTEMA", S["h2"]))
         st.append(sp(3))
         st.append(_health_grid(saude))
+        # O critério não pode morar só na seção do fim: o comprador que olha
+        # esta grade no celular não vai à página 12 procurar a metodologia.
+        st.append(sp(2))
+        st.append(Paragraph(
+            "Conforme = 100 · Atenção = 50 · Crítico = 0. Categoria sem registro fica fora "
+            "da média. Critério completo em “Como Ler Este Índice”, ao final deste Dossiê.",
+            S["small"]))
 
     return st
 
@@ -1061,10 +1267,46 @@ def _capa(dados: dict, ident: dict) -> list:
 # ─────────────────────────────────────────────────────────────
 # GERADOR
 # ─────────────────────────────────────────────────────────────
+def _avisar_glifos(dados, _limite=40):
+    """Avisa ANTES de emitir se algum texto tem caractere que a fonte não
+    desenha — emoji, por exemplo, que nenhuma fonte de texto cobre.
+
+    Não bloqueia a emissão: quem decide se o dossiê sai é a marina, não o
+    gerador. Mas o operador precisa saber que aquele nome vai imprimir com um
+    quadrado no meio, em vez de descobrir pelo comprador.
+    """
+    achados, vistos = set(), 0
+
+    def varrer(v):
+        nonlocal vistos
+        if vistos > 4000 or len(achados) >= _limite:
+            return
+        if isinstance(v, str):
+            vistos += 1
+            achados.update(_glifos_ausentes(v, SANS))
+        elif isinstance(v, dict):
+            for x in v.values():
+                varrer(x)
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                varrer(x)
+
+    try:
+        varrer(dados)
+    except Exception:                      # aviso nunca derruba a emissão
+        return
+    if achados:
+        logger.warning(
+            "DOSSIÊ-ATLAS: %d caractere(s) sem glifo na fonte %s sairão como "
+            "quadrado no PDF: %s", len(achados), SANS,
+            " ".join(sorted(achados)))
+
+
 def gerar_pdf_dossie(dados: dict) -> bytes:
     """Gera o PDF do dossiê. Duas passadas: a 1ª mede em que página cada seção
     cai, a 2ª monta o índice com os números reais."""
     _CACHE_FOTOS.clear()
+    _avisar_glifos(dados)
     _prefetch_fotos([f["url"] for f in (dados.get("fotografico") or {}).get("fotos") or []])
     try:
         mapa = _montar(dados, indice=None).mapa_secoes
@@ -1534,7 +1776,13 @@ def _montar(dados: dict, indice):
         n += 1
         story.append(PageBreak())
 
-    # ── Termo + verificação de autenticidade ──
+    # ── Como ler o índice + termo + verificação de autenticidade ──
+    # Metodologia antes do termo: o termo garante que o número é íntegro; esta
+    # seção diz o que o número quer dizer. Sem ela o termo sela um dado mudo.
+    if dados.get("prontidao") is not None:
+        story.extend(_como_ler_indice())
+        story.append(sp(6))
+
     story.append(_section_title("Termo de Custódia e Integridade Digital"))
     story.append(Paragraph(
         "Declara-se que os registros, documentos e imagens deste Dossiê foram selados por hash "

@@ -31,8 +31,15 @@ RUN npm run build
 # --- Stage 2: Final Image (Python + Nginx + Supervisord) ---
 FROM python:3.11-slim-bookworm
 
-# Instalar nginx e supervisor
-RUN apt-get update && apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
+# Instalar nginx, supervisor e as fontes do DOSSIÊ-ATLAS.
+#
+# fonts-liberation NÃO é opcional: sem ela o gerador de PDF cai nas fontes
+# base-14 do formato, que só conhecem Latin-1, e todo nome com caractere fora
+# disso (Dvořák, Łukasz, Ștefan, Yıldız) imprime um QUADRADO PRETO no lugar da
+# letra — num documento selado por SHA-256 que afirma integridade.
+# Liberation tem as mesmas medidas da Arial usada em desenvolvimento, então o
+# layout do dossiê sai idêntico ao que se vê na máquina local.
+RUN apt-get update && apt-get install -y nginx supervisor fonts-liberation && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/backend
 
