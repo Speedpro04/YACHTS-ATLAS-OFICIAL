@@ -16,10 +16,69 @@ interface Props {
 }
 
 // Mapeia o status legível -> enum aceito pelo backend de registros
+// Rótulo do formulário -> status que o banco entende.
+//
+// Esta tabela cobria APENAS 'Concluído' / 'Pendente' / 'Atenção', e todo o
+// resto caía no fallback `|| 'registrado'`. Só que as fichas oferecem SETE
+// conjuntos de rótulos diferentes no campo `status`, e seis deles não têm
+// nenhuma dessas três palavras exatas:
+//
+//   casco      'Crítico (Avaria Estrutural)' · 'Atenção (Recomenda-se Reparo)'
+//   velame     'Crítico'                     · 'Atenção (Substituir/Ajustar)'
+//   pintura    'Crítico (Sem proteção/craca)'· 'Atenção (Pintura gasta)'
+//   interior   'Crítico'                     · 'Atenção (Pontos de mofo/desgaste)'
+//   seguro     'Vencida'                     · 'Pendente de Renovação'
+//
+// Como 'registrado' não é 'atencao' nem 'pendente', `_saude_por_categoria`
+// caía no `else: st = "ok"` — e o dossiê imprimia CASCO · CONFORME, peso 100,
+// num barco cujo operador tinha marcado AVARIA ESTRUTURAL. O agravamento de
+// casco e sinistros criado em REV-06 ("não é ressalva, é fato grave, vale 0")
+// nunca chegava a disparar, porque o status jamais chegava como 'atencao'.
+//
+// Agora a leitura é por PREFIXO, não por igualdade: rótulo novo com sufixo
+// entre parênteses continua sendo entendido. A ordem dos testes importa —
+// 'Crítico' antes de 'Atenção', e ambos antes do caso favorável.
 const STATUS_ENUM: Record<string, string> = {
   'Concluído': 'concluido',
   'Pendente': 'pendente',
   'Atenção': 'atencao',
+}
+
+export function statusDoRotulo(rotulo?: string): string {
+  const s = (rotulo || '').trim().toLowerCase()
+  if (!s) return 'registrado'
+  if (STATUS_ENUM[rotulo as string]) return STATUS_ENUM[rotulo as string]
+
+  // A ficha de SINISTRO nao usa nenhuma das palavras acima -- descoberto por
+  // um teste, em 28/08/2026, DEPOIS de a primeira correcao parecer completa.
+  // Suas quatro opcoes eram 'Totalmente reparado - sem ressalva', 'Reparado
+  // com ressalva tecnica', 'Reparo parcial - pendencias em aberto' e 'Nao
+  // reparado' -- e as quatro caiam no fallback. Um sinistro NAO REPARADO saia
+  // CONFORME, peso 100, justamente na categoria que o dossie trata como fato
+  // grave. 'sem ressalva' vem antes de 'ressalva': o sufixo inverte o sentido.
+  if (s.includes('sem ressalva')) return 'concluido'
+  if (s.includes('ressalva') || s.includes('pendencia') || s.includes('pendência'))
+    return 'atencao'
+  if (s.startsWith('nao ') || s.startsWith('não ')) return 'atencao'
+
+  // Grave: avaria, apólice vencida, sistema crítico. O banco não tem um
+  // 'critico' próprio — 'atencao' é o valor que o backend já sabe tratar, e
+  // em casco/sinistros ele já vira CRÍTICO na régua do dossiê.
+  if (s.startsWith('crítico') || s.startsWith('critico')) return 'atencao'
+  if (s.startsWith('vencida') || s.startsWith('vencido')) return 'atencao'
+  if (s.startsWith('atenção') || s.startsWith('atencao')) return 'atencao'
+
+  if (s.startsWith('pendente')) return 'pendente'
+
+  // Favoráveis: só entram aqui depois que todos os alertas foram descartados.
+  if (s.startsWith('concluído') || s.startsWith('concluido')) return 'concluido'
+  if (s.startsWith('excelente') || s.startsWith('bom') ||
+      s.startsWith('operacional') || s.startsWith('regular') ||
+      s.startsWith('vigente')) return 'concluido'
+
+  // Rótulo desconhecido não vira notícia boa: fica como registro sem
+  // avaliação, que sai do denominador em vez de somar 100.
+  return 'registrado'
 }
 
 export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoId, config, onSaved, onCancel }: Props) {
@@ -116,7 +175,7 @@ export default function FichaServicoForm({ categoriaKey, categoriaTitulo, ativoI
   const selar = async () => {
     setEnviando(true)
     try {
-      const statusEnum = STATUS_ENUM[campos.status] || 'registrado'
+      const statusEnum = statusDoRotulo(campos.status)
       await api.registros.create({
         ativo_id: ativoId,
         categoria: categoriaKey,
