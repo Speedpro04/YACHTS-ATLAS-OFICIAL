@@ -78,7 +78,7 @@ export default function PagamentoDossie() {
             <div className="p-6 rounded-sm border border-[#c5a059]/20 bg-[#c5a059]/5">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="block text-sm font-black uppercase tracking-[0.2em] text-[#c5a059]">Dossiê Yachts Atlas</span>
+                  <span className="block text-sm font-black uppercase tracking-[0.2em] text-[#c5a059]">Dossiê Atlas</span>
                   <span className="block text-[10px] text-white/30 uppercase tracking-widest mt-1">Porte do ativo: {faixa.label}</span>
                 </div>
                 <span className="text-3xl font-serif font-bold text-[#c5a059]">{precoFmt}</span>

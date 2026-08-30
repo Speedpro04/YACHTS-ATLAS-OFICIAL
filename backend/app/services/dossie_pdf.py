@@ -1436,7 +1436,7 @@ def _montar(dados: dict, indice):
     doc = _Doc(
         buf, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm,
         topMargin=24 * mm, bottomMargin=20 * mm,
-        title=f"Dossiê Yachts Atlas — {ident.get('nome') or protocolo}",
+        title=f"Dossiê Atlas — {ident.get('nome') or protocolo}",
         author="Yachts Atlas · AXOS HUB",
         subject="Dossiê de Custódia e Conformidade Náutica")
     doc.addPageTemplates([
