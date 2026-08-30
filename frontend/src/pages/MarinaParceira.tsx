@@ -163,7 +163,7 @@ export default function MarinaParceira() {
               no meio de uma seção sem largura máxima, e por isso flutuavam
               soltos, descolados do título e do texto. */}
           <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#C9A84C]/80">
-            Oferta oficial: USD 250/mês • Meta pública: 120 vagas
+            Oferta oficial: USD 250/mês
           </p>
 
           <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl">
@@ -215,7 +215,7 @@ export default function MarinaParceira() {
                 text: (
                   <>
                     A página oficial trabalha a escala da rede com{' '}
-                    <strong>120 vagas e mensalidade de USD 250</strong> para marinas em operação.
+                    <strong>mensalidade de USD 250</strong> para marinas em operação.
                   </>
                 ),
               },
