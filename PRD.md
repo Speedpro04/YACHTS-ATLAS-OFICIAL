@@ -2,6 +2,10 @@
 - [x] **REV-14 — Três incoerências que o reposicionamento revelou**: a página de Segurança dizia *"cada **proprietário** recebe uma chave... você e as **entidades autorizadas** (marinas, seguradoras)"* — tratando a marina como terceiro autorizado pelo dono, enquanto a landing afirma o oposto na mesma visita (*"a custódia é da marina"*). Não era desalinhamento de tom: as duas afirmações **se contradiziam**. Junto: o Sobre dizia "custodiamos a verdade do seu ativo", e o Portal do Proprietário estampava *"Seu Ativo. **Seu Controle**"* — contradizendo o próprio `readOnly` da tela, onde o armador só consulta
 - [x] **REV-14 — O SEO estava em dois lugares e divergindo**: o `index.html` foi ajustado para falar com marina, mas existe `frontend/src/seo/seo-data.json`, que o `SeoMeta.tsx` aplica em runtime (`document.title = title`) e **sobrescrevia**. Dava para ver acontecendo: a aba mostrava o título novo e três segundos depois voltava ao antigo. Décima ocorrência do padrão "mesma regra em dois lugares" neste projeto
 - [x] **REV-14 — "Dossiê Yachts Atlas" → "Dossiê Atlas"**: decisão do fundador — *"é mais fácil de falar, guardar e mais fácil de pegar no mundo náutico"*. Seis ocorrências no Oficial (incluindo o título de metadados do PDF, que aparece na aba do leitor) e três no Lançamento. **Só onde a expressão aparecia literalmente**: a capa e o cabeçalho do documento seguem "Dossiê de Custódia e Conformidade Náutica" — o nome comercial é um, o título formal é outro, e é o formal que sustenta o peso perante Autoridade Marítima e seguradora
+- [x] **REV-15 — Lançamento e Oficial diziam números diferentes sobre o mesmo produto**: a capacidade fotográfica aparecia como **460** no sistema (`MAX_FOTOS`, soma dos mínimos de `COBERTURA_CATS`), **430** no Oficial e **400** no Lançamento — três números para o mesmo fato, e nenhum dos dois anunciados batia com o código. Decisão do fundador: **460**, o que o sistema realmente faz. E a correção foi de raiz: a landing do Oficial passa a **ler a constante** em vez de repetir o número à mão, então não há mais como divergir
+- [x] **REV-15 — "16 seções padronizadas" não correspondia a nada**: o Lançamento anunciava 16. O gerador tem 11 seções fixas numeradas mais uma por categoria com registro (máximo teórico de 22), e o dossiê real do Ferretti 780 — 19 páginas, bem preenchido — saiu com **10**. O número sempre varia, porque a regra do documento é "seção sem dado não é renderizada". Trocado por **"Estrutura padronizada"**: diz que é organizado e uniforme, sem prometer uma contagem que o sistema não garante
+- [x] **REV-15 — As vagas se contradiziam dentro do Oficial**: `referral_slots` dizia "Apenas **14** vagas disponíveis" e a Marina Parceira anunciava "Meta pública: **120** vagas", em duas passagens — contra as **20** fundadoras do modelo definitivo, que é o que o Lançamento já dizia. O fundador mandou tirar as 120 (*"nem era pra colocar isso"*) e fixar 20. A `referral_slots` era **chave órfã** — não renderizada em lugar nenhum, guardando número errado para quem fosse usá-la depois
+- [x] **REV-15 — Os três filtros de copy aplicados também ao Lançamento**: *"A marina guarda **dados soltos** em planilhas, papel e mensagens. Cada troca de responsável **recomeça do zero**"* (supõe falha), *"Sem histórico verificável, **o iate vale menos**"* (fala com o armador, não com a marina), *"vêm exigências extras, **prêmios maiores** e demora na apólice"* (alarme). E uma contradição interna: a página usa **WhatsApp como canal oficial de contato** ("Falar no WhatsApp", botão de conversão) e, em dois outros lugares, como símbolo de bagunça. Os canais de contato ficaram intactos
 - [x] **REV-14 — Headline calibrada por medição, aparelho a aparelho**: a headline nova é bem mais longa que a antiga, e no celular ocupava **32% da tela** em 7 linhas. O fundador pediu **15%**. Medindo, a proporção pula de 13% para 17% ao mexer só no corpo da fonte — porque a headline salta de 4 para 5 linhas. O ponto foi achado pela **entrelinha**, que no celular estava em 0,95 (apertada demais para leitura em tela pequena): `2.25rem` + `leading-[1.05]` dá exatamente 15% no iPhone 14, mantendo 4 linhas. De `sm` para cima nada muda. Conferido em iPhone SE (23%), Android 360px (19%), iPhone 14 (15%), 15 (14%) e 15 Pro Max (13%) — **CTA dentro da dobra e zero scroll horizontal em todos**
 - [x] **REV-14 — Três filtros de copy que passam a valer para tudo**: sem citar empresa do mesmo ramo, sem supor falha de quem lê, sem alarme. A primeira versão da copy — escrita por mim — violava os três: "o que a sua marina entrega e **a vizinha** não" (reprovado como *vulgar*), "sua equipe **para de caçar papel**", "vira **palavra contra palavra**", "o que sua operação **já paga em retrabalho e cliente perdido**", "o registro não pode viver num **grupo de WhatsApp, numa gaveta e na memória do encarregado**". Saiu também do onboarding a frase pré-existente *"marinas que não oferecem segurança digital estão perdendo espaço para o futuro"*
 - [x] **REV-13 — "Crítico (Avaria Estrutural)" chegava ao dossiê como CONFORME**: `STATUS_ENUM` no `FichaServicoForm` traduzia **três** textos exatos — 'Concluído', 'Pendente', 'Atenção' — e todo o resto caía em `|| 'registrado'`. Só que as fichas oferecem **sete** conjuntos de rótulos: casco, velame, pintura, interior, seguro e sinistro não usam nenhuma dessas três palavras sozinhas. **14 dos 17 rótulos do sistema** viravam 'registrado', que em `_saude_por_categoria` cai no `else: st = "ok"` — CONFORME, peso 100. Pior: o agravamento criado em REV-06 (casco e sinistro em atenção valem 0) **nunca chegou a disparar uma única vez**, porque o status jamais chegava como 'atencao'. A trava existia e estava desligada na origem. Agora a leitura é por prefixo, não por igualdade
@@ -507,6 +511,32 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### As duas páginas contando histórias diferentes do mesmo produto — 30/08/2026
+
+Depois de reposicionar o Oficial, o fundador levantou o ponto certo: *"essa já é mais focada para Marinas, mas verifique e ajuste conforme a Oficial, para não terem discordâncias entre si, correto meu argumento?"*
+
+Correto — **com uma exceção que precisa ficar registrada**: preço e prazo **devem** divergir. Lançamento é US$ 200 com 18 meses de dossiê; Oficial é US$ 250 com 12 meses, e os 18 não podem aparecer lá. Alinhar isso quebraria a oferta. O alinhamento é de **tom, vocabulário e afirmação de fato** — nunca de número comercial.
+
+Comparando as duas página a página, apareceram três divergências factuais:
+
+**1. A capacidade fotográfica tinha três valores.**
+
+| onde | número |
+|---|---|
+| `MAX_FOTOS` no backend (soma dos mínimos de `COBERTURA_CATS`) | **460** |
+| Oficial — landing, painel, FAQ | 430 |
+| Lançamento | 400 |
+
+O comentário do próprio backend chamava 430 de *"principal argumento de venda"* enquanto o código permitia 460. O fundador escolheu **460**, e a correção foi de raiz: a landing agora **importa `MAX_FOTOS`** e interpola no texto. Número de venda escrito à mão em três arquivos diverge — é só questão de tempo.
+
+**2. "16 seções padronizadas" não era o máximo, nem o que sai, nem o número de categorias.** O gerador tem 11 seções fixas numeradas mais uma por categoria com registro; o Ferretti 780 real produziu 10. O documento tem uma regra central — *seção sem dado não é renderizada* — que garante que esse número **sempre** vai variar. Virou "Estrutura padronizada".
+
+**3. As vagas se contradiziam dentro do próprio Oficial:** 14 numa chave, 120 em duas passagens, contra as 20 do modelo. As 120 saíram por ordem direta (*"nem era pra colocar isso"*).
+
+**Padrão a repetir:** duas superfícies que vendem o mesmo produto precisam de **uma fonte por fato**. Onde o número existe no código, o texto lê o código. Onde não dá para ler (HTML estático do Lançamento), o número entra na varredura de coerência — porque ele vai divergir sozinho.
+
+**E o padrão de copy que se confirmou:** os três filtros do fundador (alto nível, sem ofensa, sem falar de empresa do mesmo ramo) não eram sobre o Oficial — são da marca. O Lançamento violava os três, e um deles de forma constrangedora: usava **WhatsApp como canal oficial de conversão** e, dois blocos abaixo, como símbolo de desorganização.
 
 ### A página vendia para quem não paga — 30/08/2026
 

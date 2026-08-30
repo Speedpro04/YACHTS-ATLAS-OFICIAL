@@ -1753,3 +1753,36 @@ O mesmo ganho, dito pelo lado do que entregamos:
 **Padrão a repetir:** para criar tensão sem ofender, **perguntar em vez de afirmar**. A headline aprovada é *"Sua marina cuida de milhões em ativos. Cada um com uma história. Onde está registrada?"* — a pergunta transfere de afirmação para auto-avaliação, e quem responde chega sozinho à conclusão.
 
 Ele fechou apontando que é a mesma técnica que usa comigo — e é verdade: hoje ele perguntou *"posso fazer deploy?"* em vez de mandar, e a pergunta me fez auditar o build e descobrir que a correção de status não era retroativa. Ordem se executa; pergunta se investiga. Ver [[marcos-trabalha-com-pausas]].
+
+## 58. Uma fonte por fato, ou os números divergem sozinhos
+**Data:** 30/08/2026
+
+Depois de reposicionar o Oficial, o Marcos pediu para alinhar o Lançamento — *"para não terem discordâncias entre si"*. Estava certo, e a varredura achou mais do que tom.
+
+### O que NÃO se alinha
+
+Preço e prazo divergem **de propósito**: Lançamento US$ 200 + 18 meses, Oficial US$ 250 + 12 meses. Alinhar quebraria a oferta.
+
+**Padrão a repetir:** antes de "deixar tudo igual", separar o que diverge por decisão comercial do que diverge por descuido. As duas coisas parecem iguais numa varredura automática.
+
+### Três números para o mesmo fato
+
+A capacidade fotográfica era 460 no sistema, 430 no Oficial e 400 no Lançamento — e o comentário do backend chamava o 430 de "principal argumento de venda" enquanto o código permitia 460.
+
+A correção que importa não foi trocar os números: foi fazer a landing **importar `MAX_FOTOS`** e interpolar. Onde o fato existe no código, o texto lê o código.
+
+**Padrão a repetir:** número de venda escrito à mão em mais de um arquivo é divergência com data marcada. Se dá para ler da fonte, leia — o texto passa a se corrigir sozinho.
+
+### O número que o sistema nunca poderia garantir
+
+"16 seções padronizadas" não era o máximo (22), nem o que sai (10 no Ferretti real), nem o número de categorias (11). E não havia número certo possível: a regra do documento é *seção sem dado não é renderizada*, então a contagem varia com o que cada marina registrou.
+
+**Padrão a repetir:** quando o próprio produto garante que a contagem varia, não anunciar contagem. Anunciar a cobertura ("estrutura padronizada"), que é o que se sustenta em todo dossiê.
+
+### A contradição mais constrangedora do dia
+
+O Lançamento usa **WhatsApp como canal oficial de conversão** — botão "Falar no WhatsApp", campo de telefone, mensagem de erro que manda falar no WhatsApp. E, dois blocos abaixo, usava WhatsApp como símbolo de bagunça: *"sem passar por pasta, WhatsApp ou e-mail"*, *"nada espalhado em pastas, WhatsApp ou e-mail que se perde"*.
+
+A mesma página convidando para o canal e desqualificando o canal.
+
+**Padrão a repetir:** ao usar algo como exemplo de problema, verificar se a empresa não o usa como ferramenta. Ver [[tom-de-marca-alto-nivel]] e [[canais-de-aviso-whatsapp-email]].
