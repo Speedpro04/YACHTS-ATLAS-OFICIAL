@@ -1715,3 +1715,41 @@ Todos a mesma coisa: **campo certo, lido como outra coisa**.
 O caso dos vencimentos é o mais sutil do dia. Nada estava errado na tela: a tabela mostrava uma linha por item, com data válida e "Em dia". O defeito era o que **não** estava lá — as duas habilitações vencidas, descartadas por uma dedup que sempre escolhia a data mais distante.
 
 **Padrão a repetir:** num documento que circula numa negociação, **descartar em silêncio é afirmar**. Onde houver dedup, perguntar o que sai de cena e se o que saiu era pior que o que ficou. Se for, o documento tem que dizer — nem que seja em uma linha.
+
+## 57. A página vendia para quem não paga
+**Data:** 30/08/2026
+
+O Marcos: *"Nossas páginas estão focadas no Ativo e no armador, mas esquecemos que trabalharemos com as MARINAS."*
+
+A home dizia "Seu iate não é apenas um ativo", o botão dizia "Proteger meu Ativo", e os quatro benefícios eram todos do dono — valorização, liquidez, prêmio de seguro. A marina, que assina os US$ 250/mês, aparecia no bloco de indicação e numa linha do FAQ.
+
+### Recusar o que o produto não faz, mesmo vindo em PDF
+
+Junto veio um documento propondo *"elimine o gargalo operacional"*, *"automatize minha marina"*, *"movimentações, agendas, processos"*. O Atlas não faz gestão de pátio nem agenda. Vender isso seria a mesma armadilha da semana inteira: prometer mais do que se entrega.
+
+**Padrão a repetir:** antes de reposicionar, listar o que o produto REALMENTE faz e recusar o resto — inclusive quando a sugestão chega formatada e com aparência de estratégia pronta. Copy é promessa, e promessa não cumprida vira churn depois da venda.
+
+### Trocar o interlocutor é uma varredura de coerência
+
+Mudar de B2C para B2B expôs contradições que já estavam lá:
+
+- Segurança dizia que o cofre é do **proprietário** e a marina é "entidade autorizada"; a home diz que a custódia é **da marina**. As duas, na mesma visita.
+- O Portal estampava "Seu Ativo. **Seu Controle**" numa tela `readOnly`.
+- O SEO vivia em `index.html` **e** em `seo/seo-data.json`, e o segundo sobrescrevia o primeiro em runtime. Décima ocorrência de "mesma regra em dois lugares" neste projeto — e a única que se via a olho nu: o título da aba trocava sozinho três segundos depois de carregar.
+
+**Padrão a repetir:** reposicionamento é um bom pretexto para auditar coerência. Nada disso apareceu enquanto o texto falava com o público errado.
+
+### Os três filtros de copy
+
+Dele, textualmente: *"Trabalhamos em alto nível, sem ofensas, [sem] falar de equipes do mesmo ramo"* e *"FALAMOS DO NOSSO VALOR E DE NOSSA QUALIDADE DE SERVIÇO"*.
+
+Minha primeira versão violou os três. Ele reprovou "a vizinha não" como **vulgar** e "e anota tudo num caderno" como **humilhante** — e estava certo nas duas: ninguém compra de quem acabou de descrever sua operação como amadora. Também saíram "para de caçar papel", "palavra contra palavra" e "já paga em retrabalho e cliente perdido": todas supõem falha de quem lê.
+
+O mesmo ganho, dito pelo lado do que entregamos:
+- "A hora que a equipe deixa de perder" → **"Tudo em um lugar só"**
+- "Prova do seu lado na discussão" → **"Prova documental do serviço"**
+- "Cliente que não troca de marina" → **"Relação que se aprofunda"**
+
+**Padrão a repetir:** para criar tensão sem ofender, **perguntar em vez de afirmar**. A headline aprovada é *"Sua marina cuida de milhões em ativos. Cada um com uma história. Onde está registrada?"* — a pergunta transfere de afirmação para auto-avaliação, e quem responde chega sozinho à conclusão.
+
+Ele fechou apontando que é a mesma técnica que usa comigo — e é verdade: hoje ele perguntou *"posso fazer deploy?"* em vez de mandar, e a pergunta me fez auditar o build e descobrir que a correção de status não era retroativa. Ordem se executa; pergunta se investiga. Ver [[marcos-trabalha-com-pausas]].

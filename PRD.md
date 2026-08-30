@@ -1,3 +1,9 @@
+- [x] **REV-14 — A página Oficial vendia para quem não compra**: a copy falava com o **armador** em todas as seções principais — "Seu iate não é apenas um ativo", CTA "Proteger meu Ativo", "blinda a história do seu ativo", "vale até 20% mais", "reduza o tempo de venda em 60%". Só que quem assina os **US$ 250/mês é a marina**, e ela aparecia apenas no bloco de indicação e numa pergunta do FAQ. 41 textos reescritos para falar com quem paga, sem mexer em estrutura, componente ou preço
+- [x] **REV-14 — Três incoerências que o reposicionamento revelou**: a página de Segurança dizia *"cada **proprietário** recebe uma chave... você e as **entidades autorizadas** (marinas, seguradoras)"* — tratando a marina como terceiro autorizado pelo dono, enquanto a landing afirma o oposto na mesma visita (*"a custódia é da marina"*). Não era desalinhamento de tom: as duas afirmações **se contradiziam**. Junto: o Sobre dizia "custodiamos a verdade do seu ativo", e o Portal do Proprietário estampava *"Seu Ativo. **Seu Controle**"* — contradizendo o próprio `readOnly` da tela, onde o armador só consulta
+- [x] **REV-14 — O SEO estava em dois lugares e divergindo**: o `index.html` foi ajustado para falar com marina, mas existe `frontend/src/seo/seo-data.json`, que o `SeoMeta.tsx` aplica em runtime (`document.title = title`) e **sobrescrevia**. Dava para ver acontecendo: a aba mostrava o título novo e três segundos depois voltava ao antigo. Décima ocorrência do padrão "mesma regra em dois lugares" neste projeto
+- [x] **REV-14 — "Dossiê Yachts Atlas" → "Dossiê Atlas"**: decisão do fundador — *"é mais fácil de falar, guardar e mais fácil de pegar no mundo náutico"*. Seis ocorrências no Oficial (incluindo o título de metadados do PDF, que aparece na aba do leitor) e três no Lançamento. **Só onde a expressão aparecia literalmente**: a capa e o cabeçalho do documento seguem "Dossiê de Custódia e Conformidade Náutica" — o nome comercial é um, o título formal é outro, e é o formal que sustenta o peso perante Autoridade Marítima e seguradora
+- [x] **REV-14 — Headline calibrada por medição, aparelho a aparelho**: a headline nova é bem mais longa que a antiga, e no celular ocupava **32% da tela** em 7 linhas. O fundador pediu **15%**. Medindo, a proporção pula de 13% para 17% ao mexer só no corpo da fonte — porque a headline salta de 4 para 5 linhas. O ponto foi achado pela **entrelinha**, que no celular estava em 0,95 (apertada demais para leitura em tela pequena): `2.25rem` + `leading-[1.05]` dá exatamente 15% no iPhone 14, mantendo 4 linhas. De `sm` para cima nada muda. Conferido em iPhone SE (23%), Android 360px (19%), iPhone 14 (15%), 15 (14%) e 15 Pro Max (13%) — **CTA dentro da dobra e zero scroll horizontal em todos**
+- [x] **REV-14 — Três filtros de copy que passam a valer para tudo**: sem citar empresa do mesmo ramo, sem supor falha de quem lê, sem alarme. A primeira versão da copy — escrita por mim — violava os três: "o que a sua marina entrega e **a vizinha** não" (reprovado como *vulgar*), "sua equipe **para de caçar papel**", "vira **palavra contra palavra**", "o que sua operação **já paga em retrabalho e cliente perdido**", "o registro não pode viver num **grupo de WhatsApp, numa gaveta e na memória do encarregado**". Saiu também do onboarding a frase pré-existente *"marinas que não oferecem segurança digital estão perdendo espaço para o futuro"*
 - [x] **REV-13 — "Crítico (Avaria Estrutural)" chegava ao dossiê como CONFORME**: `STATUS_ENUM` no `FichaServicoForm` traduzia **três** textos exatos — 'Concluído', 'Pendente', 'Atenção' — e todo o resto caía em `|| 'registrado'`. Só que as fichas oferecem **sete** conjuntos de rótulos: casco, velame, pintura, interior, seguro e sinistro não usam nenhuma dessas três palavras sozinhas. **14 dos 17 rótulos do sistema** viravam 'registrado', que em `_saude_por_categoria` cai no `else: st = "ok"` — CONFORME, peso 100. Pior: o agravamento criado em REV-06 (casco e sinistro em atenção valem 0) **nunca chegou a disparar uma única vez**, porque o status jamais chegava como 'atencao'. A trava existia e estava desligada na origem. Agora a leitura é por prefixo, não por igualdade
 - [x] **REV-13 — Nove números da capa param de prometer o que não medem**: capa dizia **28 documentos** e a pág. 4 listava 10 (o tile somava fotos com documentos); **"Investido no ativo"** somava *prejuízo estimado* de sinistro e *estimativa de reparo* de casco com gasto real — o R$ 2,5 mi voltando por outro campo; **"Hashes íntegros 100%"** contava coluna preenchida por trigger e prometia uma conferência que a emissão não faz; **custo/mês** dividia o gasto histórico pela idade do **cadastro**; **horímetro** era o `max()` de quatro máquinas diferentes; **vencimentos** guardava a data mais distante por campo e escondia a CHA vencida, sempre a favor do barco; **linha do tempo** misturava data de serviço e de cadastro (no Ferretti, os 13 marcos saíram todos em "08/2026"); a capa prometia **13 registros** e o corpo detalhava 12; e a data sob cada foto era a do **upload**, impressa ao lado do GEO — o gêmeo do defeito que já foi corrigido pela metade
 - [x] **REV-13 — O cabeçalho do dossiê volta a ser copiável**: o letter-spacing quebrava a extração de texto — saía `P r o t o c o l o   Y A - I A T E`, que lido corrido vira **"YA HATE"**. Foi exatamente assim que um revisor externo relatou "protocolo corrompido" e "CNPJ divergente" num PDF impresso corretamente. Medido: o extrator desiste quando *tracking ÷ corpo da fonte* ≥ 0,15, e os quatro textos do cabeçalho estavam acima. Teto de 0,14 no `draw_tracked`; marca e assinatura seguem decorativas. Quem depende disso: o comprador que **copia o protocolo** para colar no verificador, o Ctrl+F, o leitor de tela
@@ -59,7 +65,10 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 24. **A verificação nunca recalcula hash nenhum** — `verificacao.py` responde "íntegro" comparando `com_hash == len(registros)`, ou seja, se a coluna está preenchida. O conteúdo do registro nunca é re-hasheado contra o selo. A única função que confere de verdade (`s3_service.verify_integrity`) não é chamada por nenhum caminho público. O texto do PDF e a página pública dizem "a plataforma recalcula os hashes" — **o tile já foi renomeado para "Registros com selo", mas essa frase continua no ar**.
 25. **Vencimentos precisam de discriminador por item** — a dedup é por CAMPO, e o mesmo campo serve seis extintores e a habilitação de vários condutores. Hoje o que é substituído e estava vencido é **contado e avisado** na seção, mas não listado. A solução completa é uma chave que identifique o item (qual extintor, qual condutor).
 26. **Varredura do dossiê ficou pela metade** — as lentes de *números* e *ausência/fallback* rodaram e renderam os nove achados de REV-13. Faltaram quatro: **cadeia de custódia**, **o comprador lendo o PDF**, **privacidade/LGPD no documento** e **a mesma informação em dois lugares**. Rodar quando houver folga de sessão.
-27. **Curadoria do registro fotográfico** — panfleto de fornecedor e arte promocional com texto sobreposto entram no dossiê hoje. Cada foto sai com data, GEO e hash: o selo afirma *"isto é evidência"*, e quando aparece embaixo de um folder ele deixa de valer para **todas** as fotos. Fazer a parte barata (diretriz no upload + campo dizendo o que a foto é); **não** tentar detecção automática agora — o erro caro é o inverso, barrar a foto legítima do casco às 18h de sexta.
+27. **Landing carrega o app inteiro** — o build é um arquivo único de **852 KB** e `App.tsx` não usa `React.lazy` em nenhuma rota. Quem abre a home baixa o painel da marina, o `@supabase/supabase-js` e o `lucide-react` completos antes de ver a primeira letra — nenhum dos três é usado na landing. Foi o que o fundador sentiu como "página um pouco lenta" em 30/08/2026. Conserto é code splitting por rota; mexe em arquitetura, então aguarda autorização.
+28. **Menu colide com o botão em tablet** — a 768px o item "PORTAL DO PROPRIETÁRIO" se sobrepõe ao botão "ACESSAR COFRE". Anterior às mudanças de copy.
+29. **"Até 15% de redução de prêmio" precisa de lastro** — a página promete desconto de seguradora (texto anterior a 30/08/2026). Se não há acordo formal assinado, é exposição a propaganda enganosa: ou existe o acordo, ou a frase precisa de ressalva. Decisão comercial do fundador.
+30. **Curadoria do registro fotográfico** — panfleto de fornecedor e arte promocional com texto sobreposto entram no dossiê hoje. Cada foto sai com data, GEO e hash: o selo afirma *"isto é evidência"*, e quando aparece embaixo de um folder ele deixa de valer para **todas** as fotos. Fazer a parte barata (diretriz no upload + campo dizendo o que a foto é); **não** tentar detecção automática agora — o erro caro é o inverso, barrar a foto legítima do casco às 18h de sexta.
 
 ## Contra-prova de Autenticidade
 
@@ -498,6 +507,47 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### A página vendia para quem não paga — 30/08/2026
+
+O Marcos: *"Nossas páginas estão focadas no Ativo e no armador, mas esquecemos que trabalharemos com as MARINAS do BRASIL e depois ao redor do globo."*
+
+Ele está certo, e o desalinhamento era total. A home dizia **"Seu iate não é apenas um ativo"**, o botão dizia **"Proteger meu Ativo"**, e os quatro benefícios eram todos do dono: valorização de 20%, liquidez, prêmio de seguro menor. A marina — que assina os US$ 250/mês — aparecia no bloco de indicação e numa pergunta do FAQ.
+
+**Uma ressalva foi levantada antes de escrever, e mudou o texto.** Veio junto um PDF de terceiro propondo headlines de *"elimine o gargalo operacional"*, *"automatize minha marina"*, *"movimentações, agendas e processos"*. O Atlas **não faz** gestão de pátio, agenda de vaga nem movimentação: vender isso seria a mesma armadilha que passamos a semana consertando no dossiê — prometer mais do que se entrega. O ângulo B2B honesto já estava no produto: a marina **se protege e retém o cliente**.
+
+**Padrão a repetir:** antes de reposicionar uma página, listar o que o produto REALMENTE faz e recusar o que ele não faz — inclusive quando a sugestão vem em documento formatado. Copy é promessa; promessa não cumprida vira churn.
+
+### Reposicionar revelou contradições que ninguém tinha visto — 30/08/2026
+
+Trocar o interlocutor expôs afirmações que **se contradiziam dentro do mesmo site**:
+
+- A página de Segurança dizia *"cada **proprietário** recebe uma chave... somente você e as **entidades autorizadas** (marinas, seguradoras)"* — a marina como terceiro autorizado pelo dono. A home afirma o inverso: *"A custódia é da marina; o proprietário apenas consulta."* Um visitante lia as duas na mesma visita.
+- O **Portal do Proprietário** estampava *"Seu Ativo. **Seu Controle**"* — e a tela é `readOnly`. A própria página, mais abaixo, explica que quem emite é a marina.
+- O **SEO** vivia em dois arquivos. O `index.html` foi corrigido, mas `seo/seo-data.json` sobrescrevia em runtime via `SeoMeta.tsx`. Dava para ver na aba: título novo e, três segundos depois, o antigo de volta.
+
+**Padrão a repetir:** mudança de posicionamento é uma boa varredura de coerência. O que estava contraditório antes ficou visível quando o interlocutor mudou — e o `seo-data.json` teria anulado o trabalho em silêncio, sem erro nenhum.
+
+### Três filtros de copy, dados pelo fundador — 30/08/2026
+
+Nas palavras dele: *"Trabalhamos em alto nível, sem ofensas, [sem] falar de equipes do mesmo ramo"* e *"não temos que falar ou supor terceiros, FALAMOS DO NOSSO VALOR E DE NOSSA QUALIDADE DE SERVIÇO."*
+
+A primeira versão da copy — escrita por mim — violava os três:
+
+| escrito | reprovado por |
+|---|---|
+| "o que a sua marina entrega e **a vizinha** não" | *vulgar*; comparar é linguagem de comércio de bairro |
+| "Sua marina cuida de milhões. **E anota tudo num caderno**" | *humilhante*; a provocação virou deboche |
+| "sua equipe **para de caçar papel**" | supõe que ela caça |
+| "vira **palavra contra palavra**" | supõe conflito na marina |
+| "o que sua operação **já paga em retrabalho e cliente perdido**" | supõe prejuízo |
+| "não pode viver num **grupo de WhatsApp, numa gaveta**" | descreve uma marina malfeita |
+
+O mesmo ganho, dito pelo lado do que **entregamos**: "A hora que a equipe deixa de perder" virou **"Tudo em um lugar só"**; "Prova do seu lado na discussão" virou **"Prova documental do serviço"**; "Cliente que não troca de marina" virou **"Relação que se aprofunda"**.
+
+Saiu também uma frase pré-existente do onboarding: *"Marinas que não oferecem segurança digital estão perdendo espaço para o futuro"* — fala de empresas do mesmo ramo e ainda ameaça.
+
+**Padrão a repetir:** o público é dono de marina de alto padrão. Ofensa velada, comparação e alarme rebaixam a marca **antes** de qualquer argumento. E quando quiser criar tensão, **pergunte em vez de afirmar** — a headline aprovada é *"Sua marina cuida de milhões em ativos. Cada um com uma história. **Onde está registrada?**"*. Quem responde chega sozinho à conclusão, sem ter sido acusado de nada. Foi ideia dele pôr a pergunta, e ele notou que é a mesma técnica que usa comigo: pergunta em vez de ordem.
 
 ### A trava que existia e estava desligada na origem — 28/08/2026
 
