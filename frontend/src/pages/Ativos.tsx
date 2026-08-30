@@ -47,7 +47,7 @@ export default function Ativos() {
   const [catAtiva, setCatAtiva] = useState<string>(GALERIA_CATS[0].key)
   const [uploadingFotos, setUploadingFotos] = useState(false)
   const totalFotos = Object.values(galeria).reduce((a, b) => a + b.length, 0)
-  // Vitrine: fotos de apresentação (interior/exterior) — até 30, SEPARADAS das 400
+  // Vitrine: fotos de apresentação (interior/exterior) — até 30, SEPARADAS das 460
   const MAX_VITRINE = 30
   const [vitrineFiles, setVitrineFiles] = useState<File[]>([])
   const [salvando, setSalvando] = useState(false)
@@ -128,7 +128,7 @@ export default function Ativos() {
     try {
       const created = await api.ativos.create(formData)
       // Fotos de apresentação (vitrine) — enviadas com categoria 'vitrine',
-      // separadas da galeria documental de 430.
+      // separadas da galeria documental de 460.
       if (created?.id && vitrineFiles.length) {
         // Sem coordenada do aparelho, de propósito: aqui o arquivo vem do disco,
         // e onde está quem envia não é onde a foto foi tirada. O servidor lê a
@@ -355,7 +355,7 @@ export default function Ativos() {
               </button>
             </div>
 
-            {/* Fotos de apresentação (vitrine) — interior e exterior, separadas das 400 */}
+            {/* Fotos de apresentação (vitrine) — interior e exterior, separadas das 460 */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
@@ -418,7 +418,7 @@ export default function Ativos() {
         </div>
       )}
 
-      {/* Galeria organizada por categoria — até 430 fotos, sai no dossiê */}
+      {/* Galeria organizada por categoria — até 460 fotos, sai no dossiê */}
       {novoAtivo && (() => {
         const cheio = totalFotos >= MAX_FOTOS
         const fotosCat = galeria[catAtiva] || []

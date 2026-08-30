@@ -535,7 +535,7 @@ def _resumo_fotografico(documentos: list[dict]) -> dict[str, Any]:
     Devolve TAMBÉM a lista das fotos que serão impressas. Antes devolvia só
     contagem, e a seção "Registro Fotográfico Certificado" saía sem uma única
     imagem — o dossiê falava das fotos e não as mostrava, num produto cujo
-    principal argumento de venda é "até 430 imagens datadas e geolocalizadas".
+    principal argumento de venda é "até 460 imagens datadas e geolocalizadas".
     """
     por_cat: dict[str, int] = {}
     total = 0
@@ -544,7 +544,7 @@ def _resumo_fotografico(documentos: list[dict]) -> dict[str, Any]:
     for doc in documentos:
         if doc.get("tipo") != "foto":
             continue
-        # Vitrine = fotos de apresentação (interior/exterior), separadas do pool de 430
+        # Vitrine = fotos de apresentação (interior/exterior), separadas do pool de 460
         if doc.get("categoria") == "vitrine":
             continue
         total += 1

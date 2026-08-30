@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import Header from '../components/Header'
 import { FAIXAS_DOSSIE, formatarPreco } from '../config/precosDossie'
+// A capacidade fotografica vem da MESMA constante que o painel e o backend
+// usam (MAX_FOTOS = soma dos minimos de COBERTURA_CATS). Estava escrita a mao
+// como "430" aqui e "400" no Lancamento, enquanto o sistema permitia 460 --
+// tres numeros para o mesmo fato. Numero de venda que se repete a mao diverge.
+import { MAX_FOTOS } from '../config/coberturaFotos'
 
 const FAQS = [
   {
@@ -20,7 +25,7 @@ const FAQS = [
   },
   {
     q: 'O que entra no dossiê?',
-    a: 'Identificação e procedência, histórico de propriedade, documentação legal, histórico de manutenção e motorização, registro fotográfico datado e geolocalizado (até 430 imagens por embarcação, organizadas por categoria), e os laudos de terceiros — tudo selado e organizado em um único cofre digital.',
+    a: `Identificação e procedência, histórico de propriedade, documentação legal, histórico de manutenção e motorização, registro fotográfico datado e geolocalizado (até ${MAX_FOTOS} imagens por embarcação, organizadas por categoria), e os laudos de terceiros — tudo selado e organizado em um único cofre digital.`,
   },
   {
     q: 'Por quanto tempo o dossiê fica disponível?',
@@ -125,7 +130,7 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
             {[
-              { icon: Camera, label: 'Registro Fotográfico', sub: 'Até 430 imagens · datadas e geolocalizadas' },
+              { icon: Camera, label: 'Registro Fotográfico', sub: `Até ${MAX_FOTOS} imagens · datadas e geolocalizadas` },
               { icon: FileText, label: 'Documentação & Procedência', sub: 'Cofre digital' },
               { icon: History, label: 'Histórico Completo', sub: 'Manutenção e motorização' },
               { icon: Lock, label: 'Selo de Integridade', sub: 'SHA-256 imutável' },

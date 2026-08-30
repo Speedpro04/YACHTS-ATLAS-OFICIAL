@@ -6,7 +6,7 @@ import { COBERTURA_CATS, MAX_FOTOS, COBERTURA_PREMIUM, normalizarCategoria } fro
 import { ACEITA_IMAGEM } from '../utils/arquivos'
 
 /* Cobertura fotográfica do dossiê — galeria organizada por categoria.
-   Barra geral (total/400) + barra por categoria (count/mínimo). */
+   Barra geral (total/460) + barra por categoria (count/mínimo). */
 export default function CoberturaFotos({ ativo, onBack, readOnly = false }: { ativo: Ativo; onBack: () => void; readOnly?: boolean }) {
   const [fotos, setFotos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
