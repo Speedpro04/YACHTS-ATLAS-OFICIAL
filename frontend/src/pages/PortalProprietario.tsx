@@ -105,7 +105,7 @@ export default function PortalProprietario() {
         {/* Welcome Section */}
         <div className="mb-16">
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight mb-4">
-            Seu Ativo. <span className="italic text-[#c5a059]">Seu Controle.</span>
+            Seu Ativo. <span className="italic text-[#c5a059]">Tudo o que foi feito nele.</span>
           </h1>
           <p className="text-white/40 text-lg font-light max-w-2xl">
             Bem-vindo ao seu cofre digital restrito. Abaixo você tem o painel técnico exclusivo da sua embarcação — em modo visualização.

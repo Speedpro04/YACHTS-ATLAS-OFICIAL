@@ -8,7 +8,7 @@ import { FAIXAS_DOSSIE, formatarPreco } from '../config/precosDossie'
 const FAQS = [
   {
     q: 'Meu jet ski ou lancha pequena tem dossiê?',
-    a: 'Sim. Todo ativo náutico até 26 pés — incluindo jet skis, motos aquáticas e embarcações de pequeno porte, motorizadas ou não — entra na faixa de entrada do Dossiê Yachts Atlas, a partir de US$ 100.',
+    a: 'Sim. Todo ativo náutico até 26 pés — incluindo jet skis, motos aquáticas e embarcações de pequeno porte, motorizadas ou não — entra na faixa de entrada do Dossiê Atlas, a partir de US$ 100.',
   },
   {
     q: 'Quanto custa o dossiê?',
@@ -67,7 +67,7 @@ export default function LandingPage() {
              <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">{t('lp.hero_badge')}</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-white mb-8 tracking-tight leading-[0.95]">
+          <h1 className="text-[2.25rem] sm:text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-white mb-8 tracking-tight leading-[1.05] sm:leading-[0.95]">
             {t('lp.hero_title')} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">
               {t('lp.hero_title_highlight')}
@@ -113,9 +113,9 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center mb-20">
             <p className="text-white/60 text-lg font-light leading-relaxed">
               Não existem versões "básica" ou "premium". Existe{' '}
-              <span className="text-[#c5a059] font-medium">um único Dossiê Yachts Atlas</span> —
-              a custódia digital que reúne, organiza e blinda toda a história do seu ativo.
-              Cada documento, cada imagem, cada registro: datado, geolocalizado e à prova de fraude.
+              <span className="text-[#c5a059] font-medium">um único Dossiê Atlas</span> —
+              o documento que a sua marina emite reunindo tudo o que foi feito na embarcação
+              sob sua guarda. Cada nota, cada laudo, cada foto: datado, geolocalizado e selado.
             </p>
           </div>
 
@@ -175,10 +175,10 @@ export default function LandingPage() {
             </h2>
             <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-8"></div>
             <p className="text-white/50 text-lg font-light leading-relaxed max-w-2xl mx-auto">
-              Cada Dossiê Yachts Atlas é organizado segundo as principais normas náuticas —
-              brasileiras e internacionais. Não é papel solto: é o seu ativo documentado na
-              linguagem que <span className="text-[#c5a059] font-medium">a Autoridade Marítima,
-              seguradoras e compradores</span> reconhecem.
+              Cada Dossiê Atlas é organizado segundo as principais normas náuticas —
+              brasileiras e internacionais. Não é papel solto: é o trabalho da sua marina
+              documentado na linguagem que <span className="text-[#c5a059] font-medium">a
+              Autoridade Marítima, seguradoras e compradores</span> reconhecem.
             </p>
           </div>
 
@@ -200,7 +200,7 @@ export default function LandingPage() {
                 icon: Globe,
                 tag: 'ISO · Internacional',
                 title: 'Padrão Global',
-                desc: 'Referências ISO para grandes iates, estabilidade e flotabilidade — a ponte do seu ativo para os mercados de EUA e Europa.',
+                desc: 'Referências ISO para grandes iates, estabilidade e flotabilidade — a ponte das embarcações da sua marina para os mercados de EUA e Europa.',
               },
               {
                 icon: BellRing,
