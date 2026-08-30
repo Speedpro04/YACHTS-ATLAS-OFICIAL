@@ -423,7 +423,7 @@ async def testar_aviso(user: dict = Depends(get_current_user)):
     """
     ok = notificar_fundador(
         "Teste de aviso",
-        "Se você recebeu isto, o canal de avisos do Yachts Atlas está funcionando.",
+        "Se você recebeu isto, o canal de avisos da Yachts Atlas está funcionando.",
     )
     if not ok:
         raise HTTPException(

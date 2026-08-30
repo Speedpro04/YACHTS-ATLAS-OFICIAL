@@ -82,7 +82,7 @@ export default function AcessoSuspenso({ bloqueio }: { bloqueio: Bloqueio }) {
         </div>
 
         <p className="text-white/20 text-[10px] uppercase tracking-[0.2em] mt-8">
-          Dúvidas? Fale com o Yachts Atlas
+          Dúvidas? Fale com a Yachts Atlas
         </p>
       </div>
     </div>

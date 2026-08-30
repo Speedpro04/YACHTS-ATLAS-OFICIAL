@@ -58,7 +58,7 @@ def send_email(
         msg["Reply-To"] = settings.EMAIL_SENDER
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.set_content(text or "Bem-vindo ao Yachts Atlas. Acesse: " + settings.FRONTEND_URL)
+        msg.set_content(text or "Bem-vindo à Yachts Atlas. Acesse: " + settings.FRONTEND_URL)
         msg.add_alternative(html, subtype="html")
 
         ctx = ssl.create_default_context()
@@ -190,7 +190,7 @@ def send_welcome_email(to_email: str, nome: str | None = None) -> bool:
     )
     return send_email(
         to_email=to_email,
-        subject="Bem-vindo ao Yachts Atlas — seu acesso está liberado ⚓",
+        subject="Bem-vindo à Yachts Atlas — seu acesso está liberado ⚓",
         html=_welcome_html(nome),
         text=texto,
     )

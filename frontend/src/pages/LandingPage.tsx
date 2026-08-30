@@ -20,7 +20,7 @@ const FAQS = [
     a: 'O preço acompanha o porte do ativo, de US$ 100 (até 26 pés) a US$ 1.500 (acima de 150 pés). É um dossiê único e completo — o valor varia apenas pela complexidade do ativo, nunca pela qualidade do documento.',
   },
   {
-    q: 'O Yachts Atlas inspeciona a embarcação?',
+    q: 'A Yachts Atlas inspeciona a embarcação?',
     a: 'Não. Somos a custódia digital do ativo: reunimos, organizamos e blindamos documentos, imagens e laudos. Inspeções, quando existem, são feitas por profissionais e estaleiros — nós guardamos e certificamos a integridade desses registros.',
   },
   {
@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: 'O dossiê segue as normas náuticas?',
-    a: 'Sim. Cada dossiê é organizado segundo as principais normas náuticas brasileiras e internacionais — NORMAM (Marinha do Brasil), ABNT (incluindo a NBR 14574) e referências ISO. O Yachts Atlas organiza e acompanha a conformidade documental do ativo; a emissão de certificados oficiais cabe aos órgãos competentes, e o dossiê já fica pronto para ela.',
+    a: 'Sim. Cada dossiê é organizado segundo as principais normas náuticas brasileiras e internacionais — NORMAM (Marinha do Brasil), ABNT (incluindo a NBR 14574) e referências ISO. A Yachts Atlas organiza e acompanha a conformidade documental do ativo; a emissão de certificados oficiais cabe aos órgãos competentes, e o dossiê já fica pronto para ela.',
   },
   {
     q: 'Sou uma marina. Como funciona a parceria?',
@@ -211,7 +211,7 @@ export default function LandingPage() {
                 icon: BellRing,
                 tag: 'Sempre atualizado',
                 title: 'Alertas de Atualização',
-                desc: 'Norma muda, certificado vence — o Atlas avisa. Sua frota nunca fica para trás da regulação.',
+                desc: 'Norma muda, certificado vence — o Programa Atlas avisa. Sua frota nunca fica para trás da regulação.',
               },
             ].map((item, i) => (
               <div
@@ -257,9 +257,9 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto p-6 border border-[#c5a059]/20 bg-[#c5a059]/[0.04] rounded-sm flex gap-4 items-start">
             <ShieldCheck size={18} className="text-[#c5a059] flex-shrink-0 mt-0.5" />
             <p className="text-white/50 text-sm leading-relaxed font-light">
-              O Yachts Atlas <span className="text-white/70">organiza e acompanha a conformidade
+              A Yachts Atlas <span className="text-white/70">organiza e acompanha a conformidade
               documental</span> do ativo segundo essas normas. A emissão de certificados oficiais é
-              atribuição dos órgãos competentes — e o Atlas deixa o seu dossiê pronto para ela.
+              atribuição dos órgãos competentes — e o Programa Atlas deixa o seu dossiê pronto para ela.
             </p>
           </div>
         </div>

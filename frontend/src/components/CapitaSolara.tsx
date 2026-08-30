@@ -21,7 +21,7 @@ function sessionId(): string {
 const SAUDACAO: ChatMsg = {
   role: 'assistant',
   content:
-    'Olá, sou a Capitã Solara ⚓ — sua assistente aqui no Yachts Atlas. ' +
+    'Olá, sou a Capitã Solara ⚓ — sua assistente aqui na Yachts Atlas. ' +
     'Pergunte sobre normas (NORMAM, ABNT, ISO) e eu respondo citando a fonte, ' +
     'ou sobre como usar o sistema — onde cadastrar, onde subir foto, como gerar o dossiê. ' +
     'Trabalho só com o que está verificado — nada de achismo.',

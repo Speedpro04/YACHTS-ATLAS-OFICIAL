@@ -190,7 +190,7 @@ if __name__ == "__main__":
         raise SystemExit(2)
 
     mensagem = sys.argv[2] if len(sys.argv) > 2 else (
-        "Teste do canal de avisos do Yachts Atlas. Se você recebeu isto, "
+        "Teste do canal de avisos da Yachts Atlas. Se você recebeu isto, "
         "está tudo certo."
     )
 

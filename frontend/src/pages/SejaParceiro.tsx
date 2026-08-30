@@ -79,7 +79,7 @@ export default function SejaParceiro() {
               Faça parte da rede.
             </h1>
             <p className="text-white/50 font-light leading-relaxed max-w-xl mx-auto">
-              Conecte seu serviço ao ecossistema náutico do Yachts Atlas. Recebemos sua solicitação e retornamos com as condições do programa.
+              Conecte seu serviço ao ecossistema náutico da Yachts Atlas. Recebemos sua solicitação e retornamos com as condições do programa.
             </p>
           </div>
 

@@ -867,7 +867,7 @@ class StripeService:
             self._marcar_pagamento_confirmado(user_id)
 
         # E-mail de boas-vindas da MARCA (best-effort, nunca derruba o webhook).
-        # E o "obrigado" do Yachts Atlas no momento exato da liberacao do acesso.
+        # E o "obrigado" da Yachts Atlas no momento exato da liberacao do acesso.
         # Texto NEUTRO quanto a oferta — serve o Lancamento e a Oficial sem
         # depender de adivinhar qual das duas foi vendida. Ver a nota em
         # email_service._welcome_html.
@@ -875,7 +875,7 @@ class StripeService:
         # `user_id` e obrigatorio aqui pelo mesmo motivo que na linha acima: a
         # conta Stripe e da Axos Hub e vende mais de um produto, e o webhook e
         # POR CONTA — nao da para filtrar por produto. Sem esta trava, um
-        # cliente de outro produto da casa recebia "Bem-vindo ao Yachts Atlas,
+        # cliente de outro produto da casa recebia "Bem-vindo à Yachts Atlas,
         # seu acesso esta liberado" com botao para um login que nao e dele.
         # Sem usuario no Atlas, nao ha acesso liberado e nao ha o que saudar.
         if user_id and payment_type != "dossier" and e_assinatura:

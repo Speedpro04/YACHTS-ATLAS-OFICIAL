@@ -541,7 +541,7 @@ export default function RegistroMarina() {
                           marina que trouxe a indicada. */}
                       <div className="space-y-4 group md:col-span-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
-                          Alguma marina indicou o Yachts Atlas para você?
+                          Alguma marina indicou a Yachts Atlas para você?
                         </label>
                         <input
                           type="text"

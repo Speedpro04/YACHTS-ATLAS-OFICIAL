@@ -51,7 +51,7 @@ export default function Parceiros() {
       <div className="border-b border-white/5 pb-10">
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight mb-3">Parceiros Atlas</h1>
         <p className="text-white/50 font-light leading-relaxed max-w-2xl">
-          Conectamos você aos melhores serviços náuticos. O Yachts Atlas é a ponte —
+          Conectamos você aos melhores serviços náuticos. A Yachts Atlas é a ponte —
           o contato e a contratação são feitos <span className="text-white/80">direto com o parceiro</span>.
         </p>
       </div>
@@ -194,7 +194,7 @@ export default function Parceiros() {
       <div className="bg-[#021431] border border-[#c5a059]/20 p-12 rounded-sm text-center">
         <h3 className="text-3xl font-serif font-bold text-white mb-4">Torne-se um Parceiro Atlas.</h3>
         <p className="text-white/40 max-w-2xl mx-auto mb-10 text-sm font-light leading-relaxed">
-          Conecte o seu serviço ao ecossistema náutico do Yachts Atlas e alcance proprietários e marinas que buscam fornecedores de confiança.
+          Conecte o seu serviço ao ecossistema náutico da Yachts Atlas e alcance proprietários e marinas que buscam fornecedores de confiança.
         </p>
         <button
           onClick={() => navigate('/seja-parceiro')}

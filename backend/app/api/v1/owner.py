@@ -89,7 +89,7 @@ async def enviar_codigo_de_acesso(data: PedidoDeCodigo):
         return {"enviado": True}
 
     texto = (
-        f"Seu código de acesso ao Yachts Atlas é {codigo}.\n\n"
+        f"Seu código de acesso à Yachts Atlas é {codigo}.\n\n"
         "Ele vale por poucos minutos e serve uma vez só. "
         "Se não foi você quem pediu, ignore esta mensagem."
     )
@@ -98,7 +98,7 @@ async def enviar_codigo_de_acesso(data: PedidoDeCodigo):
         from app.services.email_service import send_email
         send_email(
             email,
-            "Seu código de acesso ao Yachts Atlas",
+            "Seu código de acesso à Yachts Atlas",
             f"<p>Seu código de acesso é <strong style='font-size:22px;letter-spacing:3px'>{codigo}</strong></p>"
             "<p>Ele vale por poucos minutos e serve uma vez só.</p>"
             "<p style='color:#888;font-size:13px'>Se não foi você quem pediu, ignore esta mensagem.</p>",

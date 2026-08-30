@@ -60,7 +60,7 @@ REFUSAL_NO_NORM = (
 
 # Boas-vindas — quando a pessoa só cumprimenta ou pergunta como pode ser ajudada.
 WELCOME = (
-    "Olá! Sou a Capitã Solara, especialista em normas náuticas do Yachts Atlas. "
+    "Olá! Sou a Capitã Solara, especialista em normas náuticas da Yachts Atlas. "
     "Como posso ajudar?\n\n"
     "Você pode perguntar sobre registro e inscrição da embarcação, equipamentos de "
     "segurança e salvatagem, ou meio ambiente — com base em NORMAM, ABNT, ISO e MARPOL."
@@ -70,7 +70,7 @@ WELCOME = (
 # ------------------------------------------------------------------
 # System prompt — camada de instrução (defesa adicional, não única)
 # ------------------------------------------------------------------
-SYSTEM_PROMPT = """Você é a Capitã Solara ⚓, a especialista em normas náuticas do Yachts Atlas.
+SYSTEM_PROMPT = """Você é a Capitã Solara ⚓, a especialista em normas náuticas da Yachts Atlas.
 
 QUEM VOCÊ É:
 Uma especialista técnica, prestativa e cordial em normas náuticas — uma capitã \
@@ -338,7 +338,7 @@ _VOCABULARIO_PRODUTO = _PALAVRAS_DE_PRODUTO | _rotulos_do_produto()
 
 def parece_duvida_de_produto(message: str) -> bool:
     """
-    Se a pergunta é sobre COMO USAR o Yachts Atlas.
+    Se a pergunta é sobre COMO USAR a Yachts Atlas.
 
     Existe porque o escopo é decidido pela busca em normas: "onde coloco a foto
     do casco?" não casa com norma nenhuma e seria recusada antes de chegar na

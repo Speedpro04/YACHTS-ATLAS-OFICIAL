@@ -121,7 +121,7 @@ async def verificar_documento(hash_pdf: str):
             "corresponde": False,
             "hash": h,
             "mensagem": "Esta impressão digital não corresponde a nenhum dossiê "
-                        "emitido pelo Yachts Atlas. O arquivo pode ter sido "
+                        "emitido pela Yachts Atlas. O arquivo pode ter sido "
                         "alterado após a emissão, ou não ter origem nesta plataforma.",
         }
 
@@ -133,7 +133,7 @@ async def verificar_documento(hash_pdf: str):
         "emitido_em": "/".join(reversed(str(d.get("emitido_em"))[:10].split("-"))),
         "tamanho_bytes": d.get("tamanho_bytes"),
         "mensagem": "Documento íntegro. Esta impressão digital corresponde "
-                    "exatamente ao dossiê emitido pelo Yachts Atlas.",
+                    "exatamente ao dossiê emitido pela Yachts Atlas.",
     }
 
 

@@ -4,7 +4,7 @@ import { ShieldCheck, ShieldAlert, Loader2, UploadCloud, Lock, ArrowLeft } from 
 import { API_URL } from '../services/api'
 
 /**
- * Contra-prova — "este PDF é mesmo o que o Yachts Atlas emitiu?"
+ * Contra-prova — "este PDF é mesmo o que a Yachts Atlas emitiu?"
  *
  * O ARQUIVO NUNCA SAI DO COMPUTADOR de quem verifica. O navegador calcula o
  * SHA-256 localmente (Web Crypto) e envia só a impressão digital. Isso resolve
@@ -73,7 +73,7 @@ export default function ConferirDocumento() {
           <h1 className="text-lg font-bold text-white">Este dossiê foi alterado?</h1>
           <p className="text-white/55 text-sm mt-2 leading-relaxed">
             Selecione o PDF do dossiê. A conferência compara a impressão digital
-            do arquivo com a que o Yachts Atlas registrou no momento da emissão.
+            do arquivo com a que a Yachts Atlas registrou no momento da emissão.
             Um único caractere alterado muda a impressão digital inteira.
           </p>
 

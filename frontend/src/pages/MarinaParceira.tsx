@@ -316,7 +316,7 @@ export default function MarinaParceira() {
 
                 <div className={styles.ctaRow}>
                   <p className={styles.disclaimer}>
-                    A marina indicada será contatada pelo Atlas em até 48h, com a sua indicação
+                    A marina indicada será contatada pela Yachts Atlas em até 48h, com a sua indicação
                     identificada. Aprovada a entrada dela na rede, os dossiês que ela gerar passam
                     a ser receita sua por 12 meses, conforme os termos comerciais aplicáveis.
                   </p>

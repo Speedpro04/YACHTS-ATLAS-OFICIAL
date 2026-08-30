@@ -415,7 +415,7 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
             answer = (
                 "Desculpe, não consegui responder agora — o assistente está "
                 "momentaneamente indisponível. Tente de novo em instantes; se "
-                "persistir, fale com a equipe do Yachts Atlas."
+                "persistir, fale com a equipe da Yachts Atlas."
             )
 
     # Atualiza memória da conversa

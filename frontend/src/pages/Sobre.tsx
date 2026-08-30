@@ -53,7 +53,7 @@ export default function Sobre() {
               Não inspecionamos. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Custodiamos</span> o que a sua marina faz.
             </h1>
             <p className="text-lg md:text-xl text-white/60 leading-relaxed font-light max-w-2xl mx-auto">
-              Um ativo náutico vale o que sua história prova. O Yachts Atlas documenta, organiza e blinda essa história — cada documento, cada imagem, datado, geolocalizado e à prova de fraude.
+              Um ativo náutico vale o que sua história prova. A Yachts Atlas documenta, organiza e blinda essa história — cada documento, cada imagem, datado, geolocalizado e à prova de fraude.
             </p>
           </div>
         </section>
@@ -146,7 +146,7 @@ export default function Sobre() {
           <div className="max-w-3xl mx-auto px-6 text-center">
             <span className="block text-[10px] font-black tracking-[0.4em] text-[#c5a059] uppercase mb-8">A Origem</span>
             <p className="text-xl md:text-2xl text-white/70 font-light leading-relaxed font-serif">
-              Há por trás do Atlas a trajetória de quem passou a vida medindo, inspecionando e construindo
+              Há por trás do Programa Atlas a trajetória de quem passou a vida medindo, inspecionando e construindo
               com as próprias mãos — do torno mecânico ao ultrassom, da prancheta técnica à marcenaria, e de
               uma paixão genuína por motores.
             </p>
