@@ -1662,3 +1662,56 @@ Ao implementar o "saiba mais" descobri que o `AssetHealthDashboard` — o compon
 São três contas diferentes chamadas de saúde: nota ponderada no painel, média simples no dossiê, e uma terceira implementação no componente morto. A marina vê um número na tela e entrega outro ao comprador.
 
 Parei ali em vez de escolher sozinho qual explicar — pelo princípio da seção anterior. **Padrão a repetir:** antes de publicar um critério, verificar se existe **um** critério. Documentar a divergência é trabalho; documentar por cima dela é dano.
+
+## 56. A trava que existia e estava desligada na origem
+**Data:** 28/08/2026
+
+O Marcos olhou o dossiê pronto e disse: *"achei que estava praticamente pronto, mas tô vendo que tem várias coisinhas desalinhadas"*. Eram treze, e uma delas não era coisinha.
+
+### A regra dura que nunca disparou
+
+Em 26/08 (§54) escrevemos que casco e sinistro em atenção valem **zero**, não cinquenta — para impedir "GOLD · 100%" num barco que bateu. A regra foi escrita, revisada e documentada.
+
+Ela **nunca disparou uma única vez**.
+
+O `STATUS_ENUM` do formulário traduzia três textos exatos e mandava todo o resto para o fallback `'registrado'`. As fichas oferecem sete conjuntos de rótulos: `'Crítico (Avaria Estrutural)'`, `'Vencida'`, `'Nao reparado'` — nenhum deles entre os três. E `'registrado'`, a jusante, caía no `else: st = "ok"`. O operador marcava AVARIA ESTRUTURAL e o dossiê imprimia CONFORME, peso 100.
+
+**Padrão a repetir:** em `map[chave] || padrao` sobre entrada de formulário, o padrão tem que ser o **conservador**. Aqui o fallback significava "sem problema" a três arquivos de distância, então um rótulo não previsto virava notícia boa. Fallback favorável esconde; fallback conservador aparece como buraco — e buraco a gente vê.
+
+**E o padrão maior:** não basta testar a regra, é preciso testar o **caminho até ela**. Toda trava merece a pergunta *"qual entrada REAL faz isso disparar, e ela existe?"*. Uma regra de negócio inerte é pior que regra nenhuma, porque ela consta na documentação e todo mundo acha que está protegido.
+
+### O teste que achou o defeito enquanto era escrito
+
+Ele pediu testes automatizados para o que é crítico. Sem runner no frontend, o teste lê os `.ts` **como texto** e confere que todo rótulo oferecido cai numa regra.
+
+Falhou na primeira execução e apontou quatro rótulos que a minha correção — que eu já tinha dado por completa — não cobria, todos da ficha de sinistro. Inclusive `'Nao reparado'`.
+
+E um detalhe que só um teste pega: `'Totalmente reparado - sem ressalva'` e `'Reparado com ressalva tecnica'` compartilham a palavra *ressalva* com sentidos **opostos** — a regra precisa testar `sem ressalva` antes de `ressalva`.
+
+**Padrão a repetir:** teste de **contrato entre as pontas** vale mais que teste de função. Os melhores deste arquivo não verificam o que o código faz hoje; verificam que o defeito não volta. Rótulo novo sem regra quebra. Leitura por igualdade exata quebra. Segundo CNPJ no código quebra. É a sexta vez que "a mesma regra em dois lugares" custa caro aqui, e a primeira em que existe alguém vigiando as duas pontas.
+
+**Segunda vez hoje que eu dei um assunto por encerrado cedo demais** — a outra foi a barra de conformidade, que ele reabriu (§55). Ver [[marcos-trabalha-com-pausas]].
+
+### O revisor externo, certo pela razão errada — de novo
+
+Ontem o relatório de terceiro disse "falha de codificação de caracteres" apontando um sintoma que não existia, e a categoria me levou à fonte base-14 imprimindo quadrado preto (§55).
+
+Hoje aconteceu de novo com o mesmo relatório. Ele reportou `"Protocol YA HATE-2020-ECOD"`. O documento impresso está certo — mas o texto **extraído** sai `Y A - I A T E`, que lido corrido é exatamente "YA HATE". O letter-spacing do cabeçalho quebra a extração: o comprador que copia o protocolo para colar no verificador copiava lixo, e o Ctrl+F não achava nada.
+
+Medi o ponto de ruptura em quatro tamanhos de fonte: o extrator desiste quando *tracking ÷ corpo* ≥ 0,15. Teto de 0,14, com escape para a marca decorativa.
+
+**Padrão a repetir:** relatório externo que erra o sintoma mas nomeia uma categoria plausível merece que a **categoria** seja investigada. Duas vezes, o que não existia era a descrição — o que existia era pior.
+
+### Nove números, o mesmo defeito
+
+Capa dizendo 28 documentos e página listando 10. "Investido" somando prejuízo estimado. "Hashes íntegros" contando coluna preenchida. Custo/mês dividindo pela idade do cadastro. Horímetro em `max()` de quatro máquinas. Vencimento guardando a data mais distante e escondendo a CHA vencida. Linha do tempo com treze marcos no mesmo mês.
+
+Todos a mesma coisa: **campo certo, lido como outra coisa**.
+
+**Padrão a repetir:** antes de publicar um número, escrever a frase que o descreve **com o denominador dentro**. Se a frase precisa de ressalva para ser verdadeira, a ressalva vai no documento — ou o número não vai. E `A or B` como padrão só serve quando A e B são a mesma espécie: "excluir por categoria" não bastou para o "investido", porque o que decide é a **natureza do valor**, não onde ele mora.
+
+### O que a omissão diz
+
+O caso dos vencimentos é o mais sutil do dia. Nada estava errado na tela: a tabela mostrava uma linha por item, com data válida e "Em dia". O defeito era o que **não** estava lá — as duas habilitações vencidas, descartadas por uma dedup que sempre escolhia a data mais distante.
+
+**Padrão a repetir:** num documento que circula numa negociação, **descartar em silêncio é afirmar**. Onde houver dedup, perguntar o que sai de cena e se o que saiu era pior que o que ficou. Se for, o documento tem que dizer — nem que seja em uma linha.

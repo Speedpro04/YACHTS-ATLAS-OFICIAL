@@ -1,3 +1,9 @@
+- [x] **REV-13 — "Crítico (Avaria Estrutural)" chegava ao dossiê como CONFORME**: `STATUS_ENUM` no `FichaServicoForm` traduzia **três** textos exatos — 'Concluído', 'Pendente', 'Atenção' — e todo o resto caía em `|| 'registrado'`. Só que as fichas oferecem **sete** conjuntos de rótulos: casco, velame, pintura, interior, seguro e sinistro não usam nenhuma dessas três palavras sozinhas. **14 dos 17 rótulos do sistema** viravam 'registrado', que em `_saude_por_categoria` cai no `else: st = "ok"` — CONFORME, peso 100. Pior: o agravamento criado em REV-06 (casco e sinistro em atenção valem 0) **nunca chegou a disparar uma única vez**, porque o status jamais chegava como 'atencao'. A trava existia e estava desligada na origem. Agora a leitura é por prefixo, não por igualdade
+- [x] **REV-13 — Nove números da capa param de prometer o que não medem**: capa dizia **28 documentos** e a pág. 4 listava 10 (o tile somava fotos com documentos); **"Investido no ativo"** somava *prejuízo estimado* de sinistro e *estimativa de reparo* de casco com gasto real — o R$ 2,5 mi voltando por outro campo; **"Hashes íntegros 100%"** contava coluna preenchida por trigger e prometia uma conferência que a emissão não faz; **custo/mês** dividia o gasto histórico pela idade do **cadastro**; **horímetro** era o `max()` de quatro máquinas diferentes; **vencimentos** guardava a data mais distante por campo e escondia a CHA vencida, sempre a favor do barco; **linha do tempo** misturava data de serviço e de cadastro (no Ferretti, os 13 marcos saíram todos em "08/2026"); a capa prometia **13 registros** e o corpo detalhava 12; e a data sob cada foto era a do **upload**, impressa ao lado do GEO — o gêmeo do defeito que já foi corrigido pela metade
+- [x] **REV-13 — O cabeçalho do dossiê volta a ser copiável**: o letter-spacing quebrava a extração de texto — saía `P r o t o c o l o   Y A - I A T E`, que lido corrido vira **"YA HATE"**. Foi exatamente assim que um revisor externo relatou "protocolo corrompido" e "CNPJ divergente" num PDF impresso corretamente. Medido: o extrator desiste quando *tracking ÷ corpo da fonte* ≥ 0,15, e os quatro textos do cabeçalho estavam acima. Teto de 0,14 no `draw_tracked`; marca e assinatura seguem decorativas. Quem depende disso: o comprador que **copia o protocolo** para colar no verificador, o Ctrl+F, o leitor de tela
+- [x] **REV-13 — Galeria com celas iguais e textos legíveis**: cada foto entrava com a altura que tinha, e uma imagem em retrato no meio da linha abria buraco — nas páginas 15 e 16 do dossiê do Ferretti sobrava de **um terço a 40% de página em branco**. Agora cela 4:3 fixa, com a imagem encaixada inteira (*contain*, nunca recorte: num dossiê de custódia a foto é evidência e cortar pode cortar a avaria). Junto, por reclamação de legibilidade: `WHITE_FAINT` estava em **2,88:1** e `GOLD_DIM` em 3,66:1 contra a superfície — abaixo do mínimo de 4,5:1, e carregando justamente o texto miúdo de 5,5 a 7 pt. Ambos agora em 4,6:1, mesmo matiz
+- [x] **REV-13 — O painel para de chamar de "Saúde" o que não mede saúde**: `[ Gold ] [ Saúde 91% ]` eram **o mesmo número** exibido duas vezes — o score de abrangência, que não lê o `status` de nenhum registro. Um barco com sinistro aberto pontuava igual a um impecável. Agora `[ Índice de Custódia: Gold ]` (o rótulo que o dossiê e a página pública já usavam) e, no lugar do número repetido, a **Conformidade** com o denominador, calculada do `health_status` que já chegava e ninguém usava. Clicar abre o critério dos dois
+- [x] **REV-13 — 22 testes novos, e um deles achou defeito enquanto era escrito**: `test_dossie_numeros_e_selo.py`. O teste que confere se todo rótulo do formulário tem regra **falhou na primeira execução** e apontou quatro que eu não tinha visto, todos da ficha de sinistro — inclusive **'Nao reparado'**, que saía CONFORME. Os testes que mais valem são de **contrato entre as pontas**: rótulo novo sem regra quebra; leitura por igualdade exata quebra; conformidade voltando a ser barra quebra; segundo CNPJ no código quebra
 - [x] **REV-12 — O DOSSIÊ-ATLAS para de imprimir quadrado preto no nome do dono**: o gerador usava as fontes base-14 do PDF (Helvetica, Times-Bold), que só conhecem Latin-1. Fora dele o ReportLab troca o caractere **sem erro e sem log** — `Dvořák` saía `Dvo■ák`, `Łukasz` saía `■ukasz`, num documento selado por SHA-256 que afirma integridade. Agora Arial e Times New Roman (mesmas medidas: **+0,01%** de largura no pior texto real, layout intacto) e `fonts-liberation` no Dockerfile, porque produção é Debian e não tem fonte da Microsoft. Junto: **`logger` era usado e nunca importado** — `NameError` dentro do próprio `except` derrubava a emissão inteira quando uma foto falhava, justo o caso que o "Imagem indisponível" existia para tratar
 - [x] **REV-12 — O critério do Índice sai do código e entra no documento**: o dossiê estampava CONFORME / ATENÇÃO / CRÍTICO / NÃO AVALIADO e um percentual, e **em nenhum lugar dizia como aquilo foi decidido**. Nova seção **"Como Ler Este Índice"** com a tabela de pesos, o cálculo, os agravamentos (casco, sinistros, EPIRB sem ANATEL) e as retificações — mais uma linha curta sob a grade, porque quem lê no celular não vai à página 12. Ideia do Marcos
 - [x] **REV-12 — CONFORMIDADE deixa de ser barra**: ela é quase sempre 100% (só entra na conta o que tem registro) e a linha cheia de ponta a ponta afirmava "completo" antes de a legenda ser lida. Deixá-la fina e dourada (REV-06) não bastou — **forma vence cor**. Virou número e frase: *"Calculado sobre 3 de 11 sistemas — 8 sistemas sem registro não entram na conta."* Barra fica só para a cobertura, que é o que varia
@@ -49,7 +55,11 @@ Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consul
 20. **Três fórmulas diferentes chamadas de "saúde"** — o selo do painel (`AtivoHub`: *Saúde 78%*) usa `asset_score_service`, que é nota ponderada (50% abrangência, 25% manutenção, 15% documentos, 10% laudo de casco). O dossiê usa `dossie_data._prontidao`, que é média simples. O `AssetHealthDashboard` tem uma terceira implementação. **A marina vê um número na tela e entrega outro ao comprador, os dois chamados de saúde** — e o topo do `asset_score_service` manda "manter SEMPRE em concordância com o painel e o dossiê". Decidir qual é o oficial ANTES de publicar o critério no painel: critério publicado errado é pior que critério não publicado.
 21. **`AssetHealthDashboard.tsx` não é renderizado em lugar nenhum** — zero imports no projeto. Três arquivos do backend o citam como a referência que espelham (`dossie_pdf`, `dossie_data`, `asset_score_service`), mas o painel vivo é o `AtivoHub`. O "saiba mais" do Índice foi implementado nele em 28/08 e **ninguém vê** — junto com o conserto de um `return 100` que exibia *"Índice de Segurança 100%"* com barra verde cheia num ativo sem nenhum registro. Decidir: montar o componente, ou levar as duas coisas para o `AtivoHub` (depende do item 20).
 22. **Classificação do serviço deveria ser exigida no painel** — hoje o dossiê imprime *"natureza não classificada em N registro(s)"*. O relatório de terceiro pediu travar a emissão; **não fazer isso** — contradiz o princípio de mostrar a lacuna com honestidade e joga o problema no suporte. Exigir na criação do registro, e deixar o dossiê contar a verdade sobre o passado.
-23. **Curadoria do registro fotográfico** — panfleto de fornecedor e arte promocional com texto sobreposto entram no dossiê hoje. Cada foto sai com data, GEO e hash: o selo afirma *"isto é evidência"*, e quando aparece embaixo de um folder ele deixa de valer para **todas** as fotos. Fazer a parte barata (diretriz no upload + campo dizendo o que a foto é); **não** tentar detecção automática agora — o erro caro é o inverso, barrar a foto legítima do casco às 18h de sexta.
+23. **Data de captura da foto** — a legenda diz "SELADO EM" porque a única data que existe é a do upload. Ler `DateTimeOriginal` do EXIF (o `exif_service` já abre a imagem, mas lê **apenas** o bloco GPS `0x8825`) exige coluna nova em `documentos` e backfill. Enquanto não existir, o dossiê não pode afirmar quando a foto foi tirada.
+24. **A verificação nunca recalcula hash nenhum** — `verificacao.py` responde "íntegro" comparando `com_hash == len(registros)`, ou seja, se a coluna está preenchida. O conteúdo do registro nunca é re-hasheado contra o selo. A única função que confere de verdade (`s3_service.verify_integrity`) não é chamada por nenhum caminho público. O texto do PDF e a página pública dizem "a plataforma recalcula os hashes" — **o tile já foi renomeado para "Registros com selo", mas essa frase continua no ar**.
+25. **Vencimentos precisam de discriminador por item** — a dedup é por CAMPO, e o mesmo campo serve seis extintores e a habilitação de vários condutores. Hoje o que é substituído e estava vencido é **contado e avisado** na seção, mas não listado. A solução completa é uma chave que identifique o item (qual extintor, qual condutor).
+26. **Varredura do dossiê ficou pela metade** — as lentes de *números* e *ausência/fallback* rodaram e renderam os nove achados de REV-13. Faltaram quatro: **cadeia de custódia**, **o comprador lendo o PDF**, **privacidade/LGPD no documento** e **a mesma informação em dois lugares**. Rodar quando houver folga de sessão.
+27. **Curadoria do registro fotográfico** — panfleto de fornecedor e arte promocional com texto sobreposto entram no dossiê hoje. Cada foto sai com data, GEO e hash: o selo afirma *"isto é evidência"*, e quando aparece embaixo de um folder ele deixa de valer para **todas** as fotos. Fazer a parte barata (diretriz no upload + campo dizendo o que a foto é); **não** tentar detecção automática agora — o erro caro é o inverso, barrar a foto legítima do casco às 18h de sexta.
 
 ## Contra-prova de Autenticidade
 
@@ -488,6 +498,84 @@ E há a razão comercial, que chega na mesma conclusão: **quem paga é a marina
 | Gerente da marina | `user_metadata.telefone` | por marina — **já existe** |
 | Encarregado | — | por marina — **falta** |
 | Dono do ativo | `ativos.proprietario_telefone` | por barco — já existe, para contato e código do Portal (não para enviar) |
+
+### A trava que existia e estava desligada na origem — 28/08/2026
+
+Em REV-06 o `_saude_por_categoria` ganhou uma regra dura: em **casco** e **sinistros**, "atenção" não é ressalva, é fato grave — vale **0**, não 50. Foi escrita para impedir um "GOLD · 100%" num barco que bateu em objeto submerso.
+
+Ela nunca disparou. Nem uma vez.
+
+O `STATUS_ENUM` do `FichaServicoForm` traduzia três textos **exatos** para o valor que o banco guarda:
+
+```ts
+{ 'Concluído': 'concluido', 'Pendente': 'pendente', 'Atenção': 'atencao' }
+```
+
+E as fichas oferecem **sete** conjuntos de rótulos. Seis não usam nenhuma dessas três palavras sozinhas:
+
+| ficha | rótulo oferecido | virava |
+|---|---|---|
+| casco | `Crítico (Avaria Estrutural)` | `registrado` |
+| pintura | `Crítico (Sem proteção/craca)` | `registrado` |
+| seguro | `Vencida` | `registrado` |
+| sinistro | `Nao reparado` | `registrado` |
+
+`registrado` não é `atencao` nem `pendente`, então cai no `else: st = "ok"`. O operador marcava **AVARIA ESTRUTURAL** e o dossiê imprimia **CASCO · CONFORME, peso 100**.
+
+**Padrão a repetir:** quando um `map[chave] || padrao` traduz entrada de formulário, o padrão precisa ser o **conservador**, nunca o favorável. Aqui o fallback era 'registrado', que a jusante significava "sem problema" — um rótulo que ninguém previu virava notícia boa. Se o fallback fosse "não avaliado", a mesma falha teria aparecido como buraco, e buraco a gente vê.
+
+**E o segundo padrão, que é maior:** uma regra de negócio dura foi escrita, revisada e documentada **três semanas antes**, e estava inerte porque o dado nunca chegava na forma que ela esperava. Não bastou testar a regra; faltava testar o **caminho** até ela. Toda trava merece a pergunta: *qual entrada real faz isso disparar, e ela existe?*
+
+### O teste achou o defeito enquanto era escrito — 28/08/2026
+
+O Marcos pediu testes automatizados para o que é crítico. Como não há runner no frontend, o teste lê `servicosCategorias.ts` e `FichaServicoForm.tsx` **como texto** e confere que todo rótulo oferecido cai numa regra conhecida.
+
+Falhou na primeira execução, com quatro rótulos que a correção anterior — que eu já tinha dado por completa — não cobria:
+
+```
+Nao reparado                           →  registrado
+Reparo parcial - pendencias em aberto  →  registrado
+Reparado com ressalva tecnica          →  registrado
+```
+
+São da ficha de **sinistro**, que tem vocabulário próprio. Um sinistro *não reparado* saía CONFORME, na categoria que o dossiê trata como fato grave.
+
+Tem um detalhe que só um teste pega: `Totalmente reparado - sem ressalva` e `Reparado com ressalva tecnica` compartilham a palavra *ressalva* com sentidos **opostos**. A regra precisa testar `sem ressalva` **antes** de `ressalva`.
+
+**Padrão a repetir:** teste de **contrato entre as pontas** vale mais que teste de função. Estes não verificam o que o código faz hoje — verificam que o defeito não volta: rótulo novo sem regra quebra o teste; a leitura voltando a ser por igualdade exata quebra; a conformidade voltando a ser barra quebra; um segundo CNPJ aparecendo no código quebra. É a sexta vez que "a mesma regra em dois lugares" custa caro neste projeto, e a primeira em que existe alguém vigiando as duas pontas.
+
+### Nove números que prometiam mais do que mediam — 28/08/2026
+
+Uma varredura sobre o dossiê emitido do Ferretti 780 e sobre o gerador. Todos do mesmo tipo — *campo certo, lido como outra coisa*:
+
+- **capa: 28 documentos**, pág. 4: 10, pág. 14: 18 imagens. `len(documentos)` somava as duas espécies e publicava com o nome de uma. E a chave interna chamava-se `imagens` enquanto o rótulo impresso dizia "Documentos".
+- **"Investido no ativo"** somava `valor` de casco e sinistros — onde o campo é *"Estimativa de custo de reparo estrutural"* e *"Estimativa inicial de prejuízo"*. Dinheiro que ninguém gastou, anunciado como benfeitoria. É o R$ 2,5 mi da apólice voltando por outra porta: **excluir por categoria não bastou — o que decide é a natureza do valor**.
+- **"Hashes íntegros 100%"**: conta quantos registros têm a coluna preenchida, e a coluna é escrita por trigger no INSERT — nunca é nula, então dá 100% sempre. Nada é recalculado no caminho `montar_dados → gerar_pdf`. Virou **"Registros com selo"**, que é o que a conta faz.
+- **"Custo médio / mês"** dividia o gasto pelo tempo de **cadastro**. No onboarding normal a marina sobe anos de histórico na primeira semana: trinta dias depois o dossiê imprimia a década como mensalidade. Numerador de dez anos, denominador de um mês.
+- **"Horímetro atual"** era `max()` de todas as leituras — e o campo existe em fichas de motor, gerador e equipamento. O Ferretti tem quatro (1.480, 1.476, 1.120, 1.095). `max()` é o **maior**, não o mais recente: um zero a mais digitado uma vez ficaria sendo o horímetro do barco para sempre.
+- **Vencimentos** deduplicava por campo guardando a data **mais distante**. Mas o mesmo campo serve seis extintores e a habilitação de condutores diferentes: com três condutores e duas CHA vencidas, saía **uma** linha, "Em dia", com a validade do único regular. O viés era sempre para o lado favorável.
+- **Linha do tempo** misturava data do serviço e data de cadastro na mesma coluna. No Ferretti os treze marcos saíram todos em "08/2026" — cronologia sugerindo que revisão de 500 h, docagem, laudo e apólice aconteceram no mesmo mês, num documento cujo produto **é** o histórico.
+- **Capa: 13 registros; corpo: 12.** A seção 03 imprime só itens de `checklist`, e "documentacao" já entrava em `categorias_tratadas` — registro de documentação sem checklist sumia dos dois lados. Faltava a *Renovação do Título de Inscrição*, justamente um documento da Capitania.
+- **Data sob a foto** era `uploaded_at`, impressa ao lado de GEO e do hash. Lado a lado as três se leem como propriedades da **foto**. GEO foi corrigido em 26/08 e passou a sair do EXIF; a data não — metade do par consertada, metade prometendo o mesmo. Passa a dizer **"SELADO EM"**.
+
+**Padrão a repetir:** antes de publicar um número, escrever a frase que o descreve **com o denominador dentro**. Se a frase precisa de uma ressalva para ser verdadeira, a ressalva vai no documento — ou o número não vai.
+
+### O revisor externo estava certo pelo motivo errado, duas vezes — 28/08/2026
+
+Os itens 1 e 2 do relatório de terceiro (CNPJ divergente, protocolo corrompido) não existiam no documento impresso. Mas o **texto extraído** do PDF saía assim:
+
+```
+P r o t o c o l o   Y A - I A T E - 2 0 2 0 - E C D D
+A X O S  H U B  ·  C N P J  2 6 . 9 9 8 . 5 7 1 / 0 0 0 1 - 5 0
+```
+
+`Y A - I A T E` lido corrido vira **"YA HATE"** — exatamente o que o relatório escreveu. E o CNPJ soletrado é onde ele perdeu os dígitos.
+
+Medido: o extrator desiste de juntar as letras quando *tracking ÷ corpo da fonte* ≥ **0,15**. Os quatro textos do cabeçalho estavam acima (o rodapé em 0,20; a marca em 0,23). Teto de 0,14 no `draw_tracked`, com escape `decorativo=True` para a marca e a assinatura, que ninguém copia.
+
+Não é preciosismo: **o comprador que copia o protocolo para colar na página de verificação copiava lixo**, o Ctrl+F não achava nada, e o leitor de tela soletrava.
+
+**Padrão a repetir:** quando um relatório externo erra o sintoma mas nomeia uma categoria plausível, investigar a **categoria**. Foi assim nas duas vezes hoje — "falha de codificação" levou à fonte base-14 imprimindo quadrado preto, e "protocolo corrompido" levou ao letter-spacing. O que não existia era a descrição; o que existia era pior.
 
 ### O relatório de melhorias, e o defeito que ele não viu — 28/08/2026
 
