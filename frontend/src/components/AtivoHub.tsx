@@ -6,7 +6,7 @@ import {
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
   Award, ChevronRight, X, Download, Upload, Lock,
   Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor,
-  Droplets, PenLine
+  Droplets, PenLine, HelpCircle
 } from 'lucide-react'
 import SecureCameraUpload from './SecureCameraUpload'
 import FichaServicoForm from './FichaServicoForm'
@@ -110,6 +110,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
   const [dossieAberta, setDossieAberta] = useState<DossieCat | null>(null)
   const [contagem, setContagem] = useState<Record<string, number>>({})
   const [cameraAberta, setCameraAberta] = useState(false)
+  const [criterioAberto, setCriterioAberto] = useState(false)
   // Somente leitura (Portal do Proprietário): sem card de Dossiê (emissão é ação
   // exclusiva da marina) e sem a seção "Dossiê Completo & Laudos" (só tem formulário
   // de criação, nenhuma visualização de registros existentes).
@@ -163,6 +164,33 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
   const statusDe = (c: Categoria): Health =>
     (c.healthKey ? (ativo.health_status?.[c.healthKey] as Health) : undefined) || 'na'
 
+  // CONFORMIDADE — a saude do ativo, que e outra pergunta que o selo.
+  //
+  // O selo (Gold/Silver/Bronze) e o antigo "Saude X%" vinham AMBOS do mesmo
+  // numero: asset_score_service, que pesa abrangencia de cadastro, volume de
+  // manutencao, documentos e laudo de casco. Nenhum desses quatro le o campo
+  // `status` do registro -- um barco com sinistro aberto pontua igual a um
+  // impecavel, desde que tenha o mesmo numero de registros. O selo mede o
+  // trabalho da MARINA; nao mede o estado do BARCO.
+  //
+  // Esta media le `health_status`, que ja chega do backend e OLHA o status.
+  // Mesma regra do dossie (ok=100, atencao=50, critico=0; categoria sem
+  // registro fica fora da conta) -- ver "Como Ler Este Indice" no PDF.
+  //
+  // null quando nada foi avaliado: melhor nao exibir indicador do que exibir
+  // um inventado. E o denominador anda SEMPRE junto, porque 100% sobre duas
+  // categorias nao e a mesma noticia que 100% sobre onze.
+  const catsComSaude = cats.filter((c) => c.healthKey)
+  const catsAvaliadas = catsComSaude.filter((c) => statusDe(c) !== 'na')
+  const peso = (h: Health) => (h === 'ok' || h === 'info' ? 100 : h === 'warning' ? 50 : 0)
+  const conformidade = catsAvaliadas.length
+    ? Math.round(catsAvaliadas.reduce((s, c) => s + peso(statusDe(c)), 0) / catsAvaliadas.length)
+    : null
+  const corConf = conformidade === null
+    ? 'text-white/40'
+    : conformidade >= 80 ? 'text-emerald-400'
+    : conformidade >= 50 ? 'text-amber-400' : 'text-rose-400'
+
   return (
     <div className="animate-in fade-in slide-in-from-right-6 duration-500 space-y-8">
       {/* ===== BLOCO DE CIMA — Dados da embarcação ===== */}
@@ -195,12 +223,38 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* "Indice de Custodia", nao um selo solto: e o rotulo que o
+                  dossie (dossie_pdf.py) e a pagina publica (Verificacao.tsx)
+                  ja usam para o MESMO numero. So o painel mostrava o grau nu,
+                  e ao lado a palavra "Saude" -- que e o que ele nao mede. */}
               <span className={`px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.25em] border ${classif.cls}`}>
-                <Award size={11} className="inline mr-1.5 -mt-0.5" />{classif.label}
+                <Award size={11} className="inline mr-1.5 -mt-0.5" />
+                Índice de Custódia: {classif.label}
               </span>
-              <span className="px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.25em] border border-white/15 text-white/60 bg-white/5">
-                Saúde {ativo.progresso || 0}%
-              </span>
+
+              {/* Aqui ficava "Saude {ativo.progresso}%" -- o MESMO numero do
+                  selo, repetido em percentual e com o rotulo errado. No lugar
+                  dele, a conformidade, que e a saude de verdade, sempre com o
+                  denominador. Clicar abre o criterio. */}
+              <button
+                type="button"
+                onClick={() => setCriterioAberto((v) => !v)}
+                aria-expanded={criterioAberto}
+                title="Como este número é calculado"
+                className="flex items-center gap-2 px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.25em] border border-white/15 bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <span className={corConf}>
+                  {conformidade === null
+                    ? 'Conformidade —'
+                    : `Conformidade ${conformidade}%`}
+                </span>
+                <span className="text-white/35 normal-case tracking-normal font-bold">
+                  {conformidade === null
+                    ? `nenhum dos ${catsComSaude.length} sistemas avaliado`
+                    : `${catsAvaliadas.length} de ${catsComSaude.length} sistemas`}
+                </span>
+                <HelpCircle size={11} className="text-white/40" />
+              </button>
               <span className="flex items-center gap-2 px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.25em] border border-white/10 text-white/30" title="Registros são imutáveis — não podem ser editados">
                 <Lock size={11} /> Imutável
               </span>
@@ -221,6 +275,61 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
           </div>
         </div>
       </div>
+      )}
+
+      {/* Criterio da Conformidade.
+          ESPELHA o calculo logo acima E a secao "Como Ler Este Indice" do
+          dossie. Mexeu na regra, corrige os dois textos: criterio publicado
+          errado e pior do que criterio nao publicado. */}
+      {criterioAberto && (
+        <div className="bg-[#021a3d]/40 border border-white/10 rounded-sm p-5 space-y-4 text-white/65 animate-in fade-in duration-200">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="text-white text-sm font-bold">Como estes dois números são calculados</h3>
+            <button
+              type="button"
+              onClick={() => setCriterioAberto(false)}
+              className="text-[10px] font-black uppercase tracking-wider text-white/40 hover:text-white/70 transition-colors"
+            >
+              Fechar
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059]">
+                Índice de Custódia — o trabalho da marina
+              </p>
+              <p className="text-xs leading-relaxed">
+                Mede <strong className="text-white/85">quanto da embarcação está documentado</strong>:
+                abrangência das categorias com registro, volume de manutenção, documentos
+                verificados e presença de laudo de casco. <strong className="text-white/85">Não
+                avalia a condição do barco</strong> — a plataforma não inspeciona. Gold a partir
+                de 90, Silver a partir de 60.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/80">
+                Conformidade — o estado do ativo
+              </p>
+              <p className="text-xs leading-relaxed">
+                Média dos sistemas <strong className="text-white/85">que possuem registro</strong>:
+                conforme vale 100, atenção 50, crítico 0. Sistema sem nenhum registro não entra
+                na conta — não soma nem penaliza. Por isso o número vem sempre com o
+                denominador: 100% sobre dois sistemas descreve uma amostra pequena, não uma
+                embarcação em ordem.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-white/40 border-t border-white/10 pt-3">
+            São perguntas diferentes e podem divergir: um barco muito bem documentado com uma
+            avaria em aberto tem Índice de Custódia alto e Conformidade baixa. O Dossiê de
+            Custódia traz os dois, e a seção <em>“Como Ler Este Índice”</em> detalha o critério —
+            incluindo dois agravamentos que só existem no documento: ressalva em casco ou
+            sinistro em aberto valem zero, e o mesmo para EPIRB com homologação ANATEL pendente.
+          </p>
+        </div>
       )}
 
       {/* ===== BLOCO DE BAIXO — Painel Técnico (cards) ===== */}
