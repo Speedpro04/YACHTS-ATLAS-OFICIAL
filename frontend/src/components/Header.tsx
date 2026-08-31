@@ -42,7 +42,18 @@ export default function Header() {
         </Link>
 
         {/* Menu centralizado no vão + portas de entrada dos 3 mercados 16px abaixo do menu */}
-        <nav className="hidden md:flex flex-1 flex-col items-center justify-center gap-[16px]">
+        {/*
+          Corte em `lg` (1024px), não `md` (768px).
+
+          O menu tem cinco links com 40px entre eles, mais três botões de
+          região, mais o botão do cofre. Em 768px isso não cabe: "PORTAL DO
+          PROPRIETÁRIO" passava POR BAIXO do botão ACESSAR COFRE — dois
+          elementos clicáveis sobrepostos, na primeira coisa que a marina vê.
+
+          De 768 a 1023px entra o menu recolhido, que já traz os mesmos cinco
+          links, as três regiões e o cofre. Nada se perde; o que muda é caber.
+        */}
+        <nav className="hidden lg:flex flex-1 flex-col items-center justify-center gap-[16px]">
           <div className="flex items-center gap-10">
             <Link to="/" className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
               {t('common.menu_home')}
@@ -80,13 +91,13 @@ export default function Header() {
 
         <Link
           to="/login"
-          className="hidden md:inline-flex bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[#c5a059]/10"
+          className="hidden lg:inline-flex bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[#c5a059]/10"
         >
           {t('common.access_vault')}
         </Link>
 
         <button 
-          className="md:hidden text-white"
+          className="lg:hidden text-white"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -94,7 +105,7 @@ export default function Header() {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 z-50 bg-[#010c20] border-b border-white/5 p-8 flex flex-col gap-6 animate-in slide-in-from-top-4 duration-500 shadow-2xl">
+        <div className="lg:hidden absolute top-full left-0 right-0 z-50 bg-[#010c20] border-b border-white/5 p-8 flex flex-col gap-6 animate-in slide-in-from-top-4 duration-500 shadow-2xl">
            {/* Portas de entrada dos 3 mercados — visíveis também no mobile */}
            <div className="flex flex-wrap justify-center gap-2 pb-5 border-b border-white/5">
              {REGIOES.map((b) => (

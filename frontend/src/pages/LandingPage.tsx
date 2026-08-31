@@ -61,7 +61,19 @@ export default function LandingPage() {
             alt="Iate de luxo ancorado — custódia digital de ativos náuticos Yachts Atlas"
             className="w-full h-full object-cover animate-slow-zoom"
             loading="eager"
-            fetchPriority="high"
+            // `fetchpriority` em MINÚSCULA, via spread.
+            //
+            // React 18 não conhece a prop `fetchPriority` em camelCase (só a
+            // partir do 19): ele avisava no console e NÃO passava o atributo
+            // ao HTML — a prioridade que se queria dar à imagem simplesmente
+            // não acontecia. Em minúscula o React 18 repassa como atributo
+            // DOM; o spread existe porque os tipos do 18 não declaram essa
+            // grafia.
+            //
+            // Vale para esta imagem em particular: é o elemento que domina o
+            // primeiro carregamento da home (LCP), e priorizá-la é o que faz
+            // a página parecer pronta antes.
+            {...{ fetchpriority: 'high' }}
           />
           <div className="absolute inset-0 bg-[#010c20]/[0.9]"></div>
         </div>
