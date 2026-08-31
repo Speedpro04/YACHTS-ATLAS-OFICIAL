@@ -28,6 +28,12 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.core.supabase import get_supabase_admin
 
+#  ja era importado no topo, mas o logger nunca foi criado -- o
+# mesmo descuido achado em dossie_pdf.py em 28/08/2026, onde um NameError
+# dentro do proprio except derrubava a emissao do dossie. Aqui derrubaria a
+# verificacao publica justamente quando algo ja tinha falhado.
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 # Segredo da assinatura.
@@ -218,6 +224,34 @@ async def verificar(
         .eq("ativo_id", protocolo).execute().data or []
     )
 
+    # INTEGRIDADE DE VERDADE: o banco RECALCULA o hash de cada registro e
+    # compara com o selo gravado.
+    #
+    # Antes esta conta era `com_hash == len(registros)` -- contava quantas
+    # linhas TÊM a coluna preenchida. Como ela é preenchida por gatilho no
+    # INSERT, nunca era nula: o resultado dava 100% SEMPRE, inclusive num
+    # banco adulterado. E o PDF impresso afirma que "a plataforma recalcula
+    # os hashes".
+    #
+    # O recálculo mora no Postgres (`fn_verificar_integridade_ativo`), não
+    # aqui: a fórmula usa `dados::text` (JSONB) e `created_at::text`, cuja
+    # serialização tem regras próprias do Postgres. Replicar em Python e
+    # errar um espaço faria TODOS os registros aparecerem como adulterados —
+    # o oposto do objetivo, e o tipo de erro que destrói a confiança no
+    # produto. No banco a serialização é idêntica por construção.
+    try:
+        _integ = supabase.rpc(
+            "fn_verificar_integridade_ativo", {"p_ativo_id": protocolo}
+        ).execute().data
+        _integ = (_integ or [{}])[0] if isinstance(_integ, list) else (_integ or {})
+    except Exception as e:                                    # noqa: BLE001
+        # Falha na checagem NÃO é "íntegro". Um documento de custódia que diz
+        # "conferido" quando não conseguiu conferir é pior do que um que
+        # admite não saber.
+        logger.warning("Verificacao: recalculo de integridade falhou para %s: %s",
+                       protocolo, e)
+        _integ = {}
+
     com_hash = sum(1 for r in registros if r.get("hash_sha256"))
     retificacoes = sum(1 for r in registros if r.get("retifica_id"))
     datas = sorted(r["created_at"] for r in registros if r.get("created_at"))
@@ -300,9 +334,20 @@ async def verificar(
             "arquivado": bool(ativo.get("arquivado_em")),
         },
         "integridade": {
+            # `conferidos` é quantos foram RECALCULADOS e bateram —
+            # diferente de `registros_com_hash`, que só diz quantos têm selo
+            # gravado. Os dois aparecem de propósito: um mede cobertura do
+            # selo, o outro mede integridade do conteúdo.
             "registros_com_hash": com_hash,
             "total": len(registros),
-            "integro": com_hash == len(registros) and len(registros) > 0,
+            "conferidos": _integ.get("conferem"),
+            "divergentes": _integ.get("divergem"),
+            "sem_selo": _integ.get("sem_selo"),
+            # None (não "false") quando a checagem não pôde ser feita: quem
+            # lê precisa distinguir "adulterado" de "não consegui verificar".
+            "integro": _integ.get("integro") if _integ else None,
+            "recalculado": bool(_integ),
+            "verificado_em": _integ.get("verificado_em"),
             "algoritmo": "SHA-256 · append-only",
         },
         # O que a plataforma NÃO devolve aqui, e por quê.
