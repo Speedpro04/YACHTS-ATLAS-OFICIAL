@@ -154,7 +154,21 @@ async def _laco_prospeccao() -> None:
         settings.PROSPECCAO_INTERVALO_SEGUNDOS,
     )
 
+    # RECUO QUANDO NÃO HÁ TRABALHO
+    # ------------------------------
+    # A espera dobra a cada volta vazia, até o teto, e volta ao intervalo
+    # normal assim que aparece um lead. Antes disto a agenda consultava o
+    # Supabase no intervalo fixo mesmo com a fila vazia — em produção, uma
+    # consulta a cada 60s por dias seguidos, cerca de 1.400 por dia, todas
+    # voltando zero.
+    #
+    # O lead não sofre com isso: ele só fica elegível DEPOIS da carência, e
+    # o pior caso passa a ser carência + teto. Quando um aparece, a próxima
+    # volta já retoma o ritmo rápido.
+    espera = settings.PROSPECCAO_INTERVALO_SEGUNDOS
+
     while True:
+        houve_trabalho = False
         try:
             from app.services.prospeccao_service import disparar_lote
 
@@ -166,6 +180,11 @@ async def _laco_prospeccao() -> None:
             # Silêncio é o estado normal: na maioria das voltas não há nada
             # com a carência vencida. Só registra quando algo aconteceu, para
             # o log não virar ruído que ninguém lê.
+            houve_trabalho = bool(
+                resumo.get("enviados") or resumo.get("falharam")
+                or resumo.get("bloqueados") or resumo.get("sem_numero")
+            )
+
             if resumo.get("enviados") or resumo.get("falharam"):
                 logger.info(
                     "Prospecção: enviadas=%s falharam=%s bloqueadas=%s sem_numero=%s",
@@ -178,7 +197,11 @@ async def _laco_prospeccao() -> None:
             raise
         except Exception as e:  # noqa: BLE001
             logger.error("Falha no lote de prospecção: %s", e)
-        await asyncio.sleep(settings.PROSPECCAO_INTERVALO_SEGUNDOS)
+        if houve_trabalho:
+            espera = settings.PROSPECCAO_INTERVALO_SEGUNDOS
+        else:
+            espera = min(espera * 2, settings.PROSPECCAO_INTERVALO_OCIOSO_SEGUNDOS)
+        await asyncio.sleep(espera)
 
 
 _tarefa: asyncio.Task | None = None

@@ -255,7 +255,16 @@ def disparar_lote(
         if i < len(leads) - 1:
             time.sleep(PAUSA_ENTRE_ENVIOS)
 
-    logger.info(f"Prospecção — lote concluído: {resumo}")
+    # Volta vazia é o estado NORMAL: na maioria das vezes não há lead com a
+    # carência vencida. Em INFO, isso escreveu uma linha a cada 60 segundos
+    # durante dias — e o `agenda.py`, que chama esta função, já dizia no
+    # próprio comentário que só queria registrar quando algo acontecesse. O
+    # log ficou ilegível justamente para quem precisa achar o envio de
+    # verdade no meio dele.
+    if resumo.get("enviados") or resumo.get("falharam") or resumo.get("bloqueados"):
+        logger.info(f"Prospecção — lote concluído: {resumo}")
+    else:
+        logger.debug(f"Prospecção — nada na fila: {resumo}")
     return resumo
 
 

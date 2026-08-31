@@ -308,6 +308,16 @@ class Settings(BaseSettings):
     # De quanto em quanto tempo a agenda olha a fila.
     PROSPECCAO_INTERVALO_SEGUNDOS: int = int(os.getenv("PROSPECCAO_INTERVALO_SEGUNDOS", "180"))
 
+    # Teto do recuo quando a fila volta vazia. A agenda dobra a espera a cada
+    # volta sem trabalho, ate este limite, e volta ao intervalo normal assim
+    # que aparece um lead. Sem isso, uma fila vazia custava uma consulta ao
+    # Supabase a cada 60s -- cerca de 1.400 por dia para nao achar nada.
+    #
+    # Nao atrasa ninguem de forma relevante: o lead so fica elegivel depois da
+    # carencia, e o pior caso e carencia + este teto.
+    PROSPECCAO_INTERVALO_OCIOSO_SEGUNDOS: int = int(
+        os.getenv("PROSPECCAO_INTERVALO_OCIOSO_SEGUNDOS", "600"))
+
     DDI_PADRAO: str = os.getenv("DDI_PADRAO", "55")
 
     @property
