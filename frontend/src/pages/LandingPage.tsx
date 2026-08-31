@@ -66,13 +66,13 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[#010c20]/[0.9]"></div>
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+        <div className="relative z-10 max-w-5xl lg:max-w-6xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#c5a059]/30 bg-[#c5a059]/5 backdrop-blur-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
              <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></span>
              <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">{t('lp.hero_badge')}</span>
           </div>
           
-          <h1 className="text-[2.25rem] sm:text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-white mb-8 tracking-tight leading-[1.05] sm:leading-[0.95]">
+          <h1 className="text-[2.25rem] sm:text-[46px] md:text-[56px] lg:text-[70px] xl:text-[88px] font-serif font-bold text-white mb-8 tracking-tight leading-[1.05] sm:leading-[0.95]">
             {t('lp.hero_title')} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">
               {t('lp.hero_title_highlight')}
