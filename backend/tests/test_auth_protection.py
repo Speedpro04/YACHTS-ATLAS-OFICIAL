@@ -16,8 +16,6 @@ PROTECTED_GET = [
     "/api/v1/ativos/YA-TEST-2024-ABCD",
     "/api/v1/documentos/ativo/YA-TEST-2024-ABCD",
     "/api/v1/leads/marina",
-    "/api/v1/alertas/alertas/configurar",
-    "/api/v1/alertas/alertas/verificar",
     "/api/v1/brokers/brokers",
     "/api/v1/brokers/brokers/user/some-user-id",
     "/api/v1/insurance/companies",
@@ -28,8 +26,6 @@ PROTECTED_GET = [
 ]
 
 PROTECTED_POST = [
-    "/api/v1/alertas/alertas/enviar",
-    "/api/v1/alertas/alertas/testar",
     "/api/v1/owner/secret",
     "/api/v1/payments/subscription/sub_123/cancel",
     "/api/v1/auth/logout",
