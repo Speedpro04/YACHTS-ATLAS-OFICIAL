@@ -9,6 +9,7 @@ Princípios:
  - Custódia: o conteúdo vem de `registros` (dados JSONB) e `documentos`.
 """
 from typing import Any, Optional
+from app.core.pii import mascarar_documento
 from app.core.supabase import get_supabase_admin
 
 
@@ -70,24 +71,16 @@ GALERIA_LABELS: dict[str, str] = {
 MAX_FOTOS = 460  # capacidade fotográfica por embarcação (espelha COBERTURA_CATS do front)
 
 
-def _mascarar_documento(doc: Optional[str]) -> Optional[str]:
-    """CPF/CNPJ com o miolo escondido: 123.456.789-00 -> ***.456.789-**.
-
-    O documento entra no dossiê para IDENTIFICAR o titular, não para ser
-    reutilizado. Impresso por inteiro num PDF que circula entre corretor,
-    comprador e seguradora, ele vira insumo de fraude — e o documento
-    completo continua no banco, para quem tem direito a ele.
-    """
-    if not doc:
-        return None
-    digitos = "".join(c for c in str(doc) if c.isdigit())
-    if len(digitos) == 11:   # CPF
-        return f"***.{digitos[3:6]}.{digitos[6:9]}-**"
-    if len(digitos) == 14:   # CNPJ — a raiz identifica a empresa, o resto não
-        return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/****-**"
-    if len(digitos) > 4:
-        return f"{'*' * (len(digitos) - 4)}{digitos[-4:]}"
-    return None
+# O mascaramento vive em `core.pii`, fonte unica: a MESMA funcao roda na
+# gravacao (api/v1/ativos.py) e aqui. Duas implementacoes do mesmo
+# mascaramento divergiriam, e a que ficasse errada seria justamente a que
+# ninguem estivesse olhando.
+#
+# Desde 31/08/2026 o documento chega mascarado do proprio banco -- o completo
+# nao e mais gravado (ver core/pii.py). Este passo permanece por dois
+# motivos: as linhas antigas ate o backfill, e a garantia de que um caminho
+# de escrita novo que esqueca de mascarar nao vaze pelo dossie.
+_mascarar_documento = mascarar_documento
 
 
 # Rótulo náutico de cada campo de validade que a ficha coleta. Chave = campo

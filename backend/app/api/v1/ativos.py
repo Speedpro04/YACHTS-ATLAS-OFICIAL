@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from app.schemas.models import AtivoCreate
+from app.core.pii import mascarar_documento
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
 from app.core.authz import email_do_usuario
@@ -155,10 +156,14 @@ async def create_ativo(ativo: AtivoCreate, user_id: str = Depends(get_current_us
 
     # Identidade do titular. Vai impressa no dossiê — o documento precisa dizer
     # de quem é o barco, e até agora só dizia quem custodia.
-    for attr in ("proprietario_nome", "proprietario_documento"):
-        v = (getattr(ativo, attr, None) or "").strip()
-        if v:
-            data[attr] = v
+    nome_titular = (getattr(ativo, "proprietario_nome", None) or "").strip()
+    if nome_titular:
+        data["proprietario_nome"] = nome_titular
+    # Mascarado ANTES de gravar -- ver core/pii.py e o comentario em
+    # `vincular_proprietario`. O completo nao entra no banco em caminho nenhum.
+    doc_titular = mascarar_documento(getattr(ativo, "proprietario_documento", None))
+    if doc_titular:
+        data["proprietario_documento"] = doc_titular
 
     try:
         response = supabase.table("ativos").insert(data).execute()
@@ -275,7 +280,11 @@ async def definir_proprietario(
     # Sem e-mail não há dono: o telefone sozinho não abre porta nenhuma, e
     # deixá-lo para trás guardaria o contato de quem já vendeu o barco.
     nome = (data.proprietario_nome or "").strip() or None
-    documento = (data.proprietario_documento or "").strip() or None
+    # O documento e MASCARADO ANTES de gravar: o completo nunca entra no
+    # banco. Ele so servia para identificar o titular no dossie, que ja o
+    # imprimia mascarado -- guardar os digitos do meio era risco de vazamento
+    # sem contrapartida de uso. Minimizacao, LGPD art. 6, III. Ver core/pii.py.
+    documento = mascarar_documento(data.proprietario_documento)
     supabase.table("ativos").update({
         "proprietario_email": email,
         "proprietario_telefone": telefone if email else None,
