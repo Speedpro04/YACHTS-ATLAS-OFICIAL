@@ -519,7 +519,22 @@ async def acesso_processar(
         "updated_at": now,
     }).eq("id", solicitacao_id).execute()
 
-    # Livro-razão de saídas: pra quem foi, qual marina, qual barco (best-effort)
+    # Livro-razão de saídas: pra quem foi, qual marina, qual barco.
+    #
+    # ANTES da entrega, e OBRIGATÓRIO. Era `try/except: pass` — se o insert
+    # falhasse, o dossiê saía e o rastro não, em silêncio. Num livro-razão de
+    # compartilhamento isso é o inverso do desejado: o registro é o produto,
+    # não um efeito colateral dele.
+    #
+    # É a diferença entre este registro e o de `_registrar_emissao`, que
+    # continua best-effort de propósito: lá o que se perde é a impressão
+    # digital de um PDF que a plataforma já sabe ter emitido; aqui o que se
+    # perde é a única prova de que o documento saiu, e para quem. Sem ela, a
+    # resposta a "quem recebeu o dossiê deste barco?" fica errada para
+    # sempre — e é pergunta de LGPD e de auditoria de seguradora.
+    #
+    # Recusar a entrega é a escolha conservadora: o solicitante tenta de novo
+    # em segundos; um compartilhamento sem rastro não se conserta depois.
     try:
         supabase.table("dossie_saidas").insert({
             "solicitacao_id": solicitacao_id,
@@ -530,8 +545,13 @@ async def acesso_processar(
             "finalidade": sol.get("finalidade"),
             "canal": "acesso_link",
         }).execute()
-    except Exception:
-        pass
+    except Exception as e:                                    # noqa: BLE001
+        logger.error("Dossie: falha ao registrar saida da solicitacao %s: %s",
+                     solicitacao_id, e)
+        return HTMLResponse(_render_acesso_page(
+            "<p class='msg erro'>Não foi possível registrar a entrega neste momento. "
+            "O dossiê não é liberado sem esse registro — tente novamente em instantes.</p>"),
+            status_code=503)
 
     try:
         dados = montar_dados_dossie(ativo_id)
@@ -544,8 +564,13 @@ async def acesso_processar(
     # Terceiro (corretor, comprador, seguradora) — é justamente a via em que o
     # documento sai do controle da marina, então é a que MAIS precisa da
     # impressão digital registrada.
+    # `sol` vem de `dossie_solicitacoes`, que tem `solicitante_email` — NÃO
+    # `destinatario_email`, que é coluna de `dossie_saidas`. O nome errado
+    # fazia isto gravar None sempre: a impressão digital do PDF ia para o
+    # banco sem identificar quem recebeu, justamente na via em que o
+    # documento sai do controle da marina.
     _registrar_emissao(ativo_id, pdf, dados,
-                       sol.get("destinatario_email"), "acesso_link")
+                       sol.get("solicitante_email"), "acesso_link")
 
     return Response(
         content=pdf,
