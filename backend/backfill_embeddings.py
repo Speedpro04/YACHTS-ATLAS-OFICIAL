@@ -5,7 +5,13 @@ backfill_embeddings.py — Pipeline de Geração de Embeddings com Polars
 Yachts Atlas · Capitã Solara RAG
 
 Puxa todos os trechos de `normas_conteudo` que ainda NÃO possuem
-embedding, gera vetores via OpenAI (text-embedding-ada-002, 1536-dim)
+embedding, gera vetores via OpenAI usando EMBEDDING_MODEL (linha 50 —
+hoje text-embedding-3-small, 1536-dim).
+
+ATENCAO: o corpus e a consulta TEM de usar o MESMO modelo. Quem pergunta
+passa por config.OPENAI_EMBEDDING_MODEL; se os dois divergirem, o pgvector
+compara vetores de espacos diferentes e a Solara responde lixo com cara de
+resposta. Trocar o modelo aqui obriga a re-rodar o backfill inteiro.
 em lotes otimizados e salva de volta no Supabase.
 
 Dependências (já em requirements.txt):
