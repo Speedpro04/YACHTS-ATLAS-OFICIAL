@@ -169,16 +169,43 @@ def _saldo_dossie(ativo_id: str) -> dict:
         # a exceção escapava e derrubava a EMISSÃO, não só a contagem. Apurar
         # saldo é acessório; gerar o dossiê é o que a marina veio fazer.
         supabase = get_supabase_admin()
+        # A cota mede o que a MARINA emitiu, nao quantas vezes o documento foi
+        # baixado. Sao duas perguntas diferentes, e ate 31/08/2026 a conta
+        # respondia a errada: contava TODA linha de `dossie_emitidos`,
+        # inclusive as de canal `acesso_link`, gravadas a cada vez que o
+        # destinatario abre o link que ja lhe foi liberado.
+        #
+        # O efeito era o cliente errado pagar a conta: um comprador que
+        # abrisse o dossie quatro vezes esgotava o ano da marina, e a marina
+        # -- que pagou -- ficava trancada fora do proprio ativo. Pior, a via
+        # do link nunca checou limite nenhum: o terceiro seguia baixando
+        # depois do bloqueio, enquanto o dono nao conseguia mais emitir.
         res = (
             supabase.table("dossie_emitidos")
-            .select("emitido_em", count="exact")
+            .select("emitido_em")
             .eq("ativo_id", ativo_id)
+            .eq("canal", "painel")
             .gte("emitido_em", desde)
-            .order("emitido_em", desc=False)
             .execute()
         )
-        usados = res.count or 0
-        linhas = res.data or []
+        linhas = [{"quando": str(r.get("emitido_em"))[:10]}
+                  for r in (res.data or []) if r.get("emitido_em")]
+
+        # Mais as liberacoes para terceiro: UMA por pedido liberado, que e o
+        # ato da marina. Reabrir o mesmo link nao gasta cota de novo.
+        lib = (
+            supabase.table("dossie_solicitacoes")
+            .select("liberado_em")
+            .eq("ativo_id", ativo_id)
+            .eq("status", "liberado")
+            .gte("liberado_em", desde)
+            .execute()
+        )
+        linhas += [{"quando": str(r.get("liberado_em"))[:10]}
+                   for r in (lib.data or []) if r.get("liberado_em")]
+
+        linhas.sort(key=lambda r: r["quando"])
+        usados = len(linhas)
     except Exception as e:  # noqa: BLE001 — saldo não derruba a emissão
         logger.error(f"Falha ao apurar saldo de dossiês de {ativo_id}: {e}")
         return {"limite": limite_anual, "usados": 0, "restantes": limite_anual,
@@ -189,7 +216,7 @@ def _saldo_dossie(ativo_id: str) -> dict:
     # ainda dentro da janela — é ela que sai da contagem primeiro.
     reset_em = None
     if restantes == 0 and linhas:
-        mais_antiga = linhas[0].get("emitido_em")
+        mais_antiga = linhas[0].get("quando")
         if mais_antiga:
             reset_em = (datetime.fromisoformat(str(mais_antiga)) + timedelta(days=365)).date().isoformat()
 
@@ -345,6 +372,25 @@ async def liberar_solicitacao(
     if not res.data:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
     sol = res.data[0]
+
+    # Liberar E a emissao: e aqui que a marina decide entregar o dossie a um
+    # terceiro. Ate 31/08/2026 esta via nao consultava a cota -- o limite so
+    # existia no botao do painel, entao bastava liberar por pedido para passar
+    # dos quatro do ano sem que nada recusasse.
+    #
+    # Cobrar no momento da liberacao, e nao no download, poe o gasto em quem
+    # decide: o destinatario reabrir o link nao tira nada da marina.
+    _ativo = sol.get("ativo_id")
+    if _ativo:
+        saldo = _saldo_dossie(_ativo)
+        if not saldo["permitido"]:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    f"Limite de {saldo['limite']} dossies por ano atingido para este ativo. "
+                    f"Nova emissao a partir de {saldo['reset_em']}."
+                ),
+            )
 
     now = datetime.now(timezone.utc).isoformat()
     supabase.table("dossie_solicitacoes").update({
