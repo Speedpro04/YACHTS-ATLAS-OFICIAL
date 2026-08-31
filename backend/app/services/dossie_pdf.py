@@ -6,8 +6,10 @@ Regras que este módulo respeita:
   * NUNCA inventa número. Se o dado não existe, o elemento some — jamais
     aparece um placeholder que o leitor possa confundir com fato.
   * Tokens de cor e nomenclatura espelhados do painel técnico
-    (frontend/src/components/AssetHealthDashboard.tsx), para a marina ver
-    a mesma história na tela e no PDF.
+    (frontend/src/components/AtivoHub.tsx), para a marina ver a mesma
+    história na tela e no PDF. Até 31/08/2026 este comentário apontava para
+    `AssetHealthDashboard.tsx`, que foi removido por não ser renderizado em
+    lugar nenhum — a referência levava a um arquivo morto.
 
 Consome o pacote de montar_dados_dossie() (dossie_data.py).
 """
@@ -63,7 +65,7 @@ WHITE_DIM   = colors.HexColor("#9aa0aa")
 WHITE_FAINT = colors.HexColor("#7a8595")
 BORDER      = colors.HexColor("#1a2740")
 
-# Status — valores Tailwind exatos do AssetHealthDashboard
+# Status — valores Tailwind exatos do painel (`AtivoHub`)
 EMERALD = colors.HexColor("#10b981")
 AMBER   = colors.HexColor("#f59e0b")
 ROSE    = colors.HexColor("#f43f5e")
@@ -1742,6 +1744,21 @@ def _montar(dados: dict, indice):
             label = "Manutenção" if cat == "manutencao" else "Elétrica / Eletrônica"
             # Métricas só sobre o que vale hoje: registro retificado foi
             # substituído pela correção — contar os dois inflaria o total.
+            # POR QUE ESTE INDICADOR NÃO SE CHAMA MAIS "SAÚDE"
+            # -------------------------------------------------
+            # Ele mede a PROPORÇÃO entre manutenção programada e corretiva —
+            # postura de manutenção, não estado do barco. Um casco perfeito
+            # atendido só na quebra pontua mal aqui; um casco comprometido com
+            # plano preventivo em dia pontua bem. Chamar isso de "saúde" fazia
+            # o comprador ler condição da embarcação onde havia hábito de
+            # manutenção, e a Yachts Atlas **não inspeciona** embarcação: ela
+            # custodia o registro que a marina lançou.
+            #
+            # O painel já usava o vocabulário certo — Índice de Custódia (quão
+            # completo é o registro) e Conformidade (estado dos itens
+            # registrados). Este era o último lugar do produto onde a palavra
+            # "saúde" sobrevivia, e ela dizia uma terceira coisa que não era
+            # nenhuma das duas.
             vigentes = [f for f in fichas if (f.get("situacao") or "vigente") != "retificado"]
             retificados = len(fichas) - len(vigentes)
             prog = sum(1 for f in vigentes if _natureza(f) == "programada")
@@ -1751,7 +1768,7 @@ def _montar(dados: dict, indice):
             if classificados == 0:
                 # Sem classificação não se afirma nada: dizer "100% corretiva"
                 # com o campo vazio é acusar o dono de negligência.
-                story.append(_alert("na", f"Indicador de Saúde — {label}:",
+                story.append(_alert("na", f"Perfil de Manutenção — {label}:",
                                     f"natureza não classificada em {len(vigentes)} registro(s). "
                                     "Classifique os serviços como preventivo, preditivo ou "
                                     "corretivo para habilitar este indicador."))
@@ -1759,7 +1776,7 @@ def _montar(dados: dict, indice):
                 pct = round(prog / classificados * 100)
                 kind = "ok" if pct >= 70 else ("warn" if pct >= 40 else "crit")
                 extra = f" · {retificados} retificado(s)" if retificados else ""
-                story.append(_alert(kind, f"Indicador de Saúde — {label}:",
+                story.append(_alert(kind, f"Perfil de Manutenção — {label}:",
                                     f"{pct}% Preventiva / Programada · {100 - pct}% Corretiva "
                                     f"({classificados} de {len(vigentes)} classificado(s), "
                                     f"selado(s) com SHA-256{extra})"))

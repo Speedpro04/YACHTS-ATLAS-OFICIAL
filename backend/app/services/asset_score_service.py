@@ -5,7 +5,7 @@ Calcula, a partir dos dados REAIS do cofre (registros + documentos), uma nota
 0–100 que sobe conforme o dono/marina alimenta manutenção, laudos e documentos.
 A nota vira argumento de venda (para o broker) e selo de confiança (para a
 seguradora). Também devolve um mapa de saúde por categoria que alimenta o
-painel visual (AssetHealthDashboard).
+painel visual (`AtivoHub`, nos dots por categoria).
 
 Pesos (transparentes, fáceis de ajustar):
   50%  abrangência — quantas das 10 categorias-núcleo têm ao menos 1 registro
@@ -41,7 +41,7 @@ CORE_CATEGORIAS = [
 # Chaves alternativas que caem no mesmo balde (ex.: veleiro).
 CAT_ALIAS = {"velame": "motor"}
 
-# Baldes de saúde consumidos pelo painel (AssetHealthDashboard + dots do AtivoHub).
+# Baldes consumidos pelos dots por categoria do `AtivoHub`.
 HEALTH_BUCKETS = ["documentacao", "manutencao", "motor", "casco", "drenagem",
                   "eletrica", "seguranca", "pintura", "interior", "dossie"]
 

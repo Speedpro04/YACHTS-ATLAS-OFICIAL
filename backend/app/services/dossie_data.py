@@ -206,8 +206,9 @@ def _brl(v: float) -> str:
     return f"R$ {v:,.0f}".replace(",", ".")
 
 
-# Espelha as 8 categorias do AssetHealthDashboard (painel técnico).
-# Categorias que entram no Índice de Segurança.
+# Espelha as 8 categorias de `HEALTH_BUCKETS` (asset_score_service), que é
+# o que o painel `AtivoHub` desenha nos dots por categoria.
+# Categorias que entram na Conformidade.
 #
 # Precisa espelhar CATEGORIAS_TECNICAS + sinistros. A lista anterior deixava de
 # fora justamente onde o problema mora — casco, operação e sinistros — e por
@@ -294,10 +295,19 @@ def _saude_por_categoria(registros: list[dict], tipo: Optional[str] = None) -> l
 
 
 def _prontidao(saude: list[tuple[str, str]]) -> Optional[int]:
-    """Índice de segurança — mesma fórmula do painel (ok=100, warn=50, crit=0).
+    """Conformidade — média dos estados avaliados (ok=100, warn=50, crit=0).
 
-    Categorias sem dado saem da média, como no painel. Retorna None se não há
-    nada avaliado: melhor não exibir indicador do que exibir um inventado.
+    NÃO é a mesma fórmula do painel, e dizer que era foi o erro corrigido em
+    31/08/2026. O painel calcula o **Índice de Custódia**
+    (`asset_score_service`), que é ponderado — 50% abrangência, 25% manutenção,
+    15% documentos, 10% estrutural — e responde *quão completo é o registro*.
+    Esta função responde outra pergunta: *como estão os itens que têm
+    registro*. São dois números legítimos e diferentes; o defeito era o
+    comentário afirmar que eram o mesmo, o que convidava o próximo a
+    "uniformizar" duas contas que medem coisas distintas.
+
+    Categorias sem dado saem da média. Retorna None se não há nada avaliado:
+    melhor não exibir indicador do que exibir um inventado.
     """
     pontos, total = 0, 0
     for _, st in saude:
