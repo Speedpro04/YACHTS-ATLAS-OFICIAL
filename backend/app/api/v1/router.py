@@ -2,7 +2,7 @@
 Yachts Atlas — API v1 Router
 """
 from fastapi import APIRouter
-from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros, chatbot, normas, verificacao, lgpd, whatsapp
+from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, alertas, leads, registros, dossie, owner, parceiros, chatbot, normas, verificacao, lgpd, whatsapp, auditoria
 
 router = APIRouter()
 
@@ -14,6 +14,10 @@ router.include_router(payments.router, prefix="/payments", tags=["payments"])
 router.include_router(brokers.router, prefix="/brokers", tags=["brokers"])
 router.include_router(insurance.router, prefix="/insurance", tags=["insurance"])
 router.include_router(admin.router, prefix="/admin", tags=["admin"])
+# Trilha de auditoria (SOC 2 / ISO 27001 / SUSEP). Admin da PLATAFORMA:
+# a trilha registra IP e o que cada conta acessou, entao entregá-la a uma
+# marina vazaria o comportamento das outras.
+router.include_router(auditoria.router, prefix="/auditoria", tags=["auditoria"])
 router.include_router(alertas.router, prefix="/alertas", tags=["alertas"])
 router.include_router(leads.router, prefix="/leads", tags=["leads"])
 router.include_router(registros.router, prefix="/registros", tags=["registros"])
