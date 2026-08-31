@@ -1786,3 +1786,40 @@ O Lançamento usa **WhatsApp como canal oficial de conversão** — botão "Fala
 A mesma página convidando para o canal e desqualificando o canal.
 
 **Padrão a repetir:** ao usar algo como exemplo de problema, verificar se a empresa não o usa como ferramenta. Ver [[tom-de-marca-alto-nivel]] e [[canais-de-aviso-whatsapp-email]].
+
+## 59. Dado guardado não é dado disponível
+**Data:** 30/08/2026
+
+O Marcos definiu a direção: deixar o sistema pronto para API de seguradora, certificações e auditoria externa (SUSEP, ISO 27001, SOC 2). Auditei o banco de produção contra esse checklist.
+
+### Auditar o sistema, não o repositório
+
+Duas das descobertas mais importantes do dia **não apareciam no `grep` dos arquivos `.sql`**: `registros` tem gatilho de UPDATE (eu havia dito ao Marcos que não tinha) e o bucket `media` já está privado (o PRD dizia público). O repositório guarda a intenção; o banco guarda o estado.
+
+**Padrão a repetir:** quando a pergunta é "como o sistema está", perguntar ao sistema. Migration é história, não fotografia.
+
+### Documentação desatualizada é pior que pendência aberta
+
+Três itens do PRD descreviam problemas já resolvidos — bucket público, auditoria não gravando, e um docstring dizendo `ada-002` num script cujo código sempre usou `text-embedding-3-small`. Esse último é o mais perigoso: quem lesse e re-rodasse o backfill colocaria corpus e consulta em espaços vetoriais diferentes, e a Solara passaria a responder lixo **com cara de resposta**.
+
+**Padrão a repetir:** pendência resolvida e não riscada vira armadilha. Ela não é ignorada — é obedecida por alguém que não estava lá.
+
+### A trilha existia e ninguém sabia perguntar nada a ela
+
+`audit_logs` tinha 184 linhas com tudo o que uma auditoria pede. Mas o único jeito de consultar era listar os eventos de um usuário em ordem cronológica — e auditoria não pergunta assim. Ela pergunta "o que falhou, quantas vezes, de quais IPs, houve pico em que dia".
+
+**Padrão a repetir:** antes de coletar mais dado, verificar se alguém consegue interrogar o que já está guardado. Coletar é fácil; responder é o produto.
+
+### A ferramenta certa no lugar certo
+
+O Marcos pediu para explorar mais o Polars. Medi antes: 188 registros, 96 documentos, 14 ativos — nessa escala o DataFrame custa mais que o laço. Polars entrou **só** em `audit_logs`, que é a única tabela que cresce sem parar (append-only, retenção de 5 a 10 anos pela SUSEP), onde as perguntas são agregação pura e a saída precisa virar arquivo.
+
+E o motivo de NÃO estar no resto ficou escrito no cabeçalho do módulo — senão alguém "corrige" a ausência daqui a seis meses achando que foi esquecimento.
+
+**Padrão a repetir:** quando escolher não usar uma ferramenta em algum lugar, registrar o porquê junto de onde ela É usada. Ausência sem explicação parece descuido.
+
+### A porta que ficou aberta embaixo da escada
+
+`registros` e `documentos` recusavam DELETE; `registros` recusava até UPDATE. Mas `ativos` não tinha gatilho nenhum, e um DELETE ali levava tudo em cascata — contornando por cima toda a imutabilidade construída embaixo.
+
+**Padrão a repetir:** trava em tabela filha não protege nada se a tabela-pai aceita exclusão em cascata. Ao proteger um dado, seguir a cadeia de chaves estrangeiras até o topo.
