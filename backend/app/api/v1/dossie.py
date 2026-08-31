@@ -27,6 +27,7 @@ from app.core.limite_taxa import limite
 import hashlib
 from app.services.dossie_pdf import gerar_pdf_dossie
 from app.services.alert_service import send_email_alert
+from app.api.v1.consentimento import consentimento_vigente
 from app.services.notify_service import notificar_fundador
 
 logger = logging.getLogger(__name__)
@@ -389,6 +390,36 @@ async def liberar_solicitacao(
                 detail=(
                     f"Limite de {saldo['limite']} dossies por ano atingido para este ativo. "
                     f"Nova emissao a partir de {saldo['reset_em']}."
+                ),
+            )
+
+    # BASE LEGAL — sem consentimento do titular, o dossie nao sai.
+    #
+    # A plataforma ja registrava PARA QUEM o documento foi, quando e para que
+    # (`dossie_solicitacoes` + `dossie_saidas`). Faltava o outro lado: o
+    # armador ter dito que pode. Trilha sem base legal responde metade da
+    # pergunta que a LGPD -- e uma seguradora auditando -- faz.
+    #
+    # A checagem fica AQUI, e nao no download do painel, porque este e o ato
+    # de compartilhar com terceiro. A marina baixar o dossie do proprio
+    # cliente nao e compartilhamento: o dado ja esta com ela.
+    if _ativo:
+        cons = consentimento_vigente(_ativo)
+        if cons["vigente"] is None:
+            # Nao sabemos. Recusar e reversivel; entregar nao e.
+            raise HTTPException(
+                status_code=503,
+                detail="Nao foi possivel confirmar o consentimento do titular. Tente novamente.",
+            )
+        if not cons["vigente"]:
+            faltou = ("o titular retirou o consentimento"
+                      if cons["evento"] == "revogado"
+                      else "o consentimento do titular nao foi registrado")
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Nao e possivel liberar este dossie: {faltou}. "
+                    "Registre a autorizacao do armador na ficha da embarcacao."
                 ),
             )
 

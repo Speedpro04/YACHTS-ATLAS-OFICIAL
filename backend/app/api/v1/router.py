@@ -2,12 +2,15 @@
 Yachts Atlas — API v1 Router
 """
 from fastapi import APIRouter
-from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, leads, registros, dossie, owner, parceiros, chatbot, normas, verificacao, lgpd, whatsapp, auditoria
+from app.api.v1 import auth, ativos, documentos, integridade, payments, brokers, insurance, admin, leads, registros, dossie, owner, parceiros, chatbot, normas, consentimento, verificacao, lgpd, whatsapp, auditoria
 
 router = APIRouter()
 
 router.include_router(auth.router, prefix="/auth", tags=["auth"])
 router.include_router(ativos.router, prefix="/ativos", tags=["ativos"])
+# Base legal do compartilhamento. Mesmo prefixo de `ativos`: o
+# consentimento e do ATIVO, e a tela que o coleta e a do ativo.
+router.include_router(consentimento.router, prefix="/ativos", tags=["consentimento"])
 router.include_router(documentos.router, prefix="/documentos", tags=["documentos"])
 router.include_router(integridade.router, prefix="/integridade", tags=["integridade"])
 router.include_router(payments.router, prefix="/payments", tags=["payments"])

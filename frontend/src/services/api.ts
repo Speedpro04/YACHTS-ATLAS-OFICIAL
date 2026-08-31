@@ -241,6 +241,29 @@ export const api = {
       apiRequest(`/ativos/${id}${motivo ? `?motivo=${encodeURIComponent(motivo)}` : ''}`, {
         method: 'DELETE',
       }),
+    /**
+     * Consentimento do titular — a base legal para o dossiê sair para um
+     * terceiro. Sem ele, `liberar` responde 409.
+     *
+     * É append-only no banco: retirar o consentimento é registrar um evento
+     * `revogado`, nunca apagar o anterior. Por isso não existe `PATCH` nem
+     * `DELETE` aqui — a ausência é proposital.
+     */
+    consentimento: (id: string) => apiRequest(`/ativos/${id}/consentimento`),
+    registrarConsentimento: (
+      id: string,
+      dados: {
+        evento: 'concedido' | 'revogado'
+        obtido_via: 'contrato_marina' | 'assinatura_digital' | 'email' | 'presencial'
+        titular_nome?: string | null
+        titular_documento?: string | null
+        observacao?: string | null
+      },
+    ) => apiRequest(`/ativos/${id}/consentimento`, {
+      method: 'POST', body: JSON.stringify(dados),
+    }),
+    historicoConsentimento: (id: string) =>
+      apiRequest(`/ativos/${id}/consentimento/historico`),
   },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),

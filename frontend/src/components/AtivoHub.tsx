@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import SecureCameraUpload from './SecureCameraUpload'
 import FichaServicoForm from './FichaServicoForm'
+import ConsentimentoTitular from './ConsentimentoTitular'
 import CoberturaFotos from './CoberturaFotos'
 import RetificarRegistro from './RetificarRegistro'
 import CategoriaForm from './CategoriaForm'
@@ -331,6 +332,14 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
           </p>
         </div>
       )}
+
+      {/* ===== CONSENTIMENTO DO TITULAR ===== */}
+      {/* Fica ENTRE os dados da embarcação e o painel técnico, de propósito:
+          é atributo do ativo, não de um pedido. E fica visível sem clique
+          porque a ausência dele é o que impede a liberação do dossiê — se
+          estivesse dentro de uma aba, a marina só descobriria o problema no
+          momento em que o comprador estivesse esperando. */}
+      {!hideHeader && <ConsentimentoTitular ativoId={String(ativo.id)} />}
 
       {/* ===== BLOCO DE BAIXO — Painel Técnico (cards) ===== */}
       {!secao ? (

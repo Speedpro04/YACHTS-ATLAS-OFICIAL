@@ -89,8 +89,14 @@ export default function SolicitacoesDossie() {
     try {
       await api.dossie.liberar(id)
       await carregarPedidos()
-    } catch {
-      setErro('Falha ao liberar. Tente novamente.')
+    } catch (e: any) {
+      // A mensagem do servidor vem inteira, de propósito. O `catch` vazio
+      // que existia aqui trocava TODA recusa por "Tente novamente" — e as
+      // duas recusas reais que esta rota dá são justamente as que repetir
+      // não resolve: cota anual esgotada (429) e consentimento do titular
+      // ausente ou retirado (409). A marina clicava de novo, via o mesmo
+      // texto, e ligava para o suporte perguntar o que estava acontecendo.
+      setErro(e?.message || 'Falha ao liberar. Tente novamente.')
     } finally {
       setAcaoId('')
     }
