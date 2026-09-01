@@ -30,13 +30,46 @@ export default function Header() {
 
       <div className="max-w-7xl mx-auto px-6 w-full flex items-center justify-between relative z-10">
         <Link to="/" className="group transition-all" aria-label="Yachts Atlas — Página inicial">
-          <div className="w-[130px] md:w-[180px] relative">
+          {/*
+            Altura, não largura.
+
+            O arquivo da logo é QUADRADO (500x500). Dimensionando pela largura
+            com `h-auto`, a altura virava igual à largura — 130px dentro de um
+            header de 96px no celular, 180px dentro de 166px no desktop. A logo
+            transbordava a faixa do header nos dois casos e entrava por cima da
+            primeira dobra.
+
+            Prendendo pela ALTURA (`h-full w-auto`), o tamanho da logo passa a
+            ser uma decisão explícita em px, e não um efeito colateral da
+            largura — seja qual for a proporção do arquivo que colocarem aqui
+            depois.
+
+            No CELULAR o valor é 96px, que é exatamente a altura da faixa: o
+            fundador quis a logo o maior possível, "perto de invadir a primeira
+            dobra" mas sem invadir. Ela encosta nas duas bordas do header e um
+            pixel a mais já vaza para cima do hero. Se um dia mexerem em
+            `--header-h` no celular, este número tem de acompanhar — os dois
+            são a mesma medida.
+
+            No DESKTOP o valor é 180px numa faixa de 166px — ou seja, ela
+            ultrapassa a faixa em ~7px de cada lado, DE PROPÓSITO. É o tamanho
+            que a logo sempre teve e que o fundador pediu de volta; a marca
+            respirando para fora da faixa é o efeito desejado, não o defeito.
+            Não aumente `--header-h` para "consertar" isto: a 1440x900 o CTA
+            da home fecha a dobra com 5px de sobra, e um header mais alto o
+            empurra para fora.
+
+            `width`/`height` passam a ser os 500x500 reais: eram 180x60, uma
+            proporção que não existe no arquivo, e o navegador reservava o
+            espaço errado antes de a imagem carregar.
+          */}
+          <div className="h-[96px] md:h-[180px] relative">
              <img
                src="/logo-transparent.png"
                alt="Yachts Atlas — Custódia digital de ativos náuticos"
-               className="w-full h-auto object-contain transition-transform group-hover:scale-105"
-               width={180}
-               height={60}
+               className="h-full w-auto object-contain transition-transform group-hover:scale-105"
+               width={500}
+               height={500}
              />
           </div>
         </Link>
@@ -100,7 +133,7 @@ export default function Header() {
           className="lg:hidden text-white"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {isMobileMenuOpen ? <X size={32} /> : <Menu size={32} />}
         </button>
       </div>
 

@@ -53,7 +53,19 @@
   max-width: 640px;
 }
 
+/*
+  "Sua indicação." / "Sua receita." são duas frases, não duas linhas da mesma
+  frase — mesma regra da headline da home. O `block` + margem substitui o vão
+  que o <br /> dava, que era igual ao espaço ENTRE as linhas e fazia as duas
+  lerem como um bloco só.
+
+  Aqui não é preciso o truque de padding que a home usa: este texto tem cor
+  sólida, não `background-clip: text`, então o descendente não corre risco de
+  ser cortado pela caixa.
+*/
 .headline em {
+  display: block;
+  margin-top: 12px;
   font-style: italic;
   color: #C9A84C;
 }

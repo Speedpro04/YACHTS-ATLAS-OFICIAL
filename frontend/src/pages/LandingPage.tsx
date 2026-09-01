@@ -54,7 +54,7 @@ export default function LandingPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative min-h-[calc(100vh-var(--header-h))] mt-[var(--header-h)] flex items-center justify-center overflow-hidden py-[50px]">
+      <section className="relative min-h-[calc(100vh-var(--header-h))] mt-[var(--header-h)] flex items-center justify-center overflow-hidden pt-[50px] pb-[140px]">
         <div className="absolute inset-0">
           <img
             src="/hero-yacht-v2-light.jpg"
@@ -84,9 +84,28 @@ export default function LandingPage() {
              <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">{t('lp.hero_badge')}</span>
           </div>
           
-          <h1 className="text-[2.25rem] sm:text-[46px] md:text-[56px] lg:text-[70px] xl:text-[88px] font-serif font-bold text-white mb-8 tracking-tight leading-[1.05] sm:leading-[0.95]">
-            {t('lp.hero_title')} <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">
+          <h1 className="text-[1.85rem] sm:text-[46px] md:text-[56px] lg:text-[70px] xl:text-[78px] font-serif font-bold text-white mb-8 tracking-tight leading-[1.05] sm:leading-[0.95]">
+            {t('lp.hero_title')}
+            {/*
+              `block` + margem no lugar do `<br />`.
+
+              A parte A é uma afirmação e a parte B é uma pergunta — duas
+              frases. Com `<br />` elas ficavam separadas pela MESMA entrelinha
+              que separa as linhas dentro de cada uma (1,05), então o bloco
+              inteiro lia como um parágrafo só e a pergunta perdia o efeito de
+              virada. A margem dá o respiro que diz "aqui muda o pensamento".
+
+              O `pb`/`-mb` NÃO é enfeite. Este texto é `bg-clip-text`: o
+              degradê é pintado dentro da CAIXA do elemento e recortado na
+              forma das letras. Como `block`, a caixa passa a ter a altura da
+              entrelinha — e no desktop ela é `0.95`, menor que 1 —, então o
+              descendente do "j" de "hoje?" caía fora da área pintada e era
+              cortado. O padding estende a caixa de pintura para baixo e a
+              margem negativa devolve o mesmo tanto no layout, então o
+              espaçamento na tela continua idêntico. Enquanto era inline isso
+              não acontecia, porque a caixa seguia as métricas da fonte.
+            */}
+            <span className="block mt-3 md:mt-4 pb-[0.14em] -mb-[0.14em] text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">
               {t('lp.hero_title_highlight')}
             </span>
           </h1>

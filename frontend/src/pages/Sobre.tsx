@@ -135,8 +135,15 @@ export default function Sobre() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-[#c5a059]/5 blur-[130px] rounded-full pointer-events-none"></div>
           <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
             <p className="text-4xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
-              Documentado uma vez.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Verdadeiro para sempre.</span>
+              Documentado uma vez.
+              {/* Mesma regra da headline da home: duas frases, não duas linhas
+                  da mesma frase — a margem marca a virada de pensamento.
+                  O pb/-mb tampouco é enfeite: como `bg-clip-text` + `block`,
+                  a caixa de pintura fica com a altura da entrelinha e cortava
+                  o "p" de "sempre." (medido: 64,5px de descendente numa caixa
+                  de 60px). O padding estende a pintura, a margem negativa
+                  devolve o espaço no layout. */}
+              <span className="block mt-3 md:mt-4 pb-[0.14em] -mb-[0.14em] text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Verdadeiro para sempre.</span>
             </p>
           </div>
         </section>
