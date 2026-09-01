@@ -136,13 +136,18 @@ export default function LandingPage() {
       <section className="py-32 relative bg-[#010c20]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-24">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 tracking-tight">
+            <h2 className="text-[2rem] md:text-[2.75rem] font-serif font-bold text-white mb-6 tracking-tight">
               {t('lp.dossier_title')}
             </h2>
-            <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-8"></div>
-            <p className="text-white/50 text-lg uppercase tracking-[0.2em] font-medium max-w-xl mx-auto">
-              {t('lp.dossier_subtitle')}
-            </p>
+            <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-10"></div>
+            {/* A frase carrega o argumento da secao (selo, QR, quem reconhece).
+                A moldura de 1,5px isola ela do resto e devolve o peso que o
+                uppercase claro tinha tirado. Fundo segue o da secao: so contorno. */}
+            <div className="max-w-2xl mx-auto border-[1.5px] border-[#c5a059] rounded-[3px] px-10 py-8">
+              <p className="text-white/50 text-lg uppercase tracking-[0.2em] font-medium">
+                {t('lp.dossier_subtitle')}
+              </p>
+            </div>
           </div>
 
           {/* Um único dossiê — sem classes */}
