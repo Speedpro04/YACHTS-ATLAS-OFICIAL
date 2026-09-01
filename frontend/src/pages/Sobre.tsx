@@ -50,7 +50,7 @@ export default function Sobre() {
               <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">A Casa Técnica da Náutica</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-8 tracking-tight leading-[1.05]">
-              Não inspecionamos. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Custodiamos</span> o que a sua marina faz.
+              Não inspecionamos. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Custodiamos</span> o que a sua Marina faz.
             </h1>
             <p className="text-lg md:text-xl text-white/60 leading-relaxed font-light max-w-2xl mx-auto">
               Um ativo náutico vale o que sua história prova. A Yachts Atlas documenta, organiza e blinda essa história — cada documento, cada imagem, datado, geolocalizado e à prova de fraude.
@@ -107,7 +107,7 @@ export default function Sobre() {
               </h2>
               <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-8"></div>
               <p className="text-white/50 max-w-2xl mx-auto font-light leading-relaxed">
-                O dono e a marina reúnem o que têm; os laudos de terceiros entram no mesmo cofre.
+                O dono e a Marina reúnem o que têm; os laudos de terceiros entram no mesmo cofre.
                 Tudo organizado, datado e selado — uma memória única e à prova de fraude do ativo.
               </p>
             </div>
@@ -171,7 +171,7 @@ export default function Sobre() {
               Conheça o padrão Atlas.
             </h2>
             <p className="text-white/50 font-light mb-12 max-w-xl mx-auto leading-relaxed">
-              Um dossiê construído com rigor de engenharia, para dar peso ao trabalho que a sua marina já faz todo dia.
+              Um dossiê construído com rigor de engenharia, para dar peso ao trabalho que a sua Marina já faz todo dia.
             </p>
             <Link
               to="/marina-parceira"

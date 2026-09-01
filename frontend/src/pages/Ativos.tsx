@@ -342,7 +342,7 @@ export default function Ativos() {
                   Com o e-mail preenchido, o dono acompanha o dossiê deste barco pelo Portal do
                   Proprietário — ele digita o e-mail e recebe um código, sem senha para criar.
                   <span className="text-white/70"> Ele apenas lê: não altera registros, não envia fotos
-                  e não vê as outras embarcações da sua marina.</span> Preencher é opcional, e você pode
+                  e não vê as outras embarcações da sua Marina.</span> Preencher é opcional, e você pode
                   fazer isso depois.
                 </p>
               </div>

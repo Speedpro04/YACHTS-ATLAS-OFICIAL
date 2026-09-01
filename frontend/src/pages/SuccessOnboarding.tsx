@@ -40,7 +40,7 @@ export default function SuccessOnboarding() {
             Bem-vindo à <span className="text-[#c5a059] italic">Elite.</span>
           </h1>
           <p className="text-white/40 text-lg font-light max-w-md mx-auto leading-relaxed">
-            Sua marina agora faz parte da rede Yachts Atlas. A gestão da sua frota acaba de entrar na era da imutabilidade.
+            Sua Marina agora faz parte da rede Yachts Atlas. A gestão da sua frota acaba de entrar na era da imutabilidade.
           </p>
         </div>
 

@@ -159,7 +159,7 @@ export default function ConferirDocumento() {
                     Isso não significa necessariamente fraude: o arquivo pode ter
                     sido reimpresso, convertido ou salvo por outro programa, o que
                     altera os bytes sem mudar o conteúdo visível. Na dúvida, peça
-                    a via original à marina custodiante.
+                    a via original à Marina custodiante.
                   </p>
                 )}
               </div>

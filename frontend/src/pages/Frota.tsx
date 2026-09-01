@@ -122,7 +122,7 @@ export default function Frota() {
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#c5a059]/10 blur-[80px] rounded-full"></div>
               <h2 className="text-4xl font-serif font-bold text-white mb-8 tracking-tight">Pronto para elevar o status da sua frota?</h2>
               <p className="text-white/50 mb-12 text-lg font-light">
-                Junte-se às marinas e proprietários que já utilizam o padrão mundial de custódia digital.
+                Junte-se às Marinas e proprietários que já utilizam o padrão mundial de custódia digital.
               </p>
               <Link to="/login" className="bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-12 py-5 rounded-sm text-xs font-black uppercase tracking-[0.3em] transition-all inline-flex items-center gap-4 shadow-2xl">
                  Registrar meu Ativo

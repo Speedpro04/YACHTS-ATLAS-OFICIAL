@@ -3,9 +3,9 @@
   "ogImage": "https://yachtsatlas.online/logo-with-bg-light.jpg",
   "imageAlt": "Yachts Atlas — Custódia digital de ativos náuticos",
   "default": {
-    "title": "Yachts Atlas | O sistema de custódia digital para marinas",
-    "description": "Sua marina registra, sela e comprova cada serviço feito nas embarcações sob sua guarda. Cofre imutável SHA-256, dossiê certificado e receita nova por embarcação — sem vender mais vaga.",
-    "keywords": "dossiê náutico, custódia digital de iates, registro digital de embarcação, avaliação de iate, compliance náutico, due diligence marítima, marina parceira, certificação de embarcação",
+    "title": "Yachts Atlas | O sistema de custódia digital para Marinas",
+    "description": "Sua Marina registra, sela e comprova cada serviço feito nas embarcações sob sua guarda. Cofre imutável SHA-256, dossiê certificado e receita nova por embarcação — sem vender mais vaga.",
+    "keywords": "Programa Atlas, Dossiê, dossiê náutico, custódia digital de iates, registro digital de embarcação, avaliação de iate, compliance náutico, due diligence marítima, Marina parceira, certificação de embarcação",
     "ogDescription": "Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam e aceleram a negociação do seu patrimônio marítimo."
   },
   "pages": {
@@ -16,62 +16,62 @@
     "/sobre": {
       "title": "Sobre Nós — Autoridade Técnica em Inspeção Náutica | Yachts Atlas",
       "description": "A casa técnica da náutica. Custódia e dossiê construídos sobre ensaio não destrutivo por ultrassom (NDT) e controle de qualidade industrial — do casco ao motor ao acabamento.",
-      "keywords": "sobre yachts atlas, inspeção náutica, ensaio não destrutivo, ultrassom NDT, autoridade técnica náutica, custódia de iates",
+      "keywords": "Programa Atlas, Dossiê, sobre yachts atlas, inspeção náutica, ensaio não destrutivo, ultrassom NDT, autoridade técnica náutica, custódia de iates",
       "priority": "0.8",
       "changefreq": "monthly"
     },
     "/frota": {
       "title": "Gestão de Frota Náutica para Marinas | Yachts Atlas",
-      "description": "Gerencie ativos náuticos com histórico técnico, documentação certificada e visão operacional centralizada para marinas, estaleiros e gestores de frota.",
-      "keywords": "gestão de frota náutica, software para marina, controle de embarcações, gestão de ativos náuticos",
+      "description": "Gerencie ativos náuticos com histórico técnico, documentação certificada e visão operacional centralizada para Marinas, estaleiros e gestores de frota.",
+      "keywords": "Programa Atlas, Dossiê, gestão de frota náutica, software para Marina, controle de embarcações, gestão de ativos náuticos",
       "priority": "0.9",
       "changefreq": "weekly"
     },
     "/seguranca": {
       "title": "Segurança e Integridade Documental Náutica | Yachts Atlas",
       "description": "Camada de segurança, rastreabilidade e validação de integridade SHA-256 para documentos e registros marítimos críticos.",
-      "keywords": "segurança náutica digital, integridade documental, rastreabilidade marítima, hash SHA-256, compliance náutico",
+      "keywords": "Programa Atlas, Dossiê, segurança náutica digital, integridade documental, rastreabilidade marítima, hash SHA-256, compliance náutico",
       "priority": "0.8",
       "changefreq": "monthly"
     },
     "/registro-marina": {
       "title": "Seja uma Marina Parceira Fundadora | Yachts Atlas",
-      "description": "Cadastre sua marina na rede Yachts Atlas e ative onboarding, receita de dossiês e gestão de clientes com condições fundadoras exclusivas.",
-      "keywords": "registro de marina, marina parceira, onboarding de marina, rede náutica, programa fundador",
+      "description": "Cadastre sua Marina na rede Yachts Atlas e ative onboarding, receita de dossiês e gestão de clientes com condições fundadoras exclusivas.",
+      "keywords": "Programa Atlas, Dossiê, registro de Marina, Marina parceira, onboarding de Marina, rede náutica, programa fundador",
       "priority": "0.9",
       "changefreq": "weekly"
     },
     "/marina-parceira": {
       "title": "Programa Marina Parceira — Receita de Dossiês | Yachts Atlas",
-      "description": "Conheça os benefícios comerciais do programa fundador: receita de dossiês, indicação rentável e condições exclusivas para marinas aprovadas.",
-      "keywords": "marina parceira, programa de parceria, split de receita, ecossistema náutico, programa fundador",
+      "description": "Conheça os benefícios comerciais do programa fundador: receita de dossiês, indicação rentável e condições exclusivas para Marinas aprovadas.",
+      "keywords": "Programa Atlas, Dossiê, Marina parceira, programa de parceria, split de receita, ecossistema náutico, programa fundador",
       "priority": "0.8",
       "changefreq": "weekly"
     },
     "/seja-parceiro": {
       "title": "Seja Parceiro Atlas — Rede de Serviços Náuticos | Yachts Atlas",
       "description": "Conecte seu serviço náutico ao ecossistema Yachts Atlas. Estaleiros, corretores, seguradoras e prestadores: solicite as condições do programa de parceria.",
-      "keywords": "parceiro náutico, rede de serviços náuticos, parceria yachts atlas, estaleiro parceiro, corretor de embarcações",
+      "keywords": "Programa Atlas, Dossiê, parceiro náutico, rede de serviços náuticos, parceria yachts atlas, estaleiro parceiro, corretor de embarcações",
       "priority": "0.7",
       "changefreq": "monthly"
     },
     "/solicitar-dossie": {
       "title": "Solicitar Dossiê de Embarcação | Yachts Atlas",
       "description": "Solicite o dossiê auditável de um ativo náutico — válido para compra, venda e seguro. A Yachts Atlas analisa o pedido e libera o acesso seguro ao documento.",
-      "keywords": "solicitar dossiê náutico, dossiê de embarcação, laudo compra e venda de barco, documento de iate, dossiê para seguro náutico",
+      "keywords": "Programa Atlas, Dossiê, solicitar dossiê náutico, dossiê de embarcação, laudo compra e venda de barco, documento de iate, dossiê para seguro náutico",
       "priority": "0.8",
       "changefreq": "weekly"
     },
     "/acesso-proprietario": {
       "title": "Portal do Proprietário de Iate | Yachts Atlas",
       "description": "Área segura para proprietários acessarem histórico, dossiê certificado e documentação da embarcação com autenticação 2FA.",
-      "keywords": "portal do proprietário, dossiê da embarcação, acesso náutico seguro, cofre digital de iate",
+      "keywords": "Programa Atlas, Dossiê, portal do proprietário, dossiê da embarcação, acesso náutico seguro, cofre digital de iate",
       "index": false
     },
     "/termos-fundadores": {
       "title": "Termos do Programa Fundador | Yachts Atlas",
-      "description": "Condições comerciais de referência para marinas aprovadas no ciclo fundador da rede Yachts Atlas.",
-      "keywords": "termos programa fundador, condições marina parceira, contrato fundador yachts atlas",
+      "description": "Condições comerciais de referência para Marinas aprovadas no ciclo fundador da rede Yachts Atlas.",
+      "keywords": "Programa Atlas, Dossiê, termos programa fundador, condições Marina parceira, contrato fundador yachts atlas",
       "index": false
     }
   }

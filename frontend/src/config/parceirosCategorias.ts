@@ -24,8 +24,8 @@ export const CATEGORIAS_PARCEIRO: CategoriaParceiro[] = [
   { id: 'broker', label: 'Brokers', descricao: 'Corretores de embarcações que vendem com a credibilidade do dossiê.', icon: 'Briefcase', grupo: 'comercial' },
   { id: 'insurance', label: 'Seguros', descricao: 'Seguradoras que precificam com base no histórico verificável.', icon: 'ShieldCheck', grupo: 'comercial' },
 
-  { id: 'tractor', label: 'Tratores & Içamento', descricao: 'Içamento e movimentação de embarcações em marina.', icon: 'Tractor', grupo: 'operacional' },
-  { id: 'forklift', label: 'Empilhadeiras', descricao: 'Lançamento e recolhimento em marina seca.', icon: 'Forklift', grupo: 'operacional' },
+  { id: 'tractor', label: 'Tratores & Içamento', descricao: 'Içamento e movimentação de embarcações em Marina.', icon: 'Tractor', grupo: 'operacional' },
+  { id: 'forklift', label: 'Empilhadeiras', descricao: 'Lançamento e recolhimento em Marina seca.', icon: 'Forklift', grupo: 'operacional' },
   { id: 'nautical_transport', label: 'Transporte Náutico', descricao: 'Transporte de embarcações por terra e estrada.', icon: 'Truck', grupo: 'operacional' },
   { id: 'trailer_manufacturer', label: 'Carretas de Transporte', descricao: 'Fabricantes de carretas sob medida por embarcação.', icon: 'Container', grupo: 'operacional' },
 

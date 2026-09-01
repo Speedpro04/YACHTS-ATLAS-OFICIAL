@@ -140,7 +140,7 @@ export default function SolicitarDossie() {
                 </div>
                 <div>
                   <label className={labelClass}>Marina (se souber)</label>
-                  <input className={inputClass('marina_nome')} value={form.marina_nome} onChange={(e) => set('marina_nome', e.target.value)} placeholder="Nome da marina" />
+                  <input className={inputClass('marina_nome')} value={form.marina_nome} onChange={(e) => set('marina_nome', e.target.value)} placeholder="Nome da Marina" />
                 </div>
                 <div>
                   <label className={labelClass}>Código do ativo (se souber)</label>
@@ -163,7 +163,7 @@ export default function SolicitarDossie() {
               </button>
 
               <p className="text-[9px] text-white/20 uppercase tracking-[0.2em] text-center mt-6">
-                O pagamento do dossiê é tratado diretamente com a marina responsável.
+                O pagamento do dossiê é tratado diretamente com a Marina responsável.
               </p>
             </div>
           )}

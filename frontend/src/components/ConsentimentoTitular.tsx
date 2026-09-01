@@ -36,7 +36,7 @@ type Estado = {
 }
 
 const VIAS: { valor: 'contrato_marina' | 'assinatura_digital' | 'email' | 'presencial'; rotulo: string }[] = [
-  { valor: 'contrato_marina', rotulo: 'Contrato com a marina' },
+  { valor: 'contrato_marina', rotulo: 'Contrato com a Marina' },
   { valor: 'assinatura_digital', rotulo: 'Assinatura digital' },
   { valor: 'email', rotulo: 'E-mail do titular' },
   { valor: 'presencial', rotulo: 'Presencial' },
@@ -121,7 +121,7 @@ export default function ConsentimentoTitular({ ativoId }: { ativoId: string }) {
               ) : (
                 <>
                   O dossiê desta embarcação <strong className="text-white/70">não pode ser liberado
-                  para terceiros</strong> enquanto o armador não autorizar. A marina continua
+                  para terceiros</strong> enquanto o armador não autorizar. A Marina continua
                   emitindo e consultando normalmente — a exigência vale só para o envio a
                   comprador, corretor, seguradora ou perito.
                 </>
@@ -180,7 +180,7 @@ export default function ConsentimentoTitular({ ativoId }: { ativoId: string }) {
                 </div>
               </div>
               <p className="text-[10px] leading-relaxed text-white/35 max-w-3xl">
-                Ao registrar, a marina declara que o titular concordou com o texto acima. O
+                Ao registrar, a Marina declara que o titular concordou com o texto acima. O
                 registro é permanente e datado — pode ser retirado depois, mas não apagado.
               </p>
             </>

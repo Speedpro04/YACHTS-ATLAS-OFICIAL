@@ -24,7 +24,7 @@ export default function Seguranca() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#E5D5B7] italic">Criptografia Pura.</span>
             </h1>
             <p className="text-xl text-white/50 max-w-2xl mx-auto leading-relaxed font-light">
-              Sua marina responde por ativos de terceiros. Aqui, cada registro que a sua equipe faz é gravado de forma matematicamente imutável — prova que serve à marina primeiro, e ao proprietário depois.
+              Sua Marina responde por ativos de terceiros. Aqui, cada registro que a sua equipe faz é gravado de forma matematicamente imutável — prova que serve à Marina primeiro, e ao proprietário depois.
             </p>
           </div>
         </section>
@@ -113,7 +113,7 @@ export default function Seguranca() {
               <Key size={64} strokeWidth={0.5} className="mx-auto text-[#c5a059] mb-12" />
               <h2 className="text-5xl font-serif font-bold text-white mb-8 tracking-tight">O Cofre Atlas.</h2>
               <p className="text-white/40 text-xl leading-relaxed mb-16 font-light">
-                O cofre é da marina. Só a sua equipe registra e sela — e nem a plataforma pode alterar depois. O proprietário recebe uma chave própria e <span className="text-white/70">consulta</span> o dossiê da embarcação dele: vê tudo, não muda nada. É essa separação que dá peso ao documento na frente de um comprador, de um corretor ou de uma seguradora.
+                O cofre é da Marina. Só a sua equipe registra e sela — e nem a plataforma pode alterar depois. O proprietário recebe uma chave própria e <span className="text-white/70">consulta</span> o dossiê da embarcação dele: vê tudo, não muda nada. É essa separação que dá peso ao documento na frente de um comprador, de um corretor ou de uma seguradora.
               </p>
               <Link to="/login" className="bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-16 py-6 rounded-sm text-[10px] font-black uppercase tracking-[0.4em] transition-all shadow-2xl inline-block">
                 Acessar o Cofre

@@ -84,7 +84,7 @@ export default function PagamentoDossie() {
                 <span className="text-3xl font-serif font-bold text-[#c5a059]">{precoFmt}</span>
               </div>
               <p className="text-[11px] text-white/40 leading-relaxed mt-4">
-                Valor de referência conforme o porte. O pagamento do dossiê é tratado diretamente com a marina responsável.
+                Valor de referência conforme o porte. O pagamento do dossiê é tratado diretamente com a Marina responsável.
               </p>
             </div>
 

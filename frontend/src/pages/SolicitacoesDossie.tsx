@@ -201,7 +201,7 @@ export default function SolicitacoesDossie() {
         </div>
         <h1 className="text-3xl font-serif font-bold text-white tracking-tight">Custódia & Conformidade</h1>
         <p className="text-white/40 text-sm mt-2">
-          Gerencie e emita dossiês oficiais de conformidade técnica para as embarcações sob custódia da marina.
+          Gerencie e emita dossiês oficiais de conformidade técnica para as embarcações sob custódia da Marina.
         </p>
       </div>
 

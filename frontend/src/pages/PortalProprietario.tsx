@@ -62,7 +62,7 @@ export default function PortalProprietario() {
         <Anchor size={40} className="text-[#c5a059]/40 mb-6" />
         <h1 className="text-2xl font-serif font-bold text-white mb-2">Nenhuma embarcação vinculada</h1>
         <p className="text-white/40 text-sm max-w-md">
-          Ainda não encontramos um ativo associado à sua conta. Fale com a marina responsável pelo seu cadastro.
+          Ainda não encontramos um ativo associado à sua conta. Fale com a Marina responsável pelo seu cadastro.
         </p>
       </div>
     )

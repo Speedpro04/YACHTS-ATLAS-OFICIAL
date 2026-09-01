@@ -206,7 +206,7 @@ export default function RegistroMarina() {
             <>
               <h2 className="text-4xl font-serif font-bold text-white tracking-tight">Protocolo Concluído.</h2>
               <p className="text-white/40 leading-relaxed font-light uppercase tracking-[0.2em] text-[10px]">
-                Sua marina foi integrada ao ecossistema Atlas. <br /> Redirecionando para o cofre de segurança...
+                Sua Marina foi integrada ao ecossistema Atlas. <br /> Redirecionando para o cofre de segurança...
               </p>
               <div className="flex justify-center">
                 <Loader2 className="animate-spin text-gold-500/30" size={24} />
@@ -541,18 +541,18 @@ export default function RegistroMarina() {
                           marina que trouxe a indicada. */}
                       <div className="space-y-4 group md:col-span-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-focus-within:text-gold-500 transition-colors">
-                          Alguma marina indicou a Yachts Atlas para você?
+                          Alguma Marina indicou a Yachts Atlas para você?
                         </label>
                         <input
                           type="text"
                           name="indicada_por"
                           value={formData.indicada_por}
                           onChange={handleChange}
-                          placeholder="Nome ou e-mail da marina que indicou (opcional)"
+                          placeholder="Nome ou e-mail da Marina que indicou (opcional)"
                           className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
                         />
                         <p className="text-[11px] text-white/30 leading-relaxed">
-                          A marina que indica participa dos dossiês gerados por você durante o período fundador.
+                          A Marina que indica participa dos dossiês gerados por você durante o período fundador.
                         </p>
                       </div>
                     </div>

@@ -60,11 +60,11 @@ export default function Privacidade() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>
                   <strong>Cadastro e contato:</strong> nome, e-mail, telefone/WhatsApp e, quando aplicável,
-                  CPF ou CNPJ. Para marinas e parceiros: razão social, dados da empresa e do responsável.
+                  CPF ou CNPJ. Para Marinas e parceiros: razão social, dados da empresa e do responsável.
                 </li>
                 <li>
                   <strong>Dados do ativo náutico:</strong> tipo, marca, modelo, ano, dimensões,
-                  classificação e documentos, imagens e laudos enviados por você ou pela marina.
+                  classificação e documentos, imagens e laudos enviados por você ou pela Marina.
                 </li>
                 <li>
                   <strong>Dados de pagamento:</strong> processados diretamente pela Stripe. Não
@@ -106,7 +106,7 @@ export default function Privacidade() {
                 <li>
                   <strong>OpenAI</strong> — apenas para a assistente de normas (Capitã Solara). Ela recebe
                   somente a sua pergunta sobre normas; dados pessoais identificados na mensagem são
-                  removidos antes do envio e a assistente não acessa dados de marinas, proprietários ou
+                  removidos antes do envio e a assistente não acessa dados de Marinas, proprietários ou
                   embarcações específicas.
                 </li>
                 <li><strong>Autoridades públicas</strong> — quando exigido por lei ou ordem judicial.</li>

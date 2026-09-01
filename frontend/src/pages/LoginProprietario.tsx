@@ -145,7 +145,7 @@ export default function LoginProprietario() {
         {etapa === 'email' ? (
           <form onSubmit={handleEmail} className="space-y-6">
             <p className="text-white/40 text-sm font-light leading-relaxed -mt-4 mb-2">
-              Informe o e-mail cadastrado pela sua marina. Enviamos um código de acesso
+              Informe o e-mail cadastrado pela sua Marina. Enviamos um código de acesso
               por e-mail e WhatsApp — sem senha para criar nem lembrar.
             </p>
             <div className="space-y-2 group">

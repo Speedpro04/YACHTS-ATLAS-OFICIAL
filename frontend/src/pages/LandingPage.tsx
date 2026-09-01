@@ -40,8 +40,8 @@ const FAQS = [
     a: 'Sim. Cada dossiê é organizado segundo as principais normas náuticas brasileiras e internacionais — NORMAM (Marinha do Brasil), ABNT (incluindo a NBR 14574) e referências ISO. A Yachts Atlas organiza e acompanha a conformidade documental do ativo; a emissão de certificados oficiais cabe aos órgãos competentes, e o dossiê já fica pronto para ela.',
   },
   {
-    q: 'Sou uma marina. Como funciona a parceria?',
-    a: 'A marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
+    q: 'Sou uma Marina. Como funciona a parceria?',
+    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
   },
 ]
 
@@ -150,7 +150,7 @@ export default function LandingPage() {
             <p className="text-white/60 text-lg font-light leading-relaxed">
               Não existem versões "básica" ou "premium". Existe{' '}
               <span className="text-[#c5a059] font-medium">um único Dossiê Atlas</span> —
-              o documento que a sua marina emite reunindo tudo o que foi feito na embarcação
+              o documento que a sua Marina emite reunindo tudo o que foi feito na embarcação
               sob sua guarda. Cada nota, cada laudo, cada foto: datado, geolocalizado e selado.
             </p>
           </div>
@@ -212,7 +212,7 @@ export default function LandingPage() {
             <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-8"></div>
             <p className="text-white/50 text-lg font-light leading-relaxed max-w-2xl mx-auto">
               Cada Dossiê Atlas é organizado segundo as principais normas náuticas —
-              brasileiras e internacionais. Não é papel solto: é o trabalho da sua marina
+              brasileiras e internacionais. Não é papel solto: é o trabalho da sua Marina
               documentado na linguagem que <span className="text-[#c5a059] font-medium">a
               Autoridade Marítima, seguradoras e compradores</span> reconhecem.
             </p>
@@ -236,7 +236,7 @@ export default function LandingPage() {
                 icon: Globe,
                 tag: 'ISO · Internacional',
                 title: 'Padrão Global',
-                desc: 'Referências ISO para grandes iates, estabilidade e flotabilidade — a ponte das embarcações da sua marina para os mercados de EUA e Europa.',
+                desc: 'Referências ISO para grandes iates, estabilidade e flotabilidade — a ponte das embarcações da sua Marina para os mercados de EUA e Europa.',
               },
               {
                 icon: BellRing,
@@ -341,7 +341,7 @@ export default function LandingPage() {
               A página não promete o que ainda não foi visto funcionando. */}
           <div className="mt-16 max-w-3xl mx-auto text-center p-10 bg-[#021431] border border-[#c5a059]/20 rounded-sm">
             <p className="text-[#c5a059] text-[10px] font-black uppercase tracking-[0.35em] mb-5">
-              A custódia é da marina
+              A custódia é da Marina
             </p>
             <p className="text-white/50 text-base leading-relaxed font-light">
               Só a sua equipe registra e sela. O proprietário acessa o dossiê do barco dele
@@ -351,7 +351,7 @@ export default function LandingPage() {
               está vendendo.
             </p>
             <p className="text-white/30 text-sm leading-relaxed font-light mt-5">
-              E o registro nasce onde o barco está: a foto vai do celular da marina direto para o
+              E o registro nasce onde o barco está: a foto vai do celular da Marina direto para o
               cofre, selada na hora, com data e local.
             </p>
           </div>
@@ -419,7 +419,7 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-white/40 text-lg md:text-xl mb-16 font-light leading-relaxed max-w-2xl mx-auto">
-               Indique uma marina para o Programa Atlas e receba 100% da receita dos dossiês gerados por ela durante 12 meses. Uma nova fonte de receita para a sua empresa — sem custo, sem intermediários.
+               Indique uma Marina para o Programa Atlas e receba 100% da receita dos dossiês gerados por ela durante 12 meses. Uma nova fonte de receita para a sua empresa — sem custo, sem intermediários.
             </p>
             
             <div className="inline-block p-[1px] bg-gradient-to-b from-white/10 via-[#c5a059]/30 to-transparent rounded-sm relative group">
@@ -427,11 +427,11 @@ export default function LandingPage() {
                <div className="bg-[#021431]/90 px-12 py-10 rounded-sm backdrop-blur-xl relative z-10 border border-[#010c20]">
                   <div className="flex items-center justify-center gap-3 mb-6">
                      <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></span>
-                     <p className="text-[10px] text-[#c5a059] font-black uppercase tracking-[0.4em]">Indique uma marina</p>
+                     <p className="text-[10px] text-[#c5a059] font-black uppercase tracking-[0.4em]">Indique uma Marina</p>
                   </div>
 
                   <p className="text-white/80 text-sm mb-10 font-light max-w-sm mx-auto">
-                     Sua marina indica, a rede cresce e os dossiês da indicada viram receita sua por 12 meses.
+                     Sua Marina indica, a rede cresce e os dossiês da indicada viram receita sua por 12 meses.
                   </p>
                   
                   <Link 

@@ -68,7 +68,7 @@ const FICHA_PADRAO: ServicoConfig = {
       { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
 
       { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Técnico responsável', required: true },
-      { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Oficina, estaleiro, marina' },
+      { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Oficina, estaleiro, Marina' },
       { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
 
       { key: 'data', label: 'Data do serviço', type: 'date', required: true },
@@ -130,7 +130,7 @@ const FICHA_MANUTENCAO: ServicoConfig = {
     { key: 'status', label: 'Status', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
 
     { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Mecânico ou técnico responsável', required: true },
-    { key: 'prestador', label: 'Empresa / oficina / marina', type: 'text', placeholder: 'Oficina, estaleiro, concessionária' },
+    { key: 'prestador', label: 'Empresa / oficina / Marina', type: 'text', placeholder: 'Oficina, estaleiro, concessionária' },
     { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
 
     { key: 'data', label: 'Data do serviço', type: 'date', required: true },
@@ -220,7 +220,7 @@ const FICHA_OPERACAO: ServicoConfig = {
     { key: 'hora_retorno', label: 'Hora de retorno', type: 'time', required: true },
     { key: 'horimetro_retorno', label: 'Horímetro no retorno', type: 'number', placeholder: 'Leitura ao voltar', suffix: 'h', required: true },
 
-    { key: 'quem_reboque', label: 'Reboque da água até a marina (quem fez)', type: 'text', placeholder: 'Quem rebocou de volta', full: true },
+    { key: 'quem_reboque', label: 'Reboque da água até a Marina (quem fez)', type: 'text', placeholder: 'Quem rebocou de volta', full: true },
     { key: 'combustivel', label: 'Combustível no retorno', type: 'select', options: ['Cheio', '3/4', '1/2', '1/4', 'Reserva'] },
     { key: 'condicoes', label: 'Condições de mar / tempo', type: 'text', placeholder: 'Calmo, agitado, vento...' },
 
@@ -496,7 +496,7 @@ const FICHA_SINISTRO: ServicoConfig = {
     { key: 'hora', label: 'Hora aproximada', type: 'time', showIf: SIN_OCORRENCIA },
     { key: 'local_ocorrencia', label: 'Local da ocorrencia', type: 'text', placeholder: 'Ex: Canal de acesso, Baia de Ilhabela', full: true, showIf: SIN_OCORRENCIA },
     { key: 'situacao_embarcacao', label: 'A embarcacao estava', type: 'select', options: [
-      'Navegando', 'Fundeada', 'Atracada', 'Em marina seca / no seco', 'Sendo rebocada', 'Em transporte terrestre'
+      'Navegando', 'Fundeada', 'Atracada', 'Em Marina seca / no seco', 'Sendo rebocada', 'Em transporte terrestre'
     ], showIf: SIN_OCORRENCIA },
     { key: 'responsavel', label: 'Quem reportou / condutor no momento', type: 'text', placeholder: 'Nome de quem estava a bordo ou constatou', required: true },
     { key: 'houve_vitimas', label: 'Houve feridos ou vitimas?', type: 'select', options: ['Nao', 'Sim - sem gravidade', 'Sim - com atendimento medico'], showIf: SIN_OCORRENCIA },
@@ -598,7 +598,7 @@ const FICHA_ELETRICA: ServicoConfig = {
     { key: 'status', label: 'Status após o serviço', type: 'select', options: ['Concluído', 'Pendente', 'Atenção'], required: true },
 
     { key: 'responsavel', label: 'Responsável / quem executou', type: 'text', placeholder: 'Eletricista náutico ou técnico de eletrônica', required: true },
-    { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Empresa instaladora, revendedor autorizado ou marina' },
+    { key: 'prestador', label: 'Empresa / prestador', type: 'text', placeholder: 'Empresa instaladora, revendedor autorizado ou Marina' },
     { key: 'cnpj', label: 'CNPJ do prestador', type: 'text', placeholder: '00.000.000/0000-00' },
     { key: 'data', label: 'Data do serviço', type: 'date', required: true },
     { key: 'horimetro', label: 'Horímetro do motor na inspeção', type: 'number', placeholder: 'Horímetro', required: true, suffix: 'h' },

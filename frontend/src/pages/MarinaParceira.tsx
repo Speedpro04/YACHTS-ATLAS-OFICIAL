@@ -155,7 +155,7 @@ export default function MarinaParceira() {
           </h2>
 
           <p className={styles.subtext}>
-            Indique uma marina para o Programa Atlas. Quando ela entrar na rede, 100% da receita dos
+            Indique uma Marina para o Programa Atlas. Quando ela entrar na rede, 100% da receita dos
             dossiês que ela gerar é sua durante 12 meses — uma nova fonte de receita para a sua empresa.
           </p>
 
@@ -171,7 +171,7 @@ export default function MarinaParceira() {
               Cláusula Comercial de Indicação
             </p>
             <p className="text-white/70 text-sm leading-relaxed">
-              Para marinas parceiras aprovadas: 100% da receita dos dossiês gerados pela marina indicada
+              Para Marinas parceiras aprovadas: 100% da receita dos dossiês gerados pela Marina indicada
               por 12 meses, contados da ativação da conta da indicada, conforme instrumento contratual.
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function MarinaParceira() {
                 title: 'Receita Imediata',
                 text: (
                   <>
-                    Cada dossiê gerado na sua marina representa{' '}
+                    Cada dossiê gerado na sua Marina representa{' '}
                     <strong>receita direta para o seu negócio</strong> — sem intermediários, sem burocracia.
                   </>
                 ),
@@ -215,7 +215,7 @@ export default function MarinaParceira() {
                 text: (
                   <>
                     A página oficial trabalha a escala da rede com{' '}
-                    <strong>mensalidade de USD 250</strong> para marinas em operação.
+                    <strong>mensalidade de USD 250</strong> para Marinas em operação.
                   </>
                 ),
               },
@@ -307,7 +307,7 @@ export default function MarinaParceira() {
                       className={`${styles.input} ${errors.source ? styles.inputError : ''}`}
                       type="text"
                       name="source"
-                      placeholder="Nome da sua marina"
+                      placeholder="Nome da sua Marina"
                       value={form.source}
                       onChange={handleChange}
                     />
@@ -316,7 +316,7 @@ export default function MarinaParceira() {
 
                 <div className={styles.ctaRow}>
                   <p className={styles.disclaimer}>
-                    A marina indicada será contatada pela Yachts Atlas em até 48h, com a sua indicação
+                    A Marina indicada será contatada pela Yachts Atlas em até 48h, com a sua indicação
                     identificada. Aprovada a entrada dela na rede, os dossiês que ela gerar passam
                     a ser receita sua por 12 meses, conforme os termos comerciais aplicáveis.
                   </p>
@@ -333,7 +333,7 @@ export default function MarinaParceira() {
                 <span className={styles.successIcon}>✦</span>
                 <h3 className={styles.successTitle}>Indicação Recebida</h3>
                 <p className={styles.successText}>
-                  Vamos contatar a marina indicada em até 48 horas.<br />
+                  Vamos contatar a Marina indicada em até 48 horas.<br />
                   Você é avisado assim que ela entrar na rede.
                 </p>
               </div>

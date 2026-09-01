@@ -298,7 +298,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059]">
-                Índice de Custódia — o trabalho da marina
+                Índice de Custódia — o trabalho da Marina
               </p>
               <p className="text-xs leading-relaxed">
                 Mede <strong className="text-white/85">quanto da embarcação está documentado</strong>:
@@ -855,7 +855,7 @@ function SecaoDetalhe({ categoria, ativo, onBack, readOnly = false }: { categori
             </div>
             <div className="space-y-1.5">
               <label className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40">Quem fez / responsável</label>
-              <input className={inputCls} value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })} placeholder="Técnico, empresa, marina..." />
+              <input className={inputCls} value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })} placeholder="Técnico, empresa, Marina..." />
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
