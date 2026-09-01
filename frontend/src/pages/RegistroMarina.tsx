@@ -37,6 +37,10 @@ import {
 // recusava — a marina digitava algo que a página aceitava e levava erro
 // genérico do backend, sem saber qual campo estava errado. Mudou a regra lá?
 // Muda aqui, e o texto da tela acompanha sozinho.
+// ESPELHO. A autoridade e o backend: app/core/security.py (SENHA_MINIMO e
+// _REGRAS_SENHA), que valida no modelo e ainda consulta o HaveIBeenPwned.
+// Isto aqui existe so para a marina ver o que falta enquanto digita.
+// Se mudar o numero, mude LA primeiro -- aqui e copia.
 const SENHA_MINIMO = 10
 
 const REGRAS_SENHA: { texto: string; ok: (s: string) => boolean }[] = [

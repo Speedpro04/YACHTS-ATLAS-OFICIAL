@@ -1,11 +1,14 @@
 """
 Yachts Atlas — Security Utilities
 """
+import logging
 from datetime import datetime, timedelta
 from fastapi import Depends, Header, HTTPException
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = "HS256"
@@ -142,3 +145,80 @@ def require_platform_admin(user: dict = Depends(get_current_user)) -> dict:
     if role != "admin":
         raise HTTPException(status_code=403, detail="Acesso restrito ao administrador")
     return user
+
+
+# ---------------------------------------------------------------------------
+# Política de senha — UMA fonte para todo mundo
+# ---------------------------------------------------------------------------
+# Antes as regras viviam so no RegistroMarina.tsx: 10 caracteres, maiuscula,
+# minuscula e numero, conferidas no navegador. O backend recebia `password: str`
+# e mandava direto para o `create_user` do Supabase, sem olhar. Quem postasse
+# direto em /leads/marina/registrar cadastrava com "123" -- o unico piso real
+# era o minimo do proprio Supabase, que vem em 6. E `UsuarioCreate` ainda dizia
+# min_length=8, um terceiro numero para o mesmo fato.
+#
+# Agora a regra mora aqui e os modelos a chamam. Mudar o minimo e mudar UMA
+# linha. O texto da falha e o mesmo que a marina le na tela.
+SENHA_MINIMO = 10
+
+_REGRAS_SENHA = (
+    (f"pelo menos {SENHA_MINIMO} caracteres", lambda s: len(s) >= SENHA_MINIMO),
+    ("uma letra maiuscula", lambda s: any(c.isupper() for c in s)),
+    ("uma letra minuscula", lambda s: any(c.islower() for c in s)),
+    ("um numero", lambda s: any(c.isdigit() for c in s)),
+)
+
+
+def faltas_na_senha(senha: str) -> list[str]:
+    """O que a senha ainda nao cumpre. Lista vazia = senha valida."""
+    s = senha or ""
+    return [texto for texto, cumpre in _REGRAS_SENHA if not cumpre(s)]
+
+
+def validar_senha(senha: str) -> str:
+    """Para usar em `field_validator`. Levanta ValueError com o que falta."""
+    faltas = faltas_na_senha(senha)
+    if faltas:
+        raise ValueError("A senha precisa de " + ", ".join(faltas) + ".")
+    return senha
+
+
+async def senha_vazada(senha: str) -> bool:
+    """A senha aparece em vazamento publico conhecido? (HaveIBeenPwned)
+
+    E o mesmo mecanismo do recurso pago do Supabase, que so existe no plano Pro.
+    Funciona por k-anonimato: mandamos apenas os 5 primeiros caracteres do
+    SHA-1 e recebemos os sufixos daquela faixa; a comparacao final e local.
+    A senha nunca sai daqui, e o hash completo tambem nao.
+
+    FALHA ABERTO de proposito: se o HIBP estiver fora do ar, devolve False e
+    registra no log. Travar o cadastro de uma marina pagante por causa de
+    servico de terceiro seria pior que o problema que isto resolve.
+    """
+    if not senha:
+        return False
+    import hashlib
+    import httpx
+
+    sha1 = hashlib.sha1(senha.encode("utf-8")).hexdigest().upper()
+    prefixo, sufixo = sha1[:5], sha1[5:]
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as cliente:
+            r = await cliente.get(
+                f"https://api.pwnedpasswords.com/range/{prefixo}",
+                # Add-Padding faz o HIBP devolver respostas de tamanho uniforme:
+                # sem isso, o TAMANHO da resposta ja entrega quantos hashes
+                # existem naquela faixa para quem observa a rede.
+                headers={"Add-Padding": "true", "User-Agent": "YachtsAtlas"},
+            )
+            r.raise_for_status()
+            corpo = r.text
+    except Exception as e:
+        logger.warning("HIBP indisponivel (%s) — cadastro segue sem a checagem", e)
+        return False
+
+    for linha in corpo.splitlines():
+        h, _, contagem = linha.partition(":")
+        if h.strip() == sufixo and contagem.strip() not in ("", "0"):
+            return True
+    return False

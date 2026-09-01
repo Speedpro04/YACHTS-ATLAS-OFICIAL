@@ -6,11 +6,11 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from app.schemas.models import LeadMarinaCreate
 from app.core.supabase import get_supabase_admin
-from app.core.security import require_platform_admin
+from app.core.security import require_platform_admin, validar_senha, senha_vazada
 from app.core.config import settings, LAUNCH_STATES
 from app.core.precos import UFS_DO_BRASIL, link_de_checkout
 from app.services.whatsapp_service import normalizar_telefone
@@ -257,6 +257,15 @@ class MarinaRegistroPublico(BaseModel):
     # vinculo SO pode ser capturado aqui: depois ninguem lembra quem indicou
     # quem, nem a fundadora nem a indicada. E o motor que leva de 20 para 40.
     indicada_por: Optional[str] = None
+
+    # As quatro regras viviam so no RegistroMarina.tsx, conferidas no navegador.
+    # Aqui a senha chegava como `str` e ia direto para o create_user do Supabase:
+    # quem postasse direto neste endpoint cadastrava com "123". A regra e a
+    # mesma de core.security -- uma fonte, tres consumidores.
+    @field_validator("password")
+    @classmethod
+    def _senha_forte(cls, v: str) -> str:
+        return validar_senha(v)
 
 
 def _registrar_indicacao(supabase, data) -> None:
@@ -602,6 +611,19 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
     vagas, cria o acesso GRÁTIS (a marina define a própria senha), dispara a
     contagem dos 6 meses e NÃO vai para o checkout. Caso contrário, sinaliza o
     fluxo pago (USD 250/mês)."""
+    # Senha ja vazada em algum lugar do mundo nao entra, por mais forte que
+    # pareca. O Supabase faz isso sozinho, mas SO no plano Pro; aqui a checagem
+    # e nossa, contra o mesmo HaveIBeenPwned, por k-anonimato. Se o HIBP estiver
+    # fora do ar a funcao devolve False e o cadastro segue -- ver core.security.
+    if await senha_vazada(data.password):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Esta senha aparece em vazamentos publicos conhecidos. "
+                "Escolha outra — ela nao protege o cofre da sua marina."
+            ),
+        )
+
     supabase = get_supabase_admin()
 
     # 1) O e-mail é uma das vagas grátis pré-autorizadas?

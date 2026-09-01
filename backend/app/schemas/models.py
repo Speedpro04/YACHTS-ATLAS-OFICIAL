@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+from app.core.security import validar_senha
 
 
 class UserRole(str, Enum):
@@ -90,10 +91,17 @@ class ProfileResponse(ProfileBase):
 
 class UsuarioCreate(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    # Era `Field(min_length=8)` -- um TERCEIRO numero para o mesmo fato (o site
+    # exige 10, o Supabase aceita 6). Agora usa a mesma regra de core.security.
+    password: str
     nome: str
     telefone: Optional[str] = None
     whatsapp: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def _senha_forte(cls, v: str) -> str:
+        return validar_senha(v)
 
 
 class UsuarioResponse(BaseModel):
