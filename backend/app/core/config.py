@@ -196,10 +196,20 @@ class Settings(BaseSettings):
     # direto no checkout; com o vídeo de apresentação no meio, quem sai para
     # pensar e volta perderia a vaga e pagaria $250 achando que pagaria $200.
     #
-    # Três horas, e não um dia: com 4 vagas por estado, curioso segurando vaga
-    # bloqueia comprador real. O prazo é dito à marina no cadastro — prazo que
-    # o cliente não conhece é armadilha.
-    MINUTOS_DE_RESERVA_VAGA: int = 180
+    # Doze horas, e não três: quem decide na marina quase nunca é quem preenche
+    # o cadastro. O gerente precisa levar os $200/mês ao conselho ou ao dono de
+    # verdade, e conselho que só se reúne à tarde não cabe em três horas. Meio
+    # dia cobre o expediente inteiro sem prender a vaga de um dia para o outro —
+    # com 4 vagas por estado, curioso segurando vaga bloqueia comprador real.
+    #
+    # Prazo curto NÃO protege de pagamento atrasado: o checkout do lançamento é
+    # payment link da Stripe (buy.stripe.com) e vive 24h, fora do nosso alcance.
+    # Quem cobre essa brecha é _avisar_pagamento_sem_vaga, que manda a decisão
+    # para o humano em vez de estourar o cap do estado em silêncio.
+    #
+    # O prazo é dito à marina em RegistroMarina.tsx — prazo que o cliente não
+    # conhece é armadilha. Mudou aqui, muda lá.
+    MINUTOS_DE_RESERVA_VAGA: int = 720
 
     # O preço de fundadora vale 12 meses. No 13º a assinatura passa a $250 —
     # correção monetária combinada na venda, não é surpresa para a marina.

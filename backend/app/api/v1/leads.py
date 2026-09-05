@@ -113,7 +113,7 @@ def _oferta_marina(supabase, data) -> dict:
     fundadora = reserva.get("modo") == "fundadora"
 
     # Hora em que a vaga volta para a fila, para a tela mostrar o prazo exato
-    # ("reservada até 14h32") em vez de um "3 horas" que a marina precisa
+    # ("reservada até 14h32") em vez de um "12 horas" que a marina precisa
     # cronometrar sozinha. Só existe quando há reserva: quem já está ativa não
     # tem prazo correndo contra ela.
     expira_em = None

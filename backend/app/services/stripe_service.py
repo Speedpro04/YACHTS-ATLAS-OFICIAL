@@ -667,7 +667,8 @@ class StripeService:
         banco.
 
         Foi o que faltou em 27/08/2026: a Antioquia Marina pagou, recebeu acesso,
-        e a vaga dela continuou "reservado" — vencendo em tres horas. O sistema
+        e a vaga dela continuou "reservado" — vencendo em tres horas (o prazo da
+        epoca; hoje sao 12h, ver REV-20). O sistema
         tinha a linha na frente dele e nao olhou, porque so sabia perguntar
         "veio do link certo?" e "o valor bate?".
 
@@ -696,7 +697,7 @@ class StripeService:
             return False
 
         # Prazo vencido: a vaga ja voltou para a fila (fn_vagas_fundadoras_ocupadas
-        # so conta reserva dentro do prazo), mas a LINHA continua aqui. As 3 horas
+        # so conta reserva dentro do prazo), mas a LINHA continua aqui. As 12 horas
         # existem justamente para ninguem parar em cima de uma das 20 vagas sem
         # pagar — honrar reserva vencida sem olhar o estado furaria isso.
         #

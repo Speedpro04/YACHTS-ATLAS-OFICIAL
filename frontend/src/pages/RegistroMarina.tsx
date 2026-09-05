@@ -715,8 +715,19 @@ export default function RegistroMarina() {
                      fundador explicando como o sistema funciona — e em seguida
                      finaliza o pagamento.
                      <br />
-                     Sua vaga fica <strong className="text-gold-500/80 font-semibold">reservada por 3 horas</strong> para
-                     você concluir com calma.
+                     {/* 12h espelha MINUTOS_DE_RESERVA_VAGA (720) no config.py do
+                         backend. Quem preenche raramente é quem decide: o gerente
+                         costuma levar ao conselho ou ao dono. Se mudar lá, muda aqui. */}
+                     Sua vaga está <strong className="text-gold-500/80 font-semibold">reservada por 12 horas</strong> —
+                     tempo de levar a decisão a quem precisa aprovar.
+                     <br />
+                     Ao concluir, tudo o que a sua Marina faz passa a existir em
+                     <strong className="text-white/60 font-semibold"> banco de dados</strong>: cada serviço com data,
+                     autor e assinatura digital, no nome dela. É o primeiro dia em
+                     que o trabalho dela deixa de depender de quem lembra.
+                     <br />
+                     Passadas as 12 horas, a vaga volta para as
+                     <strong className="text-gold-500/80 font-semibold"> 4 do seu estado</strong>.
                      <br />
                      {/* Depois de pagar, a marina sai daqui para a Stripe. Sem
                          dizer o que esperar, ela fica sem saber se deu certo —
