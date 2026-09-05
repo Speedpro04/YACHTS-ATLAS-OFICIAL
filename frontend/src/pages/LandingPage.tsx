@@ -48,6 +48,9 @@ const FAQS = [
 export default function LandingPage() {
   const { t } = useTranslation()
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+  // O video so baixa quando a pessoa clica. Sao 75 MB: carregar sozinho
+  // gastaria o 4G de todo visitante que nem ia assistir.
+  const [videoTocando, setVideoTocando] = useState(false)
 
   return (
     <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20]">
@@ -129,6 +132,72 @@ export default function LandingPage() {
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-30">
            <div className="w-px h-12 bg-gradient-to-b from-transparent to-white"></div>
            <span className="text-[8px] font-black tracking-[0.4em] uppercase">{t('common.scroll')}</span>
+        </div>
+      </section>
+
+      {/* Video de apresentacao.
+          Fica AQUI, colado no hero, e nao mais abaixo: o CTA do hero termina em
+          807px, entao numa tela de 900 sobram 93px e o topo do poster aparece na
+          dobra -- a pessoa ve que existe video sem que o botao saia da tela. O
+          proximo lugar possivel seria a 2.531px, quase tres rolagens numa pagina
+          de 11.353px, e video que exige rolar nao e visto.
+          Clique-para-tocar: o arquivo tem 75 MB. */}
+      <section className="py-20 md:py-28 bg-[#010c20] border-y border-white/5 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-10 md:mb-14">
+            <span className="text-[10px] font-black tracking-[0.3em] text-[#c5a059] uppercase">
+              {t('lp.video_eyebrow')}
+            </span>
+            <h2 className="mt-4 text-[1.6rem] md:text-[2.25rem] font-serif font-bold text-white tracking-tight">
+              {t('lp.video_title')}
+            </h2>
+            <p className="mt-4 text-sm md:text-base text-white/45 font-light max-w-2xl mx-auto leading-relaxed">
+              {t('lp.video_subtitle')}
+            </p>
+          </div>
+
+          {/* aspect-video (16/9) casa com o arquivo, que e 1920x1080. A moldura
+              nasce da largura disponivel, entao encolhe sozinha no celular. */}
+          <div className="relative w-full max-w-[920px] mx-auto aspect-video rounded-[3px] overflow-hidden border-[1.5px] border-[#c5a059] bg-black shadow-2xl shadow-black/60">
+            {videoTocando ? (
+              <video
+                src="/video-programa-atlas.mp4"
+                poster="/video-programa-atlas-poster.jpg"
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+                className="w-full h-full block bg-black"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setVideoTocando(true)}
+                aria-label={t('lp.video_aria')}
+                className="group absolute inset-0 w-full h-full cursor-pointer"
+              >
+                <img
+                  src="/video-programa-atlas-poster.jpg"
+                  alt=""
+                  width={1600}
+                  height={900}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-[1.02] transition-all duration-700"
+                />
+                <span className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#010c20]/25 to-[#010c20]/60">
+                  <span className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-[#c5a059] bg-[#c5a059]/20 grid place-items-center group-hover:bg-[#c5a059] transition-all duration-300">
+                    <svg width="22" height="26" viewBox="0 0 26 30" className="ml-1">
+                      <polygon points="0,0 26,15 0,30" className="fill-[#c5a059] group-hover:fill-[#010c20] transition-colors duration-300" />
+                    </svg>
+                  </span>
+                  <span className="text-[10px] md:text-[11px] font-black tracking-[0.25em] uppercase text-white/80">
+                    {t('lp.video_cta')}
+                  </span>
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
