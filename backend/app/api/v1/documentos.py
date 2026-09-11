@@ -81,12 +81,31 @@ async def mover_categoria(
 
 
 @router.post("/{doc_id}/aprovar")
-async def aprovar_documento(doc_id: str, user_id: str = Depends(get_current_user_id)):
+async def aprovar_documento(
+    doc_id: str,
+    user_id: str = Depends(get_current_user_id),
+    request: Request = None,
+):
     """Promove um documento PENDENTE para o conteudo oficial.
 
     E a travessia que faltava: o Atlas Pre-Data manda a foto do pier marcada
     como pendente, e ela fica fora do dossie, do Indice de Custodia e da pagina
     do QR ate alguem do escritorio olhar e aprovar aqui.
+
+    QUEM CAPTURA NAO APROVA. Se a mesma pessoa registra e valida, a aprovacao
+    nao prova nada — vira carimbo. `get_ativo_autorizado` (sem
+    `incluir_proprietario`) so aceita quem OPERA o ativo: a Marina, o dono da
+    conta ou o admin. O armador le o dossie e nao mexe, e o colaborador de campo
+    — quando a E2-a existir e ele tiver conta propria — tambem nao tera este
+    papel, porque nao e dono do ativo.
+
+    ENQUANTO A E2-a NAO EXISTE isso nao se separa de fato: o colaborador entra
+    com a conta da propria Marina, entao quem captura e quem aprova sao a mesma
+    credencial. A regra aqui ja esta certa; e a identidade que ainda nao esta.
+
+    A aprovacao vai para o `audit_logs` com nome e hora. Consentimento que nao
+    deixa rastro nao e consentimento: seis meses depois ninguem sabe quem deixou
+    aquela foto entrar.
 
     So metadado muda. O arquivo, o hash e a data de envio continuam intactos —
     aprovar nao reescreve a prova, apenas declara que alguem a conferiu.
@@ -95,7 +114,11 @@ async def aprovar_documento(doc_id: str, user_id: str = Depends(get_current_user
     vezes por duas pessoas, e recusar a segunda so criaria um alarme falso.
     """
     supabase = get_supabase_admin()
-    res = supabase.table("documentos").select("ativo_id, status").eq("id", doc_id).execute()
+    res = (
+        supabase.table("documentos")
+        .select("ativo_id, status, nome_arquivo, uploaded_by")
+        .eq("id", doc_id).execute()
+    )
     if not res.data:
         raise HTTPException(status_code=404, detail="Documento não encontrado")
 
@@ -105,12 +128,30 @@ async def aprovar_documento(doc_id: str, user_id: str = Depends(get_current_user
     if doc.get("status") != "pendente":
         return {"id": doc_id, "status": doc.get("status"), "ja_estava": True}
 
+    quando = datetime.now(timezone.utc).isoformat()
     supabase.table("documentos").update({
         "status": "verified",
-        "validado_em": datetime.now(timezone.utc).isoformat(),
+        "validado_em": quando,
     }).eq("id", doc_id).execute()
 
-    return {"id": doc_id, "status": "verified", "ja_estava": False}
+    audit_service.create_audit_log(
+        action=AuditAction.DOCUMENT_APPROVE,
+        user_id=user_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        details={
+            "documento_id": doc_id,
+            "ativo_id": doc["ativo_id"],
+            "nome_arquivo": doc.get("nome_arquivo"),
+            "enviado_por": doc.get("uploaded_by"),
+            # Guardado explicitamente para a pergunta que aparece depois:
+            # "quem aprovou foi a mesma pessoa que mandou?".
+            "aprovou_o_proprio_envio": str(doc.get("uploaded_by")) == str(user_id),
+        },
+        location=get_client_location(request),
+    )
+
+    return {"id": doc_id, "status": "verified", "ja_estava": False, "aprovado_em": quando}
 
 
 @router.get("/pendentes/{ativo_id}")

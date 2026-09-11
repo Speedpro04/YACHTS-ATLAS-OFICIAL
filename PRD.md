@@ -113,6 +113,25 @@ revisão mostrar a foto ao lado do rascunho que ela explica.
 **Provado:** com a foto em `pendente`, o dossiê não a contém e o índice conta 8
 documentos; aprovada, ela entra e o índice conta 10.
 
+### Quem pode consentir
+
+**Quem captura não aprova.** Se a mesma pessoa registra e valida, a aprovação
+não prova nada — vira carimbo. `aprovar` usa `get_ativo_autorizado` sem
+`incluir_proprietario`, então só passa quem **opera** o ativo: a Marina, o dono
+da conta ou o admin. O armador lê o dossiê e não mexe; o colaborador de campo,
+quando tiver conta própria, também não terá esse papel, porque não é dono do
+ativo.
+
+**Enquanto a E2-a não existir isso não se separa de fato**: o colaborador entra
+com a conta da própria Marina, então quem captura e quem aprova são a mesma
+credencial. A regra já está certa — é a identidade que ainda não está. É mais um
+motivo para a E2-a.
+
+A aprovação vai para o `audit_logs` com ação própria (`document_approve`), nome
+e hora — inclusive o campo `aprovou_o_proprio_envio`, para a pergunta que
+aparece seis meses depois. Consentimento que não deixa rastro não é
+consentimento.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.

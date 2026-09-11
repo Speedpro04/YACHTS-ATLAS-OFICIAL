@@ -35,6 +35,10 @@ class AuditAction(str, Enum):
     DOCUMENT_DOWNLOAD = "document_download"
     DOCUMENT_DELETE = "document_delete"
     DOCUMENT_VIEW = "document_view"
+    # Quem deixou a foto do campo entrar no conteudo oficial. Acao propria, e
+    # nao um "update" generico: e o consentimento humano que separa pre-dado de
+    # dossie, e precisa ter nome e hora para valer alguma coisa depois.
+    DOCUMENT_APPROVE = "document_approve"
     
     # Integrity
     INTEGRITY_VERIFY = "integrity_verify"
