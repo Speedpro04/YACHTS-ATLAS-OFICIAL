@@ -139,6 +139,100 @@ def _owner_do_ativo(supabase, ativo_id: str) -> Optional[str]:
     return ativo.data[0]["usuario_id"] if ativo.data else None
 
 
+@router.get("/pre-data")
+async def listar_pre_data(token: dict = Depends(get_current_user)):
+    """O armario de pre-dados, POR EMBARCACAO.
+
+    O que chega do Atlas Pre-Data e dado CRU: veio do pier, ninguem conferiu,
+    nada foi tratado. A tela precisa dizer isso com todas as letras — pre-dado
+    com cara de registro e pior que pre-dado nenhum, porque alguem vai ler como
+    se fosse verdade conferida.
+
+    AGRUPADO POR ATIVO, sem misturar: dois barcos diferentes sao duas historias
+    diferentes, e uma lista corrida faria o revisor conferir o servico de um
+    olhando a foto do outro.
+
+    Devolve tambem as FOTOS pendentes de cada ativo, porque texto e imagem
+    chegam por caminhos separados (`registros_rascunho` e `documentos`) e quem
+    revisa precisa dos dois lado a lado.
+    """
+    supabase = get_supabase_admin()
+    user_id = str(token.get("sub") if token else "")
+
+    # Os ativos que esta conta opera. Mesma regra do /ativos, e nao uma nova:
+    # abrir excecao aqui seria criar um segundo caminho de leitura.
+    ativos = (
+        supabase.table("ativos").select("id, nome_reg, marca, modelo, ano_fabricacao, comprimento, usuario_id")
+        .is_("arquivado_em", "null").execute().data
+        or []
+    )
+    meus = [a for a in ativos if str(a.get("usuario_id")) == user_id]
+    if not meus:
+        role = _role_do_usuario(supabase, user_id)
+        if role == "admin":
+            meus = ativos
+    if not meus:
+        return {"embarcacoes": [], "total_envios": 0}
+
+    ids = [a["id"] for a in meus]
+
+    rascunhos = (
+        supabase.table("registros_rascunho").select("*")
+        .in_("ativo_id", ids).order("created_at", desc=True).execute().data
+        or []
+    )
+    fotos = (
+        supabase.table("documentos").select("id, ativo_id, nome_arquivo, categoria, descricao, created_at, storage_path")
+        .in_("ativo_id", ids).eq("status", "pendente").execute().data
+        or []
+    )
+
+    por_ativo: dict[str, dict] = {}
+    for a in meus:
+        por_ativo[a["id"]] = {
+            "ativo_id": a["id"],
+            "nome": a.get("nome_reg") or a["id"],
+            "embarcacao": " ".join(x for x in [a.get("marca"), a.get("modelo")] if x),
+            "ano": a.get("ano_fabricacao"),
+            "pes": a.get("comprimento"),
+            "envios": [],
+            "fotos_pendentes": [],
+        }
+
+    for r in rascunhos:
+        alvo = por_ativo.get(r.get("ativo_id"))
+        if alvo is not None:
+            alvo["envios"].append(r)
+    for f in fotos:
+        alvo = por_ativo.get(f.get("ativo_id"))
+        if alvo is not None:
+            alvo["fotos_pendentes"].append(f)
+
+    # So embarcacao COM envio aparece. Lista de frota inteira com zero ao lado
+    # de quase todo nome esconde as tres que importam.
+    com_envio = [v for v in por_ativo.values() if v["envios"] or v["fotos_pendentes"]]
+    com_envio.sort(key=lambda v: len(v["envios"]) + len(v["fotos_pendentes"]), reverse=True)
+
+    return {
+        "embarcacoes": com_envio,
+        "total_envios": sum(len(v["envios"]) for v in com_envio),
+        "total_fotos": sum(len(v["fotos_pendentes"]) for v in com_envio),
+    }
+
+
+def _role_do_usuario(supabase, user_id: str) -> str:
+    try:
+        r = supabase.table("profiles").select("user_role").eq("id", user_id).execute()
+        return (r.data[0].get("user_role") if r.data else "") or ""
+    except Exception:
+        return ""
+
+
+# ATENCAO A ORDEM: /pre-data precisa vir ANTES de /{ativo_id}.
+#
+# O FastAPI casa a primeira rota que bate, e /{ativo_id} aceita qualquer texto
+# no lugar do id — inclusive a palavra "pre-data". Com a ordem invertida a aba
+# inteira respondia "Ativo nao encontrado", como se o endpoint nao existisse.
 @router.get("/{ativo_id}")
 async def list_registros(ativo_id: str, token: dict = Depends(get_current_user)):
     """Lista os registros selados de um ativo, com a situação derivada.

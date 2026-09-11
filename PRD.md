@@ -113,6 +113,35 @@ revisão mostrar a foto ao lado do rascunho que ela explica.
 **Provado:** com a foto em `pendente`, o dossiê não a contém e o índice conta 8
 documentos; aprovada, ela entra e o índice conta 10.
 
+### A aba Pré-Data no painel
+
+Um **armário de dados crus**, não um registro em rascunho. O aviso "Dados sem
+tratamento" fica no topo, antes de qualquer número, e não fecha: pré-dado com
+cara de registro é pior que pré-dado nenhum — alguém lê "horímetro 412,5" numa
+tabela bem formatada e usa como verdade conferida, e o erro passa a viajar com
+aparência de fato.
+
+**Agrupado por embarcação, sem misturar.** Dois barcos são duas histórias; lista
+corrida faria o revisor conferir o serviço de um olhando a foto do outro. Cada
+linha mostra a contagem por extenso — "5 envios" —, porque um número solto faz
+parar para entender do que é.
+
+Os campos aparecem **como chegaram**, sem tradução nem unidade: `horimetro
+412,5`, e não "Horímetro: 412,5 h". Formatar sugere que alguém leu e conferiu, e
+ninguém leu. A crueza é a informação.
+
+Só embarcação **com** envio aparece: a frota inteira com zero ao lado de quase
+todo nome esconderia as três que importam.
+
+`GET /api/v1/registros/pre-data` devolve o agrupamento, com os rascunhos e as
+fotos pendentes de cada ativo — texto e imagem chegam por caminhos separados e
+quem revisa precisa dos dois lado a lado.
+
+**Ordem das rotas:** `/pre-data` precisa vir ANTES de `/{ativo_id}` no
+`registros.py`. O FastAPI casa a primeira que bate, e `/{ativo_id}` aceita
+qualquer texto — inclusive a palavra "pre-data". Com a ordem invertida a aba
+inteira respondia "Ativo não encontrado".
+
 ### Quem pode consentir
 
 **Quem captura não aprova.** Se a mesma pessoa registra e valida, a aprovação

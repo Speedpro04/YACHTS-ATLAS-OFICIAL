@@ -208,6 +208,8 @@ export const api = {
     retificar: (data: RegistroPayload & { retifica_id: string; motivo_retificacao: string }) =>
       apiRequest('/registros/retificar', { method: 'POST', body: JSON.stringify(data) }),
     /** Rascunhos: editáveis e descartáveis. Não entram no dossiê. */
+    /** O armario de pre-dados, agrupado por embarcacao. */
+    preData: () => apiRequest('/registros/pre-data'),
     rascunho: {
       list: (ativoId: string) => apiRequest(`/registros/rascunho/${ativoId}`),
       create: (data: RegistroPayload) =>

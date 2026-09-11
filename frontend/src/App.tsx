@@ -65,6 +65,7 @@ const SolicitacoesDossie = lazy(() => import('./pages/SolicitacoesDossie'))
 const PagamentoDossie = lazy(() => import('./pages/PagamentoDossie'))
 const SuccessDossie = lazy(() => import('./pages/SuccessDossie'))
 const Registros = lazy(() => import('./pages/Registros'))
+const PreData = lazy(() => import('./pages/PreData'))
 
 // Fallback do Suspense: fundo do produto e nada mais.
 //
@@ -117,6 +118,7 @@ function App() {
               <Route path="pagamento-dossie" element={<PagamentoDossie />} />
               <Route path="dossie-sucesso" element={<SuccessDossie />} />
               <Route path="registros/:ativoId" element={<Registros />} />
+              <Route path="pre-data" element={<PreData />} />
             </Route>
           </Route>
         </Routes>

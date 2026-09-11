@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Ship, FileText, LogOut, Bell, FileCheck, Scale } from 'lucide-react'
+import { Home, Ship, FileText, LogOut, Bell, FileCheck, Scale, Database } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
 import CapitaSolara from './CapitaSolara'
@@ -13,6 +13,9 @@ export default function Layout() {
     { path: '/app', label: t('common.dashboard'), icon: Home },
     { path: '/app/ativos', label: t('common.assets'), icon: Ship },
     { path: '/app/documentos', label: 'Documentos', icon: FileText },
+    // Entre Documentos e Gerar Dossie de proposito: e o degrau anterior ao
+    // dossie, e a ordem do menu conta a travessia do dado.
+    { path: '/app/pre-data', label: 'Pré-Data', icon: Database },
     { path: '/app/solicitacoes-dossie', label: 'Gerar Dossiê', icon: FileCheck },
     { path: '/app/normas', label: 'Normas', icon: Scale },
   ]
