@@ -14,7 +14,7 @@ from app.middleware.tracking import get_client_ip, get_user_agent, get_client_lo
 import re
 import unicodedata
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 audit_service = AuditService()
@@ -78,6 +78,58 @@ async def mover_categoria(
     get_ativo_autorizado(res.data[0]["ativo_id"], user_id)
     supabase.table("documentos").update({"categoria": f"galeria_{chave}"}).eq("id", doc_id).execute()
     return {"id": doc_id, "categoria": f"galeria_{chave}"}
+
+
+@router.post("/{doc_id}/aprovar")
+async def aprovar_documento(doc_id: str, user_id: str = Depends(get_current_user_id)):
+    """Promove um documento PENDENTE para o conteudo oficial.
+
+    E a travessia que faltava: o Atlas Pre-Data manda a foto do pier marcada
+    como pendente, e ela fica fora do dossie, do Indice de Custodia e da pagina
+    do QR ate alguem do escritorio olhar e aprovar aqui.
+
+    So metadado muda. O arquivo, o hash e a data de envio continuam intactos —
+    aprovar nao reescreve a prova, apenas declara que alguem a conferiu.
+
+    Aprovar o que ja esta aprovado nao e erro: a revisao pode ser tocada duas
+    vezes por duas pessoas, e recusar a segunda so criaria um alarme falso.
+    """
+    supabase = get_supabase_admin()
+    res = supabase.table("documentos").select("ativo_id, status").eq("id", doc_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Documento não encontrado")
+
+    doc = res.data[0]
+    get_ativo_autorizado(doc["ativo_id"], user_id)
+
+    if doc.get("status") != "pendente":
+        return {"id": doc_id, "status": doc.get("status"), "ja_estava": True}
+
+    supabase.table("documentos").update({
+        "status": "verified",
+        "validado_em": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", doc_id).execute()
+
+    return {"id": doc_id, "status": "verified", "ja_estava": False}
+
+
+@router.get("/pendentes/{ativo_id}")
+async def listar_pendentes(ativo_id: str, user_id: str = Depends(get_current_user_id)):
+    """Fotos que chegaram do campo e ainda nao foram conferidas.
+
+    E o que a aba de Pre-Data do painel vai listar ao lado do rascunho: sem
+    isto, o revisor le o texto sem ver a foto que o explica.
+    """
+    get_ativo_autorizado(ativo_id, user_id)
+    supabase = get_supabase_admin()
+    res = (
+        supabase.table("documentos").select("*")
+        .eq("ativo_id", ativo_id).eq("status", "pendente")
+        .order("created_at").execute()
+    )
+    docs = res.data or []
+    from app.services.s3_service import assinar_documentos
+    return assinar_documentos(docs)
 
 
 @router.get("/ativo/{ativo_id}")
@@ -169,10 +221,22 @@ async def upload_documento(
     geo_precisao: float | None = None,
     geo_fonte: str | None = None,
     descricao: str | None = None,
+    pendente_revisao: bool = False,
     user_id: str = Depends(get_current_user_id),
     request: Request = None
 ):
-    """Upload document with complete audit tracking"""
+    """Sobe um arquivo do ativo.
+
+    `pendente_revisao=true` marca o documento como NAO CONFERIDO, e o dossie o
+    ignora ate alguem revisar. Existe para o Atlas Pre-Data: a foto tirada no
+    pier chega antes de qualquer conferencia, e entrar direto no dossie criaria
+    tres problemas reais — foto do barco errado selada no dossie do cliente
+    errado; foto orfa quando o revisor descarta o pre-dado que a explicava; e
+    avaria fotografada ANTES do reparo aparecendo sem a segunda metade da
+    historia.
+
+    Quem nao passa o parametro continua com o comportamento de sempre.
+    """
     # Insert via service key: o backend já autorizou via get_ativo_autorizado;
     # a chave anônima é barrada pelo RLS da tabela documentos.
     supabase = get_supabase_admin()
@@ -232,7 +296,10 @@ async def upload_documento(
             "tamanho_bytes": len(contents),
             "mime_type": file.content_type,
             "nivel": 1,
-            "status": "verified"
+            # 'pendente' e o DEFAULT da coluna no banco — o schema sempre
+            # previu este estado, e era o upload que passava por cima dele
+            # afirmando "verified" por todo mundo.
+            "status": "pendente" if pendente_revisao else "verified",
         }
 
         # Geolocalização: o lugar da FOTO, não o de quem a enviou.

@@ -111,7 +111,14 @@ def calcular_saude_ativo(ativo_id: str, persistir: bool = True) -> dict[str, Any
         or []
     )
     documentos = (
-        supabase.table("documentos").select("status").eq("ativo_id", ativo_id).execute().data
+        # Pendente de revisao NAO conta para o indice.
+        #
+        # O Atlas Pre-Data manda foto do pier antes de qualquer conferencia, e
+        # sem este filtro o selo subiria de BRONZE para PRATA porque alguem
+        # fotografou — nao porque a Marina registrou. O indice mede o que esta
+        # provado, e prova pendente ainda nao e prova.
+        supabase.table("documentos").select("status")
+        .eq("ativo_id", ativo_id).neq("status", "pendente").execute().data
         or []
     )
 

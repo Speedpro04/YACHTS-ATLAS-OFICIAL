@@ -257,8 +257,11 @@ async def verificar(
     datas = sorted(r["created_at"] for r in registros if r.get("created_at"))
 
     documentos = (
+        # Mesmo filtro do dossie: a pagina do QR nao pode anunciar um numero de
+        # documentos maior do que o PDF em maos contem — quem confere veria 12
+        # aqui e 9 no papel, e concluiria que falta documento.
         supabase.table("documentos").select("id", count="exact")
-        .eq("ativo_id", protocolo).execute()
+        .eq("ativo_id", protocolo).neq("status", "pendente").execute()
     )
 
     nome = ativo.get("nome_reg") or " ".join(

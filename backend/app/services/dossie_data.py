@@ -597,7 +597,22 @@ def montar_dados_dossie(ativo_id: str) -> dict[str, Any]:
         or []
     )
     documentos = (
-        supabase.table("documentos").select("*").eq("ativo_id", ativo_id).execute().data
+        supabase.table("documentos").select("*")
+        .eq("ativo_id", ativo_id)
+        # Documento PENDENTE nao entra no dossie.
+        #
+        # Ate 11/09/2026 o dossie levava todo documento do ativo, sem perguntar
+        # se alguem tinha conferido. Com o Atlas Pre-Data mandando foto do pier
+        # isso virou problema concreto: a imagem chegava ANTES da revisao e ja
+        # saia impressa no documento probatorio — foto do barco errado, foto
+        # orfa depois do revisor descartar o pre-dado, avaria fotografada antes
+        # do reparo aparecendo sem a segunda metade da historia.
+        #
+        # O filtro EXCLUI 'pendente' em vez de exigir 'verified' de proposito:
+        # ha 32 documentos legitimos com status 'validado' no banco, e exigir
+        # 'verified' os apagaria de dossies ja emitidos.
+        .neq("status", "pendente")
+        .execute().data
         or []
     )
 

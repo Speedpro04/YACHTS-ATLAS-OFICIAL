@@ -72,6 +72,47 @@ Rotina de verificação em [CHECKLIST-SEMANAL.md](CHECKLIST-SEMANAL.md), ordenad
 
 Para rodar: abrir uma sessão e pedir *"roda o checklist semanal"* — as consultas ao banco e aos logs são executadas e só o que estiver fora do normal é reportado. Itens marcados com 👤 dependem do fundador (EasyPanel, Stripe, celular).
 
+## Pré-Data: nada entra no dossiê sem revisão
+
+**11/09/2026.** O Atlas Pré-Data (repo separado, `Facilitador-Operacional-Atlas`)
+manda foto tirada no píer para `POST /documentos/upload`. Até esta data essa
+foto entrava **direto no dossiê**, no Índice de Custódia e na página do QR, sem
+ninguém conferir — o upload gravava `status: "verified"` para todo mundo, e o
+`dossie_data` lia `documentos` sem filtro nenhum.
+
+Três problemas concretos disso, e todos aconteceriam:
+
+- foto do **barco errado** selada no dossiê do cliente errado;
+- foto **órfã** quando o revisor descarta o pré-dado que a explicava;
+- **avaria fotografada antes do reparo** aparecendo sem a segunda metade da
+  história — que é justamente o que dá força ao documento.
+
+**O que mudou:** `upload` aceita `pendente_revisao=true` e grava
+`status: "pendente"` (que já era o *default* da coluna — o upload é que passava
+por cima dele). E quatro leituras passaram a ignorar pendente:
+
+| Onde | Por quê |
+|---|---|
+| `dossie_data.py` | o documento probatório não pode conter o não conferido |
+| `asset_score_service.py` | senão o selo subia de Bronze para Prata porque alguém fotografou |
+| `verificacao.py` | a página do QR não pode anunciar mais documentos do que o PDF tem |
+| — | `documentos/ativo/{id}` **continua mostrando tudo**: é onde o revisor olha |
+
+**O filtro EXCLUI `pendente`, não exige `verified`.** Há 32 documentos legítimos
+com status `validado` no banco; exigir `verified` os apagaria de dossiês já
+emitidos.
+
+**Promoção:** `POST /documentos/{id}/aprovar` muda para `verified` e carimba
+`validado_em`. Só metadado — arquivo, hash e data de envio ficam intactos:
+aprovar não reescreve a prova, declara que alguém a conferiu. Aprovar duas vezes
+não é erro, porque duas pessoas podem tocar a mesma revisão.
+
+`GET /documentos/pendentes/{ativo}` lista o que chegou do campo, para a aba de
+revisão mostrar a foto ao lado do rascunho que ela explica.
+
+**Provado:** com a foto em `pendente`, o dossiê não a contém e o índice conta 8
+documentos; aprovada, ela entra e o índice conta 10.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
