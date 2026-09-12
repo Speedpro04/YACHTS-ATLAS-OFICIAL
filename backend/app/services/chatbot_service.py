@@ -189,6 +189,29 @@ def _semantic_search(query: str, k: int) -> list[dict]:
         return []
 
 
+
+_TOTAL_NORMAS: dict[str, int] = {}
+
+
+def _total_de_normas() -> int:
+    """Quantas normas verificadas o acervo tem. 0 quando não deu para ler.
+
+    Cacheado em memória: o catálogo muda pouco e isso é usado só para dar
+    concretude a uma recusa — não vale uma ida ao banco por pergunta perdida.
+    """
+    if "n" not in _TOTAL_NORMAS:
+        try:
+            sb = get_supabase_admin()
+            rows = (
+                sb.table("normas").select("codigo")
+                .eq("ativo", True).eq("status_verificacao", "verificada")
+                .execute().data or []
+            )
+            _TOTAL_NORMAS["n"] = len(rows)
+        except Exception:  # pragma: no cover - degradação proposital
+            _TOTAL_NORMAS["n"] = 0
+    return _TOTAL_NORMAS["n"]
+
 def retrieve(query: str, k: int = 3) -> list[dict]:
     """Recuperação HÍBRIDA das normas mais relevantes.
 
@@ -329,10 +352,13 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
             "blocked": True, "reason": "rate_limited", "sources": [],
         }
 
-    # 2b) Saudação / abertura: recebe com calor e pergunta como pode ajudar
-    #     (sem exigir norma — cumprimento não é pergunta técnica).
-    if guard.is_greeting(clean_msg):
-        return {"answer": guard.WELCOME, "blocked": False, "reason": "greeting", "sources": []}
+    # 2b) Abertura: cumprimento OU pedido de ajuda sem assunto. Nenhum dos dois
+    #     é pergunta técnica, e exigir norma de quem só disse "pode me ajuda"
+    #     devolvia "não encontrei norma" — recusa no lugar de conversa.
+    abertura = guard.classificar_abertura(clean_msg)
+    if abertura:
+        resposta = guard.WELCOME if abertura == "greeting" else guard.OFERTA_DE_AJUDA
+        return {"answer": resposta, "blocked": False, "reason": abertura, "sources": []}
 
     # 3) Recuperação + guard rail de ESCOPO
     #
@@ -347,7 +373,9 @@ def ask(message: str, session_id: str = "", user_key: str = "anon") -> dict:
         # Registrado justamente por ter falhado: é aqui que aparece o que a
         # marina precisa e a Solara ainda não sabe.
         _registrar_pergunta(clean_msg, "norma", False, "sem_fonte", session_id)
-        return {"answer": guard.REFUSAL_NO_NORM, "blocked": True, "reason": "no_relevant_norm", "sources": []}
+        # A recusa cita a norma que a pessoa pediu, quando ela pediu uma.
+        resposta = guard.recusa_de_norma(clean_msg, _total_de_normas())
+        return {"answer": resposta, "blocked": True, "reason": "no_relevant_norm", "sources": []}
 
     client = _get_openai()
     if client is None:

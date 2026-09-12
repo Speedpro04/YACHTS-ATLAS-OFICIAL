@@ -53,17 +53,88 @@ REFUSAL_INJECTION = (
     "Não posso atender a esse pedido. Sigo restrito a responder sobre normas náuticas."
 )
 REFUSAL_NO_NORM = (
-    "Não encontrei uma norma que cubra isso com segurança — prefiro te dar a resposta "
-    "certa a arriscar. Pode reformular, ou indicar qual norma você tem em mente "
-    "(ex.: NORMAM-211, NBR 14574)? Assim eu te oriento com precisão."
+    "Essa eu não encontrei no meu acervo, e prefiro te dizer isso a arriscar uma "
+    "resposta que não se sustente. Me dá mais um detalhe — o assunto ou o número da "
+    "norma — que eu procuro e volto com a fonte na mão."
 )
 
+# Quando a pessoa CITA uma norma que não está no acervo. Repetir a recusa genérica
+# nesse caso soa a quem não leu a pergunta: ela disse o número, e ouvir "me diga
+# qual norma você tem em mente" é ser mandada de volta ao começo.
+REFUSAL_NORMA_CITADA = (
+    "A {codigo} eu ainda não tenho no acervo — são {total} normas hoje, e ela não "
+    "está entre elas. Prefiro te dizer isso a inventar conteúdo de uma norma que não "
+    "li. Anotei o seu pedido; enquanto ela não entra, me diga o assunto que você "
+    "precisa resolver (registro, salvatagem, meio ambiente, construção) que eu vejo "
+    "o que as normas que tenho dizem sobre ele."
+)
+
+# Um código de norma dito de qualquer jeito: "NORMAM-211", "NBR 14574",
+# "ISO 12217", "norma 12003", "a 12003".
+_CODIGO_DE_NORMA = re.compile(
+    r"\b(normam|nbr|iso|abnt|marpol|solas|colreg|lesta|rlesta)[\s\-]*(\d{2,5})?\b"
+    r"|\bnorma[\s\-]+(\d{3,5})\b"
+    r"|\b(\d{4,5})\b",
+    re.IGNORECASE,
+)
+
+
+def norma_citada(message: str) -> str | None:
+    """O código de norma que a pessoa citou, como ela escreveu. None se não citou."""
+    m = _CODIGO_DE_NORMA.search(message or "")
+    if not m:
+        return None
+    texto = m.group(0).strip()
+    if texto.isdigit():
+        # Número solto só é norma se a frase falar de norma. Sem isto, "lancha de
+        # 12000 litros" viraria "a norma 12000 não está no acervo" — resposta
+        # confiante sobre uma norma que a pessoa nunca citou.
+        if not re.search(r"\b(norma|normas|nbr|iso|abnt|normam)\b", message or "", re.IGNORECASE):
+            return None
+        return f"norma {texto}"
+    return texto
+
+
+# Mesma resposta quando o total não pôde ser lido do banco: melhor omitir o
+# número do que dizer "são 0 normas hoje".
+REFUSAL_NORMA_CITADA_SEM_TOTAL = (
+    "A {codigo} eu ainda não tenho no acervo. Prefiro te dizer isso a inventar "
+    "conteúdo de uma norma que não li. Anotei o seu pedido; enquanto ela não entra, "
+    "me diga o assunto que você precisa resolver (registro, salvatagem, meio "
+    "ambiente, construção) que eu vejo o que as normas que tenho dizem sobre ele."
+)
+
+
+def recusa_de_norma(message: str, total: int = 0) -> str:
+    """Texto da recusa, ciente do que a pessoa escreveu.
+
+    Quem citou um número quer saber daquele número. Devolver a recusa genérica
+    ("me diga qual norma você tem em mente") a quem acabou de dizer o código soa
+    a quem não leu a pergunta.
+    """
+    codigo = norma_citada(message)
+    if not codigo:
+        return REFUSAL_NO_NORM
+    if total > 0:
+        return REFUSAL_NORMA_CITADA.format(codigo=codigo, total=total)
+    return REFUSAL_NORMA_CITADA_SEM_TOTAL.format(codigo=codigo)
 # Boas-vindas — quando a pessoa só cumprimenta ou pergunta como pode ser ajudada.
 WELCOME = (
     "Olá! Sou a Capitã Solara, especialista em normas náuticas da Yachts Atlas. "
     "Como posso ajudar?\n\n"
     "Você pode perguntar sobre registro e inscrição da embarcação, equipamentos de "
     "segurança e salvatagem, ou meio ambiente — com base em NORMAM, ABNT, ISO e MARPOL."
+)
+
+
+# Resposta a quem pede ajuda sem dizer do quê. Não repete a apresentação: quem
+# pediu ajuda já sabe com quem está falando e espera um sim, não um cartão de
+# visita. Diz o que ela cobre, para a pergunta seguinte vir no alvo.
+OFERTA_DE_AJUDA = (
+    "Sim, claro — é para isso que estou aqui. Me diga o que você precisa.\n\n"
+    "Posso explicar uma norma citando a fonte (NORMAM, ABNT, ISO, MARPOL) ou "
+    "mostrar o caminho aqui no sistema: onde cadastrar o serviço, onde subir a "
+    "foto, como gerar o dossiê."
 )
 
 
@@ -260,25 +331,87 @@ _GREETING_PATTERNS = [
     r"\btudo\s*(bem|certo|joia|jóia|bom)\b",
     r"^\s*ajuda?\s*[?!.]*\s*$",
 ]
-_HELP_INTENT_PATTERNS = [
+# Identidade — "quem é você?", "o que você faz?". A pergunta é sobre a Solara,
+# não sobre norma nem sobre tela: boas-vindas em qualquer tamanho.
+_IDENTIDADE_PATTERNS = [
     r"\bquem\s+(é|e|és)\s+voc[êe]\b",
     r"\bcomo\s+.*\bajud",
-    r"\bo\s+que\s+voc[êe]\s+faz\b",
-    r"\bpode\s+me\s+ajudar\b",
+    r"\bo\s+que\s+voc[êe]\s+(faz|pode\s+fazer|sabe\s+fazer)\b",
     r"\bcomo\s+(isso|aqui|voc[êe])\s+funciona\b",
 ]
 
+# Pedido de ajuda solto, do jeito que se fala. A única forma reconhecida era
+# "pode me ajudar", e bastava o "r" cair — "pode me ajuda" — para a frase virar
+# busca em normas e voltar como "não encontrei uma norma que cubra isso".
+# Quem pede ajuda e recebe recusa técnica conclui que o assistente não entendeu.
+_PEDIDO_DE_AJUDA_PATTERNS = [
+    r"\b(pode|podes|poderia|consegue|d[áa]\s+pr[ao])\s+(me\s+)?ajud\w*",
+    r"^\s*(me\s+)?ajud\w*\s*(a[íi]|por\s+favor|pfv|pf)?\s*[?!.]*\s*$",
+    r"\bpreciso\s+d[ea]\s+(uma\s+)?ajuda\b",
+    r"^\s*(socorro|help)\b",
+    r"\bn[ãa]o\s+sei\s+por\s+onde\s+come[çc]ar\b",
+    # "me ajuda COM o dossiê", "ajudar A subir a foto": pedido já preso a um
+    # assunto. Exige a preposição — sem ela casaria "a norma ajuda muito".
+    r"\bajud[ae]r?\s+(com|a|ao|no|na|nos|nas|em)\b",
+]
 
-def is_greeting(message: str) -> bool:
-    """Cumprimento ou abertura ('como pode ajudar?') -> responder com boas-vindas."""
+# Rede de segurança: a raiz "ajud". Listar forma por forma nunca fecha — cada
+# variação que falta ("pode me ajuda", "preciso da SUA ajuda") vira busca em
+# normas e volta como recusa. Frase curta, com a raiz e sem assunto nenhum é
+# pedido de ajuda, escrita como for.
+_RAIZ_AJUDA = re.compile(r"\bajud\w*", re.IGNORECASE)
+_MAX_PEDIDO_SOLTO = 60
+
+# Mantido como união: é o nome pelo qual o resto do código já conhecia isso.
+_HELP_INTENT_PATTERNS = _IDENTIDADE_PATTERNS + _PEDIDO_DE_AJUDA_PATTERNS
+
+# Siglas que denunciam pergunta técnica de verdade.
+_SIGLAS_DE_NORMA = re.compile(
+    r"\b(normam|abnt|nbr|iso|marpol|solas|colreg|rlesta)\b", re.IGNORECASE
+)
+
+
+def _tem_assunto(message: str) -> bool:
+    """A frase carrega assunto além do pedido de ajuda?
+
+    "pode me ajudar" é conversa; "pode me ajudar com a NORMAM-211" é pergunta.
+    Sem essa separação, reconhecer mais formas de pedir ajuda passaria a engolir
+    perguntas de verdade, devolvendo boas-vindas no lugar da norma.
+    """
+    texto = (message or "").lower()
+    if _SIGLAS_DE_NORMA.search(texto):
+        return True
+    return any(p in texto for p in _VOCABULARIO_PRODUTO)
+
+
+def classificar_abertura(message: str) -> str | None:
+    """O que a frase é antes de virar busca: "greeting", "help_intent" ou None.
+
+    São respostas diferentes de propósito. Quem chega com "oi" recebe a
+    apresentação; quem já pediu ajuda recebe um sim e a pergunta do que precisa.
+    Repetir a apresentação para quem acabou de pedir ajuda soa a atendimento que
+    não ouviu o que foi dito.
+    """
     msg = (message or "").strip()
     if not msg:
-        return False
-    # "como pode ajudar?", "quem é você?", etc. -> sempre boas-vindas (qualquer tamanho)
-    if _matches_any(msg, _HELP_INTENT_PATTERNS):
-        return True
+        return None
+    if _matches_any(msg, _IDENTIDADE_PATTERNS):
+        return "greeting"
+    # Pedido de ajuda COM assunto ("me ajuda com o dossiê") não é abertura: é a
+    # pergunta em si, e segue para quem sabe respondê-la.
+    if _matches_any(msg, _PEDIDO_DE_AJUDA_PATTERNS) and not _tem_assunto(msg):
+        return "help_intent"
+    if len(msg) <= _MAX_PEDIDO_SOLTO and _RAIZ_AJUDA.search(msg) and not _tem_assunto(msg):
+        return "help_intent"
     # cumprimento curto e isolado (não engole uma pergunta de verdade)
-    return len(msg) <= 30 and _matches_any(msg, _GREETING_PATTERNS)
+    if len(msg) <= 30 and _matches_any(msg, _GREETING_PATTERNS):
+        return "greeting"
+    return None
+
+
+def is_greeting(message: str) -> bool:
+    """Cumprimento ou abertura -> responder sem exigir norma."""
+    return classificar_abertura(message) is not None
 
 
 def is_answerable(top_score: float | None, min_relevance: float) -> bool:
@@ -352,7 +485,10 @@ def parece_duvida_de_produto(message: str) -> bool:
     honesta de sempre em vez de uma resposta inventada.
     """
     texto = (message or "").lower()
-    if not _PERGUNTA_DE_CAMINHO.search(texto):
+    # "onde/como" OU um pedido de ajuda ("me ajuda com o dossiê") — nas duas formas
+    # a pessoa quer instrução, e a palavra de produto abaixo é que diz sobre o quê.
+    pede_caminho = _PERGUNTA_DE_CAMINHO.search(texto) or _matches_any(texto, _PEDIDO_DE_AJUDA_PATTERNS)
+    if not pede_caminho:
         return False
     return any(p in texto for p in _VOCABULARIO_PRODUTO)
 

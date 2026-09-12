@@ -164,29 +164,82 @@ consentimento.
 ## A Capitã Solara tapava a navegação no celular — 12/09/2026
 
 O botão da Solara ficava a 24px do fundo (`bottom-6`) com `z-60`, e a barra de
-navegação do painel tem 80px de altura (`h-20`) com `z-50`. Ele sentava em cima
-dos ícones: para chegar em Ativos, Documentos ou Pré-Data era preciso acertar o
-dedo na sobra ao lado dele. Quem abre o painel pelo telefone ficava sem
-navegação — o assistente bloqueava o sistema que existe para ajudar a usar.
+navegação do painel tem 80px de altura (`h-20`) com `z-50`. Pior: era um botão
+largo, com três linhas de texto ao lado do rosto. Ele cobria os ícones — para
+chegar em Ativos, Documentos ou Pré-Data era preciso acertar o dedo na sobra ao
+lado dele. Quem abre o painel pelo telefone ficava sem navegação: o assistente
+bloqueava o sistema que existe para ajudar a usar.
 
-Abaixo de `lg` o botão sobe para `bottom-24` (96px, 16px de folga acima da
-barra); no desktop fica onde estava (`lg:bottom-6`), porque lá não há barra
-inferior. A janela de conversa sobe junto, e o teto dela passa a `70vh` no
-celular para não estourar a tela agora que começa mais alto — 70vh + 96px cabe
-em qualquer altura.
+Duas mudanças, pedidas nesta ordem pelo fundador. O botão **virou só o ícone** —
+a foto da Capitã dentro do círculo dourado, 48px de foto com anel de 6px — em
+todas as telas; e **subiu para 104px** do fundo no celular (`bottom-[104px]`,
+24px de folga acima da barra), mantendo `lg:bottom-6` no desktop, onde não há
+barra inferior. A janela de conversa acompanha, com teto de `70vh` no celular
+para não estourar a tela agora que começa mais alto.
 
-**O texto do botão continua.** "Capitã Solara · Normas · IA · Suporte · IA" é
-como a Marina descobre o que ela faz; esconder no celular resolveria a
-sobreposição levando a descoberta junto.
+**O que o texto fazia ali, e para onde foi.** As três linhas ("Capitã Solara ·
+Normas · IA · Suporte · IA") existiam para a Marina descobrir o que ela faz —
+ninguém clica no que não sabe para que serve. Sumindo do botão, a descoberta
+passou para o atributo `title`, que o desktop mostra ao passar o mouse, e o
+`aria-label` continua nomeando o botão para leitor de tela. No celular, a
+descoberta agora depende da primeira mensagem dela, que já se apresenta.
 
-**Não verificado em tela:** a barra só existe dentro de `/app`, que é rota
-protegida — a conferência foi pela geometria (80px da barra contra 96px do
-botão) e por `tsc --noEmit`, não por captura de tela.
+**Não usei `calc` com `dvh`:** valor arbitrário do Tailwind exige underscore no
+lugar do espaço, e `dvh` não é universal — regra inválida ali desligaria o teto
+sem avisar. `70vh` + 104px cabe em qualquer altura de tela.
 
 **Visto e não mexido, no mesmo lugar:** a barra tem 7 itens e os rótulos se
 encostam em tela estreita ("ATIVOSDOCUMENTOS", "DATA DOSSIÊ"), e o último item,
 que é o botão de **sair**, usa `t('lp.terms')` como rótulo — mostra "TERMOS" no
 lugar de "Sair" (`Layout.tsx`).
+
+## A Solara não reconhecia um pedido de ajuda — 12/09/2026
+
+"pode me ajuda" recebia *"Não encontrei uma norma que cubra isso com
+segurança"*. Pedir ajuda e levar recusa técnica é o que faz um assistente
+parecer que não pensa — foi assim que o fundador descreveu: *"a Solara está sem
+raciocínio"*.
+
+**A causa era uma letra.** A lista de intenções reconhecia o literal
+`\bpode\s+me\s+ajudar\b`. Sem o "r" — como se fala — nada casava, e a frase
+seguia para a busca vetorial em normas, que não achava nada e recusava. Depois
+veio "preciso da **sua** ajuda", e o padrão novo também não cobriu: uma palavra
+no meio bastava para escapar.
+
+**Por isso o conserto não é mais uma lista de frases.** Frase curta (até 60
+caracteres), com a raiz `ajud`, e **sem assunto nenhum** é pedido de ajuda,
+escrita como for. Listar forma por forma nunca fecha — a cada variação que falta,
+a pessoa recebe uma recusa.
+
+**"Sem assunto" é a parte que impede o remédio de virar doença.** Reconhecer mais
+formas de pedir ajuda passaria a engolir perguntas de verdade: "pode me ajudar
+com a NORMAM-211" viraria boas-vindas no lugar da norma. Então quem cita sigla
+de norma ou palavra de produto **não** é abertura — segue para quem sabe
+responder. E "me ajuda com o dossiê", que antes caía na recusa por não casar com
+norma nenhuma, agora entra no caminho de suporte: pedido de ajuda preso a um
+assunto de produto é dúvida de uso.
+
+**Resposta diferente da saudação, de propósito.** Quem chega com "oi" recebe a
+apresentação; quem já pediu ajuda recebe *"Sim, claro — é para isso que estou
+aqui. Me diga o que você precisa."* Repetir o cartão de visita para quem acabou
+de pedir ajuda soa a atendimento que não ouviu.
+
+**A recusa passou a ler a pergunta.** Quem cita um número quer saber daquele
+número: "não dá pra entrar norma 12003" recebia *"me diga qual norma você tem em
+mente"* — mandar de volta ao começo. Agora a recusa nomeia o código citado, diz
+quantas normas o acervo tem hoje (contadas no banco, não escritas à mão) e
+registra o pedido. Número solto só vira "norma" se a frase falar de norma —
+senão "lancha de 12000 litros" viraria uma afirmação confiante sobre a norma
+12000.
+
+**A 12003 não existe no acervo**, e isso não é defeito de código: são 20 normas
+cadastradas e ela não está entre elas. Entra por cadastro + backfill de
+embedding, não por conserto.
+
+11 testes novos em `test_chatbot_guardrails.py` prendem a classe inteira do
+defeito — as formas de pedir ajuda, o que **não** pode virar saudação, e o
+pedido de ajuda com assunto de produto. 57 testes passam entre os dois arquivos
+do chatbot.
 
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*

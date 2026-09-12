@@ -76,3 +76,59 @@ def test_escopo_recusa_sem_norma_relevante():
 # --- 2: PII que escape para a saída é removida (última rede) ---
 def test_saida_remove_pii():
     assert "joao@email.com" not in scrub_output("Conforme a norma, contate joao@email.com")
+
+
+# --- abertura: cumprimento, pedido de ajuda e o que NÃO é nenhum dos dois ---
+#
+# O defeito que trouxe estes testes: só "pode me ajudar" era reconhecido, e
+# "pode me ajuda" — sem o "r", como se fala — virava busca em normas e voltava
+# como "não encontrei uma norma que cubra isso". Pedir ajuda e levar recusa
+# técnica faz a Solara parecer que não entende o que leu.
+import pytest
+
+from app.services.chatbot_guardrails import classificar_abertura, parece_duvida_de_produto
+
+
+@pytest.mark.parametrize("frase", [
+    "pode me ajuda",
+    "pode me ajudar",
+    "me ajuda",
+    "me ajuda aí",
+    "consegue me ajudar?",
+    "poderia me ajudar por favor",
+    "preciso de ajuda",
+    "socorro",
+    "help",
+    "não sei por onde começar",
+    # A forma exata não importa: raiz "ajud", frase curta, sem assunto.
+    "preciso da sua ajuda",
+    "queria uma ajuda",
+    "me ajude",
+    "me dá uma ajuda",
+    "uma ajudinha aqui",
+])
+def test_pedido_de_ajuda_solto_recebe_oferta(frase):
+    assert classificar_abertura(frase) == "help_intent"
+
+
+@pytest.mark.parametrize("frase", ["oi", "bom dia", "tudo bem?", "quem é você?", "o que você faz?"])
+def test_cumprimento_e_identidade_recebem_boas_vindas(frase):
+    assert classificar_abertura(frase) == "greeting"
+
+
+@pytest.mark.parametrize("frase", [
+    "pode me ajudar com a NORMAM-211?",   # tem norma: é pergunta, não abertura
+    "me ajuda com o dossiê",              # tem produto: é dúvida de uso
+    "onde cadastro a foto do casco?",
+    "qual extintor é obrigatório para lancha de 30 pés?",
+])
+def test_pedido_com_assunto_nao_vira_abertura(frase):
+    assert classificar_abertura(frase) is None
+
+
+def test_pedido_de_ajuda_com_produto_entra_no_suporte():
+    # Sem isto, "me ajuda com o dossiê" cairia na recusa por falta de norma.
+    assert parece_duvida_de_produto("me ajuda com o dossiê") is True
+    assert parece_duvida_de_produto("pode me ajudar a subir a foto") is True
+    # E "ajuda" solto dentro de uma frase sobre norma continua fora do suporte.
+    assert parece_duvida_de_produto("a norma ajuda muito") is False
