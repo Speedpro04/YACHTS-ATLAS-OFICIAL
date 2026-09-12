@@ -116,7 +116,7 @@ async def aprovar_documento(
     supabase = get_supabase_admin()
     res = (
         supabase.table("documentos")
-        .select("ativo_id, status, nome_arquivo, uploaded_by")
+        .select("ativo_id, status, nome_arquivo, uploaded_by, usuario_id")
         .eq("id", doc_id).execute()
     )
     if not res.data:
@@ -127,6 +127,9 @@ async def aprovar_documento(
 
     if doc.get("status") != "pendente":
         return {"id": doc_id, "status": doc.get("status"), "ja_estava": True}
+
+    # Quem enviou: a coluna antiga primeiro, o autor do upload depois.
+    enviou = doc.get("uploaded_by") or doc.get("usuario_id")
 
     quando = datetime.now(timezone.utc).isoformat()
     supabase.table("documentos").update({
@@ -143,10 +146,20 @@ async def aprovar_documento(
             "documento_id": doc_id,
             "ativo_id": doc["ativo_id"],
             "nome_arquivo": doc.get("nome_arquivo"),
-            "enviado_por": doc.get("uploaded_by"),
+            "enviado_por": enviou,
             # Guardado explicitamente para a pergunta que aparece depois:
             # "quem aprovou foi a mesma pessoa que mandou?".
-            "aprovou_o_proprio_envio": str(doc.get("uploaded_by")) == str(user_id),
+            #
+            # Lia SO `uploaded_by`, coluna que nenhum caminho de escrita
+            # alimentava: o upload grava o autor em `usuario_id`. Com a coluna
+            # sempre nula, str(None) nunca batia com o uuid e a resposta saia
+            # "False" para todo mundo — a trilha AFIRMAVA que o aprovador nao
+            # era o remetente, sem ter como saber. Mentira silenciosa é pior que
+            # campo vazio: o vazio faz perguntar, o falso encerra a pergunta.
+            #
+            # `uploaded_by` continua sendo lida primeiro por causa dos 35
+            # documentos antigos que a têm preenchida.
+            "aprovou_o_proprio_envio": bool(enviou) and str(enviou) == str(user_id),
         },
         location=get_client_location(request),
     )

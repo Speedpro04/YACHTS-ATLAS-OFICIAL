@@ -86,7 +86,14 @@ def test_todo_endpoint_tem_alguma_guarda():
     for bloco in blocos:
         assinatura = bloco.split("\n")[1] if "\n" in bloco else bloco
         rota = bloco.split("\n")[0]
-        assert "_so_a_marina(" in bloco or "_pode_ler(" in bloco, (
+        # Três guardas, e só três. `_so_os_ativos_da_conta` cobre as rotas que
+        # listam POR CONTA e não recebem `ativo_id` — as outras duas exigem um
+        # ativo e não teriam como autorizar ali.
+        assert (
+            "_so_a_marina(" in bloco
+            or "_pode_ler(" in bloco
+            or "_so_os_ativos_da_conta(" in bloco
+        ), (
             f"Endpoint sem autorização: @router.{rota} ({assinatura.strip()})"
         )
 

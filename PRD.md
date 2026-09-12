@@ -337,6 +337,83 @@ aplicação foi lida como "não chegou pedido nenhum", quando significava "o ped
 parou antes". Quando o rastro some, o lugar de procurar é a camada anterior —
 e o proxy é a primeira que fica de fora de toda observabilidade da aplicação.
 
+## O pré-dado ganhou caminho de saída — 12/09/2026
+
+Regra do fundador, dita sem rodeio: *"nada do pré-dado deve entrar no dossiê.
+Esses dados devem ser tratados primeiro. Depois ele aparecerá no dossiê, após
+tratamento"*.
+
+**A primeira metade já era verdade, e foi conferida no código:** o dossiê não lê
+`registros_rascunho` em lugar nenhum, e filtra documento com
+`.neq("status", "pendente")`. O que faltava era a foto chegar marcada como
+pendente — consertado no app de campo hoje. **A segunda metade não existia:** não
+havia como tratar. O endpoint de selar estava lá desde sempre, o de aprovar
+documento também, e **nenhuma tela chamava nenhum dos dois**. Pré-dado sem porta
+de saída não é cautela, é arquivo morto.
+
+**O tratamento agora acontece na aba Pré-Data**, e não em outra tela, porque é
+nela que a pessoa está olhando o rascunho ao lado da foto que ele explica —
+mandar procurar o mesmo item noutro lugar é onde a revisão se perde. Cada foto
+pendente ganhou *Aprovar*; cada envio ganhou *Tratar e selar*, que passa pela
+mesma confirmação do resto do sistema (`ConfirmarSelo`), porque selar é
+irreversível. O item tratado some da aba — o que já foi tratado não é dado cru, e
+mantê-lo ali faria a fila virar histórico.
+
+**A condição levantada no píer parava de existir no meio do caminho.** O app
+manda `status` com a condição do serviço ("atenção", "pendente", "concluído"); o
+insert do rascunho não gravava essa coluna, que ficava no default `rascunho`;
+e `rascunho` não está em `STATUS_VALIDOS`, então o selo rebaixava **tudo** para
+"registrado". Uma avaria marcada no barco chegava ao documento como registro
+comum — e sumia sem erro nenhum, que é o pior jeito de sumir. Agora o insert
+grava a condição quando ela é válida, e `_status_do_selo` procura em ordem: a
+coluna, depois `dados.condicao`, e só então o padrão. O meio do caminho existe
+pelos **6 rascunhos já em produção**, todos com status `rascunho`, cuja condição
+sobreviveu apenas dentro do jsonb.
+
+**A telemetria do campo ia junto para o PDF.** O selo copia `dados` inteiro, e o
+dossiê só escondia quatro chaves. As de proveniência do Pré-Data entraram na
+lista: sem isso, o documento probatório imprimiria *"Client Id bad3fa54-f211…"*
+e *"Fotos No Aparelho 5"* entre os dados do serviço. Quem lê um dossiê não
+distingue telemetria de fato sobre a embarcação — lê tudo como fato. `condicao`
+saiu pelo mesmo motivo e por mais um: ela agora vira o `status` do registro, e
+imprimir os dois é convidar a página a se contradizer. `registrado_por` e
+`executado_por` ficaram **de fora** da lista, de propósito: são fato do serviço,
+e é o dossiê que deve mostrá-los.
+
+## A prova anti-autoaprovação era falsa — 12/09/2026
+
+`aprovar_documento` grava em `audit_logs` o campo `aprovou_o_proprio_envio`,
+para a pergunta que aparece seis meses depois: *quem aprovou foi quem mandou?*
+Ele lia a coluna `uploaded_by` — que **nenhum caminho de escrita alimenta**. O
+upload grava o autor em `usuario_id`; `uploaded_by` só tem valor em 35 documentos
+antigos e é nula em todos os recentes. Com ela nula, `str(None)` nunca batia com
+o uuid e a resposta saía `False` para todo mundo: a trilha **afirmava** que o
+aprovador não era o remetente, sem ter como saber.
+
+Mentira silenciosa é pior que campo vazio — o vazio faz perguntar, o falso
+encerra a pergunta. A aprovação passa a ler `uploaded_by` **ou** `usuario_id`, e
+só afirma quando tem com o que comparar.
+
+## A rede de proteção da autorização estava vermelha — 12/09/2026
+
+`test_todo_endpoint_tem_alguma_guarda` exige que todo bloco de rota de
+`registros.py` use uma guarda nomeada. O `/pre-data`, criado depois dessa rede,
+autorizava **à mão** dentro do próprio endpoint: filtrava os ativos por
+`usuario_id` com fallback de admin. Não havia vazamento — havia uma guarda
+anônima, que é indistinguível de guarda nenhuma para quem lê depois, humano ou
+teste.
+
+Com a suíte vermelha por um motivo conhecido, o próximo endpoint realmente
+desprotegido não se distinguiria da falha já aceita. O filtro virou
+`_so_os_ativos_da_conta`, a terceira guarda: as outras duas (`_so_a_marina`,
+`_pode_ler`) exigem um `ativo_id` no path e não servem numa lista por conta.
+12 testes de autorização passam.
+
+**Detalhe que custou uma rodada:** o comentário que eu escrevi explicando a
+guarda citava `@router.` literalmente, e o teste fatia o arquivo por essa
+string — o comentário virou um "bloco de rota" sem autorização e quebrou a
+suíte. Teste que lê código-fonte como texto tropeça na prosa sobre ele.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
