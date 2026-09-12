@@ -161,6 +161,33 @@ e hora — inclusive o campo `aprovou_o_proprio_envio`, para a pergunta que
 aparece seis meses depois. Consentimento que não deixa rastro não é
 consentimento.
 
+## A Capitã Solara tapava a navegação no celular — 12/09/2026
+
+O botão da Solara ficava a 24px do fundo (`bottom-6`) com `z-60`, e a barra de
+navegação do painel tem 80px de altura (`h-20`) com `z-50`. Ele sentava em cima
+dos ícones: para chegar em Ativos, Documentos ou Pré-Data era preciso acertar o
+dedo na sobra ao lado dele. Quem abre o painel pelo telefone ficava sem
+navegação — o assistente bloqueava o sistema que existe para ajudar a usar.
+
+Abaixo de `lg` o botão sobe para `bottom-24` (96px, 16px de folga acima da
+barra); no desktop fica onde estava (`lg:bottom-6`), porque lá não há barra
+inferior. A janela de conversa sobe junto, e o teto dela passa a `70vh` no
+celular para não estourar a tela agora que começa mais alto — 70vh + 96px cabe
+em qualquer altura.
+
+**O texto do botão continua.** "Capitã Solara · Normas · IA · Suporte · IA" é
+como a Marina descobre o que ela faz; esconder no celular resolveria a
+sobreposição levando a descoberta junto.
+
+**Não verificado em tela:** a barra só existe dentro de `/app`, que é rota
+protegida — a conferência foi pela geometria (80px da barra contra 96px do
+botão) e por `tsc --noEmit`, não por captura de tela.
+
+**Visto e não mexido, no mesmo lugar:** a barra tem 7 itens e os rótulos se
+encostam em tela estreita ("ATIVOSDOCUMENTOS", "DATA DOSSIÊ"), e o último item,
+que é o botão de **sair**, usa `t('lp.terms')` como rótulo — mostra "TERMOS" no
+lugar de "Sair" (`Layout.tsx`).
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.

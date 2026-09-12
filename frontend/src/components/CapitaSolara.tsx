@@ -111,12 +111,12 @@ export default function CapitaSolara() {
 
   return (
     <>
-      {/* Botão flutuante */}
+      {/* Botão flutuante — no celular ele sobe acima da barra de navegação (h-20): a 24px do fundo, ele tapava os ícones e travava o acesso ao sistema. */}
       {!aberto && (
         <button
           onClick={() => setAberto(true)}
           aria-label="Abrir Capitã Solara"
-          className="fixed bottom-6 right-6 z-[60] group flex items-center gap-3 pl-4 pr-5 py-3 rounded-full bg-gradient-to-br from-[#c5a059] to-[#b38f4d] text-[#010c20] shadow-2xl shadow-[#c5a059]/30 hover:scale-105 transition-all duration-300"
+          className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[60] group flex items-center gap-3 pl-4 pr-5 py-3 rounded-full bg-gradient-to-br from-[#c5a059] to-[#b38f4d] text-[#010c20] shadow-2xl shadow-[#c5a059]/30 hover:scale-105 transition-all duration-300"
         >
           <span className="relative flex items-center justify-center w-9 h-9 rounded-full bg-[#010c20]/15 border border-[#010c20]/20 overflow-hidden">
             <img
@@ -142,7 +142,7 @@ export default function CapitaSolara() {
 
       {/* Popup de chat */}
       {aberto && (
-        <div className="fixed bottom-6 right-6 z-[60] w-[92vw] max-w-[400px] h-[600px] max-h-[80vh] flex flex-col bg-[#021431] border border-[#c5a059]/30 rounded-lg overflow-hidden shadow-2xl shadow-black/50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[60] w-[92vw] max-w-[400px] h-[600px] max-h-[70vh] lg:max-h-[80vh] flex flex-col bg-[#021431] border border-[#c5a059]/30 rounded-lg overflow-hidden shadow-2xl shadow-black/50 animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Cabeçalho */}
           <div className="px-5 py-4 flex items-center justify-between bg-gradient-to-r from-[#c5a059]/10 to-transparent border-b border-white/5">
             <div className="flex items-center gap-3">
