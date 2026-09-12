@@ -2,6 +2,7 @@
   "common": {
     "dashboard": "Dashboard",
     "assets": "Assets",
+    "logout": "Sign out",
     "loading": "Loading...",
     "new_asset": "New Asset",
     "add_asset": "Add Asset",

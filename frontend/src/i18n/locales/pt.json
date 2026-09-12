@@ -2,6 +2,7 @@
   "common": {
     "dashboard": "Painel de Controle",
     "assets": "Ativos",
+    "logout": "Sair",
     "loading": "Carregando...",
     "new_asset": "Novo Ativo",
     "add_asset": "Adicionar Ativo",

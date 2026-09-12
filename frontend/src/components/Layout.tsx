@@ -136,9 +136,13 @@ export default function Layout() {
             <span className="text-[8px] font-black uppercase tracking-[0.2em]">{item.label}</span>
           </Link>
         ))}
+        {/* Este botao SAI da conta. O rotulo vinha de `lp.terms` — a chave dos
+            termos de uso da pagina publica —, entao o celular mostrava "TERMOS"
+            embaixo do icone de sair. Rotulo errado em botao de sair e pior que
+            rotulo nenhum: quem procura os termos clica e perde a sessao. */}
         <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-white/40">
           <LogOut size={20} />
-          <span className="text-[8px] font-black uppercase tracking-[0.2em]">{t('lp.terms')}</span>
+          <span className="text-[8px] font-black uppercase tracking-[0.2em]">{t('common.logout')}</span>
         </button>
       </nav>
 

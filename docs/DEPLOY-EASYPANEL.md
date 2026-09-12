@@ -58,3 +58,29 @@ frontend + faz proxy de `/api` para o FastAPI, ambos no mesmo container).
 ## Pós-deploy
 - Testar: site abre, login marina (usuário real no Supabase Auth), formulários de lead gravam
 - Validar SEO/sitemap e submeter o sitemap no Google Search Console
+
+## Deploy manual na semana de lançamento
+
+Hoje o EasyPanel reconstrói a produção a cada push em `master`. Isso é ótimo
+enquanto só nós usamos, e é exatamente o que não se quer com marina pagante
+dentro: qualquer commit — um ajuste de texto, um teste, um engano — vira deploy
+na hora, sem ninguém decidir.
+
+**Desligar** (fazer na sexta antes do lançamento): EasyPanel → serviço
+`yachts-atlas` → aba **Source** (ou **Git**) → desmarcar **Auto Deploy** →
+Save. O webhook do GitHub pode ficar; sem o auto deploy ele não dispara build.
+
+**Subir a partir daí**, quando você decidir: EasyPanel → o mesmo serviço →
+**Deploy** (ou **Rebuild**). Ele puxa o `master` atual e reconstrói. O commit que
+vai ao ar é o último que estiver no GitHub — então `git push` continua sendo o
+passo anterior, só deixa de ser o gatilho.
+
+**Como saber que subiu:** a aba **Logs** mostra o nginx reiniciando
+(`start worker processes`). No navegador, recarregue com cache limpo — o
+`index.html` não é cacheado, mas os `assets/*.js` têm hash no nome e o antigo
+fica.
+
+**Rollback:** o EasyPanel reconstrói do Git, não guarda imagem anterior. Para
+voltar, `git revert` do commit ruim, push, e Deploy de novo. Por isso commit
+pequeno e por assunto importa mais na semana de lançamento do que em qualquer
+outra: dá para reverter um sem levar junto o que estava certo.
