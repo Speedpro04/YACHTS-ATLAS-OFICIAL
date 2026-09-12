@@ -179,8 +179,8 @@ export default function LandingPage() {
                 <img
                   src="/video-programa-atlas-poster.jpg"
                   alt=""
-                  width={1600}
-                  height={900}
+                  width={880}
+                  height={880}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-[1.02] transition-all duration-700"
