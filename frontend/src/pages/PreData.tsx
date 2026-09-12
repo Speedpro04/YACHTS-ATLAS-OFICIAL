@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Anchor, Camera, ChevronDown, Database, RefreshCw } from 'lucide-react'
+import { Anchor, Camera, Check, ChevronDown, Database, Lock, RefreshCw } from 'lucide-react'
 import { api } from '../services/api'
+import ConfirmarSelo from '../components/ConfirmarSelo'
 
 /**
  * Pré-Data — o armário de dados crus.
@@ -50,6 +51,11 @@ export default function PreData() {
   const [erro, setErro] = useState<string | null>(null)
   const [aberta, setAberta] = useState<string | null>(null)
   const [recarregando, setRecarregando] = useState(false)
+  // O tratamento acontece AQUI, e não em outra tela: é nesta que a pessoa está
+  // olhando o rascunho ao lado da foto que ele explica. Mandar procurar o
+  // mesmo item noutro lugar é onde a revisão se perde.
+  const [tratando, setTratando] = useState<string>('')
+  const [selar, setSelar] = useState<Envio | null>(null)
 
   async function carregar() {
     setRecarregando(true)
@@ -67,6 +73,46 @@ export default function PreData() {
   useEffect(() => {
     carregar()
   }, [])
+
+  /**
+   * Aprova uma foto do campo: ela deixa de ser pré-dado e passa a contar no
+   * dossiê. Some desta aba justamente por isso — o que foi tratado não é mais
+   * dado cru, e deixá-lo aqui faria a aba virar histórico em vez de fila.
+   */
+  async function aprovarFoto(docId: string) {
+    setTratando(docId)
+    try {
+      await api.documentos.aprovar(docId)
+      await carregar()
+      setErro(null)
+    } catch (e: any) {
+      // A mensagem do servidor vem inteira: as recusas reais desta rota
+      // (papel insuficiente, documento já tratado) são as que repetir o clique
+      // não resolve.
+      setErro(e?.message || 'Não foi possível aprovar a foto.')
+    } finally {
+      setTratando('')
+    }
+  }
+
+  /**
+   * Sela o rascunho: o pré-dado vira registro, e a partir daí não pode mais ser
+   * editado nem excluído. Irreversível — por isso passa pela confirmação, e não
+   * por um clique direto.
+   */
+  async function selarRascunho(envio: Envio) {
+    setTratando(envio.id)
+    try {
+      await api.registros.rascunho.selar(envio.id)
+      setSelar(null)
+      await carregar()
+      setErro(null)
+    } catch (e: any) {
+      setErro(e?.message || 'Não foi possível selar o registro.')
+    } finally {
+      setTratando('')
+    }
+  }
 
   const totais = useMemo(() => {
     const l = lista || []
@@ -200,7 +246,12 @@ export default function PreData() {
                 {abertaAgora && (
                   <div className="border-t border-white/5 px-6 py-6 space-y-4">
                     {e.envios.map((env) => (
-                      <Envio key={env.id} envio={env} />
+                      <Envio
+                        key={env.id}
+                        envio={env}
+                        selando={tratando === env.id}
+                        onSelar={() => setSelar(env)}
+                      />
                     ))}
 
                     {e.fotos_pendentes.length > 0 && (
@@ -215,10 +266,18 @@ export default function PreData() {
                               className="flex items-center gap-3 text-sm text-white/60"
                             >
                               <Camera size={14} className="text-[#c5a059] shrink-0" />
-                              <span className="truncate">{f.nome_arquivo}</span>
+                              <span className="truncate flex-1">{f.nome_arquivo}</span>
                               <span className="text-white/25 text-[9px] uppercase tracking-widest shrink-0">
                                 {new Date(f.created_at).toLocaleDateString('pt-BR')}
                               </span>
+                              <button
+                                onClick={() => aprovarFoto(f.id)}
+                                disabled={tratando === f.id}
+                                className="shrink-0 flex items-center gap-1.5 border border-[#c5a059]/40 hover:bg-[#c5a059]/10 disabled:opacity-40 text-[#c5a059] px-3 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+                              >
+                                <Check size={12} />
+                                {tratando === f.id ? 'Aprovando' : 'Aprovar'}
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -236,6 +295,18 @@ export default function PreData() {
           })}
         </ul>
       </main>
+
+      {/* O atrito antes de selar é o mesmo do resto do sistema, e de propósito:
+          quem trata pré-dado está decidindo o que entra no documento probatório. */}
+      {selar && (
+        <ConfirmarSelo
+          titulo={selar.titulo || 'Registro de campo'}
+          categoria={selar.categoria}
+          enviando={tratando === selar.id}
+          onConfirmar={() => selarRascunho(selar)}
+          onCancelar={() => setSelar(null)}
+        />
+      )}
     </div>
   )
 }
@@ -247,7 +318,15 @@ export default function PreData() {
  * "horimetro 412,5" e não "Horímetro: 412,5 h". Formatar sugere que alguém leu
  * e conferiu — e ninguém leu. A crueza é a informação.
  */
-function Envio({ envio }: { envio: Envio }) {
+function Envio({
+  envio,
+  selando,
+  onSelar,
+}: {
+  envio: Envio
+  selando: boolean
+  onSelar: () => void
+}) {
   const d = envio.dados || {}
   const meta = new Set([
     'origem',
@@ -297,11 +376,24 @@ function Envio({ envio }: { envio: Envio }) {
         </dl>
       )}
 
-      {(d.executado_por || d.registrado_por) && (
-        <p className="mt-5 pt-4 border-t border-white/5 text-white/30 text-[9px] uppercase tracking-widest leading-relaxed">
-          Executou {d.executado_por || '—'} · registrou {d.registrado_por || '—'}
-        </p>
-      )}
+      <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between gap-4 flex-wrap">
+        {(d.executado_por || d.registrado_por) && (
+          <p className="text-white/30 text-[9px] uppercase tracking-widest leading-relaxed">
+            Executou {d.executado_por || '—'} · registrou {d.registrado_por || '—'}
+          </p>
+        )}
+        {/* Selar é o ato que tira o item deste armário e o põe no dossiê.
+            Fica ao lado de quem executou, de propósito: é a última coisa que a
+            pessoa lê antes de decidir. */}
+        <button
+          onClick={onSelar}
+          disabled={selando}
+          className="ml-auto flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-40 text-[#010c20] px-4 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+        >
+          <Lock size={12} />
+          {selando ? 'Selando' : 'Tratar e selar'}
+        </button>
+      </div>
     </div>
   )
 }

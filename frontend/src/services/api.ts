@@ -269,6 +269,16 @@ export const api = {
   },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),
+    /**
+     * Aprova um documento que chegou do campo pendente de revisão.
+     *
+     * O endpoint existia desde a revisão do Pré-Data e nenhuma tela o chamava:
+     * a foto entrava pendente, o dossiê a ignorava — corretamente — e não havia
+     * porta de saída. Pré-dado sem caminho de tratamento não é cautela, é
+     * arquivo morto.
+     */
+    aprovar: (docId: string) =>
+      apiRequest(`/documentos/${docId}/aprovar`, { method: 'POST' }),
     upload: async (
       ativoId: string,
       tipo: string,

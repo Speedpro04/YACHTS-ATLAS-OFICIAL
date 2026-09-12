@@ -139,6 +139,31 @@ def _owner_do_ativo(supabase, ativo_id: str) -> Optional[str]:
     return ativo.data[0]["usuario_id"] if ativo.data else None
 
 
+def _so_os_ativos_da_conta(supabase, user_id: str) -> list[dict]:
+    """Os ativos que esta conta opera — a guarda das rotas SEM `ativo_id` no path.
+
+    `_so_a_marina` e `_pode_ler` pedem um ativo para autorizar, e não servem
+    numa lista por conta: não há um ativo, há o conjunto. Este filtro fazia o
+    mesmo trabalho, mas escrito à mão dentro do endpoint — e por isso a rede de
+    proteção da suíte (que procura por uma guarda NOMEADA em cada bloco de
+    rota) apontava o /pre-data como endpoint sem autorização. Não havia
+    vazamento; havia uma guarda anônima, que é indistinguível de guarda nenhuma
+    para quem lê depois, humano ou teste.
+
+    Mesma regra do /ativos, e não uma nova: abrir exceção aqui seria criar um
+    segundo caminho de leitura.
+    """
+    ativos = (
+        supabase.table("ativos").select("id, nome_reg, marca, modelo, ano_fabricacao, comprimento, usuario_id")
+        .is_("arquivado_em", "null").execute().data
+        or []
+    )
+    meus = [a for a in ativos if str(a.get("usuario_id")) == user_id]
+    if meus:
+        return meus
+    return ativos if _role_do_usuario(supabase, user_id) == "admin" else []
+
+
 @router.get("/pre-data")
 async def listar_pre_data(token: dict = Depends(get_current_user)):
     """O armario de pre-dados, POR EMBARCACAO.
@@ -159,18 +184,7 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
     supabase = get_supabase_admin()
     user_id = str(token.get("sub") if token else "")
 
-    # Os ativos que esta conta opera. Mesma regra do /ativos, e nao uma nova:
-    # abrir excecao aqui seria criar um segundo caminho de leitura.
-    ativos = (
-        supabase.table("ativos").select("id, nome_reg, marca, modelo, ano_fabricacao, comprimento, usuario_id")
-        .is_("arquivado_em", "null").execute().data
-        or []
-    )
-    meus = [a for a in ativos if str(a.get("usuario_id")) == user_id]
-    if not meus:
-        role = _role_do_usuario(supabase, user_id)
-        if role == "admin":
-            meus = ativos
+    meus = _so_os_ativos_da_conta(supabase, user_id)
     if not meus:
         return {"embarcacoes": [], "total_envios": 0}
 
@@ -364,7 +378,7 @@ async def create_rascunho(data: RegistroCreate, token: dict = Depends(get_curren
     usuario_id = _owner_do_ativo(supabase, data.ativo_id)
     if not usuario_id:
         raise HTTPException(status_code=404, detail="Ativo não encontrado")
-    result = supabase.table("registros_rascunho").insert({
+    novo = {
         "ativo_id": data.ativo_id,
         "usuario_id": usuario_id,
         "categoria": data.categoria,
@@ -373,7 +387,15 @@ async def create_rascunho(data: RegistroCreate, token: dict = Depends(get_curren
         "dados": data.dados,
         "checklist": data.checklist,
         "created_by": token.get("sub") if token else None,
-    }).execute()
+    }
+    # A condicao vinda do campo ("atencao", "pendente", "concluido") era enviada
+    # pelo Atlas Pre-Data e descartada aqui: a coluna nao entrava no insert e
+    # ficava no default 'rascunho'. Como 'rascunho' nao esta em STATUS_VALIDOS,
+    # o selo rebaixava tudo para "registrado" — o sinal de avaria levantado no
+    # pier sumia entre o barco e o dossie, sem erro nenhum para avisar.
+    if data.status in STATUS_VALIDOS:
+        novo["status"] = data.status
+    result = supabase.table("registros_rascunho").insert(novo).execute()
     return result.data[0] if result.data else {}
 
 
@@ -401,6 +423,24 @@ async def descartar_rascunho(rascunho_id: str, token: dict = Depends(get_current
     return {"message": "Rascunho descartado"}
 
 
+def _status_do_selo(rasc: dict) -> str:
+    """A condição com que o rascunho vira registro.
+
+    Ordem de procura: a coluna, depois `dados.condicao`, e só então o padrão.
+
+    O meio do caminho existe pelos rascunhos gravados ANTES de `create_rascunho`
+    passar a guardar a condição: estão todos com status 'rascunho', que não é
+    válido, e a condição deles sobreviveu apenas dentro do jsonb — o Atlas
+    Pré-Data grava nos dois lugares. Sem esta leitura, selar um pré-dado antigo
+    apagaria de vez o "atenção" levantado no píer, e apagaria em silêncio.
+    """
+    status = (rasc.get("status") or "").strip()
+    if status in STATUS_VALIDOS:
+        return status
+    do_campo = ((rasc.get("dados") or {}).get("condicao") or "").strip()
+    return do_campo if do_campo in STATUS_VALIDOS else "registrado"
+
+
 @router.post("/rascunho/{rascunho_id}/selar")
 async def selar_rascunho(rascunho_id: str, token: dict = Depends(get_current_user)):
     """Sela o rascunho: INSERT na tabela append-only e remove o rascunho.
@@ -416,9 +456,7 @@ async def selar_rascunho(rascunho_id: str, token: dict = Depends(get_current_use
         raise HTTPException(status_code=404, detail="Rascunho não encontrado")
     rasc = r.data[0]
 
-    status = rasc.get("status") or "registrado"
-    if status not in STATUS_VALIDOS:
-        status = "registrado"
+    status = _status_do_selo(rasc)
 
     try:
         selado = supabase.table("registros").insert({

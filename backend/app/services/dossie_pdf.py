@@ -209,8 +209,23 @@ TITULOS_DOSSIE = {
     "tenders_toys": "Tenders & Toys",
     "areas": "Áreas & Acomodações",
 }
-# Chaves internas que não devem virar linha da ficha
-INTERNAS_DADOS = {"arquivos", "evidencias", "enviado_por", "enviado_em"}
+# Chaves internas que não devem virar linha da ficha.
+#
+# As de proveniência do Atlas Pré-Data entram aqui porque o selo copia `dados`
+# inteiro do rascunho: sem esta lista, o dossiê imprimiria "Client Id
+# bad3fa54-f211..." e "Fotos No Aparelho 5" como se fossem informação sobre a
+# embarcação. Quem lê um documento probatório não distingue telemetria de fato
+# do serviço — lê tudo como fato.
+#
+# `condicao` sai pelo mesmo motivo e por mais um: ela vira o `status` do
+# registro no momento de selar, e imprimir os dois é convidar a página a se
+# contradizer. Ficam DE FORA desta lista, de propósito, `registrado_por` e
+# `executado_por` — esses são fato do serviço, e é o dossiê que deve mostrá-los.
+INTERNAS_DADOS = {
+    "arquivos", "evidencias", "enviado_por", "enviado_em",
+    "origem", "client_id", "capturado_em", "capturado_por",
+    "fotos_no_aparelho", "registrado_por_login", "condicao",
+}
 
 
 def blend(fg, bg, alpha):
