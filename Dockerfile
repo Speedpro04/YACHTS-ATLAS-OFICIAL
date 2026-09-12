@@ -54,11 +54,22 @@ COPY backend/ ./
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Configurar Nginx para servir Frontend e rotear /api para o Backend local
+#
+# client_max_body_size: o padrao do nginx e 1 MB e foto de celular tem 2-5 MB.
+# Com o padrao, todo upload maior morria com 413 AQUI, no proxy — antes de
+# chegar ao uvicorn, entao sem uma linha sequer no log da aplicacao. Derrubava a
+# foto do Atlas Pre-Data (que ja mandava 25m do lado dele) e tambem o PDF de
+# laudo subido pela Marina no painel. Os prazos acompanham: subir foto em wi-fi
+# de marina demora, e sem eles o nginx corta a conexao no meio do envio.
 RUN echo 'server { \
     listen 80; \
     server_name _; \
     root /usr/share/nginx/html; \
     index index.html; \
+    client_max_body_size 25m; \
+    proxy_connect_timeout 30s; \
+    proxy_send_timeout 120s; \
+    proxy_read_timeout 120s; \
     location / { \
         try_files $uri $uri/ /index.html; \
     } \

@@ -39,6 +39,10 @@ RUN echo 'server { \
     server_name _; \
     root /usr/share/nginx/html; \
     index index.html; \
+    client_max_body_size 25m; \
+    proxy_connect_timeout 30s; \
+    proxy_send_timeout 120s; \
+    proxy_read_timeout 120s; \
     location / { \
     try_files $uri $uri/ /index.html; \
     } \

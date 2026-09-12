@@ -292,6 +292,51 @@ derrubar o acesso do comprador.
 **Visto e não mexido:** `GET /dossie/acesso/{id}` com um id que não é UUID
 devolve **500** (o cast estoura no banco) em vez de 404.
 
+## A foto do píer morria no proxy, e o log não contava — 12/09/2026
+
+O fundador testou o Atlas Pré-Data no Android e disse *"as imagens não foram"*.
+Dois defeitos empilhados, e o segundo estava escondido atrás do primeiro.
+
+**O que os dados mostraram primeiro:** três tentativas em 27 segundos, cada uma
+criando um rascunho e subindo **uma** foto — sempre a mesma. As demais não
+apareciam em lugar nenhum: nem em `documentos`, nem nos logs do Supabase, nem no
+storage. Como o rascunho declarava `fotos_no_aparelho: 5`, as fotos existiam no
+aparelho e o laço tentou enviá-las. Sem rastro do outro lado, a leitura natural
+era "a requisição nunca saiu do celular" — e estava errada.
+
+**O log do nginx do PWA desfez o engano:**
+
+```
+POST /api/v1/documentos/upload/... 200   ← a primeira foto
+POST /api/v1/documentos/upload/... 413   ← a segunda
+```
+
+**413 Request Entity Too Large.** A requisição saía, atravessava o proxy do
+Pré-Data e morria no **nginx do Atlas** — o gerado inline no `Dockerfile` da
+raiz, que roteia `/api` para o uvicorn e **nunca definiu `client_max_body_size`**.
+O padrão do nginx é **1 MB**; foto de celular tem 2 a 5 MB.
+
+Por isso não havia rastro: o 413 é respondido pelo proxy, que nem chega a chamar
+a aplicação. O log da aplicação estava correto ao não mostrar nada — não houve
+requisição para ela. A primeira foto passava porque era um *screenshot* leve; as
+de câmera, não.
+
+**Não era defeito do app de campo.** O nginx do Pré-Data já mandava
+`client_max_body_size 25m` — quem barrava era o outro lado.
+
+**E o estrago não se limitava ao Pré-Data:** o mesmo proxy serve o painel. Todo
+upload acima de 1 MB feito pela Marina — foto ou PDF de laudo — vinha falhando em
+produção pelo mesmo motivo.
+
+O conserto é uma diretiva: `client_max_body_size 25m` no bloco `server`, mais os
+prazos de proxy (30s/120s/120s), nos dois Dockerfiles que fazem esse
+roteamento — o da raiz (produção) e o de `frontend/`.
+
+**Fica registrado o método, porque ele quase enganou:** ausência de log na
+aplicação foi lida como "não chegou pedido nenhum", quando significava "o pedido
+parou antes". Quando o rastro some, o lugar de procurar é a camada anterior —
+e o proxy é a primeira que fica de fora de toda observabilidade da aplicação.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.
