@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Ativo } from '../types'
 import { api } from '../services/api'
+import { useDesktop, AVISO_SO_DESKTOP } from '../hooks/useDesktop'
 import {
   ArrowLeft, Ship, FileText, Wrench, Zap, Cpu, Shield, Paintbrush, Armchair,
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
   Award, ChevronRight, X, Download, Upload, Lock,
   Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor,
-  Droplets, PenLine, HelpCircle
+  Droplets, PenLine, HelpCircle, Monitor
 } from 'lucide-react'
 import SecureCameraUpload from './SecureCameraUpload'
 import FichaServicoForm from './FichaServicoForm'
@@ -470,6 +471,11 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
 /* ===== Gerador de Dossiê - Controle de 4/Ano + Design Premium ===== */
 function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void }) {
   const [loading, setLoading] = useState(false)
+  // Emitir é só no computador; ver o dossiê segue em qualquer tela.
+  const desktop = useDesktop()
+  // O toque precisa responder. Botão apenas desabilitado não dispara evento
+  // nenhum no celular: a pessoa toca, nada acontece, e conclui que travou.
+  const [bloqueioDesktop, setBloqueioDesktop] = useState(false)
   // Nasce SEM número: o saldo vem do servidor. Começava em `remaining: 4`, e
   // isso fazia a tela afirmar "4 restantes" por um instante antes de saber —
   // que é exatamente a mentira que estamos consertando, só que mais curta.
@@ -509,6 +515,10 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
   }, [ativo.id])
 
   const gerarPdf = async () => {
+    if (!desktop) {
+      setBloqueioDesktop(true)
+      return
+    }
     if (!limite.allowed) return
     setLoading(true)
     try {
@@ -583,14 +593,31 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
             ) : (
               <div className="text-center space-y-4 w-full">
                 <FileCheck size={48} className="mx-auto text-white/10" />
+                {/* Clicável mesmo fora do computador: o toque tem que RESPONDER,
+                    dizendo por que não pode. Botão morto não explica nada. */}
                 <button
                   onClick={gerarPdf}
-                  className="mx-auto flex items-center gap-3 bg-gradient-to-r from-[#c5a059] to-[#b38f4d] hover:from-[#d4b36d] hover:to-[#c5a059] text-[#010c20] px-8 py-4 rounded-sm text-xs font-black uppercase tracking-[0.25em] transition-all shadow-xl hover:scale-[1.02]"
+                  className={`mx-auto flex items-center gap-3 px-8 py-4 rounded-sm text-xs font-black uppercase tracking-[0.25em] transition-all ${
+                    desktop
+                      ? 'bg-gradient-to-r from-[#c5a059] to-[#b38f4d] hover:from-[#d4b36d] hover:to-[#c5a059] text-[#010c20] shadow-xl hover:scale-[1.02]'
+                      : 'bg-white/5 border border-white/10 text-white/40'
+                  }`}
                 >
                   <Download size={16} /> Emitir Dossiê Criptografado
                 </button>
+                {bloqueioDesktop && !desktop && (
+                  <div
+                    role="alert"
+                    className="mx-auto max-w-md bg-amber-500/10 border border-[#c5a059]/40 rounded-sm p-4 flex items-start gap-3 text-left animate-in fade-in slide-in-from-bottom-2 duration-200"
+                  >
+                    <Monitor size={18} className="text-[#c5a059] flex-shrink-0 mt-0.5" />
+                    <p className="text-[11px] leading-relaxed text-white/70 normal-case tracking-normal">
+                      {AVISO_SO_DESKTOP}
+                    </p>
+                  </div>
+                )}
                 <p className="text-[9px] text-white/20 uppercase tracking-widest">
-                  O download do arquivo PDF iniciará automaticamente
+                  {desktop ? 'O download do arquivo PDF iniciará automaticamente' : 'Emissão disponível no computador'}
                 </p>
               </div>
             )}

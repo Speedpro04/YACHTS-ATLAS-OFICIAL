@@ -241,6 +241,57 @@ defeito — as formas de pedir ajuda, o que **não** pode virar saudação, e o
 pedido de ajuda com assunto de produto. 57 testes passam entre os dois arquivos
 do chatbot.
 
+## O Dossiê Atlas é emitido só no computador — 12/09/2026
+
+Decisão do fundador. O dossiê é um **PDF**: documento que se confere inteiro
+antes de sair, com a cota anual descontada e o link indo para um terceiro. Isso
+não se despacha do celular no pier.
+
+**Quatro atos, e só dois são "gerar".** A separação é o cuidado que a regra
+exige, porque travar "dossiê" sem ler a diferença quebraria a entrega:
+
+| ato | quem faz | trava |
+|---|---|---|
+| `GET /dossie/{ativo}/pdf` | a Marina, no painel | **sim** |
+| `POST /solicitacoes/{id}/liberar` | a Marina, ao entregar (gasta cota) | **sim** |
+| `POST /dossie/solicitar` | o comprador, no formulário | não |
+| `GET /dossie/acesso/{id}` | o comprador, com o link | **nunca** |
+
+O comprador recebe o link e abre no telefone — é o uso normal dele. Bloquear ali
+seria entregar um documento que o destinatário não consegue ler.
+
+**Como decide.** No painel, três condições juntas: largura ≥ 1024px, ponteiro
+fino (`pointer: fine`) e o nome do aparelho fora da lista de celular/tablet.
+Cada uma sozinha erra — tablet grande em paisagem passa nas duas primeiras, e
+tablet não emite. No servidor, `User-Agent` de aparelho de mão nas duas rotas de
+emissão responde **409** com a mesma frase que a tela mostra.
+
+**Isto é política de uso, não segurança, e está escrito assim no código.** O
+`User-Agent` é texto que o cliente escreve; quem chamar a API na mão pode mentir.
+Por isso a tentativa vai para `audit_logs` com o endpoint e o motivo
+(`emissao_de_dossie_fora_do_desktop`): dissuasão com rastro vale mais que uma
+barreira que finge ser intransponível. A trava que a Marina encontra de fato está
+no painel; a do servidor existe para o painel não ser a única.
+
+**O botão fica à vista e continua clicável** — e o toque responde. Primeiro ele
+ficou apenas desabilitado; o fundador corrigiu: *"ao clicar no mobile e tablet
+tem que surgir uma mensagem"*. Estava certo. Botão desabilitado não dispara
+evento nenhum: a pessoa toca, não acontece nada, e conclui que o sistema travou —
+o silêncio explica menos que a recusa. Agora o clique abre o aviso na tela, com
+o motivo escrito. A frase é a mesma nos dois lados (`AVISO_SO_DESKTOP` no front,
+`MENSAGEM_SO_DESKTOP` no back): tela dizendo uma coisa e servidor outra é como se
+descobre que o sistema mente.
+
+**Efeito colateral aceito:** quem trabalha com a janela em meia tela de um
+monitor grande (960px) cai na trava. A mensagem diz para abrir em tela cheia.
+
+`test_dossie_so_no_desktop.py` prende inclusive o que **não** pode ser travado:
+o teste lê as rotas do router e falha se alguém, mais tarde, "proteger tudo" e
+derrubar o acesso do comprador.
+
+**Visto e não mexido:** `GET /dossie/acesso/{id}` com um id que não é UUID
+devolve **500** (o cast estoura no banco) em vez de 404.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual.

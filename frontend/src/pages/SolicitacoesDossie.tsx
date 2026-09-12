@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { FileCheck, Mail, Phone, Ship, Check, X, RefreshCw, ShieldCheck, Clock, Download, Lock, Search } from 'lucide-react'
 import { api } from '../services/api'
+import { useDesktop, AVISO_SO_DESKTOP } from '../hooks/useDesktop'
 
 interface Solicitacao {
   id: string
@@ -43,6 +44,8 @@ export default function SolicitacoesDossie() {
   const [filtro, setFiltro] = useState<string>('')
   const [carregando, setCarregando] = useState(true)
   const [acaoId, setAcaoId] = useState<string>('')
+  // Liberar é emissão: só no computador (o servidor recusa igual).
+  const desktop = useDesktop()
   const [erro, setErro] = useState('')
 
   const carregarPedidos = useCallback(async () => {
@@ -85,6 +88,12 @@ export default function SolicitacoesDossie() {
   }, [activeTab, carregarPedidos])
 
   const liberar = async (id: string) => {
+    // Liberar EMITE o dossiê (gasta cota e manda o link): só no computador.
+    // O toque responde com a razão — botão morto no celular não explica nada.
+    if (!desktop) {
+      setErro(AVISO_SO_DESKTOP)
+      return
+    }
     setAcaoId(id)
     try {
       await api.dossie.liberar(id)
@@ -390,7 +399,11 @@ export default function SolicitacoesDossie() {
                         <button
                           onClick={() => liberar(s.id)}
                           disabled={acaoId === s.id}
-                          className="flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-50 text-[#010c20] px-5 py-3 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+                          className={`flex items-center gap-2 disabled:opacity-50 px-5 py-3 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all ${
+                            desktop
+                              ? 'bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20]'
+                              : 'bg-white/5 border border-white/10 text-white/40'
+                          }`}
                         >
                           <Check size={14} /> Liberar
                         </button>

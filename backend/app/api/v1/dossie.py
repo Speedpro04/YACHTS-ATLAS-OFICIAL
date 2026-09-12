@@ -21,6 +21,7 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.core.supabase import get_supabase_admin
 from app.core.authz import get_ativo_autorizado
+from app.core.dispositivo import exigir_desktop
 from app.middleware.tracking import get_client_ip, get_user_agent
 from app.services.dossie_data import montar_dados_dossie
 from app.core.limite_taxa import limite
@@ -232,7 +233,7 @@ async def saldo_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     return _saldo_dossie(ativo_id)
 
 
-@router.get("/{ativo_id}/pdf")
+@router.get("/{ativo_id}/pdf", dependencies=[Depends(exigir_desktop)])
 async def pdf_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     """Gera o PDF do dossiê do dono/marina (só seções com dado)."""
     _assert_acesso_ativo(ativo_id, user)
@@ -361,7 +362,7 @@ async def listar_solicitacoes(
     return query.execute().data or []
 
 
-@router.post("/solicitacoes/{solicitacao_id}/liberar")
+@router.post("/solicitacoes/{solicitacao_id}/liberar", dependencies=[Depends(exigir_desktop)])
 async def liberar_solicitacao(
     solicitacao_id: str,
     request: Request,
