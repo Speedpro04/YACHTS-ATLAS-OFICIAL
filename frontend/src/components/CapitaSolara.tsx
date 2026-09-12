@@ -111,14 +111,17 @@ export default function CapitaSolara() {
 
   return (
     <>
-      {/* Botão flutuante — no celular ele sobe acima da barra de navegação (h-20): a 24px do fundo, ele tapava os ícones e travava o acesso ao sistema. */}
+      {/* Botão flutuante — só a foto da Capitã dentro do círculo dourado. No celular
+          ele fica acima da barra de navegação (h-20 = 80px): a 24px do fundo, o botão
+          tapava os ícones e travava o acesso ao sistema. */}
       {!aberto && (
         <button
           onClick={() => setAberto(true)}
           aria-label="Abrir Capitã Solara"
-          className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[60] group flex items-center gap-3 pl-4 pr-5 py-3 rounded-full bg-gradient-to-br from-[#c5a059] to-[#b38f4d] text-[#010c20] shadow-2xl shadow-[#c5a059]/30 hover:scale-105 transition-all duration-300"
+          title="Capitã Solara — Normas · Suporte · IA"
+          className="fixed bottom-[104px] right-4 lg:bottom-6 lg:right-6 z-[60] p-1.5 rounded-full bg-gradient-to-br from-[#c5a059] to-[#b38f4d] shadow-2xl shadow-[#c5a059]/30 hover:scale-105 transition-all duration-300"
         >
-          <span className="relative flex items-center justify-center w-9 h-9 rounded-full bg-[#010c20]/15 border border-[#010c20]/20 overflow-hidden">
+          <span className="relative flex items-center justify-center w-12 h-12 rounded-full bg-[#010c20]/15 overflow-hidden">
             <img
               src="/capita-solara.png"
               alt="Capitã Solara"
@@ -128,14 +131,7 @@ export default function CapitaSolara() {
                 e.currentTarget.nextElementSibling?.classList.remove('hidden')
               }}
             />
-            <Anchor size={18} className="hidden absolute" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#c5a059] animate-pulse"></span>
-          </span>
-          <span className="text-left">
-            <span className="block text-[11px] font-black uppercase tracking-[0.15em] leading-none">Capitã Solara</span>
-            <span className="block text-[8px] font-bold uppercase tracking-[0.2em] opacity-70 mt-0.5">Normas · IA</span>
-            {/* A marina não descobre o que a Solara sabe fazer se ninguém contar. */}
-            <span className="block text-[8px] font-bold uppercase tracking-[0.2em] opacity-70">Suporte · IA</span>
+            <Anchor size={22} className="hidden absolute text-[#010c20]" />
           </span>
         </button>
       )}
