@@ -463,6 +463,12 @@ function Envio({
     'executado_por',
     'registrado_por_login',
     'fotos_no_aparelho',
+    // Os envios de 11/09 vieram de uma versão anterior do app, que gravava a
+    // observação DENTRO de `dados` e usava `capturado_por` no lugar de
+    // `registrado_por`. Sem estas duas linhas, a frase do mecânico aparece
+    // espremida entre FILTRO_OLEO e TROCA_ZINCOS, do tamanho de um "Não".
+    'observacao',
+    'capturado_por',
   ])
   const campos = Object.entries(d).filter(
     ([k, v]) => !meta.has(k) && v !== undefined && v !== null && v !== '',
@@ -484,12 +490,6 @@ function Envio({
         </p>
       </div>
 
-      {envio.observacao && (
-        <p className="text-white/55 text-sm leading-relaxed mb-4 whitespace-pre-line">
-          {envio.observacao}
-        </p>
-      )}
-
       {campos.length > 0 && (
         <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
           {campos.map(([k, v]) => (
@@ -503,10 +503,28 @@ function Envio({
         </dl>
       )}
 
+      {/* A OBSERVAÇÃO FECHA O CARTÃO, e não abre.
+          Os campos acima são dados frios — "troca_oleo: Não". A observação é a
+          única coisa aqui escrita por uma pessoa, na hora do serviço, sobre o
+          que a ficha não perguntou. Ficava no topo, em cinza, do tamanho de
+          legenda; agora vem depois dos campos e com peso, porque é ela que
+          costuma explicar por que o resto está como está. */}
+      {(envio.observacao || d.observacao) && (
+        <div className="mt-5 border-l-2 border-[#c5a059]/60 bg-white/[0.03] rounded-r-sm pl-4 pr-4 py-3">
+          <p className="text-white/25 text-[9px] uppercase tracking-[0.25em] font-black mb-2">
+            Observação de quem executou
+          </p>
+          <p className="text-white/80 text-[15px] leading-relaxed whitespace-pre-line">
+            {envio.observacao || d.observacao}
+          </p>
+        </div>
+      )}
+
       <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between gap-4 flex-wrap">
-        {(d.executado_por || d.registrado_por) && (
+        {(d.executado_por || d.registrado_por || d.capturado_por) && (
           <p className="text-white/30 text-[9px] uppercase tracking-widest leading-relaxed">
-            Executou {d.executado_por || '—'} · registrou {d.registrado_por || '—'}
+            Executou {d.executado_por || d.capturado_por || '—'} · registrou{' '}
+            {d.registrado_por || d.capturado_por || '—'}
           </p>
         )}
         {/* Selar é o ato que tira o item deste armário e o põe no dossiê.

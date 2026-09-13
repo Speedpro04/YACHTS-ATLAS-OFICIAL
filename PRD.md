@@ -582,6 +582,33 @@ clique automático, e o que se quer aqui é o texto que a pessoa do píer vai le
 Registrado em `audit_logs` com quem recusou, o motivo e
 `recusou_o_proprio_envio` — a mesma pergunta que a aprovação responde.
 
+## A observação estava espremida entre dois "Não" — 13/09/2026
+
+O fundador apontou: *"a observação pode ficar mais embaixo, com um destaque
+melhor... dando mais importância a isso"*. Estava certo, e a tela tinha dois
+problemas somados.
+
+**O primeiro era de hierarquia.** Os campos da ficha são dados frios —
+`troca_oleo: Não`, `filtro_ar: Não`. A observação é a única coisa no cartão
+escrita por uma pessoa, na hora do serviço, sobre o que a ficha não perguntou.
+Ela abria o cartão em cinza, no tamanho de legenda. Agora **fecha** o cartão, com
+borda dourada à esquerda, rótulo próprio e corpo maior — é ela que costuma
+explicar por que o resto está como está.
+
+**O segundo só apareceu olhando os dados reais.** Nos envios de 11/09 a
+observação **não está na coluna** `observacao`: veio dentro de `dados`, como mais
+um par chave/valor, porque o app de campo daquela versão gravava assim. O
+resultado na tela era a frase do mecânico — *"Feito troca de todas as mangueiras
+de arrefecimento e foi colocado 6 litros"* — espremida entre `FILTRO_OLEO` e
+`TROCA_ZINCOS`, do mesmo tamanho de um "Não".
+
+O painel passa a ler **os dois formatos**, e `observacao` e `capturado_por` saem
+da grade de campos crus. `capturado_por` (o nome antigo de `registrado_por`) vai
+para a linha de autoria, que é onde ele significa alguma coisa.
+
+**Fica dito que isto é remendo de leitura, não conserto de origem:** enquanto o
+vocabulário tiver duas gerações, toda tela nova vai ter de conhecer as duas.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.
