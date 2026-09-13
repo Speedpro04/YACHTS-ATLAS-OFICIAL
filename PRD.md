@@ -671,6 +671,29 @@ pior jeito de descobrir que a tela tinha duas ações parecidas.
 duas versões do mesmo serviço, e a pergunta "qual delas é a boa?" não teria
 resposta.
 
+## A mesa de trabalho virou inventário do que já estava resolvido — 13/09/2026
+
+Primeiro teste da seção "Em trabalho", e ela listou como *"fotos sem registro que
+as explique"*: apólice de seguro, laudo estrutural de casco, certificado de
+salvatagem, TIE, relatório de docagem. Nada disso veio do píer — são documentos
+do fluxo normal do painel, que já entraram conferidos e vivem no Painel Técnico.
+
+Duas regras faltavam, e ambas são sobre **o que a mesa é**:
+
+1. **Só entra o que tem a marca do píer.** O Atlas Pré-Data grava
+   `"Atlas Pré-Data · <categoria> · <client_id>"` na descrição de todo upload;
+   é por ela que se reconhece o pré-dado. Sem esse filtro, um barco com 14
+   documentos mostrava os 14 — e a mesa virava um segundo inventário do que já
+   estava resolvido.
+2. **Só fica o que espera decisão.** Foto do píer já aprovada cumpriu o caminho:
+   entrou no dossiê e não pede mais nada de ninguém. Mesa que guarda o decidido
+   deixa de ser mesa, pelo mesmo motivo que fila que guarda o decidido deixa de
+   ser fila.
+
+O erro é da mesma família do que já apareceu duas vezes nesta frente: **campo
+certo do banco lido como outra coisa na tela**. Aqui, "documento desta
+embarcação" foi lido como "pré-dado desta embarcação".
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.

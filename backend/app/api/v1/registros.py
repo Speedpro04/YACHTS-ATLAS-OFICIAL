@@ -551,12 +551,25 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
         and not (r.get("dados") or {}).get("recusado_em")
     ]
 
-    fotos = (
-        supabase.table("documentos")
-        .select("id, nome_arquivo, categoria, descricao, created_at, storage_path, status")
-        .eq("ativo_id", ativo_id).neq("status", "recusado").execute().data
-        or []
-    )
+    # SÓ O QUE VEIO DO PÍER entra na mesa.
+    #
+    # A embarcação tem documentos de vários caminhos — PDF de laudo, foto subida
+    # pelo próprio painel, apólice. Nada disso é pré-dado: já entrou conferido e
+    # vive no Painel Técnico. Sem este filtro, um barco com 14 documentos
+    # mostrava os 14 como "foto sem registro que a explique", e a mesa de
+    # trabalho virava um segundo inventário do que já estava resolvido.
+    #
+    # A marca é a descrição que o Atlas Pré-Data grava em todo upload:
+    # "Atlas Pré-Data · <categoria> · <client_id>".
+    fotos = [
+        f for f in (
+            supabase.table("documentos")
+            .select("id, nome_arquivo, categoria, descricao, created_at, storage_path, status")
+            .eq("ativo_id", ativo_id).neq("status", "recusado").execute().data
+            or []
+        )
+        if (f.get("descricao") or "").startswith("Atlas Pré-Data")
+    ]
 
     s3 = get_s3_service()
     por_client: dict[str, list] = {}
@@ -584,8 +597,14 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
         usadas.update(str(f["id"]) for f in minhas)
         itens.append({**r, "fotos": minhas})
 
-    orfas = soltas + [
-        f for lista in por_client.values() for f in lista if str(f["id"]) not in usadas
+    # Órfã que já foi aprovada não fica na mesa: ela cumpriu o caminho, entrou no
+    # dossiê e não pede mais decisão de ninguém. A mesa mostra o que ESPERA — o
+    # resto é histórico, e histórico tem lugar próprio no Painel Técnico.
+    orfas = [
+        f for f in (
+            soltas + [f for lista in por_client.values() for f in lista if str(f["id"]) not in usadas]
+        )
+        if f.get("status") == "pendente"
     ]
 
     return {"em_trabalho": itens, "fotos_sem_registro": orfas, "total": len(itens)}
