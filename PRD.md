@@ -459,6 +459,42 @@ em dólar diz, sozinho, o tamanho que a operação tem. Trocado pelo domínio
 próprio. No mesmo passo, `docs/12` dizia `https://yachtsatlas.com` — domínio que
 não é nosso.
 
+## O e-mail de senha não saía, e o log dizia por quê — 13/09/2026
+
+Aplicados os cinco modelos em português, o teste do "esqueceu a chave" falhou com
+*"Não foi possível enviar o link"*. A mensagem da tela é genérica de propósito —
+não se conta a um estranho o que houve com o e-mail alheio —, mas o log do
+Supabase não é:
+
+```
+action: user_recovery_requested
+error:  535 "5.7.8 Error: authentication failed"
+POST /auth/v1/recover → 500
+```
+
+**535 é recusa de login no SMTP.** Não era template, não era link, não era
+domínio: o Supabase envia pelo servidor da Hostinger com a conta
+`contato@yachtsatlas.online`, e a senha guardada no painel não era a da caixa.
+Nunca havia sido exercitada — o projeto tinha SMTP próprio configurado e nenhum
+e-mail de Auth tinha sido disparado até hoje.
+
+**A senha certa já existia em outro lugar:** `EMAIL_PASSWORD`, no EasyPanel, que
+é o que o backend usa para mandar cobrança e liberação de dossiê. Copiada de lá
+para o painel do Supabase, a mesma credencial nos dois sistemas — que é como deve
+ser, senão trocar a senha da caixa conserta um canal e derruba o outro.
+
+**Resultado:** o e-mail chega em português, **na caixa de entrada**, com
+remetente `contato@yachtsatlas.online` — e não `noreply@supabase.io`, que era
+metade do problema de entrega.
+
+**O que este episódio ensina, e vale mais que o conserto:** a tela dizia "tente
+novamente", e tentar novamente nunca resolveria. Erro de credencial de
+infraestrutura se veste de erro transitório na interface. O log do provedor é a
+primeira coisa a ler quando a mensagem da tela é genérica — não a última.
+
+**Achado de passagem:** o `Sender name` está "Equipe Yachts Atlas" enquanto a
+assinatura dos modelos diz "Yachts Atlas". Não está errado; está divergente.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.
