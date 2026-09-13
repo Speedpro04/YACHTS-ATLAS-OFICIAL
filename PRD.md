@@ -495,6 +495,38 @@ primeira coisa a ler quando a mensagem da tela é genérica — não a última.
 **Achado de passagem:** o `Sender name` está "Equipe Yachts Atlas" enquanto a
 assinatura dos modelos diz "Yachts Atlas". Não está errado; está divergente.
 
+## Todo e-mail de Auth apontava para `localhost:3000` — 13/09/2026
+
+Resolvido o SMTP, o e-mail chegou — e o botão levou para
+`localhost:3000/#access_token=...`. Numa máquina qualquer que não seja a do
+desenvolvedor, isso é uma página que não existe.
+
+**A causa:** o **Site URL** do projeto no Supabase ainda era
+`http://localhost:3000`, o valor de quando o projeto nasceu, e a lista de
+**Redirect URLs** estava **vazia**. O front sempre pediu o destino certo — o log
+mostra `POST /auth/v1/recover?redirect_to=https://yachtsatlas.online/redefinir-senha`
+—, mas o GoTrue **descarta** qualquer `redirect_to` fora da allow list e cai no
+Site URL. Com a lista vazia, todo pedido caía em localhost.
+
+**O conserto:** Site URL para `https://yachtsatlas.online` e
+`https://yachtsatlas.online/**` na allow list — o `/**` é necessário, sem ele só
+a raiz seria autorizada e `/redefinir-senha` continuaria caindo no padrão.
+
+**Detalhe que confundiu no meio do caminho, e vale saber:** o destino fica
+**gravado dentro do link** no instante em que o e-mail é gerado. O e-mail emitido
+antes da correção continuou levando a localhost mesmo depois dela — e, como
+localhost também não está na allow list, o clique acabou na **home**. Corrigir a
+configuração não conserta e-mail já enviado; é preciso pedir um link novo.
+
+**Por que isso importa mais do que parece:** é o primeiro contato de uma marina
+que esqueceu a senha. Ela receberia um e-mail impecável, em português, com o
+domínio certo no remetente — e um botão que não abre nada. E nada no sistema
+acusaria: do lado do servidor, o envio é 200.
+
+Validado de ponta a ponta em 13/09: e-mail em português, caixa de entrada,
+remetente `contato@yachtsatlas.online`, link abrindo
+`yachtsatlas.online/redefinir-senha` com o formulário de nova chave.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.
