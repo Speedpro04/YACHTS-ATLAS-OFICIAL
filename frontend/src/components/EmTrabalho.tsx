@@ -48,6 +48,11 @@ const META = new Set([
   'registrado_por', 'registrado_por_login', 'executado_por', 'condicao',
   'aprovado_em', 'aprovado_por', 'recusado_em', 'recusado_por', 'motivo_recusa',
   'original_do_pier',
+  // A observação tem campo próprio, grande, aqui em cima. Os envios de 11/09
+  // guardavam ela DENTRO de `dados`, e sem esta linha ela aparecia duas vezes:
+  // vazia no campo de texto e espremida num input de 40 caracteres no meio dos
+  // "Não" — que é onde a frase do mecânico some.
+  'observacao',
 ])
 
 const CONDICOES = ['concluido', 'atencao', 'pendente'] as const
@@ -198,7 +203,8 @@ function Cartao({
   const camposDoServico = Object.keys(d).filter((k) => !META.has(k))
 
   const [titulo, setTitulo] = useState(item.titulo || '')
-  const [observacao, setObservacao] = useState(item.observacao || '')
+  // Lê os dois formatos: a coluna (app atual) e `dados.observacao` (app de 11/09).
+  const [observacao, setObservacao] = useState(item.observacao || String(d.observacao || ''))
   const [condicao, setCondicao] = useState(String(d.condicao || 'concluido'))
   const [campos, setCampos] = useState<Record<string, string>>(
     Object.fromEntries(camposDoServico.map((k) => [k, String(d[k] ?? '')])),
@@ -206,17 +212,20 @@ function Cartao({
 
   const mudou =
     titulo !== (item.titulo || '') ||
-    observacao !== (item.observacao || '') ||
+    observacao !== (item.observacao || String(d.observacao || '')) ||
     condicao !== String(d.condicao || 'concluido') ||
     camposDoServico.some((k) => campos[k] !== String(d[k] ?? ''))
 
   const salvar = () => {
+    // A observação passa a viver na COLUNA, uma só. Sai de `dados` para não
+    // existir em dois lugares — duas cópias do mesmo texto divergem na primeira
+    // edição, e aí ninguém sabe qual delas o dossiê vai imprimir. O que veio do
+    // píer continua guardado em `original_do_pier`, intocado.
+    const { observacao: _antiga, ...resto } = d
     onSalvar({
       titulo: titulo.trim() || null,
       observacao: observacao.trim() || null,
-      // `dados` vai inteiro: o que não aparece na tela (proveniência, o original
-      // do píer) é preservado, senão salvar apagaria o rastro.
-      dados: { ...d, ...campos, condicao },
+      dados: { ...resto, ...campos, condicao },
     })
   }
 
