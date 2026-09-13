@@ -41,11 +41,24 @@ export default function LoginProprietario() {
     setLoading(true)
     setErro('')
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: codigo.trim(),
-        type: 'email',
-      })
+      // DOIS TIPOS, na ordem, e não por indecisão.
+      //
+      // O código não nasce de um `signInWithOtp`: o backend o gera com
+      // `generate_link({type: 'magiclink'})` e tira o `email_otp` de lá, porque
+      // quem entrega é a Yachts Atlas (e-mail próprio e WhatsApp), não o
+      // Supabase. O mesmo dígito, então, pode ser lido pelo GoTrue como OTP de
+      // e-mail OU como token de magic link, dependendo da versão — e a
+      // diferença só apareceria na frente do armador, com "código inválido"
+      // para um código que está certo.
+      //
+      // Tentar o segundo tipo quando o primeiro recusa não mascara erro nenhum:
+      // é a mesma prova, lida da outra forma. Código errado ou vencido falha nas
+      // duas e a pessoa recebe a mesma mensagem de antes.
+      const tentar = (type: 'email' | 'magiclink') =>
+        supabase.auth.verifyOtp({ email: email.trim(), token: codigo.trim(), type })
+
+      let { error } = await tentar('email')
+      if (error) ({ error } = await tentar('magiclink'))
       if (error) {
         setErro('Código inválido ou expirado. Peça um novo.')
         return

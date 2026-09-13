@@ -111,8 +111,16 @@ Confirme seu e-mail — Yachts Atlas
 
 ## 3. Código de acesso (Magic Link)
 
-Usado pelo **Portal do Proprietário**: o armador entra com o e-mail e recebe o
-acesso por aqui.
+> **Atenção — este modelo NÃO é o do Portal do Proprietário.**
+>
+> O código que o armador recebe **não sai pelo Supabase**. O backend o gera com
+> `generate_link({type: "magiclink"})`, tira o `email_otp` de dentro e entrega
+> ele mesmo, por e-mail próprio (Hostinger) e WhatsApp — já em português, em
+> `backend/app/api/v1/owner.py`. Mexer aqui não muda nada no Portal.
+>
+> Vale colar mesmo assim: é o que sai se alguém disparar um magic link por outro
+> caminho, e e-mail em inglês saindo de uma marca brasileira é o problema que
+> este arquivo existe para resolver.
 
 **Subject:**
 
@@ -245,6 +253,9 @@ Dispare um de cada, para o seu próprio e-mail, e confira três coisas:
 
 1. **Chegou na caixa de entrada**, não no spam.
 2. **O remetente** aparece como Yachts Atlas, não como `noreply@supabase.io`.
-3. **O link funciona** e leva ao domínio certo — é o teste que também valida o
-   `verifyOtp` do Portal do Proprietário, que continua pendente de validação
-   contra a Supabase real (Pendência 10 do PRD).
+3. **O link funciona** e leva ao domínio certo.
+
+O `verifyOtp` do Portal do Proprietário **não é testado por aqui** — ele tem
+caminho próprio. Para validá-lo: Portal → entrar com o e-mail de um proprietário
+cadastrado → o código chega por e-mail e WhatsApp → digitar. É a Pendência 10 do
+PRD, e o único ponto do fluxo que não dá para testar sem conta de verdade.
