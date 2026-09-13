@@ -15,6 +15,7 @@ import ConsentimentoTitular from './ConsentimentoTitular'
 import CoberturaFotos from './CoberturaFotos'
 import RetificarRegistro from './RetificarRegistro'
 import CategoriaForm from './CategoriaForm'
+import EmTrabalho from './EmTrabalho'
 import { SERVICOS } from '../config/servicosCategorias'
 import { CATEGORIAS as DOSSIE_CATS, type Categoria as DossieCat } from '../config/dossieCategorias'
 import { ACEITA_DOCUMENTO, ROTULO_DOCUMENTO, TAMANHO_MAXIMO_MB } from '../utils/arquivos'
@@ -341,6 +342,12 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
           estivesse dentro de uma aba, a marina só descobriria o problema no
           momento em que o comprador estivesse esperando. */}
       {!hideHeader && <ConsentimentoTitular ativoId={String(ativo.id)} />}
+
+      {/* ===== EM TRABALHO — o que veio do píer e ainda não foi selado =====
+          Fica ACIMA do painel técnico de propósito: é a única parte da tela com
+          coisa pendente de decisão. Embaixo fica o que já é prova; aqui, o que
+          ainda se mexe. A seção some sozinha quando não há nada em trabalho. */}
+      {!readOnly && <EmTrabalho ativoId={String(ativo.id)} />}
 
       {/* ===== BLOCO DE BAIXO — Painel Técnico (cards) ===== */}
       {!secao ? (

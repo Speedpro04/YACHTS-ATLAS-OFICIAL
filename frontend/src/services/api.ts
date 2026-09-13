@@ -210,6 +210,8 @@ export const api = {
     /** Rascunhos: editáveis e descartáveis. Não entram no dossiê. */
     /** O armario de pre-dados, agrupado por embarcacao. */
     preData: () => apiRequest('/registros/pre-data'),
+    /** O que já saiu do píer e ainda não foi selado, com as fotos que explica. */
+    emTrabalho: (ativoId: string) => apiRequest(`/registros/em-trabalho/${ativoId}`),
     rascunho: {
       list: (ativoId: string) => apiRequest(`/registros/rascunho/${ativoId}`),
       create: (data: RegistroPayload) =>
@@ -221,6 +223,14 @@ export const api = {
       /** Sela o rascunho. A partir daqui não há volta. */
       selar: (id: string) =>
         apiRequest(`/registros/rascunho/${id}/selar`, { method: 'POST' }),
+      /**
+       * Tira o pré-dado da fila do píer e põe na mesa do escritório.
+       *
+       * NÃO sela: o item passa a aparecer dentro da embarcação como "em
+       * trabalho", e continua inteiramente editável até alguém selar.
+       */
+      enviarParaAtivos: (id: string) =>
+        apiRequest(`/registros/rascunho/${id}/enviar-para-ativos`, { method: 'POST' }),
       /** Recusa o pré-dado com motivo — sai da fila, continua no banco. */
       recusar: (id: string, motivo: string) =>
         apiRequest(`/registros/rascunho/${id}/recusar`, {

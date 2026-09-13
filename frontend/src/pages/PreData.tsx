@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Anchor, Camera, Check, ChevronDown, Database, Lock, RefreshCw, X } from 'lucide-react'
+import { Anchor, ArrowRight, Camera, Check, ChevronDown, Database, RefreshCw, X } from 'lucide-react'
 import { api } from '../services/api'
-import ConfirmarSelo from '../components/ConfirmarSelo'
 
 /**
  * Pré-Data — o armário de dados crus.
@@ -57,7 +56,6 @@ export default function PreData() {
   // olhando o rascunho ao lado da foto que ele explica. Mandar procurar o
   // mesmo item noutro lugar é onde a revisão se perde.
   const [tratando, setTratando] = useState<string>('')
-  const [selar, setSelar] = useState<Envio | null>(null)
   // A recusa pede motivo antes de acontecer. Não é burocracia: recusar sem
   // dizer por quê devolve o colaborador ao mesmo erro amanhã, e deixa o
   // revisor seguinte sem saber se aquilo foi analisado ou descartado por engano.
@@ -131,19 +129,21 @@ export default function PreData() {
   }
 
   /**
-   * Sela o rascunho: o pré-dado vira registro, e a partir daí não pode mais ser
-   * editado nem excluído. Irreversível — por isso passa pela confirmação, e não
-   * por um clique direto.
+   * Envia o pré-dado para a mesa do escritório, dentro da embarcação.
+   *
+   * NÃO sela. O que chega do píer chega incompleto de propósito, e selar daqui
+   * obrigava a escolher entre gravar o erro para sempre ou não gravar nada.
+   * O item sai desta fila e vai para Ativos, onde é editado à vontade — o selo
+   * é lá, depois, e é o que trava.
    */
-  async function selarRascunho(envio: Envio) {
+  async function enviarParaAtivos(envio: Envio) {
     setTratando(envio.id)
     try {
-      await api.registros.rascunho.selar(envio.id)
-      setSelar(null)
+      await api.registros.rascunho.enviarParaAtivos(envio.id)
       await carregar()
       setErro(null)
     } catch (e: any) {
-      setErro(e?.message || 'Não foi possível selar o registro.')
+      setErro(e?.message || 'Não foi possível enviar para Ativos.')
     } finally {
       setTratando('')
     }
@@ -285,7 +285,7 @@ export default function PreData() {
                         key={env.id}
                         envio={env}
                         selando={tratando === env.id}
-                        onSelar={() => setSelar(env)}
+                        onSelar={() => enviarParaAtivos(env)}
                         onRecusar={() => { setRecusar({ tipo: 'envio', id: env.id, rotulo: env.titulo || 'Registro de campo' }); setMotivo('') }}
                       />
                     ))}
@@ -421,17 +421,6 @@ export default function PreData() {
         </div>
       )}
 
-      {/* O atrito antes de selar é o mesmo do resto do sistema, e de propósito:
-          quem trata pré-dado está decidindo o que entra no documento probatório. */}
-      {selar && (
-        <ConfirmarSelo
-          titulo={selar.titulo || 'Registro de campo'}
-          categoria={selar.categoria}
-          enviando={tratando === selar.id}
-          onConfirmar={() => selarRascunho(selar)}
-          onCancelar={() => setSelar(null)}
-        />
-      )}
     </div>
   )
 }
@@ -538,13 +527,16 @@ function Envio({
           >
             <X size={12} /> Recusar
           </button>
+          {/* "Enviar para Ativos", e não "selar": o botão diz o destino e não
+              promete uma conferência que ainda não aconteceu. Quem confere é o
+              escritório, do outro lado, com o dado aberto na frente. */}
           <button
             onClick={onSelar}
             disabled={selando}
             className="flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-40 text-[#010c20] px-4 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
           >
-            <Lock size={12} />
-            {selando ? 'Selando' : 'Tratar e selar'}
+            <ArrowRight size={12} />
+            {selando ? 'Enviando' : 'Enviar para Ativos'}
           </button>
         </div>
       </div>

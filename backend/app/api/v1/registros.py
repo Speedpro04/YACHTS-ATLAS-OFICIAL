@@ -224,10 +224,12 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
         alvo = por_ativo.get(r.get("ativo_id"))
         if alvo is None:
             continue
-        # Recusado sai da FILA, não do banco: ele continua lá com o motivo e o
-        # autor, para quem for auditar depois. Fila que guarda o que já foi
-        # decidido para de ser fila.
-        if (r.get("dados") or {}).get("recusado_em"):
+        # A fila do píer guarda só o que ainda não foi decidido. Recusado e
+        # aprovado saem daqui — o primeiro para o arquivo (com motivo e autor),
+        # o segundo para a mesa do escritório, dentro da embarcação. Nenhum dos
+        # dois é apagado; fila que guarda o que já foi decidido para de ser fila.
+        marcas = r.get("dados") or {}
+        if marcas.get("recusado_em") or marcas.get("aprovado_em"):
             continue
         alvo["envios"].append(r)
     # A FOTO PRECISA SER VISTA, nao nomeada.
@@ -442,6 +444,33 @@ async def update_rascunho(
     campos = {k: v for k, v in data.model_dump().items() if v is not None}
     if not campos:
         raise HTTPException(status_code=400, detail="Nada para atualizar")
+
+    # O QUE VEIO DO PIER FICA GUARDADO, e só na PRIMEIRA edição.
+    #
+    # O escritório pode mudar tudo — quem assina o registro é a Marina, e ela
+    # responde por ele. Mas o dossiê vale por ser rastreável: seis meses depois
+    # alguém vai perguntar se aquele horímetro foi medido no barco ou digitado
+    # na mesa, e a resposta precisa existir. A tela mostra o valor atual; o
+    # original mora aqui, e nunca é sobrescrito.
+    atual = supabase.table("registros_rascunho").select("*").eq("id", rascunho_id).execute()
+    if not atual.data:
+        raise HTTPException(status_code=404, detail="Rascunho não encontrado")
+    antes = atual.data[0]
+    dados_atuais = dict(antes.get("dados") or {})
+    if not dados_atuais.get("original_do_pier"):
+        dados_atuais["original_do_pier"] = {
+            "titulo": antes.get("titulo"),
+            "observacao": antes.get("observacao"),
+            "dados": {k: v for k, v in dados_atuais.items() if k != "original_do_pier"},
+            "guardado_em": datetime.now(timezone.utc).isoformat(),
+        }
+        # Se a edição já traz `dados`, o original entra dentro do que vai ser
+        # gravado — senão a próxima escrita apagaria a cópia recém-feita.
+        if "dados" in campos:
+            campos["dados"] = {**(campos["dados"] or {}), "original_do_pier": dados_atuais["original_do_pier"]}
+        else:
+            campos["dados"] = dados_atuais
+
     result = supabase.table("registros_rascunho").update(campos).eq("id", rascunho_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Rascunho não encontrado")
@@ -455,6 +484,111 @@ async def descartar_rascunho(rascunho_id: str, token: dict = Depends(get_current
     _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
     supabase.table("registros_rascunho").delete().eq("id", rascunho_id).execute()
     return {"message": "Rascunho descartado"}
+
+
+@router.post("/rascunho/{rascunho_id}/enviar-para-ativos")
+async def enviar_para_ativos(rascunho_id: str, token: dict = Depends(get_current_user)):
+    """Tira o pré-dado da fila do píer e põe na mesa do escritório.
+
+    NÃO SELA. Esta é a metade que faltava do fluxo combinado:
+
+        chega (Pré-Data) -> trabalha (Ativos) -> sela (vira prova)
+
+    O que chega do píer chega incompleto de propósito — mão suja, pressa, campo
+    que a ficha não perguntou. Selar direto da fila obrigava o escritório a
+    escolher entre gravar o erro para sempre ou não gravar nada. Aqui o item só
+    muda de lugar: sai da aba Pré-Data, aparece dentro da embarcação como "em
+    trabalho", e continua inteiramente editável.
+
+    O registro é o MESMO — não há cópia. Muda a marca em `dados`, e com ela o
+    lugar onde a pessoa o encontra. Duplicar aqui criaria duas versões do mesmo
+    serviço, e a pergunta "qual delas é a boa?" não teria resposta.
+    """
+    supabase = get_supabase_admin()
+    _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
+
+    r = supabase.table("registros_rascunho").select("*").eq("id", rascunho_id).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Rascunho não encontrado")
+
+    dados = dict(r.data[0].get("dados") or {})
+    if dados.get("recusado_em"):
+        raise HTTPException(status_code=409, detail="Este pré-dado foi recusado.")
+    if dados.get("aprovado_em"):
+        return {"id": rascunho_id, "ja_estava": True}
+
+    dados.update({
+        "aprovado_em": datetime.now(timezone.utc).isoformat(),
+        "aprovado_por": token.get("sub") if token else None,
+    })
+    supabase.table("registros_rascunho").update({"dados": dados}).eq("id", rascunho_id).execute()
+    return {"id": rascunho_id, "enviado_para_ativos": True}
+
+
+@router.get("/em-trabalho/{ativo_id}")
+async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_user)):
+    """O que já saiu do píer e ainda não foi selado, desta embarcação.
+
+    É a mesa do escritório: texto editável + as fotos que o explicam. As fotos
+    vêm amarradas pelo `client_id` que o Atlas Pré-Data grava na descrição de
+    cada upload e também dentro do rascunho — a chave existia desde o início e
+    nunca tinha sido usada para juntar os dois lados.
+
+    Foto que chegou sem envio aparece à parte, na mesma embarcação: ela tem dono
+    (o barco), só não tem um serviço explicando o que mostra.
+    """
+    _so_a_marina(ativo_id, token)
+    supabase = get_supabase_admin()
+
+    rascunhos = (
+        supabase.table("registros_rascunho").select("*")
+        .eq("ativo_id", ativo_id).order("created_at", desc=True).execute().data
+        or []
+    )
+    em_trabalho = [
+        r for r in rascunhos
+        if (r.get("dados") or {}).get("aprovado_em")
+        and not (r.get("dados") or {}).get("recusado_em")
+    ]
+
+    fotos = (
+        supabase.table("documentos")
+        .select("id, nome_arquivo, categoria, descricao, created_at, storage_path, status")
+        .eq("ativo_id", ativo_id).neq("status", "recusado").execute().data
+        or []
+    )
+
+    s3 = get_s3_service()
+    por_client: dict[str, list] = {}
+    soltas: list[dict] = []
+    for f in fotos:
+        caminho = f.get("storage_path")
+        if caminho:
+            try:
+                f["url"] = s3.get_presigned_url(caminho, expires_in=3600)
+            except Exception as e:  # pragma: no cover - degradacao proposital
+                logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
+                f["url"] = None
+        # O client_id vai no fim da descrição: "Atlas Pré-Data · Manutenção · <id>"
+        dono = (f.get("descricao") or "").split("·")[-1].strip()
+        if dono:
+            por_client.setdefault(dono, []).append(f)
+        else:
+            soltas.append(f)
+
+    usadas: set[str] = set()
+    itens = []
+    for r in em_trabalho:
+        cid = (r.get("dados") or {}).get("client_id") or ""
+        minhas = por_client.get(cid, [])
+        usadas.update(str(f["id"]) for f in minhas)
+        itens.append({**r, "fotos": minhas})
+
+    orfas = soltas + [
+        f for lista in por_client.values() for f in lista if str(f["id"]) not in usadas
+    ]
+
+    return {"em_trabalho": itens, "fotos_sem_registro": orfas, "total": len(itens)}
 
 
 @router.post("/rascunho/{rascunho_id}/recusar")

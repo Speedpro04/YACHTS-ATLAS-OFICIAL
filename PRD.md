@@ -609,6 +609,68 @@ para a linha de autoria, que é onde ele significa alguma coisa.
 **Fica dito que isto é remendo de leitura, não conserto de origem:** enquanto o
 vocabulário tiver duas gerações, toda tela nova vai ter de conhecer as duas.
 
+## A mesa do escritório: o meio do caminho que faltava — 13/09/2026
+
+O fluxo combinado desde o início era **chega → trabalha → sela**. O que eu tinha
+entregue era **chega → sela**: um botão chamado "Tratar e selar" que não tratava
+nada — selava o pré-dado exatamente como veio do píer. O fundador apontou:
+*"não foi isso que combinamos desde o início"*. Estava certo, e o defeito era
+meu: entreguei a metade fácil e deixei o nome do botão prometer a outra.
+
+**O que o pré-dado é, e por que a etapa do meio não é conveniência.** O que vem
+do píer vem incompleto **de propósito** — mão suja, pressa, campo que a ficha não
+perguntou, palavra escrita torto ("mandueiras de arreficimento"). Sem a mesa, o
+escritório tinha duas opções: gravar o erro para sempre ou não gravar nada.
+Nenhuma serve para um documento que vai a uma seguradora. E o dossiê imprime o
+que está selado: erro selado vira erro impresso com QR e hash.
+
+**Como ficou:**
+
+| etapa | onde | o que acontece |
+|---|---|---|
+| chega | aba Pré-Data | texto + foto, cru, na fila |
+| **Enviar para Ativos** | botão da fila | sai da fila, **não sela** |
+| trabalha | dentro da embarcação, seção "Em trabalho" | tudo editável, salva quantas vezes quiser |
+| **Selar registro** | botão da mesa | vira prova, e aí trava |
+
+**O botão mudou de nome porque o nome mentia.** "Tratar e selar" prometia uma
+conferência que ninguém tinha feito. Agora diz o destino — *Enviar para Ativos* —
+e "selar" fica reservado para o único ato sem volta, que é o que a palavra
+significa.
+
+**Dentro da embarcação, e não numa lista geral:** o revisor precisa do barco na
+frente para julgar o que lê. "Horímetro 412" não diz nada solto; diz muito ao
+lado das outras 15 leituras daquele motor. Dois blocos separados, de propósito —
+em cima o que ainda se mexe, embaixo o histórico selado. O dossiê só lê o de
+baixo.
+
+**As fotos vão amarradas ao serviço que explicam.** A chave existia desde sempre
+e nunca fora usada: o `client_id` que o app grava na descrição de cada upload é o
+mesmo que está dentro do rascunho. Foto que chegou sem envio aparece à parte, na
+mesma embarcação — ela tem dono, só não tem um serviço explicando o que mostra.
+
+**Edita tudo, e isso é decisão do fundador:** *"aí vai da integridade da Marina,
+não somos nós mais nisso"*. Quem assina o registro é a Marina. Mas o que veio do
+píer é copiado na **primeira** edição para `dados.original_do_pier` e nunca mais
+sobrescrito — porque o dossiê vale por ser rastreável, e seis meses depois alguém
+vai perguntar se aquele horímetro foi medido no barco ou digitado na mesa. A tela
+mostra o valor atual; o original fica no banco.
+
+O rodapé da seção diz isso em letras miúdas, a pedido do fundador: *"Tudo fica
+armazenado no banco de dados, inclusive o que veio do píer antes das edições.
+Disponível em caso de auditoria."* Letras miúdas, e não aviso grande — é
+informação de rodapé de contrato, para quem procura; vira alarme se ganhar
+destaque.
+
+**Um detalhe de fluxo:** o botão de selar fica desabilitado enquanto houver
+alteração não salva. Selar por engano o que ainda estava sendo escrito seria o
+pior jeito de descobrir que a tela tinha duas ações parecidas.
+
+**O registro é o mesmo o tempo todo — não há cópia.** Muda a marca em `dados`
+(`aprovado_em`), e com ela o lugar onde a pessoa o encontra. Duplicar criaria
+duas versões do mesmo serviço, e a pergunta "qual delas é a boa?" não teria
+resposta.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.
