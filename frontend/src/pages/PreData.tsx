@@ -34,6 +34,8 @@ type FotoPendente = {
   categoria: string
   descricao: string | null
   created_at: string
+  /** URL assinada, válida por uma hora. Null quando a assinatura falhou. */
+  url: string | null
 }
 
 type Embarcacao = {
@@ -265,7 +267,36 @@ export default function PreData() {
                               key={f.id}
                               className="flex items-center gap-3 text-sm text-white/60"
                             >
-                              <Camera size={14} className="text-[#c5a059] shrink-0" />
+                              {/* A MINIATURA, e não o nome do arquivo.
+                                  Aprovar "IMG_4821.jpg" sem ver é carimbo: o
+                                  revisor não sabe se é o barco certo, se a
+                                  avaria aparece, se é um panfleto. Clicar abre
+                                  em tamanho real, que é quando se decide. */}
+                              {f.url ? (
+                                <a
+                                  href={f.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="shrink-0 w-16 h-16 rounded-sm overflow-hidden border border-white/10 hover:border-[#c5a059]/50 transition-colors bg-white/[0.03]"
+                                  title="Abrir em tamanho real"
+                                >
+                                  <img
+                                    src={f.url}
+                                    alt={f.nome_arquivo}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </a>
+                              ) : (
+                                /* Sem imagem a aba ainda serve — mas quem revisa
+                                   precisa saber que está decidindo às cegas. */
+                                <span
+                                  className="shrink-0 w-16 h-16 rounded-sm border border-amber-500/30 bg-amber-500/5 flex items-center justify-center"
+                                  title="A imagem não pôde ser carregada"
+                                >
+                                  <Camera size={16} className="text-amber-500/60" />
+                                </span>
+                              )}
                               <span className="truncate flex-1">{f.nome_arquivo}</span>
                               <span className="text-white/25 text-[9px] uppercase tracking-widest shrink-0">
                                 {new Date(f.created_at).toLocaleDateString('pt-BR')}

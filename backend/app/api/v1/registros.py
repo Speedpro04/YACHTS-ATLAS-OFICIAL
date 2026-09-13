@@ -18,6 +18,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_admin
+from app.services.s3_service import get_s3_service
 from app.core.security import get_current_user
 from app.core.authz import get_ativo_autorizado
 from pydantic import BaseModel, Field
@@ -217,10 +218,31 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
         alvo = por_ativo.get(r.get("ativo_id"))
         if alvo is not None:
             alvo["envios"].append(r)
+    # A FOTO PRECISA SER VISTA, nao nomeada.
+    #
+    # A aba devolvia `nome_arquivo` e o caminho no storage — e o revisor era
+    # convidado a aprovar "IMG_4821.jpg" sem saber se e o barco certo, se a
+    # avaria aparece ou se o arquivo e um panfleto de fornecedor. Aprovacao as
+    # cegas e carimbo: destroi exatamente o motivo de a revisao existir.
+    #
+    # A URL e assinada e vale uma hora. O balde `media` e privado (e tem de
+    # continuar), entao nao ha link publico a servir: cada revisao gera o seu.
+    s3 = get_s3_service()
     for f in fotos:
         alvo = por_ativo.get(f.get("ativo_id"))
-        if alvo is not None:
-            alvo["fotos_pendentes"].append(f)
+        if alvo is None:
+            continue
+        caminho = f.get("storage_path")
+        if caminho:
+            try:
+                f["url"] = s3.get_presigned_url(caminho, expires_in=3600)
+            except Exception as e:  # pragma: no cover - degradacao proposital
+                # Sem a imagem a aba ainda serve: mostra o que chegou e deixa
+                # aprovar. Falhar a lista inteira porque UMA assinatura nao saiu
+                # seria trocar um revisor sem foto por um revisor sem nada.
+                logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
+                f["url"] = None
+        alvo["fotos_pendentes"].append(f)
 
     # So embarcacao COM envio aparece. Lista de frota inteira com zero ao lado
     # de quase todo nome esconde as tres que importam.

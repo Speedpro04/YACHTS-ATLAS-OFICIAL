@@ -527,6 +527,29 @@ Validado de ponta a ponta em 13/09: e-mail em português, caixa de entrada,
 remetente `contato@yachtsatlas.online`, link abrindo
 `yachtsatlas.online/redefinir-senha` com o formulário de nova chave.
 
+## O revisor aprovava sem ver a foto — 13/09/2026
+
+Dívida do próprio conserto de ontem: a aba Pré-Data ganhou o botão **Aprovar**, e
+a foto continuava aparecendo como **nome de arquivo**. O revisor era convidado a
+aprovar `IMG_4821.jpg` sem saber se é o barco certo, se a avaria aparece, ou se
+o arquivo é um panfleto de fornecedor.
+
+Isso não é um detalhe de interface: aprovação às cegas é carimbo, e carimbo
+destrói exatamente o motivo de a revisão existir. Pior que não ter botão, porque
+produz um registro de conferência que ninguém fez — e o dossiê passa a afirmar
+que alguém olhou.
+
+`/registros/pre-data` já trazia o `storage_path`; agora assina uma URL de uma
+hora para cada foto pendente e a aba mostra a **miniatura**, clicável para
+tamanho real — que é quando se decide de fato. O balde `media` é privado e
+continua privado: não há link público a servir, cada revisão gera o seu.
+
+**Quando a assinatura falha**, a foto aparece com uma moldura âmbar e ícone de
+câmera em vez de sumir da lista. Duas razões: derrubar a aba inteira porque
+*uma* assinatura não saiu trocaria um revisor sem foto por um revisor sem nada; e
+quem revisa precisa **saber** que aquele item está sem imagem, em vez de aprovar
+achando que viu.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.
