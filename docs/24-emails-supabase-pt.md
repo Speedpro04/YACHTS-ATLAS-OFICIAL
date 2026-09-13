@@ -12,7 +12,13 @@ o que pesou no spam junto com o DKIM que faltava.
 Emails → escolher o modelo → colar *Subject* e *Body* → Save. Um de cada vez.
 
 **Variáveis** (deixar exatamente como estão, o Supabase substitui):
-`{{ .ConfirmationURL }}`, `{{ .Token }}`, `{{ .SiteURL }}`, `{{ .Email }}`.
+`{{ .ConfirmationURL }}`, `{{ .Token }}`, `{{ .TokenHash }}`, `{{ .SiteURL }}`,
+`{{ .Email }}`, `{{ .Data }}`, `{{ .RedirectTo }}`.
+
+**Só no modelo de troca de e-mail** existe `{{ .NewEmail }}`, e a diferença
+importa: ali `{{ .Email }}` é o endereço **atual** e `{{ .NewEmail }}` é o
+**novo**. Escrever "troca para {{ .Email }}" mandaria a pessoa confirmar o
+endereço que ela está deixando.
 
 Tom: sóbrio e direto. Sem emoji, sem exclamação, sem "clique aqui" — o botão diz
 o que faz. Toda mensagem termina dizendo o que fazer se a pessoa não reconhecer
@@ -180,8 +186,8 @@ Confirme seu novo e-mail — Yachts Atlas
 <h2 style="font-family:Georgia,serif;color:#010c20;margin:0 0 16px">Confirme seu novo e-mail</h2>
 
 <p style="font-family:Arial,sans-serif;color:#333;line-height:1.6">
-  Foi pedida a troca do e-mail da conta para <strong>{{ .Email }}</strong>.
-  Para concluir, confirme que este endereço é seu.
+  Foi pedida a troca do e-mail desta conta de <strong>{{ .Email }}</strong> para
+  <strong>{{ .NewEmail }}</strong>. Para concluir, confirme que o novo endereço é seu.
 </p>
 
 <p style="margin:28px 0">
