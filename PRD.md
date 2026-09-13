@@ -414,6 +414,51 @@ guarda citava `@router.` literalmente, e o teste fatia o arquivo por essa
 string — o comentário virou um "bloco de rota" sem autorização e quebrou a
 suíte. Teste que lê código-fonte como texto tropeça na prosa sobre ele.
 
+## Retenção e Encarregado: decididos — 13/09/2026
+
+As duas lacunas que seguravam o registro de tratamento (LGPD art. 37) eram
+decisão do controlador, não código. Decididas hoje, com o fundador, e escritas
+nos três lugares que precisam concordar: o registro em `conformidade/`, a página
+pública de privacidade e `docs/12-termos-e-privacidade.md`.
+
+| dado | prazo | no fim |
+|---|---|---|
+| histórico custodiado após encerramento do contrato | **5 anos** | anonimização — o registro do serviço fica, o dado pessoal sai |
+| lead comercial não convertido | **12 meses** sem interação | eliminação |
+| trilha de auditoria (IP, user-agent) | **6 meses** | eliminação |
+
+**Por que 5 anos e não "para sempre":** a promessa do produto é permanência, e
+apagar o histórico destruiria o valor que a marina pagou para constituir — mas
+retenção indefinida de dado pessoal não se defende perante a ANPD. A saída é
+separar as duas coisas: o que dá valor ao histórico é o **serviço feito na
+embarcação**, não o **nome do condutor** que aparece de passagem. Aos 5 anos o
+primeiro fica e o segundo sai.
+
+**Por que 6 meses na trilha:** é o prazo do Marco Civil da Internet (art. 15)
+para registros de acesso. Prazo com âncora legal se defende sozinho; número
+escolhido por conforto, não.
+
+**Encarregado (DPO):** Marcos, sócio-fundador da AXOS HUB, em
+`dpo@yachtsatlas.online`, resposta em até 15 dias — o mesmo prazo do art. 19.
+A LGPD (art. 41) exige identidade pública, e é por isso que o nome aparece na
+página de privacidade. Empresa de sócio único pode designar o próprio sócio;
+designar um terceiro que não conhece o sistema criaria um canal que não responde.
+
+**Duas coisas ficam abertas, e com nome:**
+
+1. **Não existe rotina de expurgo.** Os prazos estão declarados e a eliminação é
+   manual. Declarar sem executar é melhor que não declarar — mas só até a
+   primeira vez que alguém perguntar se foi cumprido.
+2. **O alias `dpo@yachtsatlas.online` precisa existir** no provedor de e-mail.
+   Canal publicado que não recebe é pior que canal nenhum, e este agora está
+   publicado.
+
+**Efeito colateral útil:** o canal do DPO era `yachtsatlas@gmail.com`, em quatro
+lugares. Endereço de Gmail numa política de privacidade de plataforma que cobra
+em dólar diz, sozinho, o tamanho que a operação tem. Trocado pelo domínio
+próprio. No mesmo passo, `docs/12` dizia `https://yachtsatlas.com` — domínio que
+não é nosso.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.

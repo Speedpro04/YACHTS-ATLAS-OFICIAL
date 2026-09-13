@@ -4,12 +4,10 @@
 Documento exigido pela LGPD, art. 37.
 Versão 1 — 31/08/2026.
 
-> **⚠️ ESTE DOCUMENTO AINDA NÃO ESTÁ COMPLETO.**
-> Dois campos dependem de decisão do controlador e estão marcados como
-> `[A DEFINIR]` ao longo do texto: o **prazo de retenção** (seção 6) e o
-> **encarregado pelo tratamento** (seção 8). Enquanto estiverem em branco,
-> este registro **não** deve ser apresentado a uma autoridade ou auditoria
-> como documento final.
+> **Completo desde 13/09/2026.** Os dois campos que dependiam de decisão do
+> controlador — prazo de retenção (seção 6) e encarregado (seção 8) — foram
+> decididos e estão escritos abaixo. As lacunas que permanecem (seção 10) são
+> técnicas e estão declaradas, não em branco.
 
 ---
 
@@ -89,28 +87,34 @@ pessoal em seu conteúdo.
 
 ## 6. Retenção e eliminação
 
-> **[A DEFINIR — decisão do controlador]**
->
-> Hoje **não existe prazo de retenção declarado nem rotina de expurgo** em
-> nenhuma parte do sistema. Verificado em 31/08/2026: as únicas referências a
-> tempo de vida no código são caches técnicos, sem relação com dado pessoal.
->
-> Três perguntas precisam de resposta antes que esta seção exista:
->
-> 1. **Marina que cancela a assinatura** — por quanto tempo o histórico
->    custodiado permanece? Há uma tensão real aqui: a promessa do produto é
->    permanência, e apagar o histórico destruiria o valor que a marina pagou
->    para constituir. Mas "para sempre" também não se sustenta perante a ANPD
->    sem justificativa.
-> 2. **Lead comercial não convertido** — quanto tempo um contato prospectado
->    e nunca respondido fica em `marina_leads`?
-> 3. **Trilha de auditoria** — por quanto tempo IP e user-agent ficam em
->    `audit_logs`? A finalidade é segurança, e finalidade de segurança tem
->    prazo.
+**Decidido pelo controlador em 13/09/2026.**
 
-**O que já existe:** ativo não é excluído, é **arquivado**
-(`arquivado_em`, `arquivado_por`, `arquivado_motivo`) — o gatilho
-`trg_ativos_no_delete` recusa DELETE.
+| dado | prazo | o que acontece no fim |
+|---|---|---|
+| Histórico custodiado de marina que **encerrou** o contrato | **5 anos** após o encerramento | anonimização: o registro técnico permanece, os dados pessoais saem |
+| **Lead comercial** não convertido (`marina_leads`) | **12 meses** sem qualquer interação | eliminação |
+| **Trilha de auditoria** (`audit_logs`: IP, user-agent) | **6 meses** | eliminação |
+
+**Por que 5 anos, e não "para sempre".** A promessa do produto é permanência, e
+apagar o histórico destruiria justamente o valor que a marina pagou para
+constituir — mas retenção indefinida de dado pessoal não se sustenta perante a
+ANPD sem finalidade que a justifique. A saída é separar as duas coisas: o que dá
+valor ao histórico é o **registro do serviço** (o que foi feito, quando, em qual
+embarcação), não o **nome do condutor** que aparece de passagem. Ao fim dos 5
+anos o primeiro fica e o segundo sai. Cinco anos também é o horizonte em que uma
+disputa sobre manutenção ainda pode ser levantada.
+
+**Por que 6 meses para a trilha.** É o prazo do Marco Civil da Internet
+(Lei 12.965/2014, art. 15) para guarda de registros de acesso a aplicação. Prazo
+com âncora legal se defende sozinho; número escolhido por conforto, não.
+
+**O que ainda não existe:** a **rotina de expurgo**. Os prazos acima estão
+decididos e declarados, e o sistema ainda não os executa sozinho — hoje a
+eliminação depende de ação manual. Está na seção 10 como lacuna, com esse nome.
+
+**O que já existe:** ativo não é excluído, é **arquivado** (`arquivado_em`,
+`arquivado_por`, `arquivado_motivo`) — o gatilho `trg_ativos_no_delete` recusa
+DELETE.
 
 ## 7. Direito do titular (art. 18)
 
@@ -145,11 +149,17 @@ ativo: `_exige_admin` recusa qualquer outro papel.
 
 ## 8. Encarregado (DPO)
 
-> **[A DEFINIR — decisão do controlador]**
->
-> Nome, e-mail de contato e forma de acionamento. A LGPD (art. 41) exige que a
-> identidade do encarregado seja **divulgada publicamente**, o que significa
-> que o dado escolhido aparecerá na página de privacidade.
+**Designado em 13/09/2026.**
+
+**Encarregado:** Marcos, sócio-fundador da AXOS HUB.
+**Contato:** `dpo@yachtsatlas.online`
+**Forma de acionamento:** e-mail, com resposta em até 15 dias corridos — o mesmo
+prazo que o art. 19 dá para o pedido de acesso do titular.
+
+A LGPD (art. 41) exige que a identidade do encarregado seja **divulgada
+publicamente**; por isso esses dados aparecem na página de privacidade. Empresa
+de sócio único pode designar o próprio sócio, e é o que se faz aqui: designar um
+terceiro que não conhece o sistema criaria um canal que não responde.
 
 ## 9. Medidas de segurança adotadas
 
@@ -185,8 +195,12 @@ consultar o estado de custódia de ativo de outra.
 
 Registradas aqui por honestidade, e no `PRD.md` com número:
 
-1. **Retenção não definida** (seção 6) — item 41.
-2. **Encarregado não designado** (seção 8) — item 42.
+1. ~~**Retenção não definida**~~ — **DECIDIDA em 13/09/2026** (seção 6). Fica a
+   lacuna seguinte, menor e com nome próprio: **não há rotina de expurgo**. Os
+   prazos estão declarados e a eliminação ainda é manual.
+2. ~~**Encarregado não designado**~~ — **DESIGNADO em 13/09/2026** (seção 8).
+   Falta apenas criar o alias `dpo@yachtsatlas.online` no provedor de e-mail —
+   canal publicado que não recebe é pior que canal nenhum.
 3. **Proteção contra senha vazada desligada** — bloqueada pelo plano gratuito
    do Supabase; requer plano Pro. Item 31.
 4. **OTP de acesso do proprietário expira em 1 hora** — longo para a

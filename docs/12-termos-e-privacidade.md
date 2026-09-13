@@ -139,10 +139,29 @@ Seus dados NÃO são vendidos. São compartilhados apenas com:
 
 ### 2.5 Contato DPO
 
+Encarregado pelo Tratamento de Dados: **Marcos**, sócio-fundador da AXOS HUB.
+
 Para exercer seus direitos ou tirar dúvidas:
-- Email: yachtsatlas@gmail.com
+- Email: dpo@yachtsatlas.online
+- Resposta em até 15 dias corridos
 
 ### 2.6 Retenção de Dados
+
+Decidido em 13/09/2026. A fonte é
+`conformidade/01-registro-de-operacoes-de-tratamento.md`, seção 6 — mudou aqui,
+muda lá, senão a política pública contradiz o registro que a autoridade lê.
+
+| Dado | Prazo | No fim do prazo |
+|---|---|---|
+| Conta ativa | enquanto durar o serviço | — |
+| Histórico custodiado após encerramento | 5 anos | anonimização (o registro do serviço fica; o dado pessoal sai) |
+| Contato comercial não convertido | 12 meses sem interação | eliminação |
+| Registros de acesso e segurança (IP, navegador) | 6 meses | eliminação |
+| Registros fiscais e financeiros | prazos legais aplicáveis | — |
+
+Os 6 meses dos registros de acesso seguem o art. 15 do Marco Civil da Internet.
+Os 5 anos separam o que dá valor ao histórico — o serviço feito na embarcação —
+do nome de quem aparece de passagem nele.
 
 | Dado | Período |
 |---|---|
@@ -227,8 +246,9 @@ Se qualquer cláusula for inválida, as demais permanecem.
 ### 5.3 Contato
 
 **Yachts Atlas**
-- Email: yachtsatlas@gmail.com
-- Website: https://yachtsatlas.com
+- Email: contato@yachtsatlas.online
+- Encarregado (DPO): dpo@yachtsatlas.online
+- Website: https://yachtsatlas.online
 
 ---
 

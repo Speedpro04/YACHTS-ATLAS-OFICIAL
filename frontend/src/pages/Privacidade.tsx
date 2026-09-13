@@ -11,8 +11,13 @@ import Header from '../components/Header'
  *  - Rastreamento técnico (IP, dispositivo, navegador) via middleware de
  *    auditoria/segurança.
  *
- * Campos a confirmar pelo controlador (ver TODO): razão social, CNPJ e o
- * nome do Encarregado (DPO). O canal yachtsatlas@gmail.com já está ativo.
+ * Encarregado (DPO) e prazos de retenção DECIDIDOS em 13/09/2026 — estão aqui e
+ * em `conformidade/01-registro-de-operacoes-de-tratamento.md`, que é a fonte.
+ * Mudou um prazo? Muda nos dois, ou a política pública passa a contradizer o
+ * registro que a autoridade lê.
+ *
+ * O canal `dpo@yachtsatlas.online` precisa existir no provedor de e-mail: canal
+ * publicado que não recebe é pior que canal nenhum.
  */
 
 const VIGENCIA = '26 de junho de 2026'
@@ -48,10 +53,12 @@ export default function Privacidade() {
               </p>
               <p>
                 Dúvidas, solicitações ou exercício de direitos podem ser direcionados ao nosso
-                Encarregado pelo Tratamento de Dados (DPO) pelo e-mail{' '}
-                <a href="mailto:yachtsatlas@gmail.com" className="text-[#c5a059] hover:underline">
-                  yachtsatlas@gmail.com
-                </a>.
+                Encarregado pelo Tratamento de Dados (DPO), <strong>Marcos</strong>, sócio-fundador
+                da AXOS HUB, pelo e-mail{' '}
+                <a href="mailto:dpo@yachtsatlas.online" className="text-[#c5a059] hover:underline">
+                  dpo@yachtsatlas.online
+                </a>{' '}
+                — respondemos em até 15 dias corridos.
               </p>
             </Secao>
 
@@ -125,9 +132,10 @@ export default function Privacidade() {
             <Secao titulo="6. Por quanto tempo guardamos">
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Conta ativa:</strong> enquanto você utilizar o serviço.</li>
-                <li><strong>Após o encerramento:</strong> dados de cadastro são eliminados ou anonimizados em prazo razoável, salvo quando a lei exigir guarda maior.</li>
+                <li><strong>Após o encerramento:</strong> o histórico custodiado permanece por <strong>5 anos</strong> e então é anonimizado — o registro do serviço continua existindo, os dados pessoais saem dele.</li>
+                <li><strong>Contato comercial que não virou cliente:</strong> eliminado após <strong>12 meses</strong> sem qualquer interação.</li>
+                <li><strong>Registros de acesso e segurança</strong> (IP, navegador): <strong>6 meses</strong>, na forma do art. 15 do Marco Civil da Internet.</li>
                 <li><strong>Registros fiscais e financeiros:</strong> pelos prazos legais aplicáveis.</li>
-                <li><strong>Registros de acesso/segurança:</strong> pelo período necessário para auditoria e segurança.</li>
               </ul>
             </Secao>
 
@@ -143,8 +151,8 @@ export default function Privacidade() {
               </ul>
               <p>
                 Para exercer seus direitos, escreva para{' '}
-                <a href="mailto:yachtsatlas@gmail.com" className="text-[#c5a059] hover:underline">
-                  yachtsatlas@gmail.com
+                <a href="mailto:dpo@yachtsatlas.online" className="text-[#c5a059] hover:underline">
+                  dpo@yachtsatlas.online
                 </a>. Você também pode apresentar reclamação à ANPD (Autoridade Nacional de Proteção de Dados).
               </p>
             </Secao>
@@ -185,9 +193,9 @@ export default function Privacidade() {
 
             <Secao titulo="12. Contato">
               <p>
-                Encarregado pelo Tratamento de Dados (DPO):{' '}
-                <a href="mailto:yachtsatlas@gmail.com" className="text-[#c5a059] hover:underline">
-                  yachtsatlas@gmail.com
+                Encarregado pelo Tratamento de Dados (DPO): Marcos, sócio-fundador da AXOS HUB —{' '}
+                <a href="mailto:dpo@yachtsatlas.online" className="text-[#c5a059] hover:underline">
+                  dpo@yachtsatlas.online
                 </a>
                 <br />
                 Yachts Atlas — operado por AXOSHUB.
