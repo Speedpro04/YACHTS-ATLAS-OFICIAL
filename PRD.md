@@ -550,6 +550,38 @@ câmera em vez de sumir da lista. Duas razões: derrubar a aba inteira porque
 quem revisa precisa **saber** que aquele item está sem imagem, em vez de aprovar
 achando que viu.
 
+## A revisão só sabia dizer sim — 13/09/2026
+
+Com o "aprovar" e o "selar" no lugar, a fila do Pré-Data passou a ter caminho de
+entrada e nenhum de saída. O próprio ensaio mostrou: cinco envios idênticos
+("Teste do sistema Atlas pré-data"), duplicados pelo retry de ontem, parados na
+aba — e não havia como tirá-los de lá.
+
+**Recusar é a decisão mais séria do revisor**, mais que aprovar. Aprovar errado
+alguém percebe no dossiê; recusar errado não deixa marca nenhuma. Por isso:
+
+- **Motivo obrigatório** (mínimo de 3 caracteres, validado no servidor). Recusar
+  sem dizer por quê devolve o pior dos dois mundos: o colaborador do píer não
+  aprende e manda a mesma foto torta amanhã, e o revisor seguinte não sabe se
+  aquilo foi analisado ou descartado por engano.
+- **Nada é apagado.** A foto continua no cofre, com hash intacto; o rascunho
+  continua na tabela. O que sai é da **fila**, não do banco. Pré-dado descartado
+  em silêncio é dado perdido.
+- **A recusa do rascunho mora em `dados`** (`recusado_em`, `recusado_por`,
+  `motivo_recusa`), e não na coluna `status` — porque `status` agora carrega a
+  **condição** vinda do barco, e gravar "recusado" ali apagaria o "atenção" que
+  o mecânico levantou. Já a foto usa `status: recusado`, onde a coluna não
+  disputa significado com nada.
+- **Só o que está pendente pode ser recusado.** Documento já aprovado entrou no
+  dossiê: tirá-lo de lá é **retificação**, não recusa — e retificação tem outro
+  caminho, que deixa o erro visível ao lado da correção.
+
+O modal pede a frase, sem lista de motivos prontos: motivo de catálogo vira
+clique automático, e o que se quer aqui é o texto que a pessoa do píer vai ler.
+
+Registrado em `audit_logs` com quem recusou, o motivo e
+`recusou_o_proprio_envio` — a mesma pergunta que a aprovação responde.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. **Desligar o auto-deploy** do EasyPanel (push em `master` reconstrói prod sozinho) — passar para deploy manual. Procedimento escrito em `docs/DEPLOY-EASYPANEL.md`, seção "Deploy manual na semana de lançamento": o que desmarcar, como subir depois e como reverter. **É clique no painel, ninguém faz pelo repositório.** Fazer na sexta antes do lançamento.

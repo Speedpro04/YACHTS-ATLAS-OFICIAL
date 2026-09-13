@@ -41,6 +41,16 @@ def _nome_seguro(nome: str | None) -> str:
     return (base or "arquivo")[:120]
 
 
+class RecusarFotoBody(BaseModel):
+    """Motivo da recusa. Obrigatório, e por isso não tem valor padrão.
+
+    Recusar sem dizer por quê devolve o pior dos dois mundos: o colaborador do
+    píer não aprende (vai mandar a mesma foto torta amanhã) e o revisor seguinte
+    não sabe se aquilo foi analisado ou descartado por engano.
+    """
+    motivo: str
+
+
 class ClassificarFotoBody(BaseModel):
     url: str
 
@@ -165,6 +175,82 @@ async def aprovar_documento(
     )
 
     return {"id": doc_id, "status": "verified", "ja_estava": False, "aprovado_em": quando}
+
+
+@router.post("/{doc_id}/recusar")
+async def recusar_documento(
+    doc_id: str,
+    body: RecusarFotoBody,
+    user_id: str = Depends(get_current_user_id),
+    request: Request = None,
+):
+    """Tira uma foto pendente da fila SEM apagá-la.
+
+    A revisão só sabia dizer sim. Foto do barco errado, foto tremida ou envio
+    repetido ficavam `pendente` para sempre: a fila nunca esvaziava e o que
+    importa ia sumindo atrás do que não importa. E dizer "isto não entra" é a
+    decisão mais séria do revisor — mais que aprovar, porque aprovar errado
+    alguém percebe no dossiê, e recusar errado não deixa marca nenhuma.
+
+    Por isso NADA É APAGADO. O arquivo continua no cofre, o hash intacto, a
+    linha no banco no lugar; muda o `status` para `recusado` e grava-se quem
+    recusou, quando e por quê. Pré-dado descartado em silêncio é dado perdido —
+    e um mês depois ninguém sabe se aquela foto foi analisada ou sumiu.
+
+    O motivo é obrigatório. Sem ele, o colaborador do píer não aprende e manda a
+    mesma foto torta amanhã.
+    """
+    motivo = (body.motivo or "").strip()
+    if len(motivo) < 3:
+        raise HTTPException(status_code=400, detail="Diga o motivo da recusa.")
+
+    supabase = get_supabase_admin()
+    res = (
+        supabase.table("documentos")
+        .select("ativo_id, status, nome_arquivo, uploaded_by, usuario_id")
+        .eq("id", doc_id).execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Documento não encontrado")
+
+    doc = res.data[0]
+    get_ativo_autorizado(doc["ativo_id"], user_id)
+
+    # Só o que está pendente pode ser recusado. Documento já aprovado entrou no
+    # dossiê: tirá-lo de lá é retificação, não recusa — e retificação tem outro
+    # caminho, que deixa o erro visível ao lado da correção.
+    if doc.get("status") != "pendente":
+        raise HTTPException(
+            status_code=409,
+            detail="Só é possível recusar o que ainda está pendente de revisão.",
+        )
+
+    quando = datetime.now(timezone.utc).isoformat()
+    supabase.table("documentos").update({
+        "status": "recusado",
+        "validado_em": quando,
+    }).eq("id", doc_id).execute()
+
+    enviou = doc.get("uploaded_by") or doc.get("usuario_id")
+    audit_service.create_audit_log(
+        action=AuditAction.DOCUMENT_APPROVE,
+        user_id=user_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        success=False,
+        details={
+            "documento_id": doc_id,
+            "ativo_id": doc["ativo_id"],
+            "nome_arquivo": doc.get("nome_arquivo"),
+            "decisao": "recusado",
+            "motivo": motivo,
+            "enviado_por": enviou,
+            "recusou_o_proprio_envio": bool(enviou) and str(enviou) == str(user_id),
+        },
+        location=get_client_location(request),
+    )
+
+    return {"id": doc_id, "status": "recusado", "motivo": motivo, "recusado_em": quando}
 
 
 @router.get("/pendentes/{ativo_id}")

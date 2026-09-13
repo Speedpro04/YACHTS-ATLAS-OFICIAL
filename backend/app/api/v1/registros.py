@@ -15,6 +15,7 @@ A situação (vigente / retificado / retificador) é DERIVADA em
 public.vw_registros_situacao — nunca gravada, porque gravar exigiria UPDATE.
 """
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_admin
@@ -53,6 +54,11 @@ class RegistroCreate(BaseModel):
     # força ao documento: sem ela, "este barco teve um rombo" fica sem a
     # segunda metade, que é "e foi reparado assim, por quem, com qual laudo".
     resolve_id: Optional[str] = None
+
+
+class RecusarRascunhoBody(BaseModel):
+    """Motivo da recusa do pré-dado. Obrigatório."""
+    motivo: str
 
 
 class RascunhoUpdate(BaseModel):
@@ -216,8 +222,14 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
 
     for r in rascunhos:
         alvo = por_ativo.get(r.get("ativo_id"))
-        if alvo is not None:
-            alvo["envios"].append(r)
+        if alvo is None:
+            continue
+        # Recusado sai da FILA, não do banco: ele continua lá com o motivo e o
+        # autor, para quem for auditar depois. Fila que guarda o que já foi
+        # decidido para de ser fila.
+        if (r.get("dados") or {}).get("recusado_em"):
+            continue
+        alvo["envios"].append(r)
     # A FOTO PRECISA SER VISTA, nao nomeada.
     #
     # A aba devolvia `nome_arquivo` e o caminho no storage — e o revisor era
@@ -443,6 +455,50 @@ async def descartar_rascunho(rascunho_id: str, token: dict = Depends(get_current
     _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
     supabase.table("registros_rascunho").delete().eq("id", rascunho_id).execute()
     return {"message": "Rascunho descartado"}
+
+
+@router.post("/rascunho/{rascunho_id}/recusar")
+async def recusar_rascunho(
+    rascunho_id: str, body: RecusarRascunhoBody, token: dict = Depends(get_current_user)
+):
+    """Tira o pré-dado da fila SEM apagá-lo, com motivo e autor.
+
+    Já existia `DELETE /rascunho/{id}`, e apagar não serve aqui: o que chega do
+    píer é trabalho de alguém: sumir com ele em silêncio devolve o colaborador
+    ao mesmo erro amanhã e deixa o revisor seguinte sem saber se aquilo foi
+    analisado ou perdido.
+
+    A recusa mora em `dados` (`recusado_em`, `recusado_por`, `motivo_recusa`) e
+    não na coluna `status`, que agora carrega a CONDIÇÃO do serviço vinda do
+    barco — gravar "recusado" ali apagaria o "atenção" que o mecânico levantou,
+    que é justamente o que não pode se perder.
+
+    O que some é da FILA, não do banco: a aba lista apenas o que ainda não foi
+    recusado.
+    """
+    motivo = (body.motivo or "").strip()
+    if len(motivo) < 3:
+        raise HTTPException(status_code=400, detail="Diga o motivo da recusa.")
+
+    supabase = get_supabase_admin()
+    _so_a_marina(_ativo_do_rascunho(supabase, rascunho_id), token)
+
+    r = supabase.table("registros_rascunho").select("*").eq("id", rascunho_id).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Rascunho não encontrado")
+
+    dados = dict(r.data[0].get("dados") or {})
+    if dados.get("recusado_em"):
+        return {"id": rascunho_id, "ja_estava": True, "motivo": dados.get("motivo_recusa")}
+
+    dados.update({
+        "recusado_em": datetime.now(timezone.utc).isoformat(),
+        "recusado_por": token.get("sub") if token else None,
+        "motivo_recusa": motivo,
+    })
+    supabase.table("registros_rascunho").update({"dados": dados}).eq("id", rascunho_id).execute()
+
+    return {"id": rascunho_id, "recusado": True, "motivo": motivo}
 
 
 def _status_do_selo(rasc: dict) -> str:

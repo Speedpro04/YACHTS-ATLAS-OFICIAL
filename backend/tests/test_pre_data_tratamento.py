@@ -67,3 +67,31 @@ def test_quem_fez_o_servico_continua_aparecendo(chave):
     # Estes são fato do serviço, não telemetria: escondê-los tiraria do dossiê
     # justamente a autoria que o campo foi buscar.
     assert chave not in INTERNAS_DADOS
+
+
+# --- recusar: o item sai da fila, não do banco ---
+#
+# A revisão só sabia dizer sim. Foto do barco errado ou envio repetido ficavam
+# pendentes para sempre, e a fila ia escondendo o que importa atrás do que não
+# importa. Dizer "isto não entra" é a decisão mais séria do revisor — e por isso
+# exige motivo e não apaga nada.
+
+def test_recusa_do_rascunho_nao_toca_a_condicao():
+    """A recusa mora em `dados`, não na coluna `status`.
+
+    Gravar "recusado" no status apagaria a condição vinda do barco — o "atenção"
+    que este mesmo arquivo passa o resto do tempo tentando preservar.
+    """
+    recusado = {
+        "status": "atencao",
+        "dados": {"condicao": "atencao", "recusado_em": "2026-09-13T16:00:00Z",
+                  "motivo_recusa": "foto do barco errado"},
+    }
+    assert _status_do_selo(recusado) == "atencao"
+
+
+def test_motivo_curto_nao_vale_como_motivo():
+    # Espelha a validação do servidor: menos de 3 caracteres é um "ok" disfarçado
+    # de justificativa, e quem recebe a recusa continua sem saber o que houve.
+    from app.api.v1.registros import RecusarRascunhoBody
+    assert len((RecusarRascunhoBody(motivo="  x  ").motivo or "").strip()) < 3

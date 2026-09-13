@@ -221,6 +221,12 @@ export const api = {
       /** Sela o rascunho. A partir daqui não há volta. */
       selar: (id: string) =>
         apiRequest(`/registros/rascunho/${id}/selar`, { method: 'POST' }),
+      /** Recusa o pré-dado com motivo — sai da fila, continua no banco. */
+      recusar: (id: string, motivo: string) =>
+        apiRequest(`/registros/rascunho/${id}/recusar`, {
+          method: 'POST',
+          body: JSON.stringify({ motivo }),
+        }),
     },
   },
   ativos: {
@@ -279,6 +285,17 @@ export const api = {
      */
     aprovar: (docId: string) =>
       apiRequest(`/documentos/${docId}/aprovar`, { method: 'POST' }),
+    /**
+     * Recusa uma foto do campo. O motivo é obrigatório no servidor.
+     *
+     * Nada é apagado: o arquivo fica no cofre e a linha no banco, com quem
+     * recusou e por quê. Sai da fila, não do histórico.
+     */
+    recusar: (docId: string, motivo: string) =>
+      apiRequest(`/documentos/${docId}/recusar`, {
+        method: 'POST',
+        body: JSON.stringify({ motivo }),
+      }),
     upload: async (
       ativoId: string,
       tipo: string,

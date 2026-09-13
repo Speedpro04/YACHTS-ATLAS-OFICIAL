@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Anchor, Camera, Check, ChevronDown, Database, Lock, RefreshCw } from 'lucide-react'
+import { Anchor, Camera, Check, ChevronDown, Database, Lock, RefreshCw, X } from 'lucide-react'
 import { api } from '../services/api'
 import ConfirmarSelo from '../components/ConfirmarSelo'
 
@@ -58,6 +58,11 @@ export default function PreData() {
   // mesmo item noutro lugar é onde a revisão se perde.
   const [tratando, setTratando] = useState<string>('')
   const [selar, setSelar] = useState<Envio | null>(null)
+  // A recusa pede motivo antes de acontecer. Não é burocracia: recusar sem
+  // dizer por quê devolve o colaborador ao mesmo erro amanhã, e deixa o
+  // revisor seguinte sem saber se aquilo foi analisado ou descartado por engano.
+  const [recusar, setRecusar] = useState<{ tipo: 'foto' | 'envio'; id: string; rotulo: string } | null>(null)
+  const [motivo, setMotivo] = useState('')
 
   async function carregar() {
     setRecarregando(true)
@@ -92,6 +97,34 @@ export default function PreData() {
       // (papel insuficiente, documento já tratado) são as que repetir o clique
       // não resolve.
       setErro(e?.message || 'Não foi possível aprovar a foto.')
+    } finally {
+      setTratando('')
+    }
+  }
+
+  /**
+   * Recusa o item: sai da fila, continua no banco com motivo e autor.
+   *
+   * Nada é apagado. Pré-dado descartado em silêncio é dado perdido — um mês
+   * depois ninguém sabe se aquela foto foi analisada ou sumiu.
+   */
+  async function confirmarRecusa() {
+    if (!recusar) return
+    const texto = motivo.trim()
+    if (texto.length < 3) {
+      setErro('Diga o motivo da recusa.')
+      return
+    }
+    setTratando(recusar.id)
+    try {
+      if (recusar.tipo === 'foto') await api.documentos.recusar(recusar.id, texto)
+      else await api.registros.rascunho.recusar(recusar.id, texto)
+      setRecusar(null)
+      setMotivo('')
+      await carregar()
+      setErro(null)
+    } catch (e: any) {
+      setErro(e?.message || 'Não foi possível recusar.')
     } finally {
       setTratando('')
     }
@@ -253,6 +286,7 @@ export default function PreData() {
                         envio={env}
                         selando={tratando === env.id}
                         onSelar={() => setSelar(env)}
+                        onRecusar={() => { setRecusar({ tipo: 'envio', id: env.id, rotulo: env.titulo || 'Registro de campo' }); setMotivo('') }}
                       />
                     ))}
 
@@ -309,6 +343,13 @@ export default function PreData() {
                                 <Check size={12} />
                                 {tratando === f.id ? 'Aprovando' : 'Aprovar'}
                               </button>
+                              <button
+                                onClick={() => { setRecusar({ tipo: 'foto', id: f.id, rotulo: f.nome_arquivo }); setMotivo('') }}
+                                disabled={tratando === f.id}
+                                className="shrink-0 flex items-center gap-1.5 border border-white/10 hover:border-rose-400/40 hover:text-rose-400 disabled:opacity-40 text-white/40 px-3 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+                              >
+                                <X size={12} /> Recusar
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -326,6 +367,59 @@ export default function PreData() {
           })}
         </ul>
       </main>
+
+      {/* A recusa pede o motivo ANTES de acontecer. O campo não tem valor
+          sugerido de propósito: motivo pronto em lista vira clique automático, e
+          o que se quer aqui é a frase que o colaborador do píer vai ler. */}
+      {recusar && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#010c20]/80 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-lg bg-[#021a3d] border border-white/10 rounded-sm shadow-2xl p-6 space-y-5">
+            <div>
+              <h3 className="text-white text-sm font-bold">Recusar este item</h3>
+              <p className="text-white/40 text-[11px] mt-2 leading-relaxed">
+                {recusar.rotulo}
+              </p>
+            </div>
+            <p className="text-white/50 text-[11px] leading-relaxed">
+              Nada é apagado: o item sai da fila e continua guardado, com o seu
+              nome, a hora e o motivo. Quem mandou do píer precisa saber por quê.
+            </p>
+            <div>
+              <label className="block text-white/30 text-[9px] uppercase tracking-[0.25em] font-black mb-2">
+                Motivo
+              </label>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                rows={3}
+                autoFocus
+                placeholder="Ex: foto do barco errado — este é o Aurora Austral"
+                className="w-full bg-white/5 border border-white/10 focus:border-[#c5a059]/50 rounded-sm px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-white/15"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => { setRecusar(null); setMotivo('') }}
+                className="text-white/40 hover:text-white/70 px-4 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarRecusa}
+                disabled={tratando === recusar.id || motivo.trim().length < 3}
+                className="flex items-center gap-2 bg-rose-500/80 hover:bg-rose-500 disabled:opacity-30 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                <X size={12} />
+                {tratando === recusar.id ? 'Recusando' : 'Confirmar recusa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* O atrito antes de selar é o mesmo do resto do sistema, e de propósito:
           quem trata pré-dado está decidindo o que entra no documento probatório. */}
@@ -353,10 +447,12 @@ function Envio({
   envio,
   selando,
   onSelar,
+  onRecusar,
 }: {
   envio: Envio
   selando: boolean
   onSelar: () => void
+  onRecusar: () => void
 }) {
   const d = envio.dados || {}
   const meta = new Set([
@@ -416,14 +512,23 @@ function Envio({
         {/* Selar é o ato que tira o item deste armário e o põe no dossiê.
             Fica ao lado de quem executou, de propósito: é a última coisa que a
             pessoa lê antes de decidir. */}
-        <button
-          onClick={onSelar}
-          disabled={selando}
-          className="ml-auto flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-40 text-[#010c20] px-4 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
-        >
-          <Lock size={12} />
-          {selando ? 'Selando' : 'Tratar e selar'}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={onRecusar}
+            disabled={selando}
+            className="flex items-center gap-2 border border-white/10 hover:border-rose-400/40 hover:text-rose-400 disabled:opacity-40 text-white/40 px-4 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+          >
+            <X size={12} /> Recusar
+          </button>
+          <button
+            onClick={onSelar}
+            disabled={selando}
+            className="flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] disabled:opacity-40 text-[#010c20] px-4 py-2.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all"
+          >
+            <Lock size={12} />
+            {selando ? 'Selando' : 'Tratar e selar'}
+          </button>
+        </div>
       </div>
     </div>
   )
