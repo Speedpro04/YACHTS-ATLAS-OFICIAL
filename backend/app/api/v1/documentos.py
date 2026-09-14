@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
 from pydantic import BaseModel
 from app.core.supabase import get_supabase_client, get_supabase_admin
 from app.core.security import get_current_user_id
+from app.core.campo import usuario_ou_campo
 from app.core.authz import get_ativo_autorizado
 from app.services.vision_service import classificar_foto, CATEGORIAS as GALERIA_CATS
 from app.services.s3_service import get_s3_service
@@ -362,7 +363,7 @@ async def upload_documento(
     geo_fonte: str | None = None,
     descricao: str | None = None,
     pendente_revisao: bool = False,
-    user_id: str = Depends(get_current_user_id),
+    quem: dict = Depends(usuario_ou_campo),
     request: Request = None
 ):
     """Sobe um arquivo do ativo.
@@ -377,6 +378,18 @@ async def upload_documento(
 
     Quem nao passa o parametro continua com o comportamento de sempre.
     """
+    user_id = quem.get("sub")
+
+    # DO PÁTIO, A FOTO ENTRA PENDENTE — E NÃO SE DISCUTE.
+    #
+    # O parâmetro existe para o painel, onde quem sobe já conferiu. Vindo do
+    # aparelho de campo, deixar a escolha na mão de quem envia desfaria a regra
+    # inteira: bastaria o app mandar `pendente_revisao=false` — por engano, por
+    # versão antiga ou por alguém chamando a API na mão — para a foto do píer
+    # entrar direto no documento probatório. Quem captura não confere.
+    if quem.get("escopo") == "campo":
+        pendente_revisao = True
+
     # Insert via service key: o backend já autorizou via get_ativo_autorizado;
     # a chave anônima é barrada pelo RLS da tabela documentos.
     supabase = get_supabase_admin()

@@ -283,6 +283,17 @@ export const api = {
     historicoConsentimento: (id: string) =>
       apiRequest(`/ativos/${id}/consentimento/historico`),
   },
+  /**
+   * Aparelhos do pátio: o app de campo entra por código, sem a senha da Marina.
+   * O código só é devolvido na criação — depois disso existe só o hash.
+   */
+  campo: {
+    listar: () => apiRequest('/campo/codigos'),
+    criar: (apelido: string) =>
+      apiRequest('/campo/codigos', { method: 'POST', body: JSON.stringify({ apelido }) }),
+    revogar: (id: string) =>
+      apiRequest(`/campo/codigos/${id}/revogar`, { method: 'POST' }),
+  },
   documentos: {
     list: (ativoId: string) => apiRequest(`/documentos/ativo/${ativoId}`),
     /**

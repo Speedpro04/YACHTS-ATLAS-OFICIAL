@@ -694,6 +694,50 @@ O erro é da mesma família do que já apareceu duas vezes nesta frente: **campo
 certo do banco lido como outra coisa na tela**. Aqui, "documento desta
 embarcação" foi lido como "pré-dado desta embarcação".
 
+## O colaborador do pátio entra sem a senha da Marina — 14/09/2026
+
+O fundador levantou o risco: *"a mesma senha do Pré-Data e a do sistema. Ele
+também pode entrar no sistema oficial, isso parece perigoso"*. Estava certo, e
+era o buraco mais sério em aberto. Com a senha da Marina na mão de quem está no
+píer, dava para **selar** registro (irreversível), **emitir dossiê** (gasta uma
+das 4 do ano), **liberar** documento a terceiro e ver a frota inteira. Pior: a
+regra *"quem captura não aprova"*, que o sistema afirma cumprir, era impossível
+de verificar — os dois lados eram a mesma credencial.
+
+**A solução de hoje é identidade de APARELHO, não de pessoa.** A Marina gera um
+código no painel ("Celular do pátio"), o app entra com ele, e o acesso serve
+para uma coisa só: mandar pré-dado. A identidade por pessoa continua sendo a
+E2-a — dois funcionários no mesmo celular ainda produzem registros
+indistinguíveis, e isso está dito na cara do código.
+
+**O que sustenta a restrição é o fail-closed**, e é a decisão de desenho que
+importa aqui. O token de campo é **recusado** por `get_current_user`, que é a
+porta de todo o sistema, e só passa nas **três** rotas que o aceitam de
+propósito: criar rascunho, subir foto, listar a frota. Qualquer rota existente —
+ou escrita amanhã por alguém que nunca leu o `core/campo.py` — já nasce fechada.
+O contrário (aceitar em tudo e bloquear nas sensíveis) dependeria de lembrar de
+bloquear uma a uma, e é o tipo de lista que envelhece mal. Um teste trava
+exatamente essas três rotas: se a lista crescer sem alguém pensar duas vezes, a
+suíte quebra.
+
+**Do pátio, a foto entra pendente por imposição.** O parâmetro
+`pendente_revisao` existe para o painel, onde quem sobe já conferiu. Vindo do
+aparelho, o servidor o força — senão bastaria o app mandar `false`, por engano ou
+por versão antiga, para a foto do píer entrar direto no documento probatório.
+
+**Revogar vale agora, não no vencimento.** Cada requisição confere a linha no
+banco: celular perdido às 9h não continua mandando registro até o fim da semana.
+E a linha não é apagada — o pré-dado que aquele aparelho enviou continua
+rastreável até ele.
+
+**Detalhes que parecem pequenos e não são:** o alfabeto do código não tem `O/0`
+nem `I/1/L`, porque ele é ditado por telefone e digitado no sol com a mão suja; o
+código aparece **uma vez** e depois só existe o hash; e a recusa não diz se o
+código é inválido ou revogado, porque dizer qual dos dois entrega meia resposta a
+quem está adivinhando.
+
+11 testes novos; 468 no backend.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. ~~**Desligar o auto-deploy** do EasyPanel~~ — **NÃO EXISTE, verificado em 14/09/2026.** O serviço usa a fonte **Git** (URL do repositório + chave SSH), e nesse modo o EasyPanel não dispara build por push: o deploy é sempre manual, pelo botão. A pendência descrevia o comportamento da fonte *GitHub*, que não é a configurada. Isso explica o dia 13/09 inteiro: quatro commits ficaram fora do ar até alguém clicar em Deploy, e por duas vezes o diagnóstico começou errado porque se supunha que o código no ar era o do último push. **Antes de concluir qualquer coisa sobre produção, confirmar que o deploy foi feito** — `git push` não sobe nada sozinho. Procedimento em `docs/DEPLOY-EASYPANEL.md`.

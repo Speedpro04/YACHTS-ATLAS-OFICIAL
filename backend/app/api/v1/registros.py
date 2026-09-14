@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import get_supabase_admin
 from app.services.s3_service import get_s3_service
 from app.core.security import get_current_user
+from app.core.campo import usuario_ou_campo
 from app.core.authz import get_ativo_autorizado
 from pydantic import BaseModel, Field
 from typing import Optional, Any
@@ -407,8 +408,14 @@ async def list_rascunhos(ativo_id: str, token: dict = Depends(get_current_user))
 
 
 @router.post("/rascunho")
-async def create_rascunho(data: RegistroCreate, token: dict = Depends(get_current_user)):
-    """Cria um rascunho. Editável e descartável — ainda não entra no dossiê."""
+async def create_rascunho(data: RegistroCreate, token: dict = Depends(usuario_ou_campo)):
+    """Cria um rascunho. Editável e descartável — ainda não entra no dossiê.
+
+    Aceita o aparelho do pátio (`usuario_ou_campo`) porque é exatamente para
+    isto que o código de campo existe. O `sub` do token de campo é a MARINA,
+    então `_so_a_marina` continua valendo sem exceção nenhuma — o colaborador
+    não ganha alcance além do que a conta dela já tem.
+    """
     _so_a_marina(data.ativo_id, token)
     supabase = get_supabase_admin()
     usuario_id = _owner_do_ativo(supabase, data.ativo_id)

@@ -10,11 +10,23 @@ from app.schemas.models import AtivoCreate
 from app.core.pii import mascarar_documento
 from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
+from app.core.campo import usuario_ou_campo
 from app.core.authz import email_do_usuario
 from datetime import datetime, timezone
 import uuid
 
 router = APIRouter()
+
+
+def _id_usuario_ou_campo(token: dict = Depends(usuario_ou_campo)) -> str:
+    """Id da conta, aceitando o aparelho do pátio.
+
+    A lista da frota é a única leitura que o app de campo faz: sem ela, o
+    colaborador não tem como escolher o barco. Devolve o id da MARINA, então o
+    filtro por dono logo abaixo continua o mesmo — ele vê a frota dela, e nada
+    além do que ela já vê.
+    """
+    return token.get("sub")
 
 
 def _role(supabase, user_id: str) -> str | None:
@@ -60,7 +72,7 @@ def _anexar_total_fotos(supabase, ativos: list[dict]) -> None:
 @router.get("")
 async def list_ativos(
     incluir_arquivados: bool = False,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(_id_usuario_ou_campo),
 ):
     """Lista os ativos em operação.
 

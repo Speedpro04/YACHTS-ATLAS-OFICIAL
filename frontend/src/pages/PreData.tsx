@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Anchor, ArrowRight, Camera, Check, ChevronDown, Database, RefreshCw, X } from 'lucide-react'
 import { api } from '../services/api'
+import AparelhosDeCampo from '../components/AparelhosDeCampo'
 
 /**
  * Pré-Data — o armário de dados crus.
@@ -231,6 +232,11 @@ export default function PreData() {
             </p>
           </div>
         )}
+
+        {/* Quem manda para esta fila. Fica ANTES da lista de propósito: a
+            primeira pergunta de quem abre esta aba pela primeira vez é "como o
+            colaborador entra?", e a resposta não pode estar em outra tela. */}
+        <AparelhosDeCampo />
 
         <ul className="space-y-4">
           {(lista || []).map((e) => {
