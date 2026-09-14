@@ -416,8 +416,12 @@ async def create_marina_lead(data: LeadMarinaCreate):
     try:
         supabase = get_supabase_admin()
         result = supabase.table("marina_leads").insert({
-            "marina_name": data.marina,
-            "contact_name": data.name,
+            # .strip() nos tres: o nome de quem indicou vai entre asteriscos na
+            # mensagem de WhatsApp, e negrito que FECHA depois de um espaco nao
+            # e negrito — o asterisco aparece cru para o prospecto. Aconteceu
+            # com "Marina Portugal " em 22/08 e de novo em 14/09.
+            "marina_name": (data.marina or "").strip(),
+            "contact_name": (data.name or "").strip(),
             "email": data.email,
             "fleet_size": data.fleet,
             # normalizar_telefone faz digitos + DDI + descarte do curto demais.
@@ -426,7 +430,7 @@ async def create_marina_lead(data: LeadMarinaCreate):
             # Normalizar aqui, e nao no front, e a unica garantia: POST direto
             # grava lixo e a abordagem falha calada na hora do disparo.
             "whatsapp": normalizar_telefone(data.whatsapp),
-            "source": data.source,
+            "source": (data.source or "").strip(),
             "origem": _origem_valida(data.origem),
             "status": "pending",
         }).execute()
@@ -476,7 +480,8 @@ async def prospeccao_fila(_admin: dict = Depends(require_platform_admin)):
     try:
         linhas = (
             supabase.table("marina_leads")
-            .select("marina_name, contact_name, whatsapp, source, whatsapp_status")
+            .select("marina_name, contact_name, whatsapp, source, "
+                    "whatsapp_status, email, email_status")
             .order("created_at")
             .execute()
         ).data or []
@@ -484,15 +489,27 @@ async def prospeccao_fila(_admin: dict = Depends(require_platform_admin)):
         logger.error(f"Falha ao ler a fila de prospecção: {e}")
         raise HTTPException(status_code=500, detail="Falha ao ler a fila")
 
+    # Dois canais, duas contagens. Somar os dois num numero so esconderia
+    # justamente o caso que interessa: o lead que ja recebeu o WhatsApp e ainda
+    # deve o e-mail — ou o contrario.
     por_status: dict[str, int] = {}
+    por_status_email: dict[str, int] = {}
     for linha in linhas:
         estado = linha.get("whatsapp_status") or "(nulo)"
         por_status[estado] = por_status.get(estado, 0) + 1
+        estado_email = linha.get("email_status") or "(nulo)"
+        por_status_email[estado_email] = por_status_email.get(estado_email, 0) + 1
+
+    def _na_fila(linha: dict) -> bool:
+        return "pendente" in (
+            (linha.get("whatsapp_status") or ""),
+            (linha.get("email_status") or ""),
+        )
 
     return {
         "por_status": por_status,
-        "na_fila": [linha for linha in linhas
-                    if (linha.get("whatsapp_status") or "") == "pendente"],
+        "por_status_email": por_status_email,
+        "na_fila": [linha for linha in linhas if _na_fila(linha)],
     }
 
 

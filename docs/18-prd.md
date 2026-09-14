@@ -61,6 +61,10 @@ Cobrança dinâmica baseada no tamanho do barco (pés):
 - **RF03:** A Marina deve poder convidar (onboarding) proprietários para o ecossistema.
 - **RF11:** O sistema deve oferecer um **Checklist de Segurança Digital** para marinheiros.
 - **RF12:** O sistema deve gerar **Alertas de Manutenção Preditiva** (motores, extintores, balsas) integrados à agenda da marina.
+- **RF13:** Uma Marina deve poder **indicar outra Marina**. A indicada recebe uma abordagem em dois toques — **e-mail primeiro, WhatsApp em seguida** — com o nome de quem indicou, sem preço e com saída explícita ("responda SAIR").
+  - O disparo **nunca é automático**: sai por gatilho humano, depois de uma carência e de um ensaio (`dry_run`) que mostra os dois textos antes de qualquer envio. Disparo comercial sem ninguém olhando é o caminho curto para o número ou o domínio serem denunciados.
+  - Cada canal tem estado próprio (`email_status`, `whatsapp_status`): um lead pode ter o e-mail entregue e o WhatsApp recusado sem que o lote seguinte repita o que já saiu.
+  - O WhatsApp sai pela **instância de prospecção**, nunca pela transacional — que entrega código de acesso e régua de cobrança, e não pode cair junto num ban.
 
 ### Épico 2: Gestão de Ativos
 - **RF04:** O sistema deve permitir o cadastro de ativos especificando tipo (iate, lancha, etc), marca, modelo, ano de fabricação e comprimento em pés.

@@ -27,6 +27,12 @@ logger = logging.getLogger(__name__)
 
 REMETENTE_NOME = "Yachts Atlas"
 
+# Paleta da marca. Uma fonte para todo e-mail que sai daqui.
+NAVY = "#010c20"
+NAVY_2 = "#021431"
+GOLD = "#c5a059"
+CREAM = "#E5D5B7"
+
 
 def send_email(
     to_email: str,
@@ -93,10 +99,10 @@ def _welcome_html(nome: str | None) -> str:
     saudacao = f"Olá, {nome}" if nome else "Olá"
     url = settings.FRONTEND_URL
     logo = f"{url.rstrip('/')}/logo-transparent.png"
-    navy = "#010c20"
-    navy2 = "#021431"
-    gold = "#c5a059"
-    cream = "#E5D5B7"
+    navy = NAVY
+    navy2 = NAVY_2
+    gold = GOLD
+    cream = CREAM
 
     beneficios = [
         ("Frota sob custódia", "Todos os seus ativos organizados e blindados em um cofre digital."),
@@ -194,3 +200,74 @@ def send_welcome_email(to_email: str, nome: str | None = None) -> bool:
         html=_welcome_html(nome),
         text=texto,
     )
+
+
+def moldura_html(kicker: str, titulo: str, paragrafos: list[str],
+                 cta_texto: str | None = None, cta_url: str | None = None,
+                 rodape: str | None = None) -> str:
+    """Moldura da marca para e-mails de texto corrido.
+
+    Table-based e com CSS inline pelo mesmo motivo do `_welcome_html`: cliente
+    de e-mail nao e navegador. Gmail e Outlook descartam `<style>`, ignoram
+    flex e grid, e quem manda layout moderno recebe de volta uma coluna de
+    texto sem cor nenhuma.
+
+    Serve para qualquer mensagem que seja titulo + paragrafos + um botao. O
+    e-mail de boas-vindas nao usa esta funcao porque tem lista de beneficios
+    com marcador — quando surgir um segundo assim, a lista entra aqui.
+    """
+    url_base = settings.FRONTEND_URL.rstrip("/")
+    logo = f"{url_base}/logo-transparent.png"
+
+    corpo = ""
+    for texto in paragrafos:
+        corpo += (
+            f'<p style="color:rgba(255,255,255,0.72);font-size:15px;'
+            f'line-height:1.7;margin:0 0 16px 0;">{texto}</p>'
+        )
+
+    botao = ""
+    if cta_texto and cta_url:
+        botao = (
+            f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 8px 0;">'
+            f'<tr><td align="center" style="border:1px solid {GOLD};border-radius:4px;">'
+            f'<a href="{cta_url}" style="display:inline-block;padding:14px 32px;color:{GOLD};'
+            f'font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;'
+            f'text-decoration:none;">{cta_texto}</a>'
+            f'</td></tr></table>'
+        )
+
+    pe = ""
+    if rodape:
+        pe = (
+            f'<tr><td style="padding:0 40px 36px 40px;">'
+            f'<p style="color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;'
+            f'margin:24px 0 0 0;border-top:1px solid rgba(255,255,255,0.06);'
+            f'padding-top:20px;">{rodape}</p></td></tr>'
+        )
+
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:{NAVY};font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{NAVY};padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:{NAVY_2};border:1px solid rgba(197,160,89,0.25);border-radius:8px;overflow:hidden;">
+
+        <tr><td align="center" style="padding:40px 40px 24px 40px;background:linear-gradient(180deg,#021a3d 0%,{NAVY_2} 100%);">
+          <img src="{logo}" alt="Yachts Atlas" width="170" style="display:block;max-width:170px;height:auto;">
+        </td></tr>
+
+        <tr><td style="padding:8px 40px 0 40px;">
+          <p style="color:{GOLD};font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px 0;">{kicker}</p>
+          <h1 style="color:#ffffff;font-size:26px;line-height:1.3;margin:0 0 20px 0;font-weight:normal;">{titulo}</h1>
+          {corpo}
+          {botao}
+        </td></tr>
+        {pe}
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""

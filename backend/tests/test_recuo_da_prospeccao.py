@@ -119,7 +119,12 @@ def test_volta_vazia_nao_escreve_em_info():
 
     # Tem que estar sob condição, não solto no fluxo.
     trecho = codigo[max(0, i - 300):i]
-    assert 'if resumo.get("enviados")' in trecho, (
+    # Cobra a REGRA, não uma grafia: o INFO tem que estar sob um `if` que
+    # olha o resumo. A condição cresceu quando o e-mail virou o segundo canal
+    # (antes olhava só os contadores de WhatsApp), e o teste pregado na frase
+    # exata quebrou sem nada ter regredido.
+    guarda = trecho[trecho.rfind("if "):]
+    assert "resumo.get(" in guarda, (
         "o resumo voltou a ser registrado em INFO incondicionalmente"
     )
 
