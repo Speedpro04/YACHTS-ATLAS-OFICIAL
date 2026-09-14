@@ -671,7 +671,12 @@ export default function RegistroMarina() {
                   </div>
                 )}
 
-                <div className="mt-20 flex flex-col md:flex-row items-center justify-between gap-10">
+                <div className="mt-20">
+                  {/* Os termos e os botoes dividem UMA linha. O que vem
+                      depois e paragrafo, e fica FORA dela: como filho do
+                      flex, cada um virava coluna e o texto descia
+                      espremido numa tira de 90px. */}
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-10">
                    <p className="text-[9px] text-white/20 uppercase tracking-widest max-w-xs leading-loose">
                      {t('marina_onboarding.footer_terms')}
                    </p>
@@ -705,9 +710,10 @@ export default function RegistroMarina() {
                         </button>
                       )}
                    </div>
+                  </div>
 
                    {/* O que acontece depois do botão. Prazo que o cliente não
-                       conhece é armadilha: a vaga fundadora fica presa por 3h
+                       conhece é armadilha: a vaga fundadora fica presa por 12h
                        (MINUTOS_DE_RESERVA_VAGA) e some depois disso — quem
                        voltar tarde pagaria US$ 250 sem entender por quê. */}
                    <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35 max-w-md mx-auto">
