@@ -289,8 +289,11 @@ export const api = {
    */
   campo: {
     listar: () => apiRequest('/campo/codigos'),
-    criar: (apelido: string) =>
-      apiRequest('/campo/codigos', { method: 'POST', body: JSON.stringify({ apelido }) }),
+    criar: (apelido: string, whatsapp?: string) =>
+      apiRequest('/campo/codigos', {
+        method: 'POST',
+        body: JSON.stringify({ apelido, whatsapp: whatsapp || null }),
+      }),
     revogar: (id: string) =>
       apiRequest(`/campo/codigos/${id}/revogar`, { method: 'POST' }),
   },

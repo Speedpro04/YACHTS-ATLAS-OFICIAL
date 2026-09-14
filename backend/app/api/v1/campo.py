@@ -25,6 +25,9 @@ class EntrarBody(BaseModel):
 
 class NovoCodigoBody(BaseModel):
     apelido: str = "Aparelho de campo"
+    # Opcional. Quando vem, o código sai por WhatsApp para quem vai usar o
+    # aparelho — em vez de a Marina copiar da tela e colar noutro lugar.
+    whatsapp: str | None = None
 
 
 @router.post("/entrar")
@@ -50,9 +53,37 @@ async def novo_codigo(body: NovoCodigoBody, token: dict = Depends(get_current_us
         raise HTTPException(status_code=400, detail="Entre com a conta da Marina para gerar o código.")
 
     codigo = criar_codigo(usuario_id, body.apelido, usuario_id)
+
+    # ENVIO POR WHATSAPP, quando a Marina informa o número.
+    #
+    # Vai pela instância TRANSACIONAL, como o código do Portal do Proprietário:
+    # é mensagem de acesso, não disparo de vendas. Mandar por prospecção
+    # misturaria os dois números e arriscaria o canal que o login depende.
+    #
+    # Falhar aqui NÃO derruba a criação: o código já existe e está na tela. Quem
+    # tem o número errado corrige e manda de novo; quem perde o código gera
+    # outro. Desfazer a criação porque a mensagem não saiu seria trocar um
+    # problema pequeno por um maior.
+    enviado = False
+    numero = (body.whatsapp or "").strip()
+    if numero:
+        try:
+            from app.services.whatsapp_service import enviar_whatsapp
+            texto = (
+                f"Seu acesso ao Atlas Pré-Data ({body.apelido}).\n\n"
+                f"Código: {codigo}\n\n"
+                "Abra pre-data.yachtsatlas.online e digite o código. "
+                "Ele serve para registrar serviço e foto — e mais nada.\n\n"
+                "Não repasse: este código identifica o seu aparelho."
+            )
+            enviado = bool(enviar_whatsapp(numero, texto))
+        except Exception as e:  # pragma: no cover - degradação proposital
+            logger.warning(f"Falha ao enviar código de campo por WhatsApp: {e}")
+
     return {
         "codigo": codigo,
         "apelido": body.apelido,
+        "whatsapp_enviado": enviado,
         "aviso": "Anote agora: este código não é exibido de novo.",
     }
 

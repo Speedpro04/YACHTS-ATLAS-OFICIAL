@@ -738,6 +738,34 @@ quem está adivinhando.
 
 11 testes novos; 468 no backend.
 
+## O app de campo deixou de oferecer a senha da Marina — 14/09/2026
+
+Poucas horas depois de o código de aparelho entrar no ar, o fundador viu a tela
+no celular e cortou o que sobrava: *"está aparecendo a opção de entrar no painel
+operacional, esse acesso não pode ter"*.
+
+Ele tinha razão, e o erro era meu. Eu havia deixado a entrada por conta atrás de
+um link, com o argumento de que o gerente também usa o app. O argumento não se
+sustenta: **o gerente gera um código para o próprio aparelho**. O que o link
+fazia, de fato, era manter viva a porta que o código veio fechar — e bastava um
+colaborador pedir a senha uma vez para o risco inteiro voltar.
+
+Agora o app tem **um caminho só**: código do aparelho. Sumiu junto o resto de uma
+era anterior — matrícula que não existe no banco, e-mail montado por baixo, senha
+que quem está no píer não deveria ter.
+
+**E o código passa a poder ir por WhatsApp**, a pedido do fundador: a Marina
+informa o número de quem vai usar o aparelho e a mensagem sai pela instância
+**transacional** — é acesso, não disparo de vendas; misturar os dois números
+arriscaria justamente o canal de que o login depende.
+
+Falhar no envio **não** desfaz a criação: o código já existe e está na tela. Quem
+errou o número corrige e gera outro; desfazer porque a mensagem não saiu trocaria
+um problema pequeno por um maior.
+
+**Um cuidado que não mudou:** o código continua aparecendo uma única vez. O
+WhatsApp é conveniência de entrega, não segunda via.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. ~~**Desligar o auto-deploy** do EasyPanel~~ — **NÃO EXISTE, verificado em 14/09/2026.** O serviço usa a fonte **Git** (URL do repositório + chave SSH), e nesse modo o EasyPanel não dispara build por push: o deploy é sempre manual, pelo botão. A pendência descrevia o comportamento da fonte *GitHub*, que não é a configurada. Isso explica o dia 13/09 inteiro: quatro commits ficaram fora do ar até alguém clicar em Deploy, e por duas vezes o diagnóstico começou errado porque se supunha que o código no ar era o do último push. **Antes de concluir qualquer coisa sobre produção, confirmar que o deploy foi feito** — `git push` não sobe nada sozinho. Procedimento em `docs/DEPLOY-EASYPANEL.md`.

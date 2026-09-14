@@ -28,8 +28,9 @@ export default function AparelhosDeCampo() {
   const [lista, setLista] = useState<Codigo[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [apelido, setApelido] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [criando, setCriando] = useState(false)
-  const [novo, setNovo] = useState<{ codigo: string; apelido: string } | null>(null)
+  const [novo, setNovo] = useState<{ codigo: string; apelido: string; enviado: boolean } | null>(null)
   const [copiado, setCopiado] = useState(false)
 
   const carregar = useCallback(async () => {
@@ -47,9 +48,10 @@ export default function AparelhosDeCampo() {
   async function criar() {
     setCriando(true)
     try {
-      const r = await api.campo.criar(apelido.trim() || 'Aparelho de campo')
-      setNovo({ codigo: r.codigo, apelido: r.apelido })
+      const r = await api.campo.criar(apelido.trim() || 'Aparelho de campo', whatsapp.trim())
+      setNovo({ codigo: r.codigo, apelido: r.apelido, enviado: !!r.whatsapp_enviado })
       setApelido('')
+      setWhatsapp('')
       setCopiado(false)
       await carregar()
       setErro(null)
@@ -112,8 +114,9 @@ export default function AparelhosDeCampo() {
             </button>
           </div>
           <p className="text-white/50 text-[11px] leading-relaxed">
-            Anote agora: ele não é exibido de novo. Se perder, gere outro e revogue
-            este.
+            {novo.enviado
+              ? 'Enviado por WhatsApp. Anote também: ele não é exibido de novo.'
+              : 'Anote agora: ele não é exibido de novo. Se perder, gere outro e revogue este.'}
           </p>
           <button
             onClick={() => setNovo(null)}
@@ -130,6 +133,13 @@ export default function AparelhosDeCampo() {
           onChange={(e) => setApelido(e.target.value)}
           placeholder="Ex: Celular do pátio"
           className="flex-1 min-w-[220px] bg-white/[0.03] border border-white/10 focus:border-[#c5a059]/40 rounded-sm px-4 py-2.5 text-white text-sm outline-none transition-colors placeholder:text-white/15"
+        />
+        <input
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+          placeholder="WhatsApp (opcional)"
+          inputMode="tel"
+          className="w-48 bg-white/[0.03] border border-white/10 focus:border-[#c5a059]/40 rounded-sm px-4 py-2.5 text-white text-sm outline-none transition-colors placeholder:text-white/15"
         />
         <button
           onClick={criar}
