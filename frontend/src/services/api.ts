@@ -251,6 +251,11 @@ export const api = {
     definirProprietario: (id: string, dados: { proprietario_email?: string | null; proprietario_telefone?: string | null;
                                                proprietario_nome?: string | null; proprietario_documento?: string | null }) =>
       apiRequest(`/ativos/${id}/proprietario`, { method: 'PATCH', body: JSON.stringify(dados) }),
+    /** Se o dono já entrou no Portal, e quando. Só a Marina dona pergunta. */
+    acessoDoProprietario: (id: string): Promise<{
+      situacao: 'sem_email' | 'nunca_entrou' | 'entrou' | 'outra_conta'
+      ultimo_acesso: string | null
+    }> => apiRequest(`/ativos/${id}/proprietario/acesso`),
     /**
      * Arquiva o ativo — NÃO apaga. Um ativo com registros selados não pode ser
      * excluído: a cadeia de custódia é o produto.

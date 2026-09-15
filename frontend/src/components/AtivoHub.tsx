@@ -7,8 +7,9 @@ import {
   FileCheck, Camera, ShieldCheck, Sailboat, Plus, CalendarClock,
   Award, ChevronRight, X, Download, Upload, Lock,
   Users, ClipboardCheck, Waves, AlertTriangle, TrendingUp, Globe, Anchor,
-  Droplets, PenLine, HelpCircle, Monitor
+  Droplets, PenLine, HelpCircle, Monitor, ClipboardList
 } from 'lucide-react'
+import DadosDaEmbarcacao from './DadosDaEmbarcacao'
 import SecureCameraUpload from './SecureCameraUpload'
 import FichaServicoForm from './FichaServicoForm'
 import ConsentimentoTitular from './ConsentimentoTitular'
@@ -32,6 +33,10 @@ interface Categoria {
 
 function categorias(tipo: Ativo['tipo']): Categoria[] {
   const base: Categoria[] = [
+    // Primeiro card por decisão do Marcos (15/09/2026): antes de olhar os
+    // sistemas, saber que barco é e de quem é. Não é categoria — sem registro,
+    // sem estado —, por isso não tem healthKey e não entra na Conformidade.
+    { key: 'cadastro', titulo: 'Dados da Embarcação', subtitulo: 'Cadastro & Proprietário', icon: ClipboardList },
     { key: 'documentacao', titulo: 'Documentação', subtitulo: 'Legal & Conformidade', icon: FileText, healthKey: 'documentacao' },
     { key: 'seguro', titulo: 'Seguro', subtitulo: 'Apólice & Cobertura', icon: ShieldCheck },
     { key: 'manutencao', titulo: 'Manutenção', subtitulo: 'Serviços & Revisões', icon: Wrench, healthKey: 'manutencao' },
@@ -372,6 +377,19 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
               const st = statusDe(c)
               const hs = HEALTH_STYLE[st]
               const temRegistro = n > 0
+              // O card do cadastro não conta registro nem tem estado: o rodapé
+              // diz se falta o e-mail do dono, que é o que tranca o Portal.
+              const cadastro = c.key === 'cadastro'
+              const semEmailDoDono = cadastro && !readOnly && !(ativo.proprietario_email || '').trim()
+              const rodapeCor = cadastro
+                ? (semEmailDoDono ? 'text-amber-400' : 'text-[#c5a059]')
+                : (temRegistro ? 'text-[#c5a059]' : hs.text)
+              const rodapePonto = cadastro
+                ? (semEmailDoDono ? 'bg-amber-400' : 'bg-[#c5a059]')
+                : (temRegistro ? 'bg-[#c5a059]' : hs.dot)
+              const rodapeTexto = cadastro
+                ? (semEmailDoDono ? 'Proprietário sem e-mail' : 'Ver cadastro')
+                : (temRegistro ? `${n} ${n === 1 ? 'registro' : 'registros'}` : 'Sem registro')
               return (
                 <button
                   key={c.key}
@@ -387,9 +405,9 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
                     <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-black mt-1">{c.subtitulo}</p>
                     <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
                       <span className="flex items-center gap-2">
-                        <span className={`w-1.5 h-1.5 rounded-full ${temRegistro ? 'bg-[#c5a059]' : hs.dot}`} />
-                        <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${temRegistro ? 'text-[#c5a059]' : hs.text}`}>
-                          {temRegistro ? `${n} ${n === 1 ? 'registro' : 'registros'}` : 'Sem registro'}
+                        <span className={`w-1.5 h-1.5 rounded-full ${rodapePonto}`} />
+                        <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${rodapeCor}`}>
+                          {rodapeTexto}
                         </span>
                       </span>
                       <ChevronRight size={15} className="text-white/15 group-hover:text-[#c5a059] group-hover:translate-x-0.5 transition-all" />
@@ -465,6 +483,8 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
             </div>
           )}
         </div>
+      ) : secao.key === 'cadastro' ? (
+        <DadosDaEmbarcacao ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
       ) : secao.key === 'fotos' ? (
         <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
       ) : secao.key === 'documentacao' ? (

@@ -50,6 +50,22 @@ export interface Ativo {
   health_status?: Record<string, 'ok' | 'warning' | 'critical' | 'info' | 'na'>;
   total_fotos?: number;
   created_at: string;
+  // Especificações e contato do dono. A lista da frota já trazia tudo
+  // (select *); só não estava declarado, e por isso nenhuma tela mostrava.
+  largura?: number | null;
+  calado?: number | null;
+  material_casco?: string | null;
+  capacidade_passageiros?: number | null;
+  num_cabines?: number | null;
+  capacidade_tanque?: number | null;
+  modelo_motor?: string | null;
+  potencia_motor?: number | null;
+  num_motores?: number | null;
+  tipo_combustivel?: string | null;
+  proprietario_email?: string | null;
+  proprietario_telefone?: string | null;
+  /** Já vem mascarado do banco — o completo nunca é gravado. */
+  proprietario_documento?: string | null;
 }
 
 export interface Dossie {
