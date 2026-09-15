@@ -59,3 +59,41 @@ def test_as_duas_telas_oferecem_miniatura():
         assert "url_miniatura" in inspect.getsource(funcao), (
             f"{funcao.__name__} parou de oferecer a miniatura"
         )
+
+
+# --- nao pedir o que nao existe -------------------------------------------
+
+def test_a_miniatura_so_e_assinada_para_quem_tem():
+    """Foto anterior a 15/09/2026 nao tem miniatura.
+
+    Pedir a assinatura assim mesmo custava uma ida perdida ao storage por foto
+    E escrevia ERROR no log — para uma condicao normal e prevista. ERROR que
+    toca a toa ensina a ignorar ERROR, e ai o que toca de verdade passa batido.
+
+    A coluna `tem_miniatura` responde antes de perguntar ao storage.
+    """
+    for funcao in (registros.listar_em_trabalho, registros.listar_pre_data):
+        fonte = inspect.getsource(funcao)
+        assert 'if f.get("tem_miniatura")' in fonte, (
+            f"{funcao.__name__}: voltou a assinar miniatura sem perguntar se existe"
+        )
+
+
+def test_a_consulta_traz_a_coluna():
+    """Sem ela no select, `tem_miniatura` vem vazio e NENHUMA miniatura e
+    assinada — as telas voltariam a baixar o original de 3 MB."""
+    for funcao in (registros.listar_em_trabalho, registros.listar_pre_data):
+        fonte = inspect.getsource(funcao)
+        # O select da foto e o que traz storage_path; a coluna tem que vir com ele.
+        selects = [b for b in fonte.split("select(") if "storage_path" in b[:400]]
+        assert selects, f"{funcao.__name__}: nao achei o select das fotos"
+        assert any("tem_miniatura" in b[:400] for b in selects), (
+            f"{funcao.__name__}: a coluna saiu do select"
+        )
+
+
+def test_o_upload_so_marca_se_o_envio_deu_certo():
+    """Marcar por otimismo devolveria o erro que a coluna veio eliminar."""
+    from app.api.v1 import documentos
+    fonte = inspect.getsource(documentos.upload_documento)
+    assert 'tem_miniatura = envio.get("status") == "success"' in fonte

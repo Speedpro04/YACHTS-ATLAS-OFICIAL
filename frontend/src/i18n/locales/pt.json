@@ -34,7 +34,7 @@
     "insurance_network": "Rede de Seguradoras",
     "marina_hub": "Marina Hub",
     "fleet_management": "Gestão de Frota",
-    "generated_dossiers": "Dossiês Gerados",
+    "generated_dossiers": "Dossiês Atlas Gerados",
     "total_revenue": "Faturamento Total"
   },
   "lp": {
@@ -199,7 +199,7 @@
     "documentacao": "Documentação & Legal",
     "seguranca": "Segurança & Salvatagem",
     "pintura": "Pintura & Estética",
-    "dossie": "Dossiê de Integridade",
+    "dossie": "Dossiê Atlas",
     "status_ok": "Operacional",
     "status_warning": "Atenção",
     "status_critical": "Crítico",

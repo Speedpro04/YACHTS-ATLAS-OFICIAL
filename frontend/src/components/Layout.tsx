@@ -16,7 +16,7 @@ export default function Layout() {
     // Entre Documentos e Gerar Dossie de proposito: e o degrau anterior ao
     // dossie, e a ordem do menu conta a travessia do dado.
     { path: '/app/pre-data', label: 'Pré-Data', icon: Database },
-    { path: '/app/solicitacoes-dossie', label: 'Gerar Dossiê', icon: FileCheck },
+    { path: '/app/solicitacoes-dossie', label: 'Gerar Dossiê Atlas', icon: FileCheck },
     { path: '/app/normas', label: 'Normas', icon: Scale },
   ]
 

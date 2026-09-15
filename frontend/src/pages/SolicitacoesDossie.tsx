@@ -224,7 +224,7 @@ export default function SolicitacoesDossie() {
               : 'border-transparent text-white/40 hover:text-white'
           }`}
         >
-          Gerar Dossiê
+          Gerar Dossiê Atlas
         </button>
         <button
           onClick={() => setActiveTab('pedidos')}
@@ -313,7 +313,7 @@ export default function SolicitacoesDossie() {
                           ) : (
                             <Download size={14} />
                           )}
-                          Gerar Dossiê
+                          Gerar Dossiê Atlas
                         </button>
                       ) : (
                         <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 border border-[#c5a059]/20 px-4 py-2.5 rounded-sm">

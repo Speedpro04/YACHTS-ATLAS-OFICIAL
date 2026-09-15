@@ -172,7 +172,7 @@ export default function Documentos() {
                Isso garante um histórico digital à prova de adulteração para seus ativos de alto padrão."
              </p>
              <p className="text-[#c5a059]/80 text-[10px] font-bold uppercase tracking-widest border-t border-[#c5a059]/20 pt-4">
-               Nota: O depósito de arquivos neste cofre é ilimitado. O limite de 4 requisições anuais se aplica apenas à geração do relatório Dossiê em PDF.
+               Nota: O depósito de arquivos neste cofre é ilimitado. O limite de 4 requisições anuais se aplica apenas à geração do Dossiê Atlas em PDF.
              </p>
           </div>
         </div>
@@ -181,7 +181,7 @@ export default function Documentos() {
         <div className="lg:col-span-2">
           <div className="bg-[#0a1326] border border-white/5 rounded-sm overflow-hidden flex flex-col min-h-[500px]">
              <div className="p-6 border-b border-white/5 bg-white/2 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Conteúdo do Dossiê</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Conteúdo do Dossiê Atlas</h3>
                 <div className="relative">
                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                    <input 

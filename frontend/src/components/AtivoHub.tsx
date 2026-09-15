@@ -48,7 +48,7 @@ function categorias(tipo: Ativo['tipo']): Categoria[] {
     { key: 'seguranca', titulo: 'Segurança', subtitulo: 'Salvatagem & Proteção', icon: Shield, healthKey: 'seguranca' },
     { key: 'pintura', titulo: 'Pintura', subtitulo: 'Estética & Superfície', icon: Paintbrush, healthKey: 'pintura' },
     { key: 'interior', titulo: 'Interior', subtitulo: 'Acomodações & Conforto', icon: Armchair, healthKey: 'interior' },
-    { key: 'dossie', titulo: 'Dossiê', subtitulo: 'Integridade Certificada', icon: FileCheck, healthKey: 'dossie' },
+    { key: 'dossie', titulo: 'Dossiê Atlas', subtitulo: 'Integridade Certificada', icon: FileCheck, healthKey: 'dossie' },
   ]
   if (tipo === 'veleiro') {
     return base.map((c) =>
@@ -327,8 +327,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
 
           <p className="text-[11px] leading-relaxed text-white/40 border-t border-white/10 pt-3">
             São perguntas diferentes e podem divergir: um barco muito bem documentado com uma
-            avaria em aberto tem Índice de Custódia alto e Conformidade baixa. O Dossiê de
-            Custódia traz os dois, e a seção <em>“Como Ler Este Índice”</em> detalha o critério —
+            avaria em aberto tem Índice de Custódia alto e Conformidade baixa. O Dossiê Atlas traz os dois, e a seção <em>“Como Ler Este Índice”</em> detalha o critério —
             incluindo dois agravamentos que só existem no documento: ressalva em casco ou
             sinistro em aberto valem zero, e o mesmo para EPIRB com homologação ANATEL pendente.
           </p>
@@ -400,7 +399,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
             <div className="space-y-5 pt-4">
               <div>
                 <h2 className="text-xl font-serif font-bold text-white tracking-tight flex items-center gap-3">
-                  <FileCheck size={20} className="text-[#c5a059]" /> Dossiê Completo & Laudos
+                  <FileCheck size={20} className="text-[#c5a059]" /> Dossiê Atlas — Completo & Laudos
                 </h2>
                 <p className="text-white/30 text-[10px] mt-1.5 uppercase tracking-[0.3em] font-black">
                   Procedência · especificações · laudos de terceiros · seguro — entram no dossiê
@@ -551,7 +550,7 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
           <ArrowLeft size={16} />
         </button>
         <h2 className="text-xl font-serif font-bold text-white tracking-tight flex items-center gap-3">
-          <FileCheck size={20} className="text-[#c5a059]" /> Gerar Dossiê de Custódia
+          <FileCheck size={20} className="text-[#c5a059]" /> Gerar Dossiê Atlas
           <span className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] hidden sm:inline">· Integridade Certificada</span>
         </h2>
       </div>
@@ -560,7 +559,7 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
         <div className="space-y-2">
           <h3 className="text-lg font-serif font-bold text-white">Relatório de Custódia Digital & Conformidade</h3>
           <p className="text-white/60 text-sm leading-relaxed">
-            O Dossiê da embarcação compila todas as informações técnicas inseridas no painel técnico, diário de bordo e documentos. O documento gerado possui hash criptográfico SHA-256 e selo de conformidade com a LESTA e as normas da Marinha do Brasil (NORMAM).
+            O Dossiê Atlas compila todas as informações técnicas inseridas no painel técnico, diário de bordo e documentos. O documento gerado possui hash criptográfico SHA-256 e selo de conformidade com a LESTA e as normas da Marinha do Brasil (NORMAM).
           </p>
         </div>
 
@@ -610,7 +609,7 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
                       : 'bg-white/5 border border-white/10 text-white/40'
                   }`}
                 >
-                  <Download size={16} /> Emitir Dossiê Criptografado
+                  <Download size={16} /> Gerar Dossiê Atlas
                 </button>
                 {bloqueioDesktop && !desktop && (
                   <div

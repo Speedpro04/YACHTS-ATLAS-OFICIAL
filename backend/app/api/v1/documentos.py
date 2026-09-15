@@ -454,15 +454,20 @@ async def upload_documento(
         # de revisão baixe 3 MB para desenhar um quadradinho de 80px. Falhar
         # aqui não pode derrubar um upload que já deu certo: a tela cai no
         # original e o pior caso é a lentidão que isto veio resolver.
+        tem_miniatura = False
         try:
             from app.services.miniatura import gerar, caminho_da_miniatura
             mini = gerar(contents, file.content_type)
             if mini:
-                s3_service.upload_with_worm(
+                envio = s3_service.upload_with_worm(
                     file_bytes=mini,
                     key=caminho_da_miniatura(s3_key),
                     content_type="image/jpeg",
                 )
+                # Só marca se o objeto REALMENTE subiu. A coluna serve para a
+                # tela não pedir assinatura de um caminho que não existe;
+                # marcar por otimismo devolveria o erro que ela veio eliminar.
+                tem_miniatura = envio.get("status") == "success"
         except Exception as e:  # pragma: no cover - degradação proposital
             logger.warning(f"Falha ao gerar miniatura de {doc_id}: {e}")
 
@@ -484,6 +489,7 @@ async def upload_documento(
             # previu este estado, e era o upload que passava por cima dele
             # afirmando "verified" por todo mundo.
             "status": "pendente" if pendente_revisao else "verified",
+            "tem_miniatura": tem_miniatura,
         }
 
         # Geolocalização: o lugar da FOTO, não o de quem a enviou.

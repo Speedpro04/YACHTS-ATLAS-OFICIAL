@@ -204,7 +204,7 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
         or []
     )
     fotos = (
-        supabase.table("documentos").select("id, ativo_id, nome_arquivo, categoria, descricao, created_at, storage_path")
+        supabase.table("documentos").select("id, ativo_id, nome_arquivo, categoria, descricao, created_at, storage_path, tem_miniatura")
         .in_("ativo_id", ids).eq("status", "pendente").execute().data
         or []
     )
@@ -258,17 +258,24 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
                 logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
                 f["url"] = None
 
-            # A miniatura assina em SEPARADO, e de proposito: foto anterior a
-            # 15/09/2026 nao tem miniatura, e a assinatura de um caminho que
-            # nao existe levanta. Junto com o original, isso zerava o `url` da
-            # foto boa — o acessorio derrubando o essencial.
-            try:
-                from app.services.miniatura import caminho_da_miniatura
-                f["url_miniatura"] = s3.get_presigned_url(
-                    caminho_da_miniatura(caminho), expires_in=3600
-                )
-            except Exception:  # pragma: no cover - degradacao proposital
-                f["url_miniatura"] = None
+            # A miniatura assina em SEPARADO do original, e SÓ para quem tem.
+            #
+            # Separado porque, junto, a falha zerava o `url` da foto boa — o
+            # acessório derrubando o essencial.
+            #
+            # E só para quem tem porque foto anterior a 15/09/2026 não tem
+            # miniatura: pedir a assinatura de um caminho que não existe era uma
+            # ida perdida ao storage por foto E um ERROR no log que não é erro
+            # nenhum. ERROR que toca à toa ensina a ignorar ERROR.
+            f["url_miniatura"] = None
+            if f.get("tem_miniatura"):
+                try:
+                    from app.services.miniatura import caminho_da_miniatura
+                    f["url_miniatura"] = s3.get_presigned_url(
+                        caminho_da_miniatura(caminho), expires_in=3600
+                    )
+                except Exception:  # pragma: no cover - degradacao proposital
+                    f["url_miniatura"] = None
         alvo["fotos_pendentes"].append(f)
 
     # So embarcacao COM envio aparece. Lista de frota inteira com zero ao lado
@@ -583,7 +590,7 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
     fotos = [
         f for f in (
             supabase.table("documentos")
-            .select("id, nome_arquivo, categoria, descricao, created_at, storage_path, status")
+            .select("id, nome_arquivo, categoria, descricao, created_at, storage_path, status, tem_miniatura")
             .eq("ativo_id", ativo_id).neq("status", "recusado").execute().data
             or []
         )
@@ -602,17 +609,24 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
                 logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
                 f["url"] = None
 
-            # A miniatura assina em SEPARADO, e de proposito: foto anterior a
-            # 15/09/2026 nao tem miniatura, e a assinatura de um caminho que
-            # nao existe levanta. Junto com o original, isso zerava o `url` da
-            # foto boa — o acessorio derrubando o essencial.
-            try:
-                from app.services.miniatura import caminho_da_miniatura
-                f["url_miniatura"] = s3.get_presigned_url(
-                    caminho_da_miniatura(caminho), expires_in=3600
-                )
-            except Exception:  # pragma: no cover - degradacao proposital
-                f["url_miniatura"] = None
+            # A miniatura assina em SEPARADO do original, e SÓ para quem tem.
+            #
+            # Separado porque, junto, a falha zerava o `url` da foto boa — o
+            # acessório derrubando o essencial.
+            #
+            # E só para quem tem porque foto anterior a 15/09/2026 não tem
+            # miniatura: pedir a assinatura de um caminho que não existe era uma
+            # ida perdida ao storage por foto E um ERROR no log que não é erro
+            # nenhum. ERROR que toca à toa ensina a ignorar ERROR.
+            f["url_miniatura"] = None
+            if f.get("tem_miniatura"):
+                try:
+                    from app.services.miniatura import caminho_da_miniatura
+                    f["url_miniatura"] = s3.get_presigned_url(
+                        caminho_da_miniatura(caminho), expires_in=3600
+                    )
+                except Exception:  # pragma: no cover - degradacao proposital
+                    f["url_miniatura"] = None
         # O client_id vai no fim da descrição: "Atlas Pré-Data · Manutenção · <id>"
         dono = (f.get("descricao") or "").split("·")[-1].strip()
         if dono:
