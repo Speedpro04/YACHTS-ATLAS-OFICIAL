@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from app.schemas.models import AtivoCreate
 from app.core.pii import mascarar_documento
-from app.core.supabase import get_supabase_admin, buscar_usuario_por_email
+from app.core.supabase import get_supabase_admin
 from app.core.security import get_current_user_id
 from app.core.campo import usuario_ou_campo
 from app.core.authz import email_do_usuario
@@ -386,36 +386,44 @@ async def definir_proprietario(
     }
 
 
-def _situacao_do_portal(email: str | None, buscar=buscar_usuario_por_email) -> dict:
+def _situacao_do_portal(supabase, ativo_id: str, email: str | None) -> dict:
     """Se o dono já entrou no Portal do Proprietário, e quando.
 
-    Quatro respostas, e nenhuma delas inventa:
-      • sem_email   — sem e-mail gravado, o dono não tem por onde entrar;
-      • nunca_entrou — não há conta, ou há conta que nunca validou um código
-                       (ela nasce quando o código é PEDIDO, não quando é usado);
-      • entrou      — com a data do último acesso;
-      • outra_conta — o e-mail é de uma conta que não é de proprietário (a
-                       própria Marina, por exemplo). O último login dessa conta
-                       não diz nada sobre o Portal, então não é mostrado.
+    A FONTE É NOSSA (`portal_acessos`), e não o Auth. Duas razões, e as duas
+    apareceram na revisão de 15/09/2026:
+
+      • `auth.users.last_sign_in_at` guarda a última VALIDAÇÃO DE CÓDIGO. A
+        sessão do navegador se renova sozinha, então o dono podia abrir o
+        Portal todo dia e a Marina continuar lendo a data do primeiro acesso —
+        e concluir que o cliente tinha largado o Portal;
+      • procurar aquela conta exigia varrer o Auth por e-mail. Como é a Marina
+        quem escolhe o e-mail gravado no próprio barco, ela podia digitar o de
+        qualquer pessoa e descobrir se tem conta na plataforma. Agora a
+        consulta é por ativo: ninguém pergunta sobre barco que não é seu.
+
+    Três respostas, e nenhuma delas inventa:
+      • sem_email    — sem e-mail gravado, o dono não tem por onde entrar;
+      • nunca_entrou — o e-mail existe e não há visita registrada;
+      • entrou       — com a data da última visita e quantas foram.
+
+    Falha de banco NÃO vira "nunca entrou": a exceção sobe, o endpoint responde
+    erro e a tela diz que não deu para verificar. Mentir para menos faria a
+    Marina cobrar um cliente que já usa o Portal.
     """
     alvo = (email or "").strip().lower()
     if not alvo:
-        return {"situacao": "sem_email", "ultimo_acesso": None}
+        return {"situacao": "sem_email", "ultimo_acesso": None, "visitas": 0}
 
-    usuario = buscar(alvo)
-    if not usuario:
-        return {"situacao": "nunca_entrou", "ultimo_acesso": None}
+    achado = supabase.table("portal_acessos").select("ultimo_acesso, visitas").eq(
+        "ativo_id", ativo_id).eq("email", alvo).execute()
+    if not achado.data:
+        return {"situacao": "nunca_entrou", "ultimo_acesso": None, "visitas": 0}
 
-    perfil = (getattr(usuario, "user_metadata", None) or {}).get("perfil")
-    if perfil != "armador":
-        return {"situacao": "outra_conta", "ultimo_acesso": None}
-
-    ultimo = getattr(usuario, "last_sign_in_at", None)
-    if not ultimo:
-        return {"situacao": "nunca_entrou", "ultimo_acesso": None}
+    linha = achado.data[0]
     return {
         "situacao": "entrou",
-        "ultimo_acesso": ultimo.isoformat() if hasattr(ultimo, "isoformat") else str(ultimo),
+        "ultimo_acesso": linha.get("ultimo_acesso"),
+        "visitas": linha.get("visitas") or 1,
     }
 
 
@@ -435,7 +443,7 @@ async def acesso_do_proprietario(ativo_id: str, user_id: str = Depends(get_curre
     if role != "admin" and str(achado.data[0].get("usuario_id")) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized for this asset")
 
-    return _situacao_do_portal(achado.data[0].get("proprietario_email"))
+    return _situacao_do_portal(supabase, ativo_id, achado.data[0].get("proprietario_email"))
 
 
 @router.get("/{ativo_id}/progresso")

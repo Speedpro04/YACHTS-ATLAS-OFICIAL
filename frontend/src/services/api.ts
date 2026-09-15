@@ -138,6 +138,12 @@ export const api = {
      */
     codigo: (email: string) =>
       apiRequest('/owner/codigo', { method: 'POST', body: JSON.stringify({ email }) }),
+    /**
+     * Marca que o dono abriu o Portal. É daqui que sai o "último acesso" que a
+     * Marina lê — o Auth só sabe dizer quando um código foi validado, e a
+     * sessão se renova sozinha. Sem corpo: os barcos saem do e-mail da conta.
+     */
+    registrarVisita: () => apiRequest('/owner/visto', { method: 'POST' }),
   },
   leads: {
     // Vagas fundadoras reais (20 no total, 4 por estado). Conta como ocupada
@@ -253,8 +259,9 @@ export const api = {
       apiRequest(`/ativos/${id}/proprietario`, { method: 'PATCH', body: JSON.stringify(dados) }),
     /** Se o dono já entrou no Portal, e quando. Só a Marina dona pergunta. */
     acessoDoProprietario: (id: string): Promise<{
-      situacao: 'sem_email' | 'nunca_entrou' | 'entrou' | 'outra_conta'
+      situacao: 'sem_email' | 'nunca_entrou' | 'entrou'
       ultimo_acesso: string | null
+      visitas: number
     }> => apiRequest(`/ativos/${id}/proprietario/acesso`),
     /**
      * Arquiva o ativo — NÃO apaga. Um ativo com registros selados não pode ser

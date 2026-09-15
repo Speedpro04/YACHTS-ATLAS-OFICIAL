@@ -8,7 +8,10 @@ import AtivoHub from '../components/AtivoHub'
 export default function PortalProprietario() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [ativo, setAtivo] = useState<Ativo | null>(null)
+  // O dono pode ter mais de um barco na mesma marina — e tinha: a tela mostrava
+  // só o primeiro da lista, e os outros sumiam sem aviso nenhum.
+  const [ativos, setAtivos] = useState<Ativo[]>([])
+  const [escolhido, setEscolhido] = useState<string | null>(null)
   // Foto do PRÓPRIO barco na capa. Antes era uma imagem de banco fixa no
   // código: o armador abria o portal e via o barco de outra pessoa — logo no
   // momento em que ele deveria reconhecer o dele.
@@ -18,34 +21,45 @@ export default function PortalProprietario() {
     (async () => {
       try {
         // A lista já vem filtrada pelo backend: o armador só recebe os barcos
-        // com o e-mail dele. Não há o que escolher aqui.
+        // com o e-mail dele.
         const lista = await api.ativos.list()
         const arr = Array.isArray(lista) ? lista : []
-        const meu = arr[0] || null
-        setAtivo(meu)
+        setAtivos(arr)
+        setEscolhido(arr[0] ? String(arr[0].id) : null)
 
-        if (meu?.id) {
-          try {
-            const docs = await api.documentos.list(meu.id)
-            const fotos = (Array.isArray(docs) ? docs : []).filter(
-              (d: any) => d?.tipo === 'foto' && d?.url_arquivo,
-            )
-            // Vitrine primeiro: são as fotos de apresentação, escolhidas pela
-            // marina justamente para mostrar o barco. Sem vitrine, qualquer
-            // foto do cofre serve melhor que uma imagem genérica.
-            const vitrine = fotos.find((d: any) => d.categoria === 'vitrine')
-            setCapa((vitrine || fotos[0])?.url_arquivo || null)
-          } catch {
-            /* sem foto, a capa cai no fundo institucional */
-          }
-        }
+        // A visita fica registrada por NÓS. É o que a Marina lê no card Dados
+        // da Embarcação: o Auth só sabe quando um código foi validado, e a
+        // sessão se renova sozinha. Falhar aqui não pode atrapalhar o Portal.
+        api.owner.registrarVisita().catch(() => { /* medição não trava leitura */ })
       } catch {
-        setAtivo(null)
+        setAtivos([])
       } finally {
         setLoading(false)
       }
     })()
   }, [])
+
+  const ativo = ativos.find((a) => String(a.id) === escolhido) || ativos[0] || null
+
+  // Trocou de barco: a capa acompanha. Sem isto, o dono veria a foto do
+  // primeiro barco no cabeçalho do segundo.
+  useEffect(() => {
+    if (!ativo?.id) return
+    let vivo = true
+    setCapa(null)
+    api.documentos.list(ativo.id)
+      .then((docs: any) => {
+        if (!vivo) return
+        const fotos = (Array.isArray(docs) ? docs : []).filter((d: any) => d?.tipo === 'foto' && d?.url_arquivo)
+        // Vitrine primeiro: são as fotos de apresentação, escolhidas pela
+        // marina justamente para mostrar o barco. Sem vitrine, qualquer foto
+        // do cofre serve melhor que uma imagem genérica.
+        const vitrine = fotos.find((d: any) => d.categoria === 'vitrine')
+        setCapa((vitrine || fotos[0])?.url_arquivo || null)
+      })
+      .catch(() => { /* sem foto, a capa cai no fundo institucional */ })
+    return () => { vivo = false }
+  }, [ativo?.id])
 
   if (loading) {
     return (
@@ -110,6 +124,30 @@ export default function PortalProprietario() {
           <p className="text-white/40 text-lg font-light max-w-2xl">
             Bem-vindo ao seu cofre digital restrito. Abaixo você tem o painel técnico exclusivo da sua embarcação — em modo visualização.
           </p>
+
+          {/* Mais de um barco: a tela mostrava só o primeiro e os outros
+              sumiam. Quem tem dois na mesma marina não tinha como chegar no
+              segundo. */}
+          {ativos.length > 1 && (
+            <div className="flex flex-wrap gap-2 mt-8">
+              {ativos.map((a) => {
+                const atual = String(a.id) === String(ativo.id)
+                return (
+                  <button
+                    key={String(a.id)}
+                    onClick={() => setEscolhido(String(a.id))}
+                    className={`px-5 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] border transition-all ${
+                      atual
+                        ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]'
+                        : 'border-white/10 text-white/50 hover:text-white hover:border-white/30'
+                    }`}
+                  >
+                    {a.nome_reg || `${a.marca} ${a.modelo}`}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Vessel Banner */}
@@ -177,7 +215,8 @@ export default function PortalProprietario() {
             1. Painel Técnico
           </h3>
           <div className="bg-white/[0.02] border border-white/5 rounded-sm p-4 sm:p-8 shadow-2xl">
-            <AtivoHub ativo={ativo} onBack={() => {}} readOnly hideHeader />
+            {/* key: trocar de barco fecha a seção aberta do barco anterior. */}
+            <AtivoHub key={String(ativo.id)} ativo={ativo} onBack={() => {}} readOnly hideHeader />
           </div>
         </div>
 

@@ -20,7 +20,7 @@ import { api } from '../services/api'
  * SÓ LEITURA, por enquanto. Corrigir o cadastro é decisão pendente.
  */
 
-type Situacao = 'sem_email' | 'nunca_entrou' | 'entrou' | 'outra_conta'
+type Situacao = 'sem_email' | 'nunca_entrou' | 'entrou'
 
 const TIPO: Record<string, string> = {
   iate: 'Iate', lancha: 'Lancha', veleiro: 'Veleiro', jetski: 'Jet Ski', barco_pesca: 'Barco de Pesca',
@@ -52,7 +52,7 @@ export default function DadosDaEmbarcacao({ ativo, onBack, readOnly = false }: {
   onBack: () => void
   readOnly?: boolean
 }) {
-  const [portal, setPortal] = useState<{ situacao: Situacao; ultimo_acesso: string | null } | null>(null)
+  const [portal, setPortal] = useState<{ situacao: Situacao; ultimo_acesso: string | null; visitas: number } | null>(null)
   const [erroPortal, setErroPortal] = useState(false)
 
   // A pergunta "o cliente está usando o Portal?" é da Marina. No Portal, quem
@@ -97,12 +97,11 @@ export default function DadosDaEmbarcacao({ ativo, onBack, readOnly = false }: {
       acesso = { cor: 'text-white/30', frase: 'Verificando o acesso ao Portal…' }
     } else if (portal.situacao === 'entrou' && portal.ultimo_acesso) {
       const d = new Date(portal.ultimo_acesso)
+      const vezes = portal.visitas > 1 ? ` · ${portal.visitas} visitas` : ''
       acesso = {
         cor: 'text-emerald-300',
-        frase: `Último acesso ao Portal em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`,
+        frase: `Última visita ao Portal em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${vezes}.`,
       }
-    } else if (portal.situacao === 'outra_conta') {
-      acesso = { cor: 'text-white/40', frase: 'Este e-mail pertence a uma conta que não é de proprietário — o acesso ao Portal não pode ser medido.' }
     } else {
       acesso = { cor: 'text-white/50', frase: 'O proprietário ainda não entrou no Portal.' }
     }

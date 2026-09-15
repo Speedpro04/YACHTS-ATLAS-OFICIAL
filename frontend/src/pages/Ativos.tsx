@@ -326,8 +326,8 @@ export default function Ativos() {
                 // e não eram coletadas em lugar nenhum: o dossiê de um ativo de
                 // alto valor não dizia a boca, o calado nem quantos motores tem.
                 // É a primeira coisa que seguradora e comprador procuram.
-                { label: 'Boca (largura)', key: 'largura', type: 'number', min: 0, placeholder: 'Ex: 4.2', suffix: 'm', opcional: true },
-                { label: 'Calado', key: 'calado', type: 'number', min: 0, placeholder: 'Ex: 1.1', suffix: 'm', opcional: true },
+                { label: 'Boca (largura)', key: 'largura', type: 'number', min: 0, step: 0.01, placeholder: 'Ex: 4.2', suffix: 'm', opcional: true },
+                { label: 'Calado', key: 'calado', type: 'number', min: 0, step: 0.01, placeholder: 'Ex: 1.1', suffix: 'm', opcional: true },
                 { label: 'Material do Casco', key: 'material_casco', type: 'select', options: ['Fibra de vidro', 'Alumínio', 'Aço', 'Madeira', 'Compósito', 'Outro'], opcional: true },
                 { label: 'Capacidade de Passageiros', key: 'capacidade_passageiros', type: 'number', min: 0, placeholder: 'Ex: 12', opcional: true },
                 { label: 'Cabines', key: 'num_cabines', type: 'number', min: 0, placeholder: 'Ex: 3', opcional: true },
@@ -353,6 +353,11 @@ export default function Ativos() {
                       onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
                       className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-5 py-4 text-white focus:border-[#c5a059] outline-none appearance-none transition-all text-sm font-medium"
                     >
+                      {/* O select começava vazio e o navegador mostrava a
+                          primeira opção — a tela dizia "Fibra de vidro" e o
+                          banco recebia vazio. O campo é opcional; então a
+                          opção vazia precisa existir e ter nome. */}
+                      <option value="" className="bg-[#010c20]">Não informado</option>
                       {field.options?.map(opt => (
                         <option key={opt} value={opt} className="bg-[#010c20] capitalize">{opt}</option>
                       ))}
@@ -361,11 +366,19 @@ export default function Ativos() {
                     <input
                       type={field.type}
                       value={formData[field.key as keyof typeof formData]}
-                      onChange={(e) => setFormData({...formData, [field.key]: field.type === 'number' ? parseInt(e.target.value) : e.target.value})}
+                      // parseInt truncava TUDO: boca 4,2 virava 4 e calado 0,8
+                      // virava zero, que some da tela como "não informado".
+                      // Número aqui é número, com casa decimal quando tem.
+                      onChange={(e) => setFormData({...formData, [field.key]: field.type === 'number'
+                        ? (e.target.value === '' ? '' : Number(e.target.value))
+                        : e.target.value})}
                       className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-5 py-4 text-white focus:border-[#c5a059] outline-none transition-all text-sm font-medium placeholder:text-white/10"
                       placeholder={field.placeholder}
                       min={field.min}
                       max={field.max}
+                      // Sem step, o navegador recusa 4,2 num campo numérico:
+                      // o passo padrão é 1 e o valor fica "inválido".
+                      step={(field as { step?: number }).step}
                       required={!(field as { opcional?: boolean }).opcional}
                     />
                   )}
