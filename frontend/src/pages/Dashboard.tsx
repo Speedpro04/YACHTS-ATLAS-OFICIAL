@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
+import EmissoesDoDossie from '../components/EmissoesDoDossie'
 import { Ativo } from '../types'
-import { Ship, Plus, CheckCircle, AlertCircle, TrendingUp, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileCheck, FileText } from 'lucide-react'
+import { Ship, Plus, CheckCircle, AlertCircle, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileCheck, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -30,13 +31,13 @@ export default function Dashboard() {
 
   const loadDashboard = async () => {
     try {
-      const [ativosData, plansData] = await Promise.allSettled([
+      const [ativosData, dossies] = await Promise.allSettled([
         api.ativos.list(),
-        api.pagamentos.planos(),
+        api.dossie.emitidos(),
       ])
       if (ativosData.status === 'fulfilled') setAtivos(ativosData.value)
-      if (plansData.status === 'fulfilled' && plansData.value?.dossier_count != null) {
-        setDossierCount(plansData.value.dossier_count)
+      if (dossies.status === 'fulfilled') {
+        setDossierCount(dossies.value?.total ?? 0)
       }
     } catch (err) {
       console.error('Erro ao carregar:', err)
@@ -50,7 +51,6 @@ export default function Dashboard() {
     gold: ativos.filter(a => a.classificacao === 'gold').length,
     compliance: Math.round(ativos.reduce((acc, curr) => acc + curr.progresso, 0) / (ativos.length || 1)),
     dossiers: dossierCount ?? 0,
-    revenue: (dossierCount ?? 0) * 400,
   }
 
   // Gera um relatório executivo da frota (branded) e abre o diálogo de
@@ -224,7 +224,12 @@ export default function Dashboard() {
           {[
             { label: t('common.total_assets'), value: stats.total, icon: Ship, color: '#c5a059' },
             { label: t('common.generated_dossiers'), value: stats.dossiers, icon: Download, color: '#c5a059' },
-            { label: t('common.total_revenue'), value: `$${stats.revenue}`, icon: TrendingUp, color: '#c5a059' }
+            // FATURAMENTO NÃO APARECE EM TELA NENHUMA. Decisão do fundador em
+            // 15/09/2026, e é de negócio, não de layout: o dossiê é combinado
+            // entre o dono da Marina e o dono do ativo, e pago direto na conta
+            // dela — 100% é da Marina. A plataforma não vê esse dinheiro, e
+            // exibi-lo aqui seria mostrar receita alheia como se fosse nossa.
+            // O card antigo calculava `dossiês × 400`, preço que não existe.
           ].map((stat, i) => (
             <div key={i} className="bg-white/[0.02] border border-white/5 p-8 rounded-sm flex items-center gap-8 group hover:border-[#c5a059]/30 transition-all shadow-lg">
               <div className="w-16 h-16 bg-[#c5a059]/5 border border-[#c5a059]/10 rounded-sm flex items-center justify-center text-[#c5a059] group-hover:bg-[#c5a059] group-hover:text-[#010c20] transition-all duration-500">
@@ -238,6 +243,11 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* As emissões de dossiê, e o que a Marina cobrou por cada uma.
+          Fica ACIMA do Painel Técnico de propósito: o painel é o trabalho do
+          dia; isto é o resultado dele, e é o que a Marina mostra ao sócio. */}
+      <EmissoesDoDossie />
 
       {/* Categorias Técnicas — Canvas Principal */}
       <div className="space-y-8">

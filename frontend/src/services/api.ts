@@ -371,6 +371,25 @@ export const api = {
     }) => apiRequest('/payments/checkout/onboarding', { method: 'POST', body: JSON.stringify(data) }),
   },
   dossie: {
+    /**
+     * Quantos dossiês esta Marina emitiu.
+     *
+     * O painel pedia esse número à TABELA DE PREÇOS (`/payments/plans`), lendo
+     * um campo `dossier_count` que nunca existiu — vinha `undefined` sempre, e
+     * o card ficava zerado desde o primeiro dia. O endpoint certo existe no
+     * backend desde antes disto; faltava alguém chamá-lo.
+     */
+    emitidos: (): Promise<{ total: number }> =>
+      apiRequest('/dossie/emitidos/contagem'),
+    /** As emissões desta Marina — uma linha por emissão, nunca agrupada. */
+    emissoes: (): Promise<{ emissoes: any[]; total: number }> =>
+      apiRequest('/dossie/emitidos'),
+    /** O valor que a Marina cobrou. `null` limpa — desfazer é parte de corrigir. */
+    anotarValor: (id: string, valor: number | null, moeda = 'BRL') =>
+      apiRequest(`/dossie/emitidos/${id}/valor`, {
+        method: 'PATCH',
+        body: JSON.stringify({ valor, moeda }),
+      }),
     // Pedido público de dossiê (broker / comprador / seguradora)
     solicitar: (data: {
       solicitante_nome: string

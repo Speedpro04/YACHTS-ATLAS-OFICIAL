@@ -55,6 +55,127 @@ def _check_master(senha: str) -> bool:
 # 1) Dono / marina (autenticado)
 # ----------------------------------------------------------------------------
 
+def _ativos_da_marina(supabase, usuario_id: str) -> list[str]:
+    """Os ativos desta Marina. Base de tudo que se conta por Marina aqui."""
+    try:
+        linhas = (
+            supabase.table("ativos").select("id")
+            .eq("usuario_id", usuario_id).execute().data
+            or []
+        )
+        return [a["id"] for a in linhas if a.get("id")]
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Falha ao listar ativos de {usuario_id}: {e}")
+        return []
+
+
+class ValorDoDossie(BaseModel):
+    """O que a Marina cobrou. Só isso — o resto é negócio dela."""
+    valor: Optional[float] = None
+    moeda: str = "BRL"
+
+
+@router.get("/emitidos")
+async def listar_emitidos(user: dict = Depends(get_current_user)):
+    """As emissões desta Marina, uma linha por emissão.
+
+    UMA LINHA POR EMISSÃO, NUNCA AGRUPADA POR EMBARCAÇÃO. O mesmo barco pode
+    ser emitido mais de uma vez — o Netuno II saiu duas vezes em 26/08, às
+    10:36 e às 10:59 — e cada saída é um documento diferente, com hash
+    diferente, possivelmente cobrado por um valor diferente.
+
+    O `protocolo` NÃO distingue as emissões: ele identifica a embarcação, e
+    vem igual nas três linhas de um barco emitido três vezes. Quem separa é a
+    HORA e o HASH. Agrupar por protocolo faria duas emissões legítimas
+    parecerem uma contagem em dobro.
+    """
+    supabase = get_supabase_admin()
+    usuario_id = user.get("sub") if user else None
+    if not usuario_id:
+        return {"emissoes": [], "total": 0}
+
+    ids = _ativos_da_marina(supabase, usuario_id)
+    if not ids:
+        return {"emissoes": [], "total": 0}
+
+    try:
+        linhas = (
+            supabase.table("dossie_emitidos")
+            .select("id, ativo_id, protocolo, emitido_em, hash_pdf, canal, valor, moeda, created_at")
+            .in_("ativo_id", ids).order("created_at", desc=True).execute().data
+            or []
+        )
+        ativos = (
+            supabase.table("ativos").select("id, nome_reg, comprimento, modelo, marca")
+            .in_("id", ids).execute().data
+            or []
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Falha ao listar emissões de {usuario_id}: {e}")
+        raise HTTPException(status_code=500, detail="Falha ao listar as emissões")
+
+    por_id = {a["id"]: a for a in ativos}
+    emissoes = []
+    for linha in linhas:
+        ativo = por_id.get(linha.get("ativo_id"), {})
+        emissoes.append({
+            **linha,
+            "nome": ativo.get("nome_reg") or ativo.get("modelo") or linha.get("ativo_id"),
+            "comprimento": ativo.get("comprimento"),
+            # Só o prefixo: é o que o PDF imprime, e é o que se confere a olho.
+            "hash_curto": (linha.get("hash_pdf") or "")[:12].upper() or None,
+        })
+    return {"emissoes": emissoes, "total": len(emissoes)}
+
+
+@router.patch("/emitidos/{emissao_id}/valor")
+async def anotar_valor(emissao_id: str, body: ValorDoDossie,
+                       user: dict = Depends(get_current_user)):
+    """Anota (ou corrige) o valor que a Marina cobrou por esta emissão.
+
+    EDITÁVEL SEM TRAVA, e de propósito. A imutabilidade deste sistema protege a
+    PROVA técnica — o registro selado, o hash, o dossiê. Isto aqui é o
+    livro-caixa da Marina sobre um negócio que nem passa por nós; aplicar o
+    mesmo rigor faria um zero digitado a mais virar erro permanente.
+
+    `valor: null` limpa o campo — desfazer é parte de corrigir.
+    """
+    supabase = get_supabase_admin()
+    usuario_id = user.get("sub") if user else None
+    if not usuario_id:
+        raise HTTPException(status_code=401, detail="Sessão inválida")
+
+    try:
+        linha = (
+            supabase.table("dossie_emitidos").select("id, ativo_id")
+            .eq("id", emissao_id).limit(1).execute().data
+            or []
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Falha ao ler a emissão {emissao_id}: {e}")
+        raise HTTPException(status_code=500, detail="Falha ao ler a emissão")
+
+    # A emissão precisa ser de um ativo DESTA Marina. Sem isto, qualquer conta
+    # anotaria valor na emissão de qualquer outra.
+    if not linha or linha[0].get("ativo_id") not in _ativos_da_marina(supabase, usuario_id):
+        raise HTTPException(status_code=404, detail="Emissão não encontrada")
+
+    valor = body.valor
+    if valor is not None and valor < 0:
+        raise HTTPException(status_code=400, detail="O valor não pode ser negativo.")
+
+    try:
+        supabase.table("dossie_emitidos").update({
+            "valor": valor,
+            "moeda": (body.moeda or "BRL").upper()[:3],
+        }).eq("id", emissao_id).execute()
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Falha ao anotar o valor da emissão {emissao_id}: {e}")
+        raise HTTPException(status_code=500, detail="Falha ao salvar o valor")
+
+    return {"id": emissao_id, "valor": valor, "moeda": (body.moeda or "BRL").upper()[:3]}
+
+
 @router.get("/emitidos/contagem")
 async def contar_emitidos(user: dict = Depends(get_current_user)):
     """
@@ -76,17 +197,32 @@ async def contar_emitidos(user: dict = Depends(get_current_user)):
     usuario_id = user.get("sub") if user else None
     if not usuario_id:
         return {"total": 0}
+
+    total = 0
     try:
+        # Conta por ATIVO da Marina, e não por quem clicou em emitir. Hoje dá no
+        # mesmo — uma conta por Marina —, mas no dia em que a Marina tiver dois
+        # logins, contar por pessoa partiria o número dela em dois.
         res = (
             supabase.table("dossie_emitidos")
             .select("id", count="exact")
-            .eq("emitido_por", usuario_id)
+            .in_("ativo_id", _ativos_da_marina(supabase, usuario_id) or ["-"])
             .execute()
         )
-        return {"total": res.count or 0}
+        total = res.count or 0
     except Exception as e:  # noqa: BLE001 — contador não derruba o painel
         logger.error(f"Falha ao contar dossiês emitidos de {usuario_id}: {e}")
-        return {"total": 0}
+
+    # NÃO HÁ FATURAMENTO PARA DEVOLVER AQUI, e isso é sobre o negócio, não
+    # sobre o código: o dossiê é combinado entre o dono da Marina e o dono do
+    # ativo, e pago direto na conta dela. A plataforma não vê esse dinheiro.
+    #
+    # O painel mostrava "Faturamento total" calculando `dossiês × 400` no
+    # navegador — um preço que não existe. Pior que o número errado seria o
+    # número honesto: somar os `payments` daria SEMPRE zero, e uma Marina que
+    # vendeu cinco dossiês leria "$0" achando que o sistema perdeu a receita
+    # dela. Card sem fonte não vira card com fonte ruim; ele sai.
+    return {"total": total}
 
 
 @router.get("/{ativo_id}/dados")
