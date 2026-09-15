@@ -20,7 +20,10 @@
     "access_vault": "Access Vault",
     "explore": "Explore",
     "scroll": "Scroll",
-    "select_language": "Select Language"
+    "select_language": "Select Language",
+    "compact": "Compact",
+    "executive": "Executive",
+    "superyacht": "Superyacht"
   },
   "lp": {
     "hero_badge": "GLOBAL MARITIME ASSET MANAGEMENT",
@@ -93,7 +96,8 @@
     "reset_success": "Your key has been reset successfully.",
     "reset_redirecting": "Redirecting to login...",
     "reset_validating": "Validating your reset link...",
-    "reset_back_login": "Back to login"
+    "reset_back_login": "Back to login",
+    "encrypted_connection": "Encrypted connection"
   },
   "marina_onboarding": {
     "step_3_title": "THE GLOBAL STANDARD FOR NAUTICAL CUSTODY",

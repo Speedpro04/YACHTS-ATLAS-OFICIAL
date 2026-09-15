@@ -20,7 +20,10 @@
     "access_vault": "Acceder Bóveda",
     "explore": "Explorar",
     "scroll": "Desplazar",
-    "select_language": "Seleccionar Idioma"
+    "select_language": "Seleccionar Idioma",
+    "compact": "Compact",
+    "executive": "Executive",
+    "superyacht": "Superyacht"
   },
   "lp": {
     "hero_badge": "GESTIÓN GLOBAL DE ACTIVOS NÁUTICOS",
@@ -93,6 +96,7 @@
     "reset_success": "Su clave se ha restablecido correctamente.",
     "reset_redirecting": "Redirigiendo al inicio de sesión...",
     "reset_validating": "Validando su enlace de restablecimiento...",
-    "reset_back_login": "Volver al inicio de sesión"
+    "reset_back_login": "Volver al inicio de sesión",
+    "encrypted_connection": "Conexión cifrada"
   }
 }

@@ -32,7 +32,10 @@
     "marina_hub": "Marina Hub",
     "fleet_management": "Gestão de Frota",
     "generated_dossiers": "Dossiês Atlas Gerados",
-    "total_revenue": "Faturamento Total"
+    "total_revenue": "Faturamento Total",
+    "compact": "Compact",
+    "executive": "Executive",
+    "superyacht": "Superyacht"
   },
   "lp": {
     "hero_badge": "O SISTEMA DAS MARINAS DE ALTO PADRÃO",
@@ -125,7 +128,8 @@
     "reset_success": "Sua chave foi redefinida com sucesso.",
     "reset_redirecting": "Redirecionando para o login...",
     "reset_validating": "Validando seu link de redefinição...",
-    "reset_back_login": "Voltar ao login"
+    "reset_back_login": "Voltar ao login",
+    "encrypted_connection": "Conexão criptografada"
   },
   "marina_onboarding": {
     "step_3_title": "O PADRÃO GLOBAL DE CUSTÓDIA NÁUTICA",
