@@ -251,19 +251,24 @@ async def listar_pre_data(token: dict = Depends(get_current_user)):
         if caminho:
             try:
                 f["url"] = s3.get_presigned_url(caminho, expires_in=3600)
-                # A tela desenha a miniatura e guarda o original para quem
-                # clicar. Ver services/miniatura.py: ela e conveniencia, nao
-                # prova — se nao existir, o navegador cai no `url`.
-                from app.services.miniatura import caminho_da_miniatura
-                f["url_miniatura"] = s3.get_presigned_url(
-                    caminho_da_miniatura(caminho), expires_in=3600
-                )
             except Exception as e:  # pragma: no cover - degradacao proposital
                 # Sem a imagem a aba ainda serve: mostra o que chegou e deixa
                 # aprovar. Falhar a lista inteira porque UMA assinatura nao saiu
                 # seria trocar um revisor sem foto por um revisor sem nada.
                 logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
                 f["url"] = None
+
+            # A miniatura assina em SEPARADO, e de proposito: foto anterior a
+            # 15/09/2026 nao tem miniatura, e a assinatura de um caminho que
+            # nao existe levanta. Junto com o original, isso zerava o `url` da
+            # foto boa — o acessorio derrubando o essencial.
+            try:
+                from app.services.miniatura import caminho_da_miniatura
+                f["url_miniatura"] = s3.get_presigned_url(
+                    caminho_da_miniatura(caminho), expires_in=3600
+                )
+            except Exception:  # pragma: no cover - degradacao proposital
+                f["url_miniatura"] = None
         alvo["fotos_pendentes"].append(f)
 
     # So embarcacao COM envio aparece. Lista de frota inteira com zero ao lado
@@ -593,16 +598,21 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
         if caminho:
             try:
                 f["url"] = s3.get_presigned_url(caminho, expires_in=3600)
-                # A tela desenha a miniatura e guarda o original para quem
-                # clicar. Ver services/miniatura.py: ela e conveniencia, nao
-                # prova — se nao existir, o navegador cai no `url`.
+            except Exception as e:  # pragma: no cover - degradacao proposital
+                logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
+                f["url"] = None
+
+            # A miniatura assina em SEPARADO, e de proposito: foto anterior a
+            # 15/09/2026 nao tem miniatura, e a assinatura de um caminho que
+            # nao existe levanta. Junto com o original, isso zerava o `url` da
+            # foto boa — o acessorio derrubando o essencial.
+            try:
                 from app.services.miniatura import caminho_da_miniatura
                 f["url_miniatura"] = s3.get_presigned_url(
                     caminho_da_miniatura(caminho), expires_in=3600
                 )
-            except Exception as e:  # pragma: no cover - degradacao proposital
-                logger.warning(f"Falha ao assinar URL da foto {f.get('id')}: {e}")
-                f["url"] = None
+            except Exception:  # pragma: no cover - degradacao proposital
+                f["url_miniatura"] = None
         # O client_id vai no fim da descrição: "Atlas Pré-Data · Manutenção · <id>"
         dono = (f.get("descricao") or "").split("·")[-1].strip()
         if dono:
