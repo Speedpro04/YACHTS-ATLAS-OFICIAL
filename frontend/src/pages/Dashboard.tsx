@@ -329,9 +329,18 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {ativos.map((ativo) => (
-              <div 
-                key={ativo.id} 
-                className="group bg-white/[0.02] border border-white/5 rounded-sm overflow-hidden hover:border-[#c5a059]/40 transition-all duration-700 hover:-translate-y-2 shadow-2xl relative"
+              <div
+                key={ativo.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/app/ativos', { state: { abrirAtivo: ativo.id } })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate('/app/ativos', { state: { abrirAtivo: ativo.id } })
+                  }
+                }}
+                className="group bg-white/[0.02] border border-white/5 rounded-sm overflow-hidden hover:border-[#c5a059]/40 transition-all duration-700 hover:-translate-y-2 shadow-2xl relative cursor-pointer focus:outline-none focus:border-[#c5a059]/60"
               >
                 {/* Visual Header */}
                 <div className="h-56 bg-[#010c20] relative overflow-hidden">
@@ -387,9 +396,9 @@ export default function Dashboard() {
                           />
                         ))}
                      </div>
-                     <button className="text-[10px] uppercase tracking-[0.3em] font-black text-white/30 hover:text-[#c5a059] transition-all">
+                     <span className="text-[10px] uppercase tracking-[0.3em] font-black text-white/30 group-hover:text-[#c5a059] transition-all">
                         {t('common.explore')} →
-                     </button>
+                     </span>
                   </div>
                 </div>
 

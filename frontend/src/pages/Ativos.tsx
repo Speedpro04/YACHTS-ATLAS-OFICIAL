@@ -22,6 +22,7 @@ export default function Ativos() {
   // 15/09/2026 aqueles cards mandavam a categoria e ninguém lia — os oito
   // abriam a mesma lista, sem filtro nenhum.
   const [categoriaFiltro, setCategoriaFiltro] = useState<string | null>(null)
+  const [ativoPendente, setAtivoPendente] = useState<string | null>(null)
   const ROTULO_CATEGORIA: Record<string, string> = {
     documentacao: 'Documentação', motor: 'Motor', eletrica: 'Elétrica',
     seguranca: 'Segurança', manutencao: 'Manutenção', pintura: 'Pintura',
@@ -99,7 +100,19 @@ export default function Ativos() {
     }
     const cat = location.state && (location.state as any).openCategory
     if (cat) setCategoriaFiltro(String(cat))
+    const alvo = location.state && (location.state as any).abrirAtivo
+    if (alvo) setAtivoPendente(String(alvo))
   }, [location.state])
+
+  // A navegação chega ANTES da frota carregar, então o id fica guardado e a
+  // embarcação abre quando a lista existir. Sem isto, clicar no card levava
+  // para a frota e parava ali — que é como estava até 15/09/2026.
+  useEffect(() => {
+    if (!ativoPendente || ativos.length === 0) return
+    const achado = ativos.find((a) => a.id === ativoPendente)
+    if (achado) setSelectedAtivo(achado)
+    setAtivoPendente(null)
+  }, [ativoPendente, ativos])
 
   // Sem `health_status` (leitura falhou no backend) o filtro NAO esconde nada:
   // sumir com a frota da Marina por causa de um campo ausente seria trocar um
