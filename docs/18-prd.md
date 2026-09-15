@@ -78,6 +78,9 @@ Cobrança dinâmica baseada no tamanho do barco (pés):
 - **RF06:** Usuários e Marinas devem poder fazer upload de documentos e laudos.
 - **RF07:** O backend deve gerar um Hash SHA-256 para o arquivo no momento do upload.
 - **RF08:** O sistema deve verificar a validade de documentos temporais (ex: seguros) e exibir status (ativo, vencendo, vencido).
+- **RF15:** **Selar um serviço aprova as fotos dele, no mesmo ato.** Quem sela é o escritório, com as fotos à vista na mesa de trabalho — selar É a revisão da evidência. Separar os dois atos só garantia que o segundo fosse esquecido, e o serviço ia ao dossiê sem a prova (ensaio de 15/09/2026).
+- **RF16:** A **cobertura fotográfica conta apenas o que entra no dossiê.** Foto pendente aparece na galeria — o revisor precisa vê-la — mas não soma na barra, que prometia uma cobertura que o PDF não entregava.
+- **RF17:** O dossiê **imprime todo campo preenchido na ficha**, com o rótulo que a Marina viu no formulário. A grade fixa por categoria cobre os principais; o restante entra logo abaixo. Campo preenchido que não chega ao documento é trabalho jogado fora.
 
 ### Épico 4: Geração de Dossiês de Certificação
 - **RF09:** O sistema deve calcular o preço da geração do dossiê baseado no comprimento em pés do ativo cadastrado.

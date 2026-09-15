@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Anchor, ArrowRight, Camera, Check, ChevronDown, Database, RefreshCw, X } from 'lucide-react'
 import { api } from '../services/api'
 import AparelhosDeCampo from '../components/AparelhosDeCampo'
+import { rotuloDoCampo } from '../config/servicosCategorias'
 
 /**
  * Pré-Data — o armário de dados crus.
@@ -490,7 +491,7 @@ function Envio({
           {campos.map(([k, v]) => (
             <div key={k} className="flex items-baseline justify-between gap-3 min-w-0">
               <dt className="text-white/25 text-[9px] uppercase tracking-[0.2em] font-black truncate">
-                {k}
+                {rotuloDoCampo(k)}
               </dt>
               <dd className="text-white/70 text-sm text-right shrink-0">{String(v)}</dd>
             </div>

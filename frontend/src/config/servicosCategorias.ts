@@ -782,3 +782,30 @@ export function temFichaRica(categoriaKey: string): boolean {
   return Boolean(SERVICOS[categoriaKey])
 }
 
+/**
+ * Rótulo de um campo a partir da chave gravada em `dados`.
+ *
+ * As telas de revisão imprimiam a chave do banco: o revisor lia
+ * `HELICE_ESTADO` onde o formulário pergunta "Estado visual (cavitação,
+ * amassados)". Quem preenche e quem confere veem nomes diferentes para o mesmo
+ * campo — e é na conferência que a diferença custa caro.
+ *
+ * Sem rótulo conhecido, devolve a chave legível: campo de ficha antiga ainda
+ * precisa aparecer, e "Filtro oleo" é melhor que o campo sumir.
+ */
+const ROTULOS: Record<string, string> = (() => {
+  const mapa: Record<string, string> = {}
+  for (const ficha of Object.values(SERVICOS)) {
+    for (const campo of ficha.fields) if (!mapa[campo.key]) mapa[campo.key] = campo.label
+    for (const slot of ficha.uploads) if (!mapa[slot.key]) mapa[slot.key] = slot.label
+  }
+  return mapa
+})()
+
+export function rotuloDoCampo(chave: string): string {
+  const conhecido = ROTULOS[chave]
+  if (conhecido) return conhecido
+  const legivel = String(chave || '').replace(/_/g, ' ').trim()
+  return legivel ? legivel.charAt(0).toUpperCase() + legivel.slice(1) : ''
+}
+

@@ -679,6 +679,74 @@ def _status_do_selo(rasc: dict) -> str:
     return do_campo if do_campo in STATUS_VALIDOS else "registrado"
 
 
+def _aprovar_as_fotos_do_servico(supabase, rasc: dict, aprovador: str | None) -> list[str]:
+    """Aprova as fotos que vieram com este pré-dado, no mesmo ato do selo.
+
+    O PROBLEMA QUE ISTO RESOLVE. Selar gravava o serviço e apagava o rascunho —
+    e as fotos ficavam `pendente` para sempre. Como era o rascunho que as
+    amarrava ao serviço (pelo `client_id` na descrição), some o rascunho, some
+    o vínculo: a foto vira "imagem desta embarcação sem registro que a
+    explique". O dossiê exclui pendente de propósito, então o serviço ia para o
+    documento probatório SEM a prova. Aconteceu no ensaio de 15/09/2026: motor
+    selado, três fotos boas, nenhuma no PDF.
+
+    POR QUE APROVAR AQUI É HONESTO, e não um atalho. Quem sela é o escritório,
+    não o píer — a regra "quem captura não aprova" continua de pé. E ele não
+    aprova no escuro: a mesa de trabalho mostra as fotos ao lado do texto que
+    ele está corrigindo. Selar É a revisão; separar os dois atos só garantia
+    que o segundo fosse esquecido.
+
+    Best-effort por necessidade, não por escolha: a esta altura o registro já
+    foi inserido numa tabela append-only e não há como voltar atrás. Falhar
+    aqui devolve o estado de antes — foto pendente, recuperável na aba
+    Pré-Data — e deixa o motivo no log.
+    """
+    client_id = (rasc.get("dados") or {}).get("client_id")
+    if not client_id:
+        return []
+
+    try:
+        pendentes = (
+            supabase.table("documentos")
+            .select("id, descricao")
+            .eq("ativo_id", rasc["ativo_id"]).eq("status", "pendente")
+            .execute().data
+            or []
+        )
+    except Exception as e:  # pragma: no cover - degradacao proposital
+        logger.error(f"Falha ao ler as fotos do pré-dado {client_id}: {e}")
+        return []
+
+    # O client_id vai no fim da descricao: "Atlas Pré-Data · Motor · <client_id>".
+    # Comparar o fim, e nao `in`, para um id nao casar com o de outro envio que
+    # por acaso o contenha.
+    alvos = [
+        d["id"] for d in pendentes
+        if (d.get("descricao") or "").split("·")[-1].strip() == str(client_id)
+    ]
+    if not alvos:
+        return []
+
+    quando = datetime.now(timezone.utc).isoformat()
+    aprovadas = []
+    for doc_id in alvos:
+        try:
+            supabase.table("documentos").update({
+                "status": "verified",
+                "validado_em": quando,
+            }).eq("id", doc_id).execute()
+            aprovadas.append(doc_id)
+        except Exception as e:  # pragma: no cover - degradacao proposital
+            logger.error(f"Falha ao aprovar a foto {doc_id} ao selar: {e}")
+
+    if aprovadas:
+        logger.info(
+            f"Selo levou {len(aprovadas)} foto(s) do pré-dado {client_id} "
+            f"(aprovadas por {aprovador})"
+        )
+    return aprovadas
+
+
 @router.post("/rascunho/{rascunho_id}/selar")
 async def selar_rascunho(rascunho_id: str, token: dict = Depends(get_current_user)):
     """Sela o rascunho: INSERT na tabela append-only e remove o rascunho.
@@ -714,12 +782,17 @@ async def selar_rascunho(rascunho_id: str, token: dict = Depends(get_current_use
     if not selado.data:
         raise HTTPException(status_code=500, detail="Falha ao selar: registro não retornado")
 
+    # As fotos vao junto. Precisa ser ANTES do delete: e o rascunho que guarda
+    # o `client_id` que as amarra a este servico.
+    fotos = _aprovar_as_fotos_do_servico(supabase, rasc, token.get("sub") if token else None)
+
     # só remove o rascunho depois que o selo existe — nunca perde dado
     supabase.table("registros_rascunho").delete().eq("id", rascunho_id).execute()
 
     return {
         "message": "Registro selado. Não pode mais ser editado nem excluído.",
         "registro": selado.data[0],
+        "fotos_aprovadas": len(fotos),
     }
 
 

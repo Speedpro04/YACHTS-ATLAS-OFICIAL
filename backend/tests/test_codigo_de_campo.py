@@ -119,3 +119,30 @@ def test_recusa_nao_diz_qual_dos_dois_motivos():
     # meia informação a quem está tentando adivinhar código.
     fonte = inspect.getsource(nucleo.token_do_codigo)
     assert fonte.count("Código inválido ou revogado.") == 1
+
+
+# --- o codigo de campo nao herda admin ---
+
+def test_o_aparelho_do_patio_nunca_e_admin():
+    """O token de campo devolve o id da MARINA dona do codigo. Se essa conta
+    for admin, o filtro por dono era pulado e a lista voltava com a frota da
+    plataforma inteira — foi o que apareceu em 15/09/2026, dez embarcacoes de
+    quatro Marinas no aparelho do patio.
+
+    O codigo de campo e o acesso mais fraco do sistema: um papel que pode ser
+    colado num painel. Ele nao pode herdar privilegio de administrador por
+    causa de quem e o dono da conta.
+    """
+    from app.api.v1.ativos import _e_do_patio
+    assert _e_do_patio({"escopo": "campo"}) is True
+    assert _e_do_patio({"escopo": None}) is False
+    assert _e_do_patio({}) is False
+    assert _e_do_patio(None) is False
+
+
+def test_a_lista_de_ativos_pergunta_pelo_escopo():
+    """Se alguem remover a dependencia, o admin volta a vazar pelo aparelho."""
+    import inspect
+    from app.api.v1 import ativos
+    fonte = inspect.getsource(ativos.list_ativos)
+    assert "do_patio" in fonte, "list_ativos parou de olhar o escopo de campo"

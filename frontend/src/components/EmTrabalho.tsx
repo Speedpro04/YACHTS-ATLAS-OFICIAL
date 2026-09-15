@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Camera, Check, Lock, PenLine } from 'lucide-react'
 import { api } from '../services/api'
 import ConfirmarSelo from './ConfirmarSelo'
+import { rotuloDoCampo } from '../config/servicosCategorias'
 
 /**
  * A mesa do escritório — o meio do caminho que faltava.
@@ -286,7 +287,7 @@ function Cartao({
           {camposDoServico.map((k) => (
             <div key={k} className="flex items-center justify-between gap-3">
               <label className="text-white/25 text-[9px] uppercase tracking-[0.2em] font-black truncate">
-                {k.replace(/_/g, ' ')}
+                {rotuloDoCampo(k)}
               </label>
               <input
                 value={campos[k] ?? ''}

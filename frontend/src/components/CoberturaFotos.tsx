@@ -33,7 +33,18 @@ export default function CoberturaFotos({ ativo, onBack, readOnly = false }: { at
   for (const c of COBERTURA_CATS) porCat[c.key] = []
   for (const f of fotos) (porCat[normalizarCategoria(f.categoria)] ||= []).push(f)
 
-  const total = fotos.length
+  // A COBERTURA CONTA SÓ O QUE ENTRA NO DOSSIÊ.
+  //
+  // O dossiê exclui documento `pendente` de propósito (ver dossie_data): foto
+  // do píer não entra no documento probatório antes de alguém conferir. Mas a
+  // barra contava todas — e prometia uma cobertura que o PDF não entregava.
+  // No ensaio de 15/09/2026 ela marcou 3/460 com as três fotos pendentes, e o
+  // dossiê saiu sem nenhuma.
+  //
+  // As pendentes continuam na galeria: o revisor precisa vê-las para aprovar.
+  // Elas só não contam como cobertura antes de contarem de verdade.
+  const aguardando = fotos.filter((f) => f.status === 'pendente').length
+  const total = fotos.length - aguardando
   const pctGeral = Math.min(100, Math.round((total / MAX_FOTOS) * 100))
   const lotado = total >= MAX_FOTOS
   const premium = pctGeral >= COBERTURA_PREMIUM
@@ -106,6 +117,13 @@ export default function CoberturaFotos({ ativo, onBack, readOnly = false }: { at
             ? 'Cobertura premium (≥ 80%) — peso elevado na negociação e na seguradora.'
             : `Faltam ${MAX_FOTOS - total} fotos para o máximo. A partir de ${COBERTURA_PREMIUM}% o dossiê ganha peso premium na negociação.`}
         </p>
+        {aguardando > 0 && (
+          <p className="text-amber-400/70 text-[10px] tracking-wide mt-1.5">
+            {aguardando === 1
+              ? '1 foto aguardando revisão — ainda não entra no dossiê.'
+              : `${aguardando} fotos aguardando revisão — ainda não entram no dossiê.`}
+          </p>
+        )}
       </div>
 
       {/* ===== Cobertura por categoria ===== */}

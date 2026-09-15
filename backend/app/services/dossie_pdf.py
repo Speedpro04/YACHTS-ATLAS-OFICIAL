@@ -225,6 +225,32 @@ INTERNAS_DADOS = {
     "arquivos", "evidencias", "enviado_por", "enviado_em",
     "origem", "client_id", "capturado_em", "capturado_por",
     "fotos_no_aparelho", "registrado_por_login", "condicao",
+    # Guardado no selo para a auditoria, nunca impresso: e o texto ANTES da
+    # revisao do escritorio, e o dossie mostra o depois.
+    "original_do_pier", "aprovado_em", "aprovado_por",
+}
+
+# O que as grades fixas de cada categoria ja imprimem. Tudo o que sobrar da
+# ficha entra depois, com o rotulo que a Marina viu no formulario.
+#
+# ATE 15/09/2026 O QUE SOBRAVA SUMIA. A grade e uma lista escrita a mao, e a
+# ficha tecnica tem 257 campos: o colaborador preenchia "Estado visual
+# (cavitacao, amassados): Excelente" no pier, o dado atravessava a revisao,
+# entrava no registro selado — e nao aparecia no PDF. O documento existe para
+# provar o que foi feito; campo preenchido que nao chega nele e trabalho
+# jogado fora.
+_JA_NA_GRADE = {
+    "natureza_manutencao", "sistema_afetado", "metodo",
+    "finalidade", "local", "condutor", "habilitacao",
+    "cha_numero", "cha_validade", "pessoas_bordo", "resp_manuseio",
+    "quem_lancou", "hora_saida", "horimetro_saida",
+    "hora_retorno", "horimetro_retorno", "milhas_navegadas",
+    "quem_reboque", "combustivel", "condicoes", "retorno_estado",
+    "avaria_desc",
+    # Promovidos para o topo do card em dossie_data._registro_para_pdf
+    "data", "tipo", "servico", "resp", "prestador", "cnpj",
+    "horimetro", "horas_trabalhadas", "proxima_revisao", "valor", "custo",
+    "peca_descricao", "peca_serie", "peca_part_number", "observacao",
 }
 
 
@@ -1169,6 +1195,20 @@ def _ficha_card(m: dict):
         ], cols=3, total_w=164 * mm)
     if grid:
         inner.append(grid)
+
+    # O que a ficha coletou e a grade fixa nao previu.
+    from app.services.rotulos_ficha import rotulo_do_campo
+    sobras = [
+        (rotulo_do_campo(k), v) for k, v in c.items()
+        if k not in _JA_NA_GRADE
+        and k not in INTERNAS_DADOS
+        and not isinstance(v, (dict, list))
+        and v not in (None, "", [], {})
+    ]
+    if sobras:
+        extra = _info_grid(sobras, cols=3, total_w=164 * mm)
+        if extra:
+            inner.append(extra)
 
     if m.get("observacao"):
         inner.append(Paragraph(m["observacao"], S["body"]))

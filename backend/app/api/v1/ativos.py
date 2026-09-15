@@ -29,6 +29,24 @@ def _id_usuario_ou_campo(token: dict = Depends(usuario_ou_campo)) -> str:
     return token.get("sub")
 
 
+def _e_do_patio(token: dict = Depends(usuario_ou_campo)) -> bool:
+    """Se esta requisição veio do aparelho do pátio.
+
+    ISTO EXISTE PORQUE O CÓDIGO DE CAMPO HERDAVA ADMIN. O token de campo
+    devolve o id da MARINA dona dele — e se essa conta tem perfil `admin`, o
+    filtro por dono era pulado e a lista voltava com a frota da plataforma
+    inteira. Apareceu em 15/09/2026: o aparelho do pátio abriu mostrando dez
+    embarcações de quatro Marinas diferentes.
+
+    Hoje só a conta do fundador é admin, então nenhuma Marina viu a frota de
+    outra. Mas o desenho estava errado: o código de campo é o acesso mais fraco
+    do sistema — um papel que pode ser colado num painel do pátio — e acesso
+    fraco não pode herdar privilégio de administrador por causa de quem é o
+    dono da conta.
+    """
+    return (token or {}).get("escopo") == "campo"
+
+
 def _role(supabase, user_id: str) -> str | None:
     if user_id == "maintenance-admin":
         return "admin"
@@ -73,6 +91,7 @@ def _anexar_total_fotos(supabase, ativos: list[dict]) -> None:
 async def list_ativos(
     incluir_arquivados: bool = False,
     user_id: str = Depends(_id_usuario_ou_campo),
+    do_patio: bool = Depends(_e_do_patio),
 ):
     """Lista os ativos em operação.
 
@@ -81,7 +100,8 @@ async def list_ativos(
     substituto da exclusão: registro selado não pode ser apagado.
     """
     supabase = get_supabase_admin()
-    role = _role(supabase, user_id)
+    # O aparelho do pátio nunca é admin, mesmo quando a conta dele é.
+    role = None if do_patio else _role(supabase, user_id)
     q = supabase.table("ativos").select("*")
     if role != "admin":
         # Dois caminhos para o mesmo barco, e nunca pela mesma porta:
