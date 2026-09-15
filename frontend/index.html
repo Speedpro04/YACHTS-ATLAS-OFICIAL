@@ -119,29 +119,63 @@
             "provider": { "@id": "https://yachtsatlas.online/#organization" },
             "areaServed": { "@type": "Country", "name": "Brazil" },
             "description": "Dossiê imutável com auditoria técnica, histórico de manutenção, avaliação de mercado e rastreabilidade SHA-256.",
-            "offers": [
-              {
-                "@type": "Offer",
-                "name": "Dossiê Compact — até 45 pés",
-                "price": "200",
-                "priceCurrency": "USD",
-                "category": "Compact"
-              },
-              {
-                "@type": "Offer",
-                "name": "Dossiê Executive — 46 a 79 pés",
-                "price": "400",
-                "priceCurrency": "USD",
-                "category": "Executive"
-              },
-              {
-                "@type": "Offer",
-                "name": "Dossiê Superyacht — 80+ pés",
-                "price": "600",
-                "priceCurrency": "USD",
-                "category": "Superyacht"
-              }
-            ]
+            "offers": {
+              "@type": "AggregateOffer",
+              "priceCurrency": "USD",
+              "lowPrice": "100",
+              "highPrice": "1500",
+              "offerCount": 8,
+              "offers": [
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — até 26 pés",
+                  "price": "100",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 27 a 35 pés",
+                  "price": "150",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 36 a 45 pés",
+                  "price": "200",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 46 a 60 pés",
+                  "price": "300",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 61 a 79 pés",
+                  "price": "400",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 80 a 99 pés",
+                  "price": "600",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 100 a 149 pés",
+                  "price": "900",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Dossiê Atlas — 150+ pés",
+                  "price": "1500",
+                  "priceCurrency": "USD"
+                }
+              ]
+            }
           }
         ]
       }

@@ -48,7 +48,6 @@ function categorias(tipo: Ativo['tipo']): Categoria[] {
     { key: 'seguranca', titulo: 'Segurança', subtitulo: 'Salvatagem & Proteção', icon: Shield, healthKey: 'seguranca' },
     { key: 'pintura', titulo: 'Pintura', subtitulo: 'Estética & Superfície', icon: Paintbrush, healthKey: 'pintura' },
     { key: 'interior', titulo: 'Interior', subtitulo: 'Acomodações & Conforto', icon: Armchair, healthKey: 'interior' },
-    { key: 'dossie', titulo: 'Dossiê Atlas', subtitulo: 'Integridade Certificada', icon: FileCheck, healthKey: 'dossie' },
   ]
   if (tipo === 'veleiro') {
     return base.map((c) =>
@@ -114,10 +113,17 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
   const [contagem, setContagem] = useState<Record<string, number>>({})
   const [cameraAberta, setCameraAberta] = useState(false)
   const [criterioAberto, setCriterioAberto] = useState(false)
-  // Somente leitura (Portal do Proprietário): sem card de Dossiê (emissão é ação
-  // exclusiva da marina) e sem a seção "Dossiê Completo & Laudos" (só tem formulário
-  // de criação, nenhuma visualização de registros existentes).
-  const cats = categorias(ativo.tipo).filter((c) => !readOnly || c.key !== 'dossie')
+  // O DOSSIÊ SAIU DA GRADE DO PAINEL TÉCNICO (15/09/2026).
+  //
+  // Aquela grade são CATEGORIAS DA EMBARCAÇÃO — motor, casco, elétrica. Dossiê
+  // não é categoria do barco; é um ATO. Ele estava ali por vizinhança visual, e
+  // era isso que fazia a palavra "Dossiê" aparecer duas vezes na mesma tela
+  // significando coisas opostas: o card levava a EMITIR, e a seção logo abaixo
+  // é o que ABASTECE. Agora a emissão fica embaixo, depois do conteúdo — que é
+  // a ordem em que a decisão acontece: vejo o que tenho, depois emito.
+  //
+  // O Portal do Proprietário continua sem emitir: emissão é ação da Marina.
+  const cats = categorias(ativo.tipo)
   const classif = CLASSIF[ativo.classificacao] || CLASSIF.bronze
   const comprimento = ativo.comprimento_pes || 0
   const dossieExtra = readOnly ? [] : DOSSIE_CATS.filter((c) => DOSSIE_EXTRA_IDS.includes(c.id) && comprimento >= c.porteMinimoPes)
@@ -439,6 +445,25 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
               </div>
             </div>
           )}
+
+          {/* ===== Emitir — o fim da leitura, e não o começo =====
+              Botão no fim de propósito: emitir é a conclusão de ter olhado o
+              que a embarcação tem. No topo, ele convidaria a clicar antes de
+              olhar — e cada emissão gasta uma das 4 do ano. */}
+          {!readOnly && (
+            <div className="flex flex-col items-center gap-3 pt-10 pb-2">
+              <button
+                onClick={() => setSecao({ key: 'dossie', titulo: 'Dossiê Atlas', subtitulo: 'Integridade Certificada', icon: FileCheck })}
+                className="flex items-center gap-3 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-12 py-4 rounded-sm text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[#c5a059]/10"
+              >
+                <FileCheck size={16} />
+                Gerar Dossiê Atlas
+              </button>
+              <p className="text-white/25 text-[10px]">
+                Compila tudo o que está selado nesta embarcação num documento único.
+              </p>
+            </div>
+          )}
         </div>
       ) : secao.key === 'fotos' ? (
         <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
@@ -601,11 +626,16 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
                 <FileCheck size={48} className="mx-auto text-white/10" />
                 {/* Clicável mesmo fora do computador: o toque tem que RESPONDER,
                     dizendo por que não pode. Botão morto não explica nada. */}
+                {/* Mais discreto que o de entrada, e de propósito: aqui a pessoa
+                    JÁ decidiu emitir — o botão dourado que a trouxe até aqui
+                    está na tela anterior. Dois botões chamativos em sequência
+                    para o mesmo ato viram insistência, e este gasta uma das 4
+                    emissões do ano. */}
                 <button
                   onClick={gerarPdf}
-                  className={`mx-auto flex items-center gap-3 px-8 py-4 rounded-sm text-xs font-black uppercase tracking-[0.25em] transition-all ${
+                  className={`mx-auto flex items-center gap-3 px-8 py-3.5 rounded-sm text-[10px] font-black uppercase tracking-[0.25em] transition-all ${
                     desktop
-                      ? 'bg-gradient-to-r from-[#c5a059] to-[#b38f4d] hover:from-[#d4b36d] hover:to-[#c5a059] text-[#010c20] shadow-xl hover:scale-[1.02]'
+                      ? 'border border-[#c5a059]/50 text-[#c5a059] hover:bg-[#c5a059] hover:text-[#010c20]'
                       : 'bg-white/5 border border-white/10 text-white/40'
                   }`}
                 >
