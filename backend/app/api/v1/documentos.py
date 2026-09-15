@@ -392,6 +392,17 @@ async def upload_documento(
     if quem.get("escopo") == "campo":
         pendente_revisao = True
 
+    # A FOTO É ARQUIVADA NA CATEGORIA DA GALERIA, não na da ficha.
+    #
+    # São dois vocabulários: a ficha organiza o serviço (`casco`), a galeria
+    # organiza a foto (`casco_exterior`). O app de campo manda o primeiro, e
+    # onde os dois divergem a foto caía em "Outros" — aconteceu em 15/09/2026
+    # com duas fotos da aba "Integridade do Casco". Traduzir na escrita
+    # conserta o painel e o dossiê de uma vez. Ver services/categorias_galeria.
+    if tipo == "foto":
+        from app.services.categorias_galeria import para_galeria
+        categoria = para_galeria(categoria)
+
     # Insert via service key: o backend já autorizou via get_ativo_autorizado;
     # a chave anônima é barrada pelo RLS da tabela documentos.
     supabase = get_supabase_admin()
