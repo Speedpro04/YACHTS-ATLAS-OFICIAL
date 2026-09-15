@@ -135,12 +135,18 @@ def test_conta_sem_marca_de_cobranca_nunca_e_bloqueada(metadata):
 class _AuthAdmin:
     """Dublê do Auth admin do Supabase, que guarda o metadata em memória."""
 
-    def __init__(self, metadata):
+    def __init__(self, metadata, email="marina@exemplo.com"):
         self.metadata = dict(metadata)
+        self.email = email
 
     def get_user_by_id(self, uid):
         return types.SimpleNamespace(
-            user=types.SimpleNamespace(user_metadata=dict(self.metadata))
+            user=types.SimpleNamespace(
+                user_metadata=dict(self.metadata),
+                # `marinas_fundadoras` e chaveada por e-mail, entao o duble
+                # precisa ter um para a devolucao da vaga chegar a acontecer.
+                email=self.email,
+            )
         )
 
     def update_user_by_id(self, uid, dados):
@@ -155,6 +161,7 @@ class _AdminComMetadata:
         self.auth = types.SimpleNamespace(admin=self.auth_admin)
         self._usuario_id = usuario_id
         self.inserts = []
+        self.updates = []
 
     def table(self, nome):
         return _QueryPayments(self, nome)
@@ -165,15 +172,22 @@ class _QueryPayments:
         self._admin = admin
         self._tabela = tabela
         self._payload = None
+        self._update = None
+        self._filtros = []
 
     def insert(self, payload):
         self._payload = payload
+        return self
+
+    def update(self, payload):
+        self._update = payload
         return self
 
     def select(self, *a, **k):
         return self
 
     def eq(self, *a, **k):
+        self._filtros.append(a)
         return self
 
     def order(self, *a, **k):
@@ -183,6 +197,9 @@ class _QueryPayments:
         return self
 
     def execute(self):
+        if self._update is not None:
+            self._admin.updates.append((self._tabela, self._update, self._filtros))
+            return types.SimpleNamespace(data=[])
         if self._payload is not None:
             self._admin.inserts.append((self._tabela, self._payload))
             return types.SimpleNamespace(data=[])
@@ -264,3 +281,84 @@ def test_assinatura_cancelada_revoga_o_acesso(acesso_falso):
 
     assert admin.auth_admin.metadata["pagamento"] == "cancelado"
     assert avaliar_acesso(admin.auth_admin.metadata).motivo == "assinatura_cancelada"
+
+
+# --------------------------------------------------------------------------
+# Cancelar é um movimento de três partes
+# --------------------------------------------------------------------------
+# A condição de fundadora vale ENQUANTO a assinatura estiver ativa (regra do
+# Marcos, 15/09/2026). Por muito tempo só a primeira parte acontecia: o acesso
+# caía, mas a vaga continuava ocupada e a conta continuava marcada como
+# fundadora — então quem saía voltava pagando o preço de lançamento por uma
+# vaga que ela mesma havia liberado.
+
+def test_cancelar_derruba_a_condicao_de_fundadora(acesso_falso):
+    """Saiu, perdeu o lugar: voltando, entra pela porta normal."""
+    admin = acesso_falso({
+        "pagamento": "pago", "oferta": "fundadora",
+        "preco_mensal": 200, "uf": "SP", "nome": "Marina Teste",
+    })
+
+    StripeService()._handle_subscription_deleted(
+        types.SimpleNamespace(id="sub_123", metadata={}, status="canceled")
+    )
+
+    meta = admin.auth_admin.metadata
+    assert meta["oferta"] == "oficial"
+    assert meta["preco_mensal"] == 250
+    # E o que não é da assinatura continua lá — o update do Auth troca o
+    # objeto inteiro, e já apagou nome de marina uma vez.
+    assert meta["nome"] == "Marina Teste"
+
+
+def test_a_porta_de_volta_cobra_o_valor_oficial(acesso_falso):
+    """O botão "Assinar novamente" lê o metadata. Se `oferta` continuasse
+    "fundadora", ele devolveria o link de R$ 1.000 para quem cancelou."""
+    from app.core.acesso import avaliar_acesso
+    from app.core.precos import link_de_checkout
+
+    admin = acesso_falso({"pagamento": "pago", "oferta": "fundadora", "uf": "SP"})
+
+    StripeService()._handle_subscription_deleted(
+        types.SimpleNamespace(id="sub_123", metadata={}, status="canceled")
+    )
+
+    bloqueio = avaliar_acesso(admin.auth_admin.metadata)
+    oficial, _ = link_de_checkout(fundadora=False, uf="SP")
+    fundadora, _ = link_de_checkout(fundadora=True, uf="SP")
+    assert bloqueio.link_pagamento == oficial
+    assert bloqueio.link_pagamento != fundadora
+
+
+def test_cancelar_devolve_a_vaga_para_o_estado(acesso_falso):
+    """São 4 por estado e elas são o argumento da campanha. Vaga que não volta
+    é venda que some do estoque sem ninguém notar."""
+    admin = acesso_falso({"pagamento": "pago", "oferta": "fundadora", "uf": "SP"})
+
+    StripeService()._handle_subscription_deleted(
+        types.SimpleNamespace(id="sub_123", metadata={}, status="canceled")
+    )
+
+    vagas = [u for u in admin.updates if u[0] == "marinas_fundadoras"]
+    assert len(vagas) == 1, "a vaga fundadora não foi devolvida"
+    _, mudanca, filtros = vagas[0]
+    assert mudanca["status"] == "cancelado"
+    # Só a linha desta marina, e só se ela ainda estiver ativa.
+    assert ("email", "marina@exemplo.com") in filtros
+    assert ("status", "ativo") in filtros
+
+
+def test_sem_email_a_vaga_nao_e_tocada(acesso_falso):
+    """Falha de leitura não pode virar UPDATE sem filtro — seria cancelar a
+    vaga de todo mundo."""
+    admin = acesso_falso({"pagamento": "pago", "oferta": "fundadora"})
+    admin.auth_admin.email = ""
+
+    StripeService()._handle_subscription_deleted(
+        types.SimpleNamespace(id="sub_123", metadata={}, status="canceled")
+    )
+
+    assert [u for u in admin.updates if u[0] == "marinas_fundadoras"] == []
+    # O acesso cai do mesmo jeito: a vaga é o acessório, o acesso é o essencial.
+    assert admin.auth_admin.metadata["pagamento"] == "cancelado"
+

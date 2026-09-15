@@ -981,8 +981,54 @@ class StripeService:
     # existe mais cobranca automatica para religar sozinha.
     STATUS_ENCERRADOS = ("canceled", "unpaid", "incomplete_expired")
 
+    @staticmethod
+    def _devolver_vaga_fundadora(usuario_id: str) -> None:
+        """Solta a vaga de fundadora que esta marina ocupava.
+
+        Sao 4 por estado, e elas sao o argumento inteiro da campanha. Enquanto
+        isto nao existia, marina que cancelava levava a vaga junto: o contador
+        publico anunciava 19 de 20, e a vaga que voce podia vender ficava
+        guardada para quem ja tinha saido — calada, sem ninguem notar.
+
+        Best-effort, como todo o resto do webhook: falhar aqui nao pode
+        derrubar o processamento do evento. O pior caso e a vaga continuar
+        presa, que e exatamente o estado de hoje.
+        """
+        try:
+            from app.core.supabase import get_supabase_admin
+            supabase = get_supabase_admin()
+
+            # `marinas_fundadoras` e chaveada por e-mail, nao por usuario_id.
+            resposta = supabase.auth.admin.get_user_by_id(usuario_id)
+            usuario = getattr(resposta, "user", None) or resposta
+            email = (getattr(usuario, "email", None) or "").strip().lower()
+            if not email:
+                logger.warning(
+                    f"Sem e-mail para o usuario {usuario_id} — a vaga fundadora "
+                    "nao foi devolvida"
+                )
+                return
+
+            supabase.table("marinas_fundadoras").update({
+                "status": "cancelado",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("email", email).eq("status", "ativo").execute()
+            logger.info(f"Vaga fundadora devolvida a fila: {email}")
+        except Exception as e:
+            logger.error(f"Falha ao devolver a vaga fundadora de {usuario_id}: {e}")
+
     def _bloquear_por_assinatura_encerrada(self, subscription_id: str, motivo: str) -> None:
-        """Tira o acesso de quem nao tem mais assinatura ativa."""
+        """Encerra a assinatura: tira o acesso, a vaga e a condicao de fundadora.
+
+        Sao tres movimentos, e por muito tempo so o primeiro acontecia.
+
+        A regra de negocio (decidida em 15/09/2026) e que a condicao de
+        fundadora vale ENQUANTO a assinatura estiver ativa. Quem sai devolve o
+        lugar; se voltar, entra pela porta normal, no valor oficial. Sem o
+        `oferta -> oficial` daqui, a marina que cancelou clicava em "Assinar
+        novamente" e recebia de volta o link de fundadora — pagando o preco de
+        lancamento por uma vaga que ela mesma tinha liberado.
+        """
         usuario_id = self._usuario_da_assinatura(subscription_id)
         if not usuario_id:
             logger.warning(
@@ -990,7 +1036,13 @@ class StripeService:
                 "checkout de origem — nenhum acesso foi revogado"
             )
             return
-        self._atualizar_metadata(usuario_id, {"pagamento": "cancelado"})
+
+        self._atualizar_metadata(usuario_id, {
+            "pagamento": "cancelado",
+            "oferta": "oficial",
+            "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
+        })
+        self._devolver_vaga_fundadora(usuario_id)
         logger.info(f"Acesso revogado ({motivo}): assinatura {subscription_id}")
 
     def _handle_subscription_updated(self, subscription: stripe.Subscription) -> Dict[str, Any]:
