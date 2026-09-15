@@ -37,6 +37,8 @@ type FotoPendente = {
   created_at: string
   /** URL assinada, válida por uma hora. Null quando a assinatura falhou. */
   url: string | null
+  /** Derivada, só para desenhar. Não é a prova — ver services/miniatura.py. */
+  url_miniatura?: string | null
 }
 
 type Embarcacao = {
@@ -322,9 +324,15 @@ export default function PreData() {
                                   title="Abrir em tamanho real"
                                 >
                                   <img
-                                    src={f.url}
+                                    src={f.url_miniatura || f.url}
                                     alt={f.nome_arquivo}
                                     loading="lazy"
+                                    onError={(e) => {
+                                      const img = e.currentTarget
+                                      if (img.dataset.caiu || !f.url || img.src === f.url) return
+                                      img.dataset.caiu = '1'
+                                      img.src = f.url
+                                    }}
                                     className="w-full h-full object-cover"
                                   />
                                 </a>

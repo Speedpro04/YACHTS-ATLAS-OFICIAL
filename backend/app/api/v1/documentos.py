@@ -12,12 +12,14 @@ from app.services.s3_service import get_s3_service
 from app.services.exif_service import geo_para_selar
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
+import logging
 import re
 import unicodedata
 import uuid
 from datetime import datetime, timezone
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 audit_service = AuditService()
 
 
@@ -435,6 +437,24 @@ async def upload_documento(
             
             raise HTTPException(status_code=500, detail="Failed to upload file")
         
+        # MINIATURA — conveniência, nunca prova.
+        #
+        # O original já está salvo e hasheado acima; isto só evita que a tela
+        # de revisão baixe 3 MB para desenhar um quadradinho de 80px. Falhar
+        # aqui não pode derrubar um upload que já deu certo: a tela cai no
+        # original e o pior caso é a lentidão que isto veio resolver.
+        try:
+            from app.services.miniatura import gerar, caminho_da_miniatura
+            mini = gerar(contents, file.content_type)
+            if mini:
+                s3_service.upload_with_worm(
+                    file_bytes=mini,
+                    key=caminho_da_miniatura(s3_key),
+                    content_type="image/jpeg",
+                )
+        except Exception as e:  # pragma: no cover - degradação proposital
+            logger.warning(f"Falha ao gerar miniatura de {doc_id}: {e}")
+
         # Create document record (colunas existentes na tabela documentos)
         doc_data = {
             "id": doc_id,

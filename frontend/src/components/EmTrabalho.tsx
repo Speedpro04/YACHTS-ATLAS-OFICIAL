@@ -31,6 +31,8 @@ type Foto = {
   created_at: string
   status: string
   url: string | null
+  /** Derivada, para a tela desenhar. Não é a prova — ver services/miniatura.py. */
+  url_miniatura?: string | null
 }
 
 type Item = {
@@ -184,7 +186,22 @@ function Miniatura({ foto }: { foto: Foto }) {
       title={`${foto.nome_arquivo} — abrir em tamanho real`}
       className="w-20 h-20 rounded-sm overflow-hidden border border-white/10 hover:border-[#c5a059]/50 transition-colors"
     >
-      <img src={foto.url} alt={foto.nome_arquivo} loading="lazy" className="w-full h-full object-cover" />
+      {/* Miniatura para desenhar, original para clicar. Antes o quadradinho de
+          80px baixava os 3 MB da câmera — três fotos por serviço, 10 MB toda
+          vez que alguém abria a aba. Foto antiga não tem miniatura: o onError
+          cai no original uma única vez (o guard evita laço se os dois falharem). */}
+      <img
+        src={foto.url_miniatura || foto.url}
+        alt={foto.nome_arquivo}
+        loading="lazy"
+        onError={(e) => {
+          const img = e.currentTarget
+          if (img.dataset.caiu || !foto.url || img.src === foto.url) return
+          img.dataset.caiu = '1'
+          img.src = foto.url
+        }}
+        className="w-full h-full object-cover"
+      />
     </a>
   )
 }
