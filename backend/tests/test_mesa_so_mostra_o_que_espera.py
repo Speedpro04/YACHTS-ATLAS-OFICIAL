@@ -27,15 +27,33 @@ def test_a_mesa_consulta_os_registros_selados():
         "a mesa parou de consultar os selados — as fotos de serviço selado vão "
         "voltar a aparecer como órfãs"
     )
-    assert "clients_selados" in fonte
+    assert "com_dono" in fonte
 
 
-def test_orfa_exclui_quem_tem_selo():
+def test_o_dono_vale_nos_tres_estados():
+    """O serviço de um pré-dado vive em três lugares, e a foto é dele nos três:
+    na fila do Pré-Data, na mesa, e selado.
+
+    A mesa só enxergava o do meio. Foto de serviço ainda na FILA aparecia como
+    "sem registro que a explique" — aconteceu em 15/09/2026 com o registro
+    "Pintura está perfeita", que estava ali, visível, na aba ao lado.
+    """
+    fonte = inspect.getsource(registros.listar_em_trabalho)
+    linha = [l for l in fonte.splitlines() if "com_dono = {" in l]
+    assert linha, "não achei o conjunto de donos"
+
+    assert "rascunhos + selados" in fonte, (
+        "o conjunto de donos parou de somar a fila do Pré-Data aos selados — "
+        "foto de serviço que ainda espera na fila vai voltar a parecer órfã"
+    )
+
+
+def test_orfa_exclui_quem_tem_dono():
     fonte = inspect.getsource(registros.listar_em_trabalho)
     linha = [l for l in fonte.splitlines() if "orfas = " in l]
     assert linha, "não achei a definição de órfãs"
-    assert "not in clients_selados" in linha[0], (
-        "a exclusão dos selados saiu do cálculo das órfãs"
+    assert "not in com_dono" in linha[0], (
+        "a exclusão de quem tem dono saiu do cálculo das órfãs"
     )
 
 

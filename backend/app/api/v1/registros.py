@@ -644,9 +644,22 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
         .eq("ativo_id", ativo_id).execute().data
         or []
     )
-    clients_selados = {
+
+    # TEM DONO EM QUALQUER UM DOS TRÊS LUGARES = NÃO É ÓRFÃ.
+    #
+    # O serviço de um pré-dado vive em três estados, e a foto continua sendo
+    # dele nos três:
+    #   1. na fila do Pré-Data  — rascunho ainda não enviado para Ativos;
+    #   2. na mesa              — rascunho enviado, em edição;
+    #   3. selado               — virou prova.
+    #
+    # A mesa só enxergava o estado 2. Resultado: foto de serviço que ainda
+    # espera na fila (1) e foto de serviço já selado (3) eram as duas
+    # anunciadas como "sem registro que as explique" — com o registro existindo
+    # e visível em outra aba. Aconteceu nos dois sentidos em 15/09/2026.
+    com_dono = {
         str((r.get("dados") or {}).get("client_id"))
-        for r in selados
+        for r in (rascunhos + selados)
         if (r.get("dados") or {}).get("client_id")
     }
 
@@ -670,7 +683,7 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
     # aba Pré-Data continua listando toda foto pendente da embarcação, e é lá
     # que se aprova. E desde hoje o próprio selo já aprova as fotos do serviço,
     # então este caso só existe para os envios anteriores ao conserto.
-    orfas = [f for f in pendentes if _dona(f) not in clients_selados]
+    orfas = [f for f in pendentes if _dona(f) not in com_dono]
 
     return {"em_trabalho": itens, "fotos_sem_registro": orfas, "total": len(itens)}
 

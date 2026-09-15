@@ -152,6 +152,17 @@ export default function EmTrabalho({ ativoId }: { ativoId: string }) {
       <p className="text-white/20 text-[10px] leading-relaxed pt-4 border-t border-white/5">
         Tudo fica armazenado no banco de dados, inclusive o que veio do píer antes
         das edições. Disponível em caso de auditoria.
+        {/* A retificação vive aqui embaixo, e não num aviso ao lado do botão
+            de selar. Quem está prestes a selar precisa pensar que aquilo é
+            definitivo — é o que faz a pessoa reler antes de clicar. Dizer
+            "depois dá para corrigir" naquele momento afrouxa a única revisão
+            que o registro vai ter. Mas quem já selou e achou um erro precisa
+            saber que existe saída, e é isso que esta linha entrega: sem
+            alarme, para quem procura. */}{' '}
+        Depois de selado, um registro não é editado nem apagado — mas pode ser{' '}
+        <strong className="text-white/35 font-semibold">retificado</strong>: a
+        correção entra como registro novo, com o motivo, e os dois aparecem no
+        dossiê, lado a lado.
       </p>
 
       {selar && (

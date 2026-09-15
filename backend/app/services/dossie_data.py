@@ -270,11 +270,23 @@ def _saude_por_categoria(registros: list[dict], tipo: Optional[str] = None) -> l
     # Índice", no PDF, publica esta regra; ela precisa ser verdade aqui.
     registros = [r for r in registros
                  if (r.get("situacao") or "vigente") != "retificado"]
+    return [(label, st) for _cat, label, st in _saude_bruta(registros, tipo)]
+
+
+def _saude_bruta(registros: list[dict], tipo: Optional[str] = None) -> list[tuple[str, str, str]]:
+    """(categoria, rótulo, estado) — o cálculo, uma vez só.
+
+    Extraído para o painel poder usar EXATAMENTE esta regra. Antes o painel
+    lia um campo `health_status` que nenhum caminho do backend produzia, então
+    ele dizia "nenhum sistema avaliado" para toda embarcação, sempre, enquanto
+    o dossiê da mesma embarcação imprimia "Motor: conforme". Duas telas, duas
+    respostas, e a errada era a que a Marina olha todo dia.
+    """
     out = []
     for cat, label in categorias_do_tipo(tipo):
         regs = _por_categoria(registros, cat)
         if not regs:
-            out.append((label, "na"))
+            out.append((cat, label, "na"))
             continue
         status = {r.get("status") for r in regs}
         if "atencao" in status:
@@ -290,8 +302,27 @@ def _saude_por_categoria(registros: list[dict], tipo: Optional[str] = None) -> l
             st = "warn"
         else:
             st = "ok"
-        out.append((label, st))
+        out.append((cat, label, st))
     return out
+
+
+# O painel nomeia os mesmos estados de outro jeito. A tradução mora aqui, num
+# lugar só — foi ter dois vocabulários soltos que fez a foto do casco cair em
+# "Outros" mais cedo hoje.
+_ESTADO_NO_PAINEL = {"ok": "ok", "warn": "warning", "crit": "critical", "na": "na"}
+
+
+def saude_por_chave(registros: list[dict], tipo: Optional[str] = None) -> dict[str, str]:
+    """O que o painel consome: {categoria: estado}, sem as não avaliadas.
+
+    Omitir a categoria sem registro é o contrato que o painel já espera: ele
+    trata ausência como "não avaliado" e mantém a categoria fora da média.
+    """
+    return {
+        cat: _ESTADO_NO_PAINEL[st]
+        for cat, _label, st in _saude_bruta(registros, tipo)
+        if st != "na"
+    }
 
 
 def _prontidao(saude: list[tuple[str, str]]) -> Optional[int]:

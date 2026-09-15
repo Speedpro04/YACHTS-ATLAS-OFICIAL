@@ -14,10 +14,12 @@ from app.core.campo import usuario_ou_campo
 from app.core.authz import email_do_usuario
 from datetime import datetime, timezone
 import uuid
+import logging
 
 router = APIRouter()
 
 
+logger = logging.getLogger(__name__)
 def _id_usuario_ou_campo(token: dict = Depends(usuario_ou_campo)) -> str:
     """Id da conta, aceitando o aparelho do pátio.
 
@@ -87,6 +89,53 @@ def _anexar_total_fotos(supabase, ativos: list[dict]) -> None:
         a["total_fotos"] = contagem.get(a.get("id"), 0)
 
 
+def _anexar_saude(supabase, ativos: list[dict]) -> None:
+    """Injeta `health_status` — o estado de cada sistema — em UMA consulta.
+
+    ESTE CAMPO NUNCA EXISTIU. O painel lê `ativo.health_status` desde sempre
+    (AtivoHub.tsx) e nenhum caminho do backend o produzia: não é coluna de
+    `ativos` nem era calculado em lugar nenhum. O resultado é que o cabeçalho
+    de TODA embarcação dizia "nenhum dos 10 sistemas avaliado", inclusive as
+    que tinham registro selado — enquanto o dossiê da mesma embarcação
+    imprimia "Motor: conforme, conformidade 100%".
+
+    Painel e dossiê discordando sobre o mesmo barco, e a errada era a tela que
+    a Marina abre todo dia.
+
+    A regra vem de `dossie_data.saude_por_chave`, a MESMA que o PDF usa. Não há
+    segunda fórmula aqui — foi ter duas que criou o problema.
+    """
+    ids = [a["id"] for a in ativos if a.get("id")]
+    if not ids:
+        return
+    try:
+        from app.services.dossie_data import saude_por_chave
+
+        # A view resolve a cadeia de retificação: registro corrigido sai da
+        # conta, e quem vale é a correção. Sem isso um problema já resolvido
+        # puxaria a categoria para baixo para sempre.
+        linhas = (
+            supabase.table("vw_registros_situacao")
+            .select("ativo_id, categoria, status, situacao, dados")
+            .in_("ativo_id", ids).execute().data
+            or []
+        )
+    except Exception as e:  # pragma: no cover - degradacao proposital
+        # Sem os registros, o painel volta a dizer "não avaliado" — que é o
+        # comportamento de antes, e não uma informação inventada.
+        logger.warning(f"Falha ao calcular a saúde dos ativos: {e}")
+        return
+
+    por_ativo: dict[str, list[dict]] = {}
+    for linha in linhas:
+        por_ativo.setdefault(linha.get("ativo_id"), []).append(linha)
+
+    for a in ativos:
+        a["health_status"] = saude_por_chave(
+            por_ativo.get(a.get("id"), []), a.get("tipo")
+        )
+
+
 @router.get("")
 async def list_ativos(
     incluir_arquivados: bool = False,
@@ -122,6 +171,7 @@ async def list_ativos(
     response = q.order("created_at", desc=True).execute()
     ativos = [_enrich(a) for a in (response.data or [])]
     _anexar_total_fotos(supabase, ativos)
+    _anexar_saude(supabase, ativos)
     return ativos
 
 
