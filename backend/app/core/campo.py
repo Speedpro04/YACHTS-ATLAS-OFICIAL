@@ -82,6 +82,24 @@ def criar_codigo(usuario_id: str, apelido: str, criado_por: str | None) -> str:
     return codigo
 
 
+def _nome_da_marina(usuario_id: str) -> str | None:
+    """O nome que a Marina se deu no cadastro, para a tela do pátio mostrar.
+
+    Best-effort de propósito: o colaborador não pode ficar sem entrar porque o
+    nome não veio. Sem ele o app mostra um rótulo neutro — chato, nunca
+    impeditivo.
+    """
+    try:
+        resposta = get_supabase_admin().auth.admin.get_user_by_id(usuario_id)
+        usuario = getattr(resposta, "user", None) or resposta
+        meta = getattr(usuario, "user_metadata", None) or {}
+        nome = (meta.get("marina") or meta.get("nome") or "").strip()
+        return nome or None
+    except Exception as e:  # pragma: no cover - degradação proposital
+        logger.warning(f"Falha ao ler o nome da Marina {usuario_id}: {e}")
+        return None
+
+
 def token_do_codigo(codigo: str) -> dict:
     """Troca o código por um token de campo. Levanta 401 se não valer.
 
@@ -122,6 +140,10 @@ def token_do_codigo(codigo: str) -> dict:
         "token": token,
         "apelido": registro.get("apelido"),
         "validade_dias": VALIDADE.days,
+        # O app nao pode trazer o nome da Marina escrito no proprio codigo: ele
+        # e um so para todas. Quem sabe de quem e o aparelho e o codigo, e o
+        # codigo esta aqui.
+        "marina": _nome_da_marina(str(registro["usuario_id"])),
     }
 
 
