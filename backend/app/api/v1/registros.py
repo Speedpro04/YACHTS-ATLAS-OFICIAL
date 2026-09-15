@@ -628,15 +628,49 @@ async def listar_em_trabalho(ativo_id: str, token: dict = Depends(get_current_us
         usadas.update(str(f["id"]) for f in minhas)
         itens.append({**r, "fotos": minhas})
 
-    # Órfã que já foi aprovada não fica na mesa: ela cumpriu o caminho, entrou no
-    # dossiê e não pede mais decisão de ninguém. A mesa mostra o que ESPERA — o
-    # resto é histórico, e histórico tem lugar próprio no Painel Técnico.
-    orfas = [
-        f for f in (
-            soltas + [f for lista in por_client.values() for f in lista if str(f["id"]) not in usadas]
-        )
-        if f.get("status") == "pendente"
+    # ÓRFÃ DE VERDADE É A QUE NÃO TEM REGISTRO EM LUGAR NENHUM.
+    #
+    # Até 15/09/2026 bastava não achar o rascunho para a foto ser chamada de
+    # órfã. Só que selar APAGA o rascunho — então, no instante em que o serviço
+    # vira prova, as fotos dele passavam a ser anunciadas como "sem registro
+    # que as explique", com o registro selado logo ali no dossiê. A tela
+    # afirmava o contrário do que o banco dizia.
+    #
+    # Agora o selo leva as fotos junto, e isso deixa de acontecer. Estas duas
+    # consultas existem para os envios anteriores ao conserto — e para o dia em
+    # que a aprovação do selo falhar, que é best-effort por construção.
+    selados = (
+        supabase.table("registros").select("dados")
+        .eq("ativo_id", ativo_id).execute().data
+        or []
+    )
+    clients_selados = {
+        str((r.get("dados") or {}).get("client_id"))
+        for r in selados
+        if (r.get("dados") or {}).get("client_id")
+    }
+
+    candidatas = soltas + [
+        f for lista in por_client.values() for f in lista if str(f["id"]) not in usadas
     ]
+
+    # Aprovada já cumpriu o caminho e entrou no dossiê: não pede decisão de
+    # ninguém. A mesa mostra o que ESPERA.
+    pendentes = [f for f in candidatas if f.get("status") == "pendente"]
+
+    def _dona(foto: dict) -> str:
+        return (foto.get("descricao") or "").split("·")[-1].strip()
+
+    # SELADO SAI DA MESA — imagem e texto. Decisão do Marcos em 15/09/2026, e
+    # ela é a leitura certa do que esta tela é: a mesa mostra o que ESPERA
+    # trabalho. Serviço selado não espera mais nada de ninguém; ele virou prova
+    # e mora no Painel Técnico e no dossiê.
+    #
+    # A foto pendente de um serviço já selado não fica invisível no sistema: a
+    # aba Pré-Data continua listando toda foto pendente da embarcação, e é lá
+    # que se aprova. E desde hoje o próprio selo já aprova as fotos do serviço,
+    # então este caso só existe para os envios anteriores ao conserto.
+    orfas = [f for f in pendentes if _dona(f) not in clients_selados]
 
     return {"em_trabalho": itens, "fotos_sem_registro": orfas, "total": len(itens)}
 
