@@ -18,6 +18,15 @@ export default function Ativos() {
   const { t } = useTranslation()
   const location = useLocation()
   const [ativos, setAtivos] = useState<Ativo[]>([])
+  // Filtro vindo do Painel Técnico do Dashboard. Ver o useEffect abaixo: até
+  // 15/09/2026 aqueles cards mandavam a categoria e ninguém lia — os oito
+  // abriam a mesma lista, sem filtro nenhum.
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string | null>(null)
+  const ROTULO_CATEGORIA: Record<string, string> = {
+    documentacao: 'Documentação', motor: 'Motor', eletrica: 'Elétrica',
+    seguranca: 'Segurança', manutencao: 'Manutenção', pintura: 'Pintura',
+    interior: 'Interior', casco: 'Casco', drenagem: 'Drenagem / Porão',
+  }
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedAtivo, setSelectedAtivo] = useState<Ativo | null>(null)
@@ -88,7 +97,16 @@ export default function Ativos() {
     if (location.state && (location.state as any).openForm) {
       setShowForm(true)
     }
+    const cat = location.state && (location.state as any).openCategory
+    if (cat) setCategoriaFiltro(String(cat))
   }, [location.state])
+
+  // Sem `health_status` (leitura falhou no backend) o filtro NAO esconde nada:
+  // sumir com a frota da Marina por causa de um campo ausente seria trocar um
+  // filtro que nao funciona por uma tela que parece vazia.
+  const visiveis = categoriaFiltro
+    ? ativos.filter((a: any) => !a.health_status || a.health_status[categoriaFiltro])
+    : ativos
 
   useEffect(() => {
     loadAtivos()
@@ -245,6 +263,19 @@ export default function Ativos() {
           <p className="text-white/30 text-[10px] mt-2 uppercase tracking-[0.4em] font-black">
              Protocolo do Sistema <span className="text-[#c5a059] mx-2">•</span> Console de Gestão
           </p>
+          {/* Filtro À VISTA e com saída. Filtro invisível é o jeito mais rápido
+              de a Marina achar que perdeu metade da frota. */}
+          {categoriaFiltro && (
+            <button
+              onClick={() => setCategoriaFiltro(null)}
+              title="Ver a frota inteira"
+              className="mt-4 inline-flex items-center gap-2.5 border border-[#c5a059]/40 bg-[#c5a059]/5 hover:bg-[#c5a059]/10 text-[#c5a059] px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.2em] transition-colors"
+            >
+              Com registro de {ROTULO_CATEGORIA[categoriaFiltro] || categoriaFiltro}
+              <span className="text-white/40">· {visiveis.length} de {ativos.length}</span>
+              <X size={12} />
+            </button>
+          )}
         </div>
         <button
           onClick={() => { setShowForm(!showForm); setSelectedAtivo(null); }}
@@ -536,7 +567,7 @@ export default function Ativos() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {ativos.map((ativo) => (
+                  {visiveis.map((ativo) => (
                     <tr key={ativo.id} className="group hover:bg-[#c5a059]/[0.02] transition-all duration-500">
                       <td className="py-8 px-8">
                         <div className="flex items-center gap-6 cursor-pointer" onClick={() => setSelectedAtivo(ativo)}>
@@ -619,6 +650,22 @@ export default function Ativos() {
                 </tbody>
               </table>
             </div>
+
+            {categoriaFiltro && visiveis.length === 0 && ativos.length > 0 && (
+              <div className="text-center py-24 bg-white/[0.01]">
+                <Ship size={48} strokeWidth={0.5} className="mx-auto text-white/5 mb-5" />
+                <p className="text-white/30 uppercase tracking-[0.35em] text-[10px] font-black">
+                  Nenhuma embarcação com registro de{' '}
+                  {ROTULO_CATEGORIA[categoriaFiltro] || categoriaFiltro}
+                </p>
+                <button
+                  onClick={() => setCategoriaFiltro(null)}
+                  className="mt-4 text-[#c5a059] hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  Ver a frota inteira
+                </button>
+              </div>
+            )}
 
             {ativos.length === 0 && (
               <div className="text-center py-32 bg-white/[0.01]">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import EmissoesDoDossie from '../components/EmissoesDoDossie'
 import { Ativo } from '../types'
-import { Ship, Plus, CheckCircle, AlertCircle, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileText } from 'lucide-react'
+import { Ship, Plus, CheckCircle, AlertCircle, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileText, Waves } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -270,6 +270,7 @@ export default function Dashboard() {
             { id: 'manutencao', label: 'Manutenção', desc: 'Serviços & Revisões', icon: Wrench },
             { id: 'pintura', label: 'Pintura', desc: 'Estética & Superfície', icon: Paintbrush },
             { id: 'interior', label: 'Interior', desc: 'Acomodações & Conforto', icon: Armchair },
+            { id: 'casco', label: 'Casco', desc: 'Estrutura & Integridade', icon: Waves },
           ].map((cat) => (
             <button
               key={cat.id}
