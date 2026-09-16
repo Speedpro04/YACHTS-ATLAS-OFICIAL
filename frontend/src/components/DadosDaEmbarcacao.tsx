@@ -92,6 +92,11 @@ export default function DadosDaEmbarcacao({ ativo, onBack, readOnly = false, onS
   const [salvando, setSalvando] = useState(false)
   const [erroForm, setErroForm] = useState<string | null>(null)
   const [form, setForm] = useState({ nome: '', documento: '', email: '', telefone: '' })
+  // Correção de cadastro ou transferência de propriedade? Só a Marina sabe, e
+  // a diferença decide se isso vira elo na cadeia de proprietários do dossiê.
+  const [evento, setEvento] = useState<'correcao' | 'transferencia'>('correcao')
+  const [tipoTransferencia, setTipoTransferencia] = useState('Compra e Venda')
+  const [dataTransferencia, setDataTransferencia] = useState('')
 
   // A pergunta "o cliente está usando o Portal?" é da Marina. No Portal, quem
   // lê é o próprio dono — não faz sentido, e o servidor recusaria.
@@ -112,6 +117,9 @@ export default function DadosDaEmbarcacao({ ativo, onBack, readOnly = false, onS
       // O campo guarda DDD + número; o "+55" é rótulo, não conteúdo.
       telefone: soDDDeNumero(ativo.proprietario_telefone || ''),
     })
+    setEvento('correcao')
+    setTipoTransferencia('Compra e Venda')
+    setDataTransferencia(new Date().toISOString().slice(0, 10))
     setErroForm(null)
     setEditando(true)
   }
@@ -136,6 +144,10 @@ export default function DadosDaEmbarcacao({ ativo, onBack, readOnly = false, onS
         // Já chega mascarado do banco e a função no servidor é idempotente:
         // reenviar o mascarado não estraga o que está guardado.
         proprietario_documento: form.documento.trim() || null,
+        evento,
+        ...(evento === 'transferencia'
+          ? { tipo_transferencia: tipoTransferencia, data_transferencia: dataTransferencia }
+          : {}),
       })
       onSalvo?.({
         proprietario_email: salvo?.proprietario_email ?? null,
@@ -255,6 +267,64 @@ export default function DadosDaEmbarcacao({ ativo, onBack, readOnly = false, onS
                      onChange={(v) => setForm({ ...form, telefone: soDDDeNumero(v) })}
                      placeholder="(12) 99118-7251" prefixo="+55"
                      ajuda="Por onde o código de acesso também é enviado." />
+
+              {/* O QUE ACONTECEU AQUI. Trocar o dono nem sempre é venda — na
+                  maioria das vezes é corrigir um e-mail digitado errado. Se
+                  toda correção virasse elo da cadeia de proprietários, o
+                  dossiê encheria de erro de digitação e a cadeia deixaria de
+                  valer como prova. Quem sabe a diferença é a Marina. */}
+              <div className="pt-2 border-t border-white/5 space-y-2">
+                <p className="text-[9px] uppercase tracking-[0.25em] text-white/30 font-black">O que aconteceu</p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    ['correcao', 'Correção de cadastro'],
+                    ['transferencia', 'Transferência de propriedade'],
+                  ] as const).map(([valor, rotulo]) => (
+                    <button
+                      key={valor}
+                      onClick={() => setEvento(valor)}
+                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-[0.15em] border transition-all ${
+                        evento === valor
+                          ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]'
+                          : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/25'
+                      }`}
+                    >
+                      {rotulo}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-white/25 text-[10px] leading-relaxed">
+                  {evento === 'transferencia'
+                    ? 'Entra no Dossiê Atlas, na seção Histórico de Proprietários. O registro é selado: depois só se corrige por retificação.'
+                    : 'Não gera registro no dossiê. É o caso do e-mail ou do nome digitado errado.'}
+                </p>
+
+                {evento === 'transferencia' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] uppercase tracking-[0.25em] text-white/30 font-black">Tipo</label>
+                      <select
+                        value={tipoTransferencia}
+                        onChange={(e) => setTipoTransferencia(e.target.value)}
+                        className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm focus:border-[#c5a059] outline-none"
+                      >
+                        {['Compra e Venda', 'Herança', 'Doação'].map((t) => (
+                          <option key={t} value={t} className="bg-[#010c20]">{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] uppercase tracking-[0.25em] text-white/30 font-black">Data</label>
+                      <input
+                        type="date"
+                        value={dataTransferencia}
+                        onChange={(e) => setDataTransferencia(e.target.value)}
+                        className="w-full bg-white/[0.03] border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm focus:border-[#c5a059] outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Apagar o e-mail é o caminho de "barco vendido": o vínculo cai
                   inteiro, de propósito. O histórico selado não se mexe — mas

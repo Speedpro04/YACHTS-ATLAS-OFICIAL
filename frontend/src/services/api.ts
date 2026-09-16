@@ -255,7 +255,13 @@ export const api = {
      * dele. E-mail vazio desfaz o vínculo — barco vendido.
      */
     definirProprietario: (id: string, dados: { proprietario_email?: string | null; proprietario_telefone?: string | null;
-                                               proprietario_nome?: string | null; proprietario_documento?: string | null }) =>
+                                               proprietario_nome?: string | null; proprietario_documento?: string | null;
+                                               // "transferencia" grava a troca na cadeia de proprietários do dossiê.
+                                               // Correção de cadastro não gera registro nenhum: erro de digitação não
+                                               // é elo de cadeia, e encheria a prova de ruído.
+                                               evento?: 'correcao' | 'transferencia'
+                                               tipo_transferencia?: string
+                                               data_transferencia?: string }) =>
       apiRequest(`/ativos/${id}/proprietario`, { method: 'PATCH', body: JSON.stringify(dados) }),
     /** Se o dono já entrou no Portal, e quando. Só a Marina dona pergunta. */
     acessoDoProprietario: (id: string): Promise<{

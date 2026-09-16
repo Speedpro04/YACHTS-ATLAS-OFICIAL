@@ -326,6 +326,76 @@ class ProprietarioDoAtivo(BaseModel):
     # entram no documento, que circula entre corretor, comprador e seguradora.
     proprietario_nome: Optional[str] = None
     proprietario_documento: Optional[str] = None
+    # TROCAR O DONO NEM SEMPRE É VENDA. Corrigir um e-mail digitado errado é o
+    # caso mais comum, e transformar toda correção em elo da cadeia de
+    # proprietários encheria o dossiê de erro de digitação — e aí a cadeia
+    # deixa de valer como prova. Quem sabe a diferença é a Marina; então ela
+    # diz, no momento de salvar.
+    evento: Optional[str] = None                 # "correcao" (padrão) ou "transferencia"
+    tipo_transferencia: Optional[str] = None     # Compra e Venda, Herança, Doação
+    data_transferencia: Optional[str] = None     # AAAA-MM-DD
+
+
+TIPOS_DE_TRANSFERENCIA = ["Compra e Venda", "Herança", "Doação"]
+
+
+def _data_br(iso: Optional[str]) -> str:
+    """AAAA-MM-DD -> DD/MM/AAAA. Sem data informada, usa hoje."""
+    try:
+        d = datetime.fromisoformat((iso or "").strip()) if iso else datetime.now(timezone.utc)
+    except ValueError:
+        d = datetime.now(timezone.utc)
+    return d.strftime("%d/%m/%Y")
+
+
+def _registrar_transferencia(supabase, ativo_id: str, anterior: dict, nome_novo: Optional[str],
+                             tipo: str, data_iso: Optional[str], user_id: str) -> int:
+    """Escreve a troca de dono na cadeia de proprietários do dossiê.
+
+    O PERÍODO NÃO É INVENTADO. Ninguém sabe quando o dono anterior comprou o
+    barco — a plataforma só sabe quando ele foi cadastrado aqui. Então o elo
+    do antigo fica "até DD/MM/AAAA" e o do novo "desde DD/MM/AAAA": as duas
+    são verdade, e nenhuma finge uma data que não existe.
+
+    São registros como quaisquer outros: imutáveis. Data errada se conserta
+    por retificação com motivo, nunca por edição.
+    """
+    quando = _data_br(data_iso)
+    linhas = []
+
+    # O elo do antigo só entra se a cadeia estiver vazia. Se a Marina já
+    # lançou o histórico à mão, duplicar seria inventar um dono a mais.
+    nome_anterior = (anterior.get("proprietario_nome") or "").strip()
+    if nome_anterior:
+        ja_tem = supabase.table("registros").select("id").eq(
+            "ativo_id", ativo_id).eq("categoria", "proprietarios").limit(1).execute()
+        if not ja_tem.data:
+            linhas.append({
+                "titulo": nome_anterior,
+                "dados": {"nome": nome_anterior, "periodo": f"até {quando}",
+                          "tipo": "Proprietário Original"},
+            })
+
+    linhas.append({
+        "titulo": (nome_novo or "").strip() or "Proprietário não informado",
+        "dados": {"nome": (nome_novo or "").strip() or "Proprietário não informado",
+                  "periodo": f"desde {quando}", "tipo": tipo},
+    })
+
+    gravados = 0
+    for linha in linhas:
+        supabase.table("registros").insert({
+            "ativo_id": ativo_id,
+            "usuario_id": anterior.get("usuario_id"),
+            "categoria": "proprietarios",
+            "titulo": linha["titulo"],
+            "observacao": f"{tipo} registrada em {quando} pela Marina.",
+            "dados": linha["dados"],
+            "status": "registrado",
+            "created_by": user_id if user_id != "maintenance-admin" else None,
+        }).execute()
+        gravados += 1
+    return gravados
 
 
 @router.patch("/{ativo_id}/proprietario")
@@ -349,13 +419,23 @@ async def definir_proprietario(
     hora e o histórico não se mexe — registro selado não se apaga.
     """
     supabase = get_supabase_admin()
-    achado = supabase.table("ativos").select("id, usuario_id").eq("id", ativo_id).execute()
+    achado = supabase.table("ativos").select(
+        "id, usuario_id, proprietario_nome, proprietario_email").eq("id", ativo_id).execute()
     if not achado.data:
         raise HTTPException(status_code=404, detail="Ativo not found")
+    anterior = achado.data[0]
 
     role = _role(supabase, user_id)
-    if role != "admin" and str(achado.data[0].get("usuario_id")) != str(user_id):
+    if role != "admin" and str(anterior.get("usuario_id")) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized for this asset")
+
+    transferencia = (data.evento or "").strip().lower() == "transferencia"
+    tipo = (data.tipo_transferencia or "").strip() or "Compra e Venda"
+    if transferencia and tipo not in TIPOS_DE_TRANSFERENCIA:
+        raise HTTPException(
+            status_code=400,
+            detail=f"tipo de transferência inválido (use: {', '.join(TIPOS_DE_TRANSFERENCIA)})",
+        )
 
     email = (data.proprietario_email or "").strip().lower() or None
     telefone = (data.proprietario_telefone or "").strip() or None
@@ -376,12 +456,22 @@ async def definir_proprietario(
         "proprietario_documento": documento if email else None,
     }).eq("id", ativo_id).execute()
 
+    # A cadeia de proprietários entra DEPOIS do update: se a gravação do dono
+    # falhar, não fica um elo no dossiê para uma transferência que não houve.
+    elos = 0
+    if transferencia:
+        elos = _registrar_transferencia(
+            supabase, ativo_id, anterior, nome if email else None,
+            tipo, data.data_transferencia, user_id,
+        )
+
     return {
         "ativo_id": ativo_id,
         "proprietario_email": email,
         "proprietario_telefone": telefone if email else None,
         "proprietario_nome": nome if email else None,
         "proprietario_documento": documento if email else None,
+        "transferencia_registrada": elos,
         "message": "Proprietário definido" if email else "Vínculo do proprietário removido",
     }
 
