@@ -118,6 +118,11 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
   const [contagem, setContagem] = useState<Record<string, number>>({})
   const [cameraAberta, setCameraAberta] = useState(false)
   const [criterioAberto, setCriterioAberto] = useState(false)
+  // Dono recém-salvo no card Dados da Embarcação. Sem isto, o rodapé do card
+  // continuaria dizendo "Proprietário sem e-mail" com o e-mail já gravado —
+  // duas partes da mesma tela respondendo diferente sobre o mesmo dado.
+  const [donoSalvo, setDonoSalvo] = useState<Partial<Ativo> | null>(null)
+  const ativoComDono = donoSalvo ? { ...ativo, ...donoSalvo } : ativo
   // O DOSSIÊ SAIU DA GRADE DO PAINEL TÉCNICO (15/09/2026).
   //
   // Aquela grade são CATEGORIAS DA EMBARCAÇÃO — motor, casco, elétrica. Dossiê
@@ -380,7 +385,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
               // O card do cadastro não conta registro nem tem estado: o rodapé
               // diz se falta o e-mail do dono, que é o que tranca o Portal.
               const cadastro = c.key === 'cadastro'
-              const semEmailDoDono = cadastro && !readOnly && !(ativo.proprietario_email || '').trim()
+              const semEmailDoDono = cadastro && !readOnly && !(ativoComDono.proprietario_email || '').trim()
               const rodapeCor = cadastro
                 ? (semEmailDoDono ? 'text-amber-400' : 'text-[#c5a059]')
                 : (temRegistro ? 'text-[#c5a059]' : hs.text)
@@ -484,7 +489,12 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
           )}
         </div>
       ) : secao.key === 'cadastro' ? (
-        <DadosDaEmbarcacao ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
+        <DadosDaEmbarcacao
+          ativo={ativoComDono}
+          onBack={() => setSecao(null)}
+          readOnly={readOnly}
+          onSalvo={(dados) => setDonoSalvo((a) => ({ ...(a || {}), ...dados }))}
+        />
       ) : secao.key === 'fotos' ? (
         <CoberturaFotos ativo={ativo} onBack={() => setSecao(null)} readOnly={readOnly} />
       ) : secao.key === 'documentacao' ? (
