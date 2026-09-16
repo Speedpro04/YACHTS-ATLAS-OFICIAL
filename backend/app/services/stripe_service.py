@@ -347,9 +347,35 @@ class StripeService:
             return preco.get("id")
         return getattr(preco, "id", None)
 
+    # Preço oficial por moeda. A fundadora brasileira assina EM REAL (R$ 1.000)
+    # e a Stripe não aceita cronograma que muda de moeda no meio — então a
+    # segunda fase precisa estar na moeda da própria assinatura.
+    @staticmethod
+    def _valor_oficial_na_moeda(moeda: Optional[str]) -> tuple[int, str]:
+        """(valor em centavos, moeda) do preço oficial para esta moeda.
+
+        Moeda desconhecida levanta, em vez de cair no dólar: cobrar US$ 250 de
+        quem assinou em outra moeda é o mesmo defeito com outra roupa, e a
+        falha aqui vira aviso para agendar na mão — que é o certo.
+        """
+        m = (moeda or "").strip().lower()
+        if m == "brl":
+            return settings.TRADITIONAL_PRICE_MONTHLY_BRL * 100, "brl"
+        if m == "usd":
+            return settings.TRADITIONAL_PRICE_MONTHLY * 100, "usd"
+        raise ValueError(f"sem preço oficial definido para a moeda '{moeda}'")
+
+    @staticmethod
+    def _rotulo_da_virada(moeda: Optional[str]) -> str:
+        """O texto que o fundador lê no aviso — na moeda que a Marina paga."""
+        if (moeda or "").lower() == "brl":
+            return (f"R$ {settings.LAUNCH_PRICE_MONTHLY_BRL:,} → "
+                    f"R$ {settings.TRADITIONAL_PRICE_MONTHLY_BRL:,}").replace(",", ".")
+        return f"US$ {settings.LAUNCH_PRICE_MONTHLY} → US$ {settings.TRADITIONAL_PRICE_MONTHLY}"
+
     def _agendar_correcao_do_13o_mes(self, subscription_id: str) -> None:
         """
-        Deixa agendado na Stripe: 12 meses a $200, depois $250.
+        Deixa agendado na Stripe: 12 meses no preço de fundadora, depois o oficial.
 
         Combinado na venda — a fundadora paga o preço de lançamento por um ano
         e entra na tabela oficial no 13º mês. Quem executa é a própria Stripe,
@@ -357,13 +383,25 @@ class StripeService:
         assinou em dezembro vira em dezembro. Não existe rotina nossa para
         rodar — nem para alguém esquecer de rodar — um ano depois.
 
+        NA MOEDA DA ASSINATURA. Até 16/09/2026 a segunda fase saía fixa em
+        dólar. A fundadora brasileira assina em real, a Stripe recusa
+        cronograma com duas moedas, e o reajuste nunca era agendado — chegou ao
+        fundador como "Reajuste do 13º mês não agendado" no teste de 14/09.
+        Sem conserto, cada fundadora ficaria em R$ 1.000 para sempre.
+
         Best-effort: o pagamento já aconteceu, e falhar aqui não pode derrubar
-        o webhook. Se falhar, o Telegram avisa para ser feito no painel.
+        o webhook. Se falhar, o fundador é avisado para agendar no painel.
         """
+        moeda = None
         try:
+            assinatura = stripe.Subscription.retrieve(subscription_id)
+            moeda = getattr(assinatura, "currency", None) or (
+                assinatura.get("currency") if isinstance(assinatura, dict) else None
+            )
+            valor, moeda = self._valor_oficial_na_moeda(moeda)
             preco_oficial = self._get_or_create_price(
-                amount=settings.TRADITIONAL_PRICE_MONTHLY * 100,
-                currency="usd",
+                amount=valor,
+                currency=moeda,
                 recurring=True,
                 product_name=self.PRICING[PlanType.MARINA]["name"],
             )
@@ -389,8 +427,7 @@ class StripeService:
             )
             logger.info(
                 f"Correção do 13º mês agendada para {subscription_id}: "
-                f"{settings.LAUNCH_PRICE_MONTHS} meses a ${settings.LAUNCH_PRICE_MONTHLY}, "
-                f"depois ${settings.TRADITIONAL_PRICE_MONTHLY}"
+                f"{settings.LAUNCH_PRICE_MONTHS} meses, {self._rotulo_da_virada(moeda)}"
             )
         except Exception as e:
             logger.error(f"Falha ao agendar o 13º mês de {subscription_id}: {e}")
@@ -399,7 +436,7 @@ class StripeService:
                 notificar_fundador(
                     "Reajuste do 13º mês não agendado",
                     f"Assinatura {subscription_id} ficou sem o cronograma de "
-                    f"${settings.LAUNCH_PRICE_MONTHLY} → ${settings.TRADITIONAL_PRICE_MONTHLY}.\n"
+                    f"{self._rotulo_da_virada(moeda)}.\n"
                     "Agende na mão no painel da Stripe, senão ela paga o preço "
                     "de fundadora para sempre.",
                 )
