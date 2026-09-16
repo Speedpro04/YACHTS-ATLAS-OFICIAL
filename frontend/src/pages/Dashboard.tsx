@@ -345,15 +345,10 @@ export default function Dashboard() {
                 {/* Visual Header */}
                 <div className="h-56 bg-[#010c20] relative overflow-hidden">
                    <div className="absolute inset-0 bg-gradient-to-t from-[#010c20] via-transparent to-transparent z-10"></div>
-                   <div className="absolute top-5 left-5 z-20">
-                      <span className={`px-4 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-[0.3em] border shadow-2xl ${
-                        ativo.porte_categoria === 'superyacht' ? 'bg-[#c5a059] border-[#c5a059] text-[#010c20]' : 
-                        ativo.porte_categoria === 'executive' ? 'bg-white/90 border-white text-[#010c20]' : 
-                        'bg-white/10 border-white/20 text-white'
-                      }`}>
-                        {t(`common.${ativo.porte_categoria}`)}
-                      </span>
-                   </div>
+                   {/* Aqui ficava a etiqueta Compact/Executive/Superyacht. Essas
+                       classes não existem no Programa (RF27) e o campo nunca
+                       veio do banco: o card mostrava COMMON.UNDEFINED em todo
+                       barco. O tipo e o porte já aparecem logo abaixo. */}
                    
                    {/* Abstract background icon */}
                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] group-hover:opacity-[0.08] group-hover:scale-125 transition-all duration-1000">

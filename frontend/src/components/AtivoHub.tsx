@@ -367,6 +367,10 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
       {/* ===== BLOCO DE BAIXO — Painel Técnico (cards) ===== */}
       {!secao ? (
         <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Quem esconde o cabeçalho (o Portal do Proprietário) já escreve
+              "1. Painel Técnico" na própria página. Repetir aqui dava o mesmo
+              título duas vezes, um embaixo do outro. */}
+          {!hideHeader && (
           <div>
             <h2 className="text-xl font-serif font-bold text-white tracking-tight flex items-center gap-3">
               <Wrench size={20} className="text-[#c5a059]" /> Painel Técnico
@@ -375,6 +379,7 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
               Acesso às categorias da embarcação
             </p>
           </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
             {cats.map((c) => {

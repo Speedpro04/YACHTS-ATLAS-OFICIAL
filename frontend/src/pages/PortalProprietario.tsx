@@ -163,9 +163,6 @@ export default function PortalProprietario() {
           <div className="absolute bottom-8 left-8 right-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-[10px] font-black text-[#c5a059] border border-[#c5a059]/30 bg-[#c5a059]/10 px-3 py-1 rounded-sm uppercase tracking-widest">
-                  {ativo.porte_categoria}
-                </span>
                 <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
                   <CheckCircle2 size={12} />
                   Ativo Certificado
