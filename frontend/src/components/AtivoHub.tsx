@@ -10,6 +10,7 @@ import {
   Droplets, PenLine, HelpCircle, Monitor, ClipboardList
 } from 'lucide-react'
 import DadosDaEmbarcacao from './DadosDaEmbarcacao'
+import { rotuloDoIndice, nomeDoArquivoDoDossie } from '../utils/indiceDeCustodia'
 import SecureCameraUpload from './SecureCameraUpload'
 import FichaServicoForm from './FichaServicoForm'
 import ConsentimentoTitular from './ConsentimentoTitular'
@@ -82,9 +83,9 @@ const HEALTH_STYLE: Record<Health, { dot: string; label: string; text: string }>
 // nome de grau, não texto corrido: mantê-lo idêntico nas duas pontas é o que
 // permite a marina e o comprador falarem da mesma coisa.
 const CLASSIF: Record<string, { label: string; cls: string }> = {
-  gold: { label: 'Gold', cls: 'bg-[#c5a059] text-[#010c20] border-[#c5a059]' },
-  silver: { label: 'Silver', cls: 'bg-white/80 text-[#010c20] border-white' },
-  bronze: { label: 'Bronze', cls: 'bg-[#a06a3c]/20 text-[#c98b54] border-[#a06a3c]/40' },
+  gold: { label: rotuloDoIndice('gold'), cls: 'bg-[#c5a059] text-[#010c20] border-[#c5a059]' },
+  silver: { label: rotuloDoIndice('silver'), cls: 'bg-white/80 text-[#010c20] border-white' },
+  bronze: { label: rotuloDoIndice('bronze'), cls: 'bg-[#a06a3c]/20 text-[#c98b54] border-[#a06a3c]/40' },
 }
 
 // Categorias ricas do dossiê (dossieCategorias.ts) que NÃO estão no painel
@@ -236,8 +237,9 @@ export default function AtivoHub({ ativo, onBack, readOnly = false, hideHeader =
                   <span>{ativo.comprimento_pes || '—'} pés</span>
                   <span className="text-[#c5a059]">•</span>
                   <span>{ativo.ano_fabricacao}</span>
-                  <span className="text-[#c5a059]">•</span>
-                  <span>#{String(ativo.id).slice(0, 8).toUpperCase()}</span>
+                  {/* Aqui ficava "#YA-IATE-": os 8 primeiros caracteres de um
+                      protocolo de 17, justamente a parte que não identifica
+                      nada. O protocolo inteiro está no dossiê e na verificação. */}
                 </div>
               </div>
             </div>
@@ -592,7 +594,7 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
       await verificarLimite()
       const a = document.createElement('a')
       a.href = url
-      a.download = `dossie_${ativo.marca.toLowerCase()}_${ativo.modelo.toLowerCase()}_${ativo.id.slice(0, 8)}.pdf`
+      a.download = nomeDoArquivoDoDossie(ativo)
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { nomeDoArquivoDoDossie } from '../utils/indiceDeCustodia'
 import { FileCheck, Mail, Phone, Ship, Check, X, RefreshCw, ShieldCheck, Clock, Download, Lock, Search } from 'lucide-react'
 import { api } from '../services/api'
 import { useDesktop, AVISO_SO_DESKTOP } from '../hooks/useDesktop'
@@ -176,7 +177,7 @@ export default function SolicitacoesDossie() {
       await carregarSaldo(ativo.id)
       const a = document.createElement('a')
       a.href = url
-      a.download = `dossie_${ativo.marca.toLowerCase()}_${ativo.modelo.toLowerCase()}_${ativo.id.slice(0, 8)}.pdf`
+      a.download = nomeDoArquivoDoDossie(ativo)
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

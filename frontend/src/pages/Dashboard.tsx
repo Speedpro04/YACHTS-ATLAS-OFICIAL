@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { rotuloDoIndice } from '../utils/indiceDeCustodia'
 import { api } from '../services/api'
 import EmissoesDoDossie from '../components/EmissoesDoDossie'
 import { Ativo } from '../types'
@@ -49,7 +50,6 @@ export default function Dashboard() {
   const stats = {
     total: ativos.length,
     gold: ativos.filter(a => a.classificacao === 'gold').length,
-    compliance: Math.round(ativos.reduce((acc, curr) => acc + curr.progresso, 0) / (ativos.length || 1)),
     dossiers: dossierCount ?? 0,
   }
 
@@ -78,11 +78,10 @@ export default function Dashboard() {
             <td class="num">${esc(a.ano_fabricacao)}</td>
             <td class="num">${esc(a.comprimento_pes)} pés</td>
             <td>${esc(a.proprietario_nome)}</td>
-            <td><span class="tag tag-${esc(a.classificacao)}">${esc(a.classificacao)}</span></td>
+            <td><span class="tag tag-${esc(a.classificacao)}">${esc(rotuloDoIndice(a.classificacao))}</span></td>
             <td>${esc(statusLabel[a.status] ?? a.status)}</td>
-            <td class="num">${esc(a.progresso)}%</td>
           </tr>`).join('')
-      : `<tr><td colspan="9" class="empty">Nenhum ativo cadastrado nesta frota.</td></tr>`
+      : `<tr><td colspan="8" class="empty">Nenhum ativo cadastrado nesta frota.</td></tr>`
 
     const card = (label: string, value: string | number) => `
       <div class="card">
@@ -135,7 +134,6 @@ export default function Dashboard() {
 
   <div class="cards">
     ${card('Total de Ativos', stats.total)}
-    ${card('Compliance Médio', stats.compliance + '%')}
     ${card('Ativos Gold', stats.gold)}
     ${card('Dossiês Gerados', stats.dossiers)}
   </div>
@@ -145,7 +143,7 @@ export default function Dashboard() {
     <thead>
       <tr>
         <th>#</th><th>Tipo</th><th>Embarcação</th><th>Ano</th><th>Comprimento</th>
-        <th>Proprietário</th><th>Classe</th><th>Status</th><th>Compliance</th>
+        <th>Proprietário</th><th>Índice de Custódia</th><th>Status</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { Ativo } from '../types'
 import AtivoHub from '../components/AtivoHub'
+import { rotuloDoIndice } from '../utils/indiceDeCustodia'
 
 export default function PortalProprietario() {
   const navigate = useNavigate()
@@ -167,9 +168,13 @@ export default function PortalProprietario() {
                   <CheckCircle2 size={12} />
                   Ativo Certificado
                 </span>
-                {/* A nota que a marina vê, o dono também vê.
-                    Ela é a prova de que a marina está alimentando o cofre —
-                    mostrar ao armador reforça o trabalho dela, não expõe. */}
+                {/* A nota que a marina vê, o dono também vê — e com o MESMO
+                    nome. O Portal traduzia para "Prata" e colava o percentual
+                    ("PRATA · 80%"), enquanto o painel, o dossiê e a verificação
+                    pública dizem "Índice de Custódia: Silver". Dono, Marina e
+                    comprador precisam falar do mesmo selo com a mesma palavra;
+                    e o número ao lado do grau é a confusão do "100% ao lado de
+                    BRONZE" que o dossiê já tinha tirado. */}
                 {ativo.classificacao && (
                   <span
                     className={`text-[10px] font-black px-3 py-1 rounded-sm uppercase tracking-widest border ${
@@ -181,9 +186,7 @@ export default function PortalProprietario() {
                     }`}
                     title="Índice de custódia: quanto do histórico deste ativo já está registrado e selado"
                   >
-                    {ativo.classificacao === 'gold' ? 'Ouro'
-                      : ativo.classificacao === 'silver' ? 'Prata' : 'Bronze'}
-                    {typeof ativo.progresso === 'number' ? ` · ${ativo.progresso}%` : ''}
+                    Índice de Custódia: {rotuloDoIndice(ativo.classificacao)}
                   </span>
                 )}
               </div>

@@ -612,10 +612,8 @@ export default function Ativos() {
                                 {ativo.marca} {ativo.modelo}
                               </div>
                             )}
-                            <div className="text-[9px] text-white/20 font-black uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
-                               <span className="w-1.5 h-1.5 rounded-full bg-white/5 group-hover:bg-[#c5a059] transition-colors"></span>
-                               ID: #{String(ativo.id).slice(0, 8).toUpperCase()}
-                            </div>
+                            {/* Aqui ficava "ID: #YA-IATE-" — o protocolo cortado
+                                na parte que não identifica nada. */}
                             {/* Medidor de fotos da embarcação (0–200) */}
                             {(() => {
                               const n = ativo.total_fotos || 0

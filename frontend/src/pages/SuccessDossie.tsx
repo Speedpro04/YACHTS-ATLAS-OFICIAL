@@ -6,7 +6,6 @@ export default function SuccessDossie() {
   const [searchParams] = useSearchParams()
   const [countdown, setCountdown] = useState(10)
   
-  const ativoId = searchParams.get('ativo_id') || ''
   const nivel = searchParams.get('nivel') || 'compact'
 
   useEffect(() => {
@@ -45,7 +44,6 @@ export default function SuccessDossie() {
         <div className="bg-white/[0.02] border border-white/5 rounded-sm p-6 text-left space-y-4">
           <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-white/20">
             <span>Detalhes do Registro</span>
-            <span className="text-[#c5a059]">ID: #{ativoId.slice(0,8).toUpperCase()}</span>
           </div>
           
           <div className="space-y-3">
