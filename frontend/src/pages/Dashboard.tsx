@@ -406,7 +406,7 @@ export default function Dashboard() {
                         {ativo.progresso === 100 ? t('common.cert_complete') : t('common.complete_docs')}
                       </span>
                    </div>
-                   <span className="opacity-50">ID: #{ativo.id.slice(0, 4)}</span>
+                   {/* Aqui ficava "ID: #YA-I" — 4 caracteres de um protocolo de 17. */}
                 </div>
               </div>
             ))}
