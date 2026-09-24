@@ -766,6 +766,44 @@ um problema pequeno por um maior.
 **Um cuidado que não mudou:** o código continua aparecendo uma única vez. O
 WhatsApp é conveniência de entrega, não segunda via.
 
+## O vídeo de boas-vindas entra no sistema — 24/09/2026
+
+A Marina assina e cai num painel vazio. O produto inteiro — Painel Técnico,
+Pré-Data, Portal do Proprietário, Dossiê — precisa ser explicado por alguém, e
+até hoje esse alguém era o fundador, um por um, no WhatsApp.
+
+O vídeo de 4 minutos é essa explicação, e **ele não vende**: quem assiste já
+pagou. São quatro blocos, cada um com um cartão dourado sobre `#010c20` antes
+de entrar — Painel Técnico, Pré-Data, Portal, Dossiê —, gravados da tela do
+sistema real, com narração própria por bloco. As fontes (textos, cartões,
+decupagem e a montagem em código) vivem no repositório `video-yacht-atlas`, em
+`versoes/demonstracao-br/`; aqui fica só o que o app precisa para exibir.
+
+**Ele não é público, e essa foi a decisão de desenho.** O vídeo mostra o sistema
+por dentro: telas de painel, cofre e dossiê. Servido de um balde público,
+bastaria o link vazar para virar material de quem não assinou. Ele mora no mesmo
+balde privado dos documentos (`media`), **fora de `ativos/`** — não é documento
+de cliente —, e sai assinado por uma hora em
+`GET /api/v1/institucional/boas-vindas`, que exige sessão. Sem token, 401.
+
+**A tela de sucesso do pagamento matava o vídeo.** Ela redireciona para o painel
+em 15 segundos, e quem clicasse para assistir seria arrancado da tela aos
+0:15 de um filme de 4:09. Agora o clique no convite para o relógio.
+
+**A faixa fica no painel, não só na tela de sucesso.** Ninguém assiste quatro
+minutos com a euforia de ter acabado de assinar; a dúvida aparece no primeiro
+cadastro, dias depois. No topo do Dashboard ela continua ao alcance, some com um
+"x" (lembrado no navegador) e **só baixa os 16 MB quando a pessoa dá play** —
+carregar sozinho pesaria em toda abertura do painel, inclusive de quem já viu.
+
+**E um card mentia sobre dinheiro.** A primeira tela depois do pagamento
+anunciava *"Split Ativo — 50% de receita"*, enquanto a página que a Marina leu
+antes de pagar promete **100% da receita do dossiê**. Corrigido para "Dossiê no
+seu nome — 100% da receita". O fundador confirmou: *"não existe 50%"*. A
+varredura atrás das outras ocorrências dessa afirmação — inclusive no caminho do
+dinheiro, em `stripe_service.py` — está em andamento e **não foi aplicada**:
+mexer em split de pagamento às vésperas do lançamento é decisão dele, não minha.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. ~~**Desligar o auto-deploy** do EasyPanel~~ — **NÃO EXISTE, verificado em 14/09/2026.** O serviço usa a fonte **Git** (URL do repositório + chave SSH), e nesse modo o EasyPanel não dispara build por push: o deploy é sempre manual, pelo botão. A pendência descrevia o comportamento da fonte *GitHub*, que não é a configurada. Isso explica o dia 13/09 inteiro: quatro commits ficaram fora do ar até alguém clicar em Deploy, e por duas vezes o diagnóstico começou errado porque se supunha que o código no ar era o do último push. **Antes de concluir qualquer coisa sobre produção, confirmar que o deploy foi feito** — `git push` não sobe nada sozinho. Procedimento em `docs/DEPLOY-EASYPANEL.md`.

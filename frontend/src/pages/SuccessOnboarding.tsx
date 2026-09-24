@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { CheckCircle2, Shield, ArrowRight, LayoutDashboard, Anchor, Lock } from 'lucide-react'
+import { CheckCircle2, Shield, ArrowRight, LayoutDashboard, Anchor, Lock, PlayCircle } from 'lucide-react'
 
 export default function SuccessOnboarding() {
   const navigate = useNavigate()
   const [countdown, setCountdown] = useState(15)
+  // Clicou em assistir: o relogio para. Sem isto, o video de 4 minutos seria
+  // interrompido aos 15 segundos pelo proprio sistema.
+  const [ficar, setFicar] = useState(false)
 
   useEffect(() => {
+    if (ficar) return
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -19,7 +23,7 @@ export default function SuccessOnboarding() {
       })
     }, 1000)
     return () => clearInterval(timer)
-  }, [navigate])
+  }, [navigate, ficar])
 
   return (
     <div className="min-h-screen bg-[#010c20] text-white flex flex-col items-center justify-center p-6 font-['Inter']">
@@ -49,7 +53,7 @@ export default function SuccessOnboarding() {
           {[
             { icon: Anchor, title: 'Frota Ilimitada', desc: 'Gerencie ativos' },
             { icon: Lock, title: 'Cofre Seguro', desc: 'Docs cripto' },
-            { icon: CheckCircle2, title: 'Split Ativo', desc: '50% de receita' }
+            { icon: CheckCircle2, title: 'Dossiê no seu nome', desc: '100% da receita' }
           ].map((item, i) => (
             <div key={i} className="bg-white/[0.02] border border-white/5 p-5 rounded-sm text-left">
               <item.icon size={20} className="text-[#c5a059] mb-3" />
@@ -61,6 +65,15 @@ export default function SuccessOnboarding() {
 
         {/* Primary Action */}
         <div className="pt-6 space-y-4">
+          <Link
+            to="/app?boas-vindas=1"
+            onClick={() => setFicar(true)}
+            className="w-full border border-[#c5a059]/30 hover:border-[#c5a059] text-[#c5a059] py-5 rounded-sm text-xs font-black uppercase tracking-[0.3em] flex items-center justify-center gap-4 transition-all"
+          >
+            <PlayCircle size={18} />
+            Ver o sistema por dentro · 4 min
+          </Link>
+
           <Link 
             to="/app"
             className="w-full bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] py-5 rounded-sm text-xs font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 transition-all shadow-2xl shadow-[#c5a059]/10"
@@ -70,9 +83,11 @@ export default function SuccessOnboarding() {
             <ArrowRight size={16} />
           </Link>
           
-          <p className="text-[10px] text-white/20 uppercase tracking-[0.3em] font-black">
-            Iniciando protocolo em {countdown} segundos...
-          </p>
+          {!ficar && (
+            <p className="text-[10px] text-white/20 uppercase tracking-[0.3em] font-black">
+              Iniciando protocolo em {countdown} segundos...
+            </p>
+          )}
         </div>
 
       </div>

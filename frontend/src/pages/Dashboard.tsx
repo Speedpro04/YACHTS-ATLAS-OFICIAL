@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react'
 import { rotuloDoIndice } from '../utils/indiceDeCustodia'
 import { api } from '../services/api'
 import EmissoesDoDossie from '../components/EmissoesDoDossie'
+import VideoBoasVindas from '../components/VideoBoasVindas'
 import { Ativo } from '../types'
 import { Ship, Plus, CheckCircle, AlertCircle, Anchor, Download, Zap, Cpu, Shield, Wrench, Paintbrush, Armchair, FileText, Waves } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // Quem chega da tela de sucesso do pagamento vem com ?boas-vindas=1 e ja
+  // encontra o video tocando — e o unico caso em que a faixa se abre sozinha.
+  const [params] = useSearchParams()
   const { session } = useAuth()
 
   // O nome de quem está logado. "Marina Hub" era texto fixo de tradução, não
@@ -177,6 +181,8 @@ export default function Dashboard() {
   
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      <VideoBoasVindas aberturaForcada={params.get('boas-vindas') === '1'} />
+
       {/* Welcome & Stats Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div 

@@ -130,6 +130,15 @@ export const api = {
     me: () => apiRequest('/auth/me'),
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   },
+  institucional: {
+    /**
+     * Link assinado do vídeo de boas-vindas. Assinado, e não público, porque
+     * ele mostra o sistema por dentro: quem paga é quem vê. O link vale uma
+     * hora — se a pessoa deixar a aba aberta a tarde toda e der play depois,
+     * basta pedir de novo.
+     */
+    boasVindas: () => apiRequest('/institucional/boas-vindas'),
+  },
   owner: {
     /**
      * Manda ao armador o código de acesso ao portal, por e-mail e WhatsApp.
