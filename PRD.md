@@ -804,6 +804,34 @@ varredura atrás das outras ocorrências dessa afirmação — inclusive no cami
 dinheiro, em `stripe_service.py` — está em andamento e **não foi aplicada**:
 mexer em split de pagamento às vésperas do lançamento é decisão dele, não minha.
 
+## O último 50/50 saiu do código — 25/09/2026
+
+O modelo é uma frase: **a recorrência é nossa, o dossiê é da Marina.** Ela paga
+a assinatura mensal; o dossiê é negociado direto entre ela e o dono do barco, e
+100% daquele dinheiro é dela. Nunca passa por nós, e por isso não há nada a
+dividir.
+
+O `stripe_service.py` ainda guardava o contrário: `DOSSIER_ROI_SPLIT_RATIO = 0.5`,
+uma tabela de preço do dossiê cobrado pela plataforma (200/400/600) e um
+`create_dossier_checkout_session` que, via Stripe Connect, mandava **metade** do
+valor para a Marina e retinha a outra metade aqui.
+
+Nada disso rodava — o endpoint `/payments/checkout/dossier` já respondia **410**
+desde a mudança para pagamento direto. Mas era o único código do sistema capaz
+de dividir dinheiro, e estava pronto para ser religado por quem não conhecesse a
+história. Foi assim que o "50% de receita" chegou até o card da tela de sucesso,
+que só saiu ontem.
+
+**Removidos:** a razão do rateio, a tabela `DOSSIER_PRICING`, o método inteiro e
+a enum `DossierLevel` (Compact/Executive/Superyacht, que o RF27 já declarava
+inexistentes). O endpoint 410 continua de pé, sem os parâmetros que alimentavam
+o checkout que não existe mais. 89 linhas a menos; nenhuma ocorrência da palavra
+*split* sobrou no arquivo. 551 testes passam.
+
+O que ainda ensina o modelo antigo são os documentos: `BUSINESS_PLAN.md`,
+`docs/09`, `docs/18-prd`, `docs/19` e `docs/16`. Não vão ao ar, mas foram eles
+que alimentaram o código — e continuam ali.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. ~~**Desligar o auto-deploy** do EasyPanel~~ — **NÃO EXISTE, verificado em 14/09/2026.** O serviço usa a fonte **Git** (URL do repositório + chave SSH), e nesse modo o EasyPanel não dispara build por push: o deploy é sempre manual, pelo botão. A pendência descrevia o comportamento da fonte *GitHub*, que não é a configurada. Isso explica o dia 13/09 inteiro: quatro commits ficaram fora do ar até alguém clicar em Deploy, e por duas vezes o diagnóstico começou errado porque se supunha que o código no ar era o do último push. **Antes de concluir qualquer coisa sobre produção, confirmar que o deploy foi feito** — `git push` não sobe nada sozinho. Procedimento em `docs/DEPLOY-EASYPANEL.md`.

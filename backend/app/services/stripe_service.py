@@ -21,16 +21,13 @@ class PlanType(str, Enum):
     ENTERPRISE = "enterprise"  # B2B - Grandes redes
 
 
-class DossierLevel(str, Enum):
-    """Dossier certification levels"""
-    COMPACT = "compact"
-    EXECUTIVE = "executive"
-    SUPERYACHT = "superyacht"
-
-
 class StripeService:
-    """Premium Stripe service for payment processing"""
-    DOSSIER_ROI_SPLIT_RATIO = 0.5
+    """Premium Stripe service for payment processing.
+
+    A plataforma cobra UMA coisa: a assinatura mensal da Marina. O dossie e
+    pago pelo dono do barco direto a Marina, e 100% dessa receita e dela —
+    nao passa por aqui, nao e dividido, e nao existe repasse a calcular.
+    """
     
     # Pricing configuration (in USD) - B2B2C Model
     # Marinas pay monthly, resell to asset owners
@@ -52,13 +49,6 @@ class StripeService:
             "name": "Enterprise",
             "features": ["Unlimited assets", "Multi-location management", "24/7 dedicated support", "White-label", "Full API access", "Custom integrations", "SLA guarantee"]
         }
-    }
-    
-    # Dossier pricing (one-time) - Sold directly to asset owners
-    DOSSIER_PRICING = {
-        DossierLevel.COMPACT: 200,
-        DossierLevel.EXECUTIVE: 400,
-        DossierLevel.SUPERYACHT: 600
     }
     
     def __init__(self):
@@ -187,85 +177,6 @@ class StripeService:
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {str(e)}")
             raise Exception(f"Failed to create checkout session: {str(e)}")
-    def create_dossier_checkout_session(
-        self,
-        user_id: str,
-        dossier_level: DossierLevel,
-        ativo_id: str,
-        success_url: str,
-        cancel_url: str,
-        marina_stripe_account_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """
-        Create Stripe checkout session for dossier certification (one-time payment)
-        With 50/50 split between platform and marina
-        """
-        try:
-            amount = self.DOSSIER_PRICING[dossier_level]
-            
-            # Create or get price
-            price_id = self._get_or_create_price(
-                amount=amount * 100,  # Convert to cents
-                currency="usd",
-                recurring=False,
-                product_name=f"Dossier {dossier_level.value.capitalize()} Certification"
-            )
-            
-            # Base session parameters
-            session_params = {
-                'payment_method_types': ['card'],
-                'line_items': [{
-                    'price': price_id,
-                    'quantity': 1,
-                }],
-                'mode': 'payment',
-                'success_url': success_url,
-                'cancel_url': cancel_url,
-                'customer_email': metadata.get('email') if metadata else None,
-                'metadata': {
-                    'user_id': user_id,
-                    'dossier_level': dossier_level.value,
-                    'ativo_id': ativo_id,
-                    'payment_type': 'dossier',
-                    'split_enabled': 'true' if marina_stripe_account_id else 'false',
-                    **(metadata or {})
-                }
-            }
-
-            # Implement 50/50 Revenue Split if Marina Account is provided
-            if marina_stripe_account_id:
-                # Stripe Connect: Marina receives 50% directly
-                split_amount = int((amount * 100) * self.DOSSIER_ROI_SPLIT_RATIO)
-                session_params['payment_intent_data'] = {
-                    'transfer_data': {
-                        'destination': marina_stripe_account_id,
-                        'amount': split_amount
-                    }
-                }
-                logger.info(f"Split payment configured: 50% (${amount/2}) to marina {marina_stripe_account_id}")
-
-            # Create checkout session
-            session = stripe.checkout.Session.create(**session_params)
-            
-            logger.info(f"Created dossier checkout session {session.id} for user {user_id}, level {dossier_level.value}")
-            
-            return {
-                "session_id": session.id,
-                "url": session.url,
-                "dossier_level": dossier_level.value,
-                "ativo_id": ativo_id,
-                "amount": amount,
-                "split_active": bool(marina_stripe_account_id)
-            }
-            
-        except stripe.error.StripeError as e:
-            logger.error(f"Stripe error creating dossier checkout session: {str(e)}")
-            raise Exception(f"Failed to create dossier checkout session: {str(e)}")
-        except Exception as e:
-            logger.error(f"Error creating dossier checkout session: {str(e)}")
-            raise Exception(f"Failed to create dossier checkout session: {str(e)}")
-    
     @staticmethod
     def _lookup_key(amount: int, currency: str, recurring: bool) -> str:
         """Chave estavel do preco — e por ela que reencontramos o price ja criado."""

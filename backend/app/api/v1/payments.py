@@ -3,7 +3,7 @@ Yachts Atlas — Payment Endpoints
 Stripe integration for payments and subscriptions
 """
 from fastapi import APIRouter, HTTPException, Depends, Request, Header
-from app.services.stripe_service import StripeService, PlanType, DossierLevel
+from app.services.stripe_service import StripeService, PlanType
 from app.services.audit_service import AuditService, AuditAction, AuditSeverity
 from app.middleware.tracking import get_client_ip, get_user_agent, get_client_location
 from app.core.security import get_current_user, get_current_user_id
@@ -157,12 +157,7 @@ async def create_subscription_checkout(
 
 @router.post("/checkout/dossier", deprecated=True)
 async def create_dossier_checkout(
-    dossier_level: DossierLevel = None,
-    ativo_id: str = None,
-    success_url: str = None,
-    cancel_url: str = None,
     user_id: str = Depends(get_current_user_id),
-    request: Request = None
 ):
     """
     DESATIVADO. O dossiê não é mais vendido pela plataforma — o pagamento é
