@@ -107,6 +107,8 @@ Ciclo completo testado com cartão real (link recorrente de R$ 1,00): não pagou
 ## 6. O preço de fundadora é da CAMPANHA, não do estado da marina
 **Data da Decisão:** 19/08/2026
 
+> **Preço superado em 13/10/2026 — ver §60.** A regra desta seção continua valendo inteira; o que mudou é o que a campanha entrega. Desde o preço único (US$ 140 para todas), a vaga fundadora não dá desconto: dá os 18 meses de dossiê 100% da marina. Onde se lê "US$ 200 x US$ 250" abaixo, leia "com vaga x sem vaga".
+
 ### O Problema
 `_oferta_marina` reservava vaga fundadora olhando **só a UF**. Marina de SC/SP/RJ/ES/BA recebia o link de US$ 200 tendo chegado de onde tivesse chegado — inclusive pelo site Oficial. Isso quebrava justamente a **indicação**, que é o motor do programa: a fundadora manda o link do Oficial para outra marina do mesmo estado, e a indicada — que deve entrar por US$ 250 — entrava por US$ 200 e consumia uma das 20 vagas.
 
@@ -1763,6 +1765,8 @@ Depois de reposicionar o Oficial, o Marcos pediu para alinhar o Lançamento — 
 
 Preço e prazo divergem **de propósito**: Lançamento US$ 200 + 18 meses, Oficial US$ 250 + 12 meses. Alinhar quebraria a oferta.
 
+> **Atualizado em 13/10/2026 (§60):** o preço parou de divergir — é US$ 140 nas duas. O **prazo** continua divergindo de propósito (18 meses no Lançamento, 12 no Oficial), e é hoje a única diferença entre as ofertas. O padrão abaixo não muda: separar o que diverge por decisão comercial do que diverge por descuido.
+
 **Padrão a repetir:** antes de "deixar tudo igual", separar o que diverge por decisão comercial do que diverge por descuido. As duas coisas parecem iguais numa varredura automática.
 
 ### Três números para o mesmo fato
@@ -1823,3 +1827,44 @@ E o motivo de NÃO estar no resto ficou escrito no cabeçalho do módulo — sen
 `registros` e `documentos` recusavam DELETE; `registros` recusava até UPDATE. Mas `ativos` não tinha gatilho nenhum, e um DELETE ali levava tudo em cascata — contornando por cima toda a imutabilidade construída embaixo.
 
 **Padrão a repetir:** trava em tabela filha não protege nada se a tabela-pai aceita exclusão em cascata. Ao proteger um dado, seguir a cadeia de chaves estrangeiras até o topo.
+
+## 60. Um preço só: US$ 140, travado 12 meses, depois IPCA + 15%
+**Data:** 13/10/2026
+
+Decisão do Marcos: *"vamos alterar o valor do nosso serviço pra $140 dólares que dará R$ 647,00 por 12 meses, depois a correção será o IPCA + 15%"*.
+
+### O que mudou
+
+Eram dois preços — US$ 200/mês para as 20 fundadoras e US$ 250/mês para as demais, com a fundadora subindo para US$ 250 no 13º mês (§6, §53, §58). Agora é **um só, para todas: US$ 140/mês, R$ 647,00/mês em real**, travado por **12 meses a contar da assinatura de cada marina**; a partir do 13º, correção por **IPCA + 15%**.
+
+O programa fundador continua: 4 vagas por estado (SC/SP/RJ/ES/BA) e 18 meses de dossiê 100% da marina. **O que ele deixou de ser é desconto.** Daí sai quase todo o resto do trabalho, porque o sistema inteiro separava fundadora de oficial **pelo valor pago**.
+
+### O preço na primeira dobra
+
+A home falava do produto e não dizia quanto custa: a marina só via um valor na etapa 4 do cadastro, depois de entregar CNPJ, endereço e senha. Quem acha caro desiste de qualquer jeito — a diferença é que desistia **depois** de entregar os dados, e quem acha justo passava quatro telas na dúvida.
+
+O valor passou a ficar logo abaixo do CTA do hero: dólar grande, real entre parênteses (é forma de pagamento, não um segundo preço — §9) e, embaixo, a regra inteira em uma frase. Reajuste que o cliente só descobre na fatura do 13º mês é cancelamento marcado; dito no mesmo lugar em que ele viu o preço, vira condição aceita.
+
+### O 13º mês deixou de ser um degrau agendado
+
+Enquanto a segunda fase era um número conhecido no dia da venda, dava para agendar na Stripe (`SubscriptionSchedule`, §53). **IPCA + 15% não é**: o índice do período só existe na época.
+
+Cronograma com valor inventado cobraria o errado com a autoridade de um automatismo, e um degrau de US$ 140 para US$ 140 só fingiria que a regra está implementada. O webhook passa a **gravar a regra e a data de vencimento** — `preco_travado_ate`, `reajuste_indice`, `reajuste_percentual`, no acesso da marina e, quando é fundadora, na linha dela — e a avisar o fundador. Aplicar é ato comercial, com aviso prévio.
+
+Para a regra não ficar guardada onde ninguém acha, o banco ganhou `vw_marinas_a_reajustar`: quem vence o preço travado, para a carta sair **antes** de a fatura subir.
+
+**Padrão a repetir:** quando a regra comercial depende de um número que ainda não existe, o sistema guarda a regra e a data — não inventa o número para poder automatizar.
+
+### Os links de pagamento ficaram vazios, de propósito
+
+Os Payment Links antigos continuam vivos na Stripe cobrando R$ 1.000 e R$ 1.250. **Link que cobra o preço errado é pior que link que não existe**: a marina lê R$ 647,00 na home, paga R$ 1.250 e tem razão em pedir estorno. As quatro variáveis foram zeradas, e o link fixo que o cadastro usava como rede de segurança saiu junto — sem URL, a tela avisa e o cadastro fica salvo.
+
+Continuam sendo **quatro** links mesmo com preço único. Com o valor igual, o link é a **única prova** de qual porta a marina usou: era o valor que separava campanha de site (§6), e isso acabou.
+
+**Padrão a repetir:** ao mudar um preço, o link do preço velho é passivo, não ativo. Zerar a configuração é mais seguro que confiar em lembrar de trocar.
+
+### O que o valor pago ainda identifica, e o que não identifica mais
+
+`_programa_do_checkout` já decidia por metadata, link e reserva (§56) — essas três continuam valendo. O portão por valor virou o que sempre deveria ter sido: *"é uma assinatura de marina no nosso preço"*, e nada além disso. Quem separa campanha de site é o link.
+
+**Padrão a repetir:** reconhecer cliente pelo valor pago só funciona enquanto os valores forem diferentes. É uma coincidência com prazo de validade, e o prazo vence no dia em que o preço muda.
