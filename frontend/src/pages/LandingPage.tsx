@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import Header from '../components/Header'
 import { FAIXAS_DOSSIE, formatarPreco } from '../config/precosDossie'
+// O preço da assinatura vem do mesmo lugar que a etapa de pagamento do
+// cadastro lê (ver config/precoServico.ts). A home anuncia e o checkout
+// cobra: dois números escritos à mão para o mesmo valor é promessa quebrada
+// esperando a hora.
+import { PRECO_SERVICO, precoEmDolar, precoEmReal } from '../config/precoServico'
 // A capacidade fotografica vem da MESMA constante que o painel e o backend
 // usam (MAX_FOTOS = soma dos minimos de COBERTURA_CATS). Estava escrita a mao
 // como "430" aqui e "400" no Lancamento, enquanto o sistema permitia 460 --
@@ -125,6 +130,50 @@ export default function LandingPage() {
               {t('lp.cta_start')}
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </Link>
+          </div>
+
+          {/*
+            O PREÇO, LOGO ABAIXO DO BOTÃO.
+
+            Até aqui a home inteira falava do produto e não dizia quanto
+            custa: a primeira vez que a marina via um valor era na etapa 4 do
+            cadastro, depois de preencher CNPJ, endereço e senha. Quem acha
+            caro desiste de qualquer jeito — a diferença é que desistia DEPOIS
+            de entregar os dados, e quem acha justo passava quatro telas na
+            dúvida. Preço na primeira dobra qualifica antes de pedir trabalho.
+
+            O dólar é a oferta e vem grande; o real vai entre parênteses porque
+            é a forma de pagamento da marina brasileira, não um segundo preço
+            (ver `link_de_checkout` no backend — o caminho em real existe para
+            ela não pagar IOF nem taxa de compra internacional).
+
+            A linha de baixo é a regra inteira do contrato em uma frase: 12
+            meses travados e, depois, IPCA + 15%. Reajuste que o cliente só
+            descobre na fatura do 13º mês é cancelamento marcado — dito aqui,
+            no mesmo lugar em que ele viu o preço, vira condição aceita.
+          */}
+          <div className="mt-8 flex flex-col items-center gap-2.5 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <p className="flex flex-wrap items-baseline justify-center gap-x-2.5 gap-y-1">
+              <span className="text-3xl md:text-4xl font-serif font-bold text-[#c5a059]">
+                {precoEmDolar()}
+              </span>
+              <span className="text-xs md:text-sm text-white/40 font-light">
+                {t('lp.price_per_month')}
+              </span>
+              <span className="text-base md:text-lg text-white/55 font-light">
+                ({precoEmReal()})
+              </span>
+            </p>
+            {/* `max-w-md` e não `sm`: com 384px a frase quebrava deixando
+                "15%." sozinho na segunda linha. No celular quem manda é o
+                `px-6` do contêiner, então lá nada muda. */}
+            <p className="text-[11px] md:text-xs text-white/35 font-light tracking-wide max-w-md leading-relaxed">
+              {t('lp.price_lock_note', {
+                meses: PRECO_SERVICO.mesesTravado,
+                indice: PRECO_SERVICO.reajusteIndice,
+                percentual: PRECO_SERVICO.reajustePercentual,
+              })}
+            </p>
           </div>
         </div>
 

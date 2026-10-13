@@ -45,6 +45,8 @@
     "video_cta": "Assistir · 3 min",
     "video_aria": "Reproduzir o vídeo de apresentação do Programa Atlas",
     "cta_start": "Quero na minha Marina",
+    "price_per_month": "/ mês",
+    "price_lock_note": "Valor travado por {{meses}} meses. A partir do 13º, correção por {{indice}} + {{percentual}}%.",
     "dossier_title": "O Dossiê Atlas: o documento que a sua Marina emite",
     "dossier_subtitle": "Documento selado por SHA-256, com QR de verificação, que a sua Marina emite em nome da embarcação. É o que transforma três anos de trabalho bem feito em prova na hora da venda — o dono vê, o corretor aceita e a seguradora reconhece.",
     "pricing_title": "A receita dos dossiês é sua",

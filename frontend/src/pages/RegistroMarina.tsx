@@ -28,6 +28,10 @@ import {
   MSG_TELEFONE_INCOMPLETO,
   MSG_EMAIL_INVALIDO,
 } from '../utils/telefone'
+// O valor cobrado nesta tela é o MESMO que a home anuncia na primeira dobra.
+// Ver config/precoServico.ts — e o espelho dele no backend, que é quem fala
+// com a Stripe.
+import { PRECO_SERVICO, precoEmDolar, precoEmReal } from '../config/precoServico'
 
 
 // A regra da senha vive AQUI e em mais nenhum lugar da tela.
@@ -115,9 +119,25 @@ export default function RegistroMarina() {
     setFormData({ ...formData, [name]: name === 'phone' ? soDDDeNumero(value) : value })
   }
 
-  // Fallback quando o cadastro falha antes de o backend dizer a oferta.
-  // Usa o preço oficial: prometer US$ 200 sem confirmar vaga fundadora vira estorno.
-  const STRIPE_MARINA_LINK = 'https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01'
+  // NÃO EXISTE MAIS LINK DE RESERVA ESCRITO AQUI.
+  //
+  // Havia um: quando o backend não dizia a oferta, a tela mandava a marina
+  // para um link fixo de checkout para "não travar a venda". Com o preço
+  // único de US$ 140 (R$ 647,00) esse link virou uma armadilha — ele cobra a
+  // tabela antiga, de R$ 1.250/mês. Mandar para ele quem acabou de ler
+  // R$ 647,00 na home é cobrar quase o dobro do anunciado: estorno, e com
+  // razão.
+  //
+  // Quem escolhe o checkout é o backend (`link_de_checkout`, em
+  // app/core/precos.py), que decide a moeda pela UF e nunca devolve link
+  // vazio disfarçado de válido. Sem URL, a tela diz que não deu e o cadastro
+  // continua salvo — cobrar errado é pior que pedir para tentar de novo.
+  const MSG_CHECKOUT_INDISPONIVEL =
+    'Seu cadastro foi salvo, mas não conseguimos abrir o pagamento agora. ' +
+    'Tente novamente em alguns minutos ou fale com contato@yachtsatlas.online.'
+  const MSG_CADASTRO_FALHOU =
+    'Não conseguimos concluir o cadastro agora. Tente novamente em alguns ' +
+    'minutos ou fale com contato@yachtsatlas.online.'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -174,12 +194,16 @@ export default function RegistroMarina() {
         setSuccess(true)
         return
       }
-      // Checkout escolhido pelo backend: fundadora (USD 200) enquanto houver
-      // uma das 20 vagas, oficial (USD 250) depois.
-      window.location.href = res.checkout_url || STRIPE_MARINA_LINK
+      // Checkout escolhido pelo backend: o preço é o mesmo para todas
+      // (US$ 140 / R$ 647,00) — o que ele escolhe é a MOEDA, pela UF, e qual
+      // dos dois links identifica o programa no webhook.
+      if (!res.checkout_url) {
+        setSubmitError(MSG_CHECKOUT_INDISPONIVEL)
+        return
+      }
+      window.location.href = res.checkout_url
     } catch {
-      // Em caso de falha, não trava a marina: segue para o fluxo pago.
-      window.location.href = STRIPE_MARINA_LINK
+      setSubmitError(MSG_CADASTRO_FALHOU)
     } finally {
       setLoading(false)
     }
@@ -606,7 +630,10 @@ export default function RegistroMarina() {
                   <div className="space-y-10 animate-in slide-in-from-right-8 duration-700">
                     <div className="text-center mb-12">
                        <h2 className="text-3xl font-serif font-bold text-white mb-4">{t('marina_onboarding.payment_title')}</h2>
-                       <p className="text-gold-500 text-4xl font-serif font-bold">$250<span className="text-sm text-white/40 font-['Inter'] font-light"> / mês</span></p>
+                       <p className="text-gold-500 text-4xl font-serif font-bold">{precoEmDolar()}<span className="text-sm text-white/40 font-['Inter'] font-light"> / mês</span></p>
+                       <p className="mt-2 text-white/45 text-sm font-light">
+                         ({precoEmReal()} / mês) · valor travado por {PRECO_SERVICO.mesesTravado} meses
+                       </p>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 p-10 rounded-sm space-y-8">
@@ -621,7 +648,7 @@ export default function RegistroMarina() {
                              </div>
                           </div>
                           <div className="text-right">
-                             <span className="text-2xl font-serif font-bold text-gold-500">$250</span>
+                             <span className="text-2xl font-serif font-bold text-gold-500">{precoEmDolar()}</span>
                              <span className="text-[10px] text-white/20 uppercase ml-2">/ mês</span>
                           </div>
                        </div>
@@ -714,8 +741,11 @@ export default function RegistroMarina() {
 
                    {/* O que acontece depois do botão. Prazo que o cliente não
                        conhece é armadilha: a vaga fundadora fica presa por 12h
-                       (MINUTOS_DE_RESERVA_VAGA) e some depois disso — quem
-                       voltar tarde pagaria US$ 250 sem entender por quê. */}
+                       (MINUTOS_DE_RESERVA_VAGA) e some depois disso. Com o
+                       preço único, voltar tarde não muda o valor — muda o que
+                       vem com ele: os 18 meses de dossiê 100% da marina
+                       fundadora, que só existem enquanto houver vaga no
+                       estado. */}
                    <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35 max-w-md mx-auto">
                      Ao concluir, você verá um <strong className="text-white/60 font-semibold">vídeo curto</strong> do
                      fundador explicando como o sistema funciona — e em seguida
@@ -744,12 +774,18 @@ export default function RegistroMarina() {
 
                    {/* O preço é em dólar, mas marina brasileira é cobrada em real —
                        o servidor escolhe o link pela UF (ver leads._checkout). Sem
-                       dizer isso aqui, ela vê US$ 250 na tela e R$ 1.250 no checkout
-                       e acha que trocaram o preço no meio do caminho. */}
+                       dizer isso aqui, ela vê o dólar na tela e o real no checkout
+                       e acha que trocaram o preço no meio do caminho. Os dois
+                       valores saem de precoServico.ts, então não há como um
+                       envelhecer sem o outro. */}
                    <p className="mt-4 text-center text-[11px] leading-relaxed text-white/30 max-w-md mx-auto">
                      Marina no Brasil? A cobrança é feita em <strong className="text-white/50 font-semibold">reais
-                     — R$ 1.250/mês</strong>, valor equivalente, <strong className="text-white/50 font-semibold">sem
+                     — {precoEmReal()}/mês</strong>, valor equivalente, <strong className="text-white/50 font-semibold">sem
                      IOF</strong> nem taxa de compra internacional.
+                     <br />
+                     O valor fica travado por <strong className="text-white/50 font-semibold">{PRECO_SERVICO.mesesTravado} meses</strong>.
+                     A partir do 13º, a correção é por <strong className="text-white/50 font-semibold">{PRECO_SERVICO.reajusteIndice} + {PRECO_SERVICO.reajustePercentual}%</strong>,
+                     avisada antes de entrar na fatura.
                    </p>
                 </div>
               </div>

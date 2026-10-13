@@ -51,8 +51,9 @@ from app.services.whatsapp_service import (
 logger = logging.getLogger(__name__)
 
 # --- Condições comerciais -----------------------------------------------
-# Fonte única do que a mensagem promete. Ver a memória do projeto: o Oficial
-# trata SOMENTE US$ 250/mês e 12 meses de dossiê 100%.
+# Fonte única do que a mensagem promete. Preço é um só (US$ 140/mês, ver
+# config.PRECO_MENSAL_USD) e a indicada leva 12 meses de dossiê 100% — a
+# mensagem, de propósito, não cita valor nenhum.
 MESES_DOSSIE_INDICACAO = 12
 PERCENTUAL_DOSSIE = 100
 

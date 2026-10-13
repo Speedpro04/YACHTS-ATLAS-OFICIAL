@@ -1,10 +1,14 @@
 """
 Regressão da oferta da marina paga: 4 vagas fundadoras POR ESTADO.
 
-O estado era coletado no formulário e descartado na hora de decidir o preço —
+O estado era coletado no formulário e descartado na hora de decidir a oferta —
 20 marinas de um mesmo estado podiam tomar todas as vagas. E, quando a consulta
 ao banco falhava, o código assumia vaga livre e mandava todo mundo para o link
-de US$ 200.
+de fundadora.
+
+Desde 13/10/2026 o preço é um só (US$ 140), então a vaga não dá mais desconto:
+dá os 18 meses de dossiê 100% da marina. A cota por estado continua valendo
+igual — é o bônus que acaba, não o preço que muda.
 
 O Supabase é substituído por um dublê — nenhum teste toca no banco real.
 """
@@ -42,6 +46,17 @@ class _SupabaseFalso:
         return _Exec()
 
 
+@pytest.fixture(autouse=True)
+def links_em_real(monkeypatch):
+    """Põe os links em real que o config não tem mais (ver test_checkout_por_uf).
+
+    Estes testes afirmam que SAI um checkout; qual URL é assunto de outro
+    arquivo. Sem isto eles passariam a falhar por um motivo que não é o deles.
+    """
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA_BRL", "https://buy.stripe.com/brl-fundadora")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "https://buy.stripe.com/brl-oficial")
+
+
 def _cadastro(state):
     # origem de Lançamento: a vaga fundadora só é oferecida a quem vem da
     # campanha. Estes testes cobrem a regra de ESTADO, então partem de um
@@ -57,16 +72,16 @@ def _cadastro(state):
 
 
 def test_estado_fora_do_programa_vai_para_o_oficial():
-    """Paraná não está no programa — tem de cair na oferta de US$ 250."""
+    """Paraná não está no programa — tem de cair na oferta oficial, sem vaga."""
     supabase = _SupabaseFalso(
         retorno={"modo": "tradicional", "motivo": "uf_fora_do_programa",
-                 "preco_mensal": 250}
+                 "preco_mensal": 140}
     )
 
     oferta = _oferta_marina(supabase, _cadastro("PR"))
 
     assert oferta["oferta"] == "oficial"
-    assert oferta["preco_mensal"] == settings.TRADITIONAL_PRICE_MONTHLY
+    assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD
     # PR é do Brasil: mesma oferta, cobrada em real. Qual URL exatamente é
     # assunto de test_checkout_por_uf — aqui importa que exista uma.
     assert oferta["moeda_cobranca"] == "brl"
@@ -76,13 +91,13 @@ def test_estado_fora_do_programa_vai_para_o_oficial():
 def test_estado_com_vaga_recebe_oferta_fundadora():
     supabase = _SupabaseFalso(
         retorno={"modo": "fundadora", "status": "reservada", "uf": "SC",
-                 "preco_mensal": 200, "vagas_restantes": 3}
+                 "preco_mensal": 140, "vagas_restantes": 3}
     )
 
     oferta = _oferta_marina(supabase, _cadastro("SC"))
 
     assert oferta["oferta"] == "fundadora"
-    assert oferta["preco_mensal"] == settings.LAUNCH_PRICE_MONTHLY
+    assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD
     assert oferta["moeda_cobranca"] == "brl"   # SC é do Brasil
     assert oferta["checkout_url"]
     assert oferta["uf"] == "SC"
@@ -98,14 +113,14 @@ def test_estado_lotado_vai_para_o_oficial():
     oferta = _oferta_marina(supabase, _cadastro("SC"))
 
     assert oferta["oferta"] == "oficial"
-    assert oferta["preco_mensal"] == settings.TRADITIONAL_PRICE_MONTHLY
+    assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD
     assert oferta["motivo"] == "vagas_do_estado_esgotadas"
 
 
-def test_falha_na_reserva_cai_no_oficial_nao_no_desconto():
-    """O fallback inverteu: sem reserva confirmada, cobra o preço oficial.
+def test_falha_na_reserva_cai_no_oficial_nao_na_vaga():
+    """O fallback inverteu: sem reserva confirmada, a oferta é a oficial.
 
-    Devolver a diferença para quem merecia US$ 200 é resolvível; prometer uma
+    Conceder o bônus de fundadora depois, na mão, é resolvível; prometer uma
     5ª vaga fundadora num estado que só tem 4 não é.
     """
     supabase = _SupabaseFalso(erro="conexao caiu")
@@ -113,7 +128,7 @@ def test_falha_na_reserva_cai_no_oficial_nao_no_desconto():
     oferta = _oferta_marina(supabase, _cadastro("SC"))
 
     assert oferta["oferta"] == "oficial"
-    assert oferta["preco_mensal"] == settings.TRADITIONAL_PRICE_MONTHLY
+    assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD
     assert oferta["checkout_url"]
 
 

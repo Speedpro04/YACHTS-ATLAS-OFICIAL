@@ -1,7 +1,8 @@
 """
 Em que moeda a marina é cobrada — decidido pelo estado dela.
 
-Em 19/08/2026 um Visa recusou uma cobrança de US$ 250 com "moeda não aceita".
+Em 19/08/2026 um Visa recusou uma cobrança de US$ 250 — o preço da época — com
+"moeda não aceita".
 Cartão brasileiro costuma vir com compra internacional bloqueada, e Elo e
 Hipercard — comuns em conta empresarial — são nacionais: em dólar não passam
 de jeito nenhum.
@@ -19,6 +20,22 @@ from app.core.config import settings
 class DadosFalsos:
     def __init__(self, state=None, origem=None, email="marina@exemplo.com", name="Marina X"):
         self.state, self.origem, self.email, self.name = state, origem, email, name
+
+
+@pytest.fixture(autouse=True)
+def links_em_real(monkeypatch):
+    """Põe os links em real que o config não tem mais.
+
+    Desde 13/10/2026 os quatro links estão vazios na configuração: o preço
+    virou US$ 140 / R$ 647,00 e os links antigos continuam vivos na Stripe
+    cobrando a tabela velha. Vazio é a verdade do config, e não é o que estes
+    testes verificam — eles verificam a REGRA de qual moeda a marina recebe.
+
+    Quem testa justamente o vazio sobrescreve isto com o próprio monkeypatch,
+    que roda depois.
+    """
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA_BRL", "https://buy.stripe.com/brl-fundadora")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "https://buy.stripe.com/brl-oficial")
 
 
 # ------------------------------------------------------------ o caso comum
@@ -100,6 +117,6 @@ def test_oferta_oficial_leva_a_uf_ate_o_checkout(monkeypatch):
 
 
 def test_preco_anunciado_continua_em_dolar():
-    """O real não é oferta diferente — a página segue dizendo US$ 250."""
+    """O real não é oferta diferente — a página segue anunciando o dólar."""
     oferta = _oferta_oficial("SP")
-    assert oferta["preco_mensal"] == settings.TRADITIONAL_PRICE_MONTHLY == 250
+    assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD == 140

@@ -112,7 +112,7 @@ def _sessao(valor_cents, metadata, session_id="cs_test_1", mode="subscription"):
     )
 
 
-def _invoice(invoice_id, billing_reason, valor_cents=25000):
+def _invoice(invoice_id, billing_reason, valor_cents=14000):
     return types.SimpleNamespace(
         id=invoice_id,
         customer="cus_1",
@@ -128,45 +128,53 @@ def _ocupou_vaga(registro):
     return any(nome == "cadastrar_marina_fundadora" for nome, _ in registro["rpcs"])
 
 
-def test_pagamento_de_200_ocupa_vaga_mesmo_sem_metadata(supabase_falso):
+def test_assinatura_no_nosso_preco_ocupa_vaga_mesmo_sem_metadata(supabase_falso):
     """O Payment Link pode não ter metadata.programa configurado no painel.
 
     Se a vaga não fosse ocupada, marinas_fundadoras ficaria em zero para sempre
-    e toda marina seguinte continuaria recebendo o link de US$ 200.
+    e toda marina seguinte continuaria recebendo o link da campanha.
+
+    Com o preço único, este portão não diz mais DE ONDE a marina veio — diz
+    apenas "é uma assinatura de marina no nosso preço". Quem separa campanha de
+    site é o link (ver test_programa_do_checkout.py).
     """
     registro = supabase_falso()
-    preco_fundadora = settings.LAUNCH_PRICE_MONTHLY * 100
 
     StripeService()._handle_checkout_completed(
-        _sessao(preco_fundadora, {"plan_type": "marina"})
+        _sessao(settings.PRECO_MENSAL_USD * 100, {"plan_type": "marina"})
     )
 
     assert _ocupou_vaga(registro)
     assert any(tabela == "payments" for tabela, _ in registro["inserts"])
 
 
-def test_pagamento_oficial_nao_ocupa_vaga_fundadora(supabase_falso):
+def test_assinatura_de_outro_valor_nao_ocupa_vaga_fundadora(supabase_falso):
+    """A conta Stripe é da Axos Hub e vende outros produtos no mesmo webhook.
+
+    Valor que não é o nosso não vira marina — era a tabela antiga de US$ 250
+    quando havia duas, é qualquer outro produto da casa hoje.
+    """
     registro = supabase_falso()
-    preco_oficial = settings.TRADITIONAL_PRICE_MONTHLY * 100
 
     StripeService()._handle_checkout_completed(
-        _sessao(preco_oficial, {"plan_type": "marina"})
+        _sessao(25000, {"plan_type": "marina"})
     )
 
     assert not _ocupou_vaga(registro)
 
 
-def test_dossie_de_200_nao_ocupa_vaga_fundadora(supabase_falso):
-    """A faixa de 36-45 pés do dossiê custa os mesmos US$ 200 da fundadora.
+def test_dossie_no_mesmo_valor_nao_ocupa_vaga_fundadora(supabase_falso):
+    """Nada impede uma faixa do dossiê cair no mesmo valor da assinatura.
 
-    O dossiê é vendido por Payment Link próprio, sem metadata, e é pagamento
-    avulso — não pode ocupar vaga nem liberar acesso de marina.
+    Já aconteceu: a faixa de 36-45 pés custava os mesmos US$ 200 da fundadora
+    de então. O dossiê é vendido por Payment Link próprio, sem metadata, e é
+    pagamento avulso — não pode ocupar vaga nem liberar acesso de marina.
     """
     registro = supabase_falso()
-    preco_fundadora = settings.LAUNCH_PRICE_MONTHLY * 100
 
     StripeService()._handle_checkout_completed(
-        _sessao(preco_fundadora, {}, session_id="cs_dossie", mode="payment")
+        _sessao(settings.PRECO_MENSAL_USD * 100, {},
+                session_id="cs_dossie", mode="payment")
     )
 
     # O pagamento é gravado normalmente: prova que o fluxo rodou até o fim e
@@ -176,11 +184,11 @@ def test_dossie_de_200_nao_ocupa_vaga_fundadora(supabase_falso):
 
 
 def test_metadata_explicito_continua_valendo(supabase_falso):
+    """Intenção declarada vale mesmo quando o valor não diz nada."""
     registro = supabase_falso()
 
     StripeService()._handle_checkout_completed(
-        _sessao(settings.TRADITIONAL_PRICE_MONTHLY * 100,
-                {"programa": "marina_fundadora"})
+        _sessao(25000, {"programa": "marina_fundadora"})
     )
 
     assert _ocupou_vaga(registro)
@@ -193,7 +201,7 @@ def test_reentrega_do_mesmo_checkout_nao_reprocessa(supabase_falso):
     )
 
     resultado = StripeService()._handle_checkout_completed(
-        _sessao(settings.LAUNCH_PRICE_MONTHLY * 100, {"programa": "marina_fundadora"})
+        _sessao(settings.PRECO_MENSAL_USD * 100, {"programa": "marina_fundadora"})
     )
 
     assert resultado["status"] == "duplicate"
@@ -223,7 +231,7 @@ def test_renovacao_mensal_e_registrada(supabase_falso):
 
     gravados = [p for tabela, p in registro["inserts"] if tabela == "payments"]
     assert len(gravados) == 1
-    assert gravados[0]["amount"] == float(settings.TRADITIONAL_PRICE_MONTHLY)
+    assert gravados[0]["amount"] == float(settings.PRECO_MENSAL_USD)
     assert gravados[0]["stripe_invoice_id"] == "in_2"
     assert gravados[0]["usuario_id"] == "user-uuid-1"
 

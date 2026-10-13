@@ -32,19 +32,21 @@ def _origem_valida(valor: Optional[str]) -> str:
     v = (valor or "").strip().lower()
     return v if v in ORIGENS_DE_INDICACAO else "desconhecida"
 
-# Oferta da marina paga: 4 vagas fundadoras POR ESTADO a US$ 200/mes
-# (SC/SP/RJ/ES/BA = 20 no total), depois US$ 250.
+# Oferta da marina paga: preco unico de US$ 140/mes (R$ 647,00) para todas,
+# travado 12 meses e corrigido depois por IPCA + 15%. As 4 vagas fundadoras
+# POR ESTADO (SC/SP/RJ/ES/BA = 20 no total) nao dao desconto — dao os 18 meses
+# de dossie 100% da marina.
 # Os links ficam em env para trocar de conta Stripe sem rebuild do frontend.
 # Quantidade e precos vem do config para nao existirem dois numeros de
 # lancamento diferentes no mesmo sistema.
 VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
 MINUTOS_DE_RESERVA = settings.MINUTOS_DE_RESERVA_VAGA
 
-# Origens que vendem a vaga fundadora de US$ 200. Só a campanha de lançamento
-# entra aqui — o site oficial trabalha a tabela de US$ 250. Qualquer valor fora
-# desta lista (inclusive vazio) cai na oferta oficial: preferir cobrar a mais de
-# quem merecia menos, que se conserta devolvendo a diferença, a queimar uma das
-# 20 vagas com quem nunca viu a campanha, que não se conserta.
+# Origens que vendem a VAGA fundadora. Só a campanha de lançamento entra aqui.
+# Com o preço único, errar para cá não cobra mais caro de ninguém — cobra o
+# mesmo —, mas queima uma das 4 vagas do estado com quem nunca viu a campanha,
+# e vaga queimada não se conserta. Qualquer valor fora desta lista (inclusive
+# vazio) cai na oferta oficial, que tem o mesmo preço e não consome vaga.
 ORIGENS_DE_LANCAMENTO = frozenset({"lancamento", "lançamento", "lp-fundadoras", "lp-lancamento"})
 # Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
 # links para mandar a marina bloqueada ao checkout do preço que ela contratou.
@@ -54,11 +56,15 @@ _checkout = link_de_checkout
 
 
 def _oferta_oficial(uf: str | None = None) -> dict:
-    """Oferta do site oficial: US$ 250/mês, sem vaga fundadora envolvida."""
+    """Oferta do site oficial: o preço de todas, sem vaga fundadora envolvida.
+
+    O preço é o mesmo da fundadora (US$ 140 / R$ 647,00) desde 13/10/2026 — o
+    que não vem aqui são os 18 meses de dossiê 100% da marina.
+    """
     url, moeda = _checkout(fundadora=False, uf=uf)
     return {
         "oferta": "oficial",
-        "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
+        "preco_mensal": settings.PRECO_MENSAL_USD,
         "uf": None,
         "vagas_restantes": None,
         "motivo": "fora_da_campanha_de_lancamento",
@@ -74,21 +80,22 @@ def _oferta_marina(supabase, data) -> dict:
     Escolhe o checkout da marina paga e JA RESERVA a vaga fundadora.
 
     Sao 4 vagas por ESTADO (SC/SP/RJ/ES/BA). Marina de qualquer outro estado
-    vai direto para a oferta oficial de US$ 250 — antes o estado era coletado
-    no formulario e descartado, entao 20 marinas de um mesmo estado podiam
-    tomar todas as vagas e zerar os outros quatro.
+    vai direto para a oferta oficial — mesmo preco, sem os 18 meses de dossie
+    100%. Antes o estado era coletado no formulario e descartado, entao 20
+    marinas de um mesmo estado podiam tomar todas as vagas e zerar os outros
+    quatro.
 
     A vaga e reservada aqui, e nao so no pagamento: entre preencher o
     formulario e pagar havia uma janela em que todas viam "tem vaga" e recebiam
-    o link de US$ 200, dando para ter mais gente paga a preco de fundadora do
+    o link da campanha, dando para ter mais gente com bonus de fundadora do
     que vaga para honrar. A reserva vence sozinha em MINUTOS_DE_RESERVA.
 
     Exige service role: marinas_fundadoras tem RLS sem politica publica.
     """
-    # O preco de fundadora pertence a CAMPANHA de lancamento, nao ao estado da
-    # marina. Quem chega pelo site oficial paga a tabela oficial, mesmo estando
-    # em SC/SP/RJ/ES/BA e mesmo havendo vaga livre — senao as 20 vagas somem
-    # para quem nunca viu a campanha, e a exclusividade da LP nao vale nada.
+    # A vaga de fundadora pertence a CAMPANHA de lancamento, nao ao estado da
+    # marina. Quem chega pelo site oficial entra sem vaga, mesmo estando em
+    # SC/SP/RJ/ES/BA e mesmo havendo vaga livre — senao as 20 vagas somem para
+    # quem nunca viu a campanha, e a exclusividade da LP nao vale nada.
     if (getattr(data, "origem", None) or "").strip().lower() not in ORIGENS_DE_LANCAMENTO:
         return _oferta_oficial(getattr(data, "state", None))
 
@@ -103,10 +110,10 @@ def _oferta_marina(supabase, data) -> dict:
         }).execute()
         reserva = res.data if isinstance(res.data, dict) else {}
     except Exception as e:
-        # Sem reserva confirmada, manda para o oficial. Cobrar US$ 250 de quem
-        # merecia US$ 200 se conserta devolvendo a diferenca; cobrar US$ 200 de
-        # quem nao tem vaga cria uma obrigacao impossivel — nao existe 5a vaga
-        # em estado nenhum.
+        # Sem reserva confirmada, manda para o oficial. O preco e o mesmo, e o
+        # bonus de fundadora se concede depois, na mao; prometer a vaga de quem
+        # nao a tem cria uma obrigacao impossivel — nao existe 5a vaga em
+        # estado nenhum.
         logger.error(f"Falha ao reservar vaga fundadora para {data.email}: {e}")
         reserva = {}
 
@@ -125,8 +132,9 @@ def _oferta_marina(supabase, data) -> dict:
     url, moeda = _checkout(fundadora, data.state)
     return {
         "oferta": "fundadora" if fundadora else "oficial",
-        "preco_mensal": (settings.LAUNCH_PRICE_MONTHLY if fundadora
-                         else settings.TRADITIONAL_PRICE_MONTHLY),
+        # Mesmo valor nas duas ofertas: o que a vaga fundadora muda são os
+        # 18 meses de dossiê 100% da marina, não a mensalidade.
+        "preco_mensal": settings.PRECO_MENSAL_USD,
         "uf": reserva.get("uf") or (data.state or "").strip().upper() or None,
         "vagas_restantes": reserva.get("vagas_restantes"),
         "motivo": reserva.get("motivo"),
@@ -247,10 +255,10 @@ class MarinaRegistroPublico(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     website: Optional[str] = None
-    # De onde veio o cadastro. O preço de fundadora é da CAMPANHA de lançamento,
+    # De onde veio o cadastro. A vaga de fundadora é da CAMPANHA de lançamento,
     # não do estado da marina: sem isto, qualquer um que se cadastrasse pelo site
-    # oficial levava US$ 200 e consumia uma das 20 vagas sem nunca ter visto a
-    # campanha. Ausente ou desconhecido = site oficial = US$ 250.
+    # oficial consumia uma das 20 vagas sem nunca ter visto a campanha. Ausente
+    # ou desconhecido = site oficial = mesmo preço, sem vaga.
     origem: Optional[str] = None
     # Quem indicou esta marina — nome ou e-mail da fundadora, como ela lembrar.
     # A pagina promete que quem indica participa dos dossies da indicada, e esse
@@ -395,10 +403,10 @@ async def vagas_fundadoras():
     """Vagas fundadoras restantes, por estado e no total.
 
     Serve a página de LANÇAMENTO. A página oficial anuncia só a mensalidade
-    de US$ 250 e não consome isto.
+    (a mesma para todas) e não consome isto.
 
     Conta como ocupada tanto a vaga paga quanto a reservada dentro do prazo —
-    é o mesmo número que decide o preço no cadastro, para a página nunca
+    é o mesmo número que decide o bônus no cadastro, para a página nunca
     prometer uma vaga que o checkout vai negar.
     """
     try:
@@ -656,9 +664,11 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
     status = result.get("status")
 
     # 2) Não pré-autorizada -> fluxo pago (sem criar conta aqui).
-    #    O checkout vem do backend: fundadora (US$ 200) enquanto houver vaga,
-    #    oficial (US$ 250) depois. O link fixo no frontend cobrava US$ 250 de
-    #    todo mundo e ainda apontava para a conta Stripe antiga (CPF).
+    #    O checkout vem do backend: ele escolhe a MOEDA pela UF e qual dos
+    #    links identifica o programa (fundadora enquanto houver vaga, oficial
+    #    depois) — o preço é o mesmo nos dois. O link fixo no frontend cobrava
+    #    a tabela antiga de todo mundo e ainda apontava para a conta Stripe
+    #    antiga (CPF).
     if status == "nao_autorizado":
         oferta = _oferta_marina(supabase, data)
         user_id = _criar_acesso_marina_paga(supabase, data, oferta)
