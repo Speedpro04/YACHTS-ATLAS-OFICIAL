@@ -1,17 +1,21 @@
 """
-Regressão da oferta por origem — a regra mais simples e mais cara de errar.
+A origem do cadastro deixou de decidir qualquer coisa.
+
+A regra tinha duas linhas e era a mais cara de errar:
 
   • site oficial     → oferta oficial, sem vaga;
   • LP de lançamento → vaga fundadora, enquanto houver no estado.
 
-O PREÇO É O MESMO NAS DUAS desde 13/10/2026 (US$ 140 / R$ 697,00): o que a
-campanha dá é a VAGA, e com ela os 18 meses de dossiê 100% da marina. Antes a
-diferença era de preço — US$ 200 contra US$ 250 — e é daí que vem o nome
-antigo destes testes.
+Hoje é UMA: toda origem recebe a Oficial, a US$ 140/mês. O preço já era o
+mesmo desde 13/10/2026; em 14/10 o programa fundador foi suspenso pelo
+fundador — *"vamos deixar de lado a página fundadora, iremos trabalhar só com
+a oficial nesse novo valor"* — e a vaga, que era a última coisa que a campanha
+dava, parou de ser concedida.
 
-A vaga pertence à CAMPANHA, não ao estado da marina. Sem esta separação,
-qualquer um que se cadastrasse pelo site oficial consumia uma das 20 vagas sem
-nunca ter visto a campanha — e a exclusividade da LP não valia nada.
+O QUE ESTES TESTES PROTEGEM AGORA: que `data.origem` não volte a abrir caminho
+para a reserva sem uma decisão comercial atrás. A lista `ORIGENS_DE_LANCAMENTO`
+continua escrita em `leads.py`, dormente — e código dormente perto de um `if`
+é como o religamento acontece sem ninguém querer.
 """
 import os
 import types
@@ -49,45 +53,49 @@ def _marina(origem=None, state="SC"):
 
 
 @pytest.mark.parametrize("origem", [None, "", "   ", "google", "instagram", "oficial"])
-def test_fora_da_campanha_nao_ganha_vaga_fundadora(origem):
-    """Mesmo em estado com vaga livre: sem origem de campanha, é a oficial."""
+def test_fora_da_campanha_recebe_a_oficial(origem):
     sb = _Supabase()
 
     oferta = _oferta_marina(sb, _marina(origem=origem))
 
     assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD
     assert oferta["oferta"] == "oficial"
-    # E, principalmente: não encostou na reserva. Uma das 20 vagas não pode ser
-    # consumida — nem temporariamente — por quem não veio da campanha.
+    # E, principalmente: não encostou na reserva.
     assert sb.rpcs == []
 
 
 @pytest.mark.parametrize("origem", ["lancamento", "LANCAMENTO", "lp-fundadoras", " lancamento "])
-def test_campanha_de_lancamento_recebe_a_vaga_fundadora(origem):
+def test_a_campanha_tambem_recebe_a_oficial(origem):
+    """O ponto da suspensão.
+
+    Estas quatro origens eram a porta da vaga — a lista continua em
+    `ORIGENS_DE_LANCAMENTO`, e é justamente por isso que elas são as que
+    precisam estar sob teste. Entram como qualquer outra.
+    """
     sb = _Supabase()
 
     oferta = _oferta_marina(sb, _marina(origem=origem))
 
     assert oferta["preco_mensal"] == settings.PRECO_MENSAL_USD
-    assert oferta["oferta"] == "fundadora"
-    assert sb.rpcs == ["reservar_vaga_fundadora"]
+    assert oferta["oferta"] == "oficial"
+    assert sb.rpcs == [], "a campanha não reserva mais vaga"
 
 
-def test_as_duas_ofertas_custam_o_mesmo():
-    """O preço é um só, e quem reintroduzir dois valores quebra aqui.
+def test_toda_origem_recebe_exatamente_a_mesma_oferta():
+    """Uma oferta só: mesmo preço, mesmo rótulo, mesmo checkout.
 
-    Era a diferença entre US$ 200 e US$ 250. Hoje a campanha vende vaga e
-    bônus, não desconto — e a página anuncia um número só.
+    Quebra se alguém reintroduzir qualquer bifurcação por origem — de preço,
+    de vaga ou de link.
     """
-    fundadora = _oferta_marina(_Supabase(), _marina(origem="lancamento"))
-    oficial = _oferta_marina(_Supabase(), _marina(origem="google"))
+    campanha = _oferta_marina(_Supabase(), _marina(origem="lancamento"))
+    site = _oferta_marina(_Supabase(), _marina(origem="google"))
 
-    assert fundadora["oferta"] == "fundadora"
-    assert oficial["oferta"] == "oficial"
-    assert fundadora["preco_mensal"] == oficial["preco_mensal"] == 140
+    assert campanha["oferta"] == site["oferta"] == "oficial"
+    assert campanha["preco_mensal"] == site["preco_mensal"] == 140
+    assert campanha["checkout_url"] == site["checkout_url"]
 
 
-def test_so_a_campanha_recebe_prazo_de_reserva():
-    """Sem reserva não há relógio correndo — a oficial não promete prazo nenhum."""
+def test_ninguem_recebe_prazo_de_reserva():
+    """Sem vaga não há relógio correndo, para origem nenhuma."""
     assert _oferta_marina(_Supabase(), _marina())["reserva_expira_em"] is None
-    assert _oferta_marina(_Supabase(), _marina(origem="lancamento"))["reserva_expira_em"]
+    assert _oferta_marina(_Supabase(), _marina(origem="lancamento"))["reserva_expira_em"] is None

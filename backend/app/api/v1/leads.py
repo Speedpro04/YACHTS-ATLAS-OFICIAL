@@ -2,7 +2,6 @@
 Yachts Atlas — Leads (marinas e parceiros)
 """
 import logging
-from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -33,20 +32,23 @@ def _origem_valida(valor: Optional[str]) -> str:
     return v if v in ORIGENS_DE_INDICACAO else "desconhecida"
 
 # Oferta da marina paga: preco unico de US$ 140/mes (R$ 697,00) para todas,
-# travado 12 meses e corrigido depois por IPCA + 15%. As 4 vagas fundadoras
-# POR ESTADO (SC/SP/RJ/ES/BA = 20 no total) nao dao desconto — dao os 18 meses
-# de dossie 100% da marina.
+# travado 12 meses e corrigido depois por IPCA + 15%.
+#
+# O PROGRAMA FUNDADOR ESTA SUSPENSO (14/10/2026): so se vende a Oficial. As
+# constantes abaixo continuam aqui porque o programa nao foi apagado, apenas
+# desligado em `_oferta_marina` — ver a explicacao la, que e o unico lugar por
+# onde se entrava nele.
 # Os links ficam em env para trocar de conta Stripe sem rebuild do frontend.
 # Quantidade e precos vem do config para nao existirem dois numeros de
 # lancamento diferentes no mesmo sistema.
 VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
 MINUTOS_DE_RESERVA = settings.MINUTOS_DE_RESERVA_VAGA
 
-# Origens que vendem a VAGA fundadora. Só a campanha de lançamento entra aqui.
-# Com o preço único, errar para cá não cobra mais caro de ninguém — cobra o
-# mesmo —, mas queima uma das 4 vagas do estado com quem nunca viu a campanha,
-# e vaga queimada não se conserta. Qualquer valor fora desta lista (inclusive
-# vazio) cai na oferta oficial, que tem o mesmo preço e não consome vaga.
+# Origens que vendiam a VAGA fundadora. DORMENTE desde 14/10/2026: ninguém
+# consulta mais esta lista, porque toda marina recebe a Oficial. Fica escrita
+# para o dia em que a campanha voltar — era ela que separava quem viu a
+# campanha de quem chegou pelo site, e reconstruir de memória é como o
+# conjunto erra.
 ORIGENS_DE_LANCAMENTO = frozenset({"lancamento", "lançamento", "lp-fundadoras", "lp-lancamento"})
 # Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
 # links para mandar a marina bloqueada ao checkout do preço que ela contratou.
@@ -77,72 +79,30 @@ def _oferta_oficial(uf: str | None = None) -> dict:
 
 def _oferta_marina(supabase, data) -> dict:
     """
-    Escolhe o checkout da marina paga e JA RESERVA a vaga fundadora.
+    Oferta da marina paga. Hoje existe UMA: a Oficial, a US$ 140/mes.
 
-    Sao 4 vagas por ESTADO (SC/SP/RJ/ES/BA). Marina de qualquer outro estado
-    vai direto para a oferta oficial — mesmo preco, sem os 18 meses de dossie
-    100%. Antes o estado era coletado no formulario e descartado, entao 20
-    marinas de um mesmo estado podiam tomar todas as vagas e zerar os outros
-    quatro.
+    O PROGRAMA FUNDADOR ESTA SUSPENSO desde 14/10/2026, por decisao do
+    fundador: *"vamos deixar de lado a pagina fundadora, iremos trabalhar so
+    com a oficial nesse novo valor"*. Nenhum cadastro reserva vaga, venha de
+    onde vier — inclusive da campanha de lancamento.
 
-    A vaga e reservada aqui, e nao so no pagamento: entre preencher o
-    formulario e pagar havia uma janela em que todas viam "tem vaga" e recebiam
-    o link da campanha, dando para ter mais gente com bonus de fundadora do
-    que vaga para honrar. A reserva vence sozinha em MINUTOS_DE_RESERVA.
+    POR QUE ISTO E UMA FUNCAO E NAO UM `return _oferta_oficial(...)` SOLTO
+    O programa nao foi apagado: as 4 vagas por estado, a reserva com prazo e
+    as funcoes do banco continuam de pe, so que ninguem mais entra nelas. Esta
+    funcao e a UNICA porta por onde se entrava — entao e aqui que a suspensao
+    mora, inteira e num lugar so.
 
-    Exige service role: marinas_fundadoras tem RLS sem politica publica.
+    COMO RELIGAR, se a campanha voltar: devolver o corpo antigo (git log deste
+    arquivo), que consultava `data.origem` contra ORIGENS_DE_LANCAMENTO e
+    chamava `reservar_vaga_fundadora`. O que ele precisa continua existindo:
+    a RPC no banco, VAGAS_POR_ESTADO, MINUTOS_DE_RESERVA e o link da campanha
+    em STRIPE_LINK_MARINA_FUNDADORA. Nada foi removido.
+
+    O `supabase` continua no parametro de proposito, e nao e esquecimento: a
+    rota ja o passa, e o dia em que a campanha voltar nao deve exigir mexer em
+    quem chama.
     """
-    # A vaga de fundadora pertence a CAMPANHA de lancamento, nao ao estado da
-    # marina. Quem chega pelo site oficial entra sem vaga, mesmo estando em
-    # SC/SP/RJ/ES/BA e mesmo havendo vaga livre — senao as 20 vagas somem para
-    # quem nunca viu a campanha, e a exclusividade da LP nao vale nada.
-    if (getattr(data, "origem", None) or "").strip().lower() not in ORIGENS_DE_LANCAMENTO:
-        return _oferta_oficial(getattr(data, "state", None))
-
-    try:
-        res = supabase.rpc("reservar_vaga_fundadora", {
-            "p_email": data.email,
-            "p_uf": data.state or "",
-            "p_marina_nome": data.name,
-            "p_responsavel": data.name,
-            "p_telefone": data.phone,
-            "p_minutos": MINUTOS_DE_RESERVA,
-        }).execute()
-        reserva = res.data if isinstance(res.data, dict) else {}
-    except Exception as e:
-        # Sem reserva confirmada, manda para o oficial. O preco e o mesmo, e o
-        # bonus de fundadora se concede depois, na mao; prometer a vaga de quem
-        # nao a tem cria uma obrigacao impossivel — nao existe 5a vaga em
-        # estado nenhum.
-        logger.error(f"Falha ao reservar vaga fundadora para {data.email}: {e}")
-        reserva = {}
-
-    fundadora = reserva.get("modo") == "fundadora"
-
-    # Hora em que a vaga volta para a fila, para a tela mostrar o prazo exato
-    # ("reservada até 14h32") em vez de um "12 horas" que a marina precisa
-    # cronometrar sozinha. Só existe quando há reserva: quem já está ativa não
-    # tem prazo correndo contra ela.
-    expira_em = None
-    if fundadora and reserva.get("status") != "ja_ativa":
-        expira_em = (
-            datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_DE_RESERVA)
-        ).isoformat()
-
-    url, moeda = _checkout(fundadora, data.state)
-    return {
-        "oferta": "fundadora" if fundadora else "oficial",
-        # Mesmo valor nas duas ofertas: o que a vaga fundadora muda são os
-        # 18 meses de dossiê 100% da marina, não a mensalidade.
-        "preco_mensal": settings.PRECO_MENSAL_USD,
-        "uf": reserva.get("uf") or (data.state or "").strip().upper() or None,
-        "vagas_restantes": reserva.get("vagas_restantes"),
-        "motivo": reserva.get("motivo"),
-        "checkout_url": url,
-        "moeda_cobranca": moeda,
-        "reserva_minutos": MINUTOS_DE_RESERVA if expira_em else None,
-        "reserva_expira_em": expira_em,
-    }
+    return _oferta_oficial(getattr(data, "state", None))
 
 
 def _criar_acesso_marina_paga(supabase, data, oferta: dict) -> Optional[str]:

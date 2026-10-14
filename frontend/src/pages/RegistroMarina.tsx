@@ -579,8 +579,12 @@ export default function RegistroMarina() {
                           placeholder="Nome ou e-mail da Marina que indicou (opcional)"
                           className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
                         />
+                        {/* Dizia "durante o período fundador". O programa está
+                            suspenso (14/10/2026) e a indicação não depende
+                            dele: ela vale para qualquer Marina da rede, pelo
+                            prazo do próprio programa de indicação. */}
                         <p className="text-[11px] text-white/30 leading-relaxed">
-                          A Marina que indica participa dos dossiês gerados por você durante o período fundador.
+                          A Marina que indica participa dos dossiês gerados por você durante 12 meses.
                         </p>
                       </div>
                     </div>
@@ -677,14 +681,20 @@ export default function RegistroMarina() {
                           </div>
                        </div>
 
+                       {/* A cláusula falava do "contrato fundador" e de 18 meses
+                           de retenção. O programa fundador está suspenso
+                           (14/10/2026) e a receita do dossiê não passa mais
+                           pela plataforma: ela vai direto da marina para o
+                           dono, 100% dela, sem prazo. Prometer "18 meses" era
+                           prometer menos do que se entrega. */}
                        <div className="pt-2">
                           <div className="p-4 bg-[#021431] border border-[#c5a059]/30 rounded-sm">
                              <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
                                 Clausula Comercial de Dossies
                              </p>
                              <p className="text-white/70 text-[12px] leading-relaxed">
-                                Para parceiros aprovados no contrato fundador: receita de dossies com retencao integral por 18 meses,
-                                com marco inicial na ativacao da conta e demais condicoes definidas em instrumento contratual.
+                                A receita dos dossiês é integralmente da Marina: o dossiê é pago pelo proprietário
+                                diretamente a ela, sem divisão com a plataforma e sem prazo de carência.
                              </p>
                           </div>
                        </div>
@@ -739,31 +749,23 @@ export default function RegistroMarina() {
                    </div>
                   </div>
 
-                   {/* O que acontece depois do botão. Prazo que o cliente não
-                       conhece é armadilha: a vaga fundadora fica presa por 12h
-                       (MINUTOS_DE_RESERVA_VAGA) e some depois disso. Com o
-                       preço único, voltar tarde não muda o valor — muda o que
-                       vem com ele: os 18 meses de dossiê 100% da marina
-                       fundadora, que só existem enquanto houver vaga no
-                       estado. */}
+                   {/* O que acontece depois do botão.
+
+                       Aqui havia o prazo da vaga fundadora — "reservada por 12
+                       horas", "passadas as 12h ela volta para as 4 do seu
+                       estado". Saiu com a suspensão do programa (14/10/2026):
+                       não existe mais vaga para reservar, e prazo de uma
+                       escassez que acabou é pressão sem lastro. O resto do
+                       texto continua, porque continua verdade. */}
                    <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35 max-w-md mx-auto">
                      Ao concluir, você verá um <strong className="text-white/60 font-semibold">vídeo curto</strong> do
                      fundador explicando como o sistema funciona — e em seguida
                      finaliza o pagamento.
                      <br />
-                     {/* 12h espelha MINUTOS_DE_RESERVA_VAGA (720) no config.py do
-                         backend. Quem preenche raramente é quem decide: o gerente
-                         costuma levar ao conselho ou ao dono. Se mudar lá, muda aqui. */}
-                     Sua vaga está <strong className="text-gold-500/80 font-semibold">reservada por 12 horas</strong> —
-                     tempo de levar a decisão a quem precisa aprovar.
-                     <br />
                      Ao concluir, tudo o que a sua Marina faz passa a existir em
                      <strong className="text-white/60 font-semibold"> banco de dados</strong>: cada serviço com data,
                      autor e assinatura digital, no nome dela. É o primeiro dia em
                      que o trabalho dela deixa de depender de quem lembra.
-                     <br />
-                     Passadas as 12 horas, a vaga volta para as
-                     <strong className="text-gold-500/80 font-semibold"> 4 do seu estado</strong>.
                      <br />
                      {/* Depois de pagar, a marina sai daqui para a Stripe. Sem
                          dizer o que esperar, ela fica sem saber se deu certo —

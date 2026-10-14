@@ -32,6 +32,12 @@ from app.core.config import settings
 from app.services.stripe_service import StripeService
 
 
+def _cadastrou_vaga():
+    """Quem o webhook cadastrou como fundadora, pelo nome da RPC que ele chama."""
+    return [p.get("p_email") for nome, p in _RPCS_CHAMADAS
+            if nome == "cadastrar_marina_fundadora"]
+
+
 class _Query:
     def __init__(self, retorno=None):
         self._retorno = retorno
@@ -75,12 +81,17 @@ class _Admin:
         return _Query()
 
     def rpc(self, nome, params):
+        _RPCS_CHAMADAS.append((nome, params))
         return _Query(retorno=self._resposta_rpc)
+
+
+_RPCS_CHAMADAS: list = []
 
 
 @pytest.fixture
 def cenario(monkeypatch):
-    """Instala o banco falso e espiões nos dois efeitos que importam."""
+    """Instala o banco falso e espiões nos três efeitos que importam."""
+    _RPCS_CHAMADAS.clear()
     chamadas = {"agendou": [], "avisou": []}
 
     def instalar(resposta_rpc):
@@ -102,10 +113,20 @@ def cenario(monkeypatch):
     return instalar
 
 
-def _checkout_fundadora(session_id="cs_fundadora"):
+def _checkout_marina(session_id="cs_marina", programa=None):
+    """Checkout de marina no nosso preço.
+
+    `programa="marina_fundadora"` é a PROVA EXPLÍCITA que, desde a suspensão
+    do programa (14/10/2026), é a única coisa que ainda concede vaga — e que
+    só existe se alguém marcar o Payment Link no painel ou preencher
+    STRIPE_LINK_MARINA_FUNDADORA. O cadastro não produz mais nenhuma das duas.
+    """
+    metadata = {"plan_type": "marina", "uf": "SC"}
+    if programa:
+        metadata["programa"] = programa
     return types.SimpleNamespace(
         id=session_id,
-        metadata={"plan_type": "marina", "uf": "SC"},
+        metadata=metadata,
         amount_total=settings.PRECO_MENSAL_USD * 100,
         currency="usd",
         mode="subscription",
@@ -117,42 +138,65 @@ def _checkout_fundadora(session_id="cs_fundadora"):
     )
 
 
-def test_fundadora_com_vaga_registra_o_reajuste(cenario):
+def test_marina_comum_registra_o_reajuste_e_nao_ocupa_vaga(cenario):
+    """O caminho de TODA marina desde a suspensão.
+
+    Ela paga o nosso preço, o sistema reconhece a assinatura e grava os 12
+    meses travados. A vaga, não: o dublê devolveria "fundadora" se fosse
+    perguntado, e justamente por isso o teste prova que ninguém perguntou.
+    """
     chamadas = cenario({"modo": "fundadora", "slot": 1, "uf": "SC"})
 
-    StripeService()._handle_checkout_completed(_checkout_fundadora())
+    StripeService()._handle_checkout_completed(_checkout_marina())
 
+    assert chamadas["agendou"] == ["sub_123"]
+    assert chamadas["avisou"] == []
+    assert _cadastrou_vaga() == [], "sem prova explícita, não ocupa vaga"
+
+
+def test_prova_explicita_ainda_concede_vaga(cenario):
+    """O programa está suspenso, não demolido.
+
+    Marcar `programa: marina_fundadora` no Payment Link continua funcionando —
+    é assim que o fundador religa o lado do pagamento sem deploy. Se este
+    teste quebrar, religar passou a exigir mexer em código.
+    """
+    chamadas = cenario({"modo": "fundadora", "slot": 1, "uf": "SC"})
+
+    StripeService()._handle_checkout_completed(
+        _checkout_marina("cs_explicita", programa="marina_fundadora")
+    )
+
+    assert _cadastrou_vaga() == ["marina@exemplo.com"]
     assert chamadas["agendou"] == ["sub_123"]
     assert chamadas["avisou"] == []
 
 
-def test_assinou_sem_vaga_dispara_alerta_e_ainda_registra_o_reajuste(cenario):
-    """Sem vaga ela não leva o bônus — mas paga o mesmo e tem os 12 meses.
-
-    Antes, não ter vaga significava estar no preço errado, e o reajuste não era
-    agendado de propósito. Com preço único ela está no preço certo: os 12 meses
-    travados são dela como de qualquer outra, e só o bônus fica para o humano
-    decidir.
-    """
+def test_prova_explicita_sem_vaga_no_estado_chama_o_humano(cenario):
+    """O alerta continua de pé para o caso de religar com os 5 estados cheios."""
     chamadas = cenario({"modo": "tradicional", "motivo": "vagas_do_estado_esgotadas"})
 
-    StripeService()._handle_checkout_completed(_checkout_fundadora("cs_sem_vaga"))
+    StripeService()._handle_checkout_completed(
+        _checkout_marina("cs_sem_vaga", programa="marina_fundadora")
+    )
 
     assert chamadas["avisou"] == ["marina@exemplo.com"]
+    # Ela paga o mesmo que todas: os 12 meses travados são dela de qualquer jeito.
     assert chamadas["agendou"] == ["sub_123"]
 
 
-def test_assinatura_de_outro_valor_nao_mexe_em_vaga(cenario):
-    """Outro produto da casa no mesmo webhook não pode ocupar vaga.
+def test_assinatura_de_outro_valor_nao_mexe_em_nada(cenario):
+    """Outro produto da casa no mesmo webhook não é marina.
 
-    O reajuste também não é registrado: sem o nosso valor, nem link, nem
-    metadata, não há prova de que seja uma marina.
+    Sem o nosso valor, nem link, nem metadata, não há prova de nada: nem vaga,
+    nem régua de reajuste.
     """
     chamadas = cenario({"modo": "fundadora"})
-    sessao = _checkout_fundadora("cs_outro")
+    sessao = _checkout_marina("cs_outro")
     sessao.amount_total = 25000
 
     StripeService()._handle_checkout_completed(sessao)
 
     assert chamadas["agendou"] == []
     assert chamadas["avisou"] == []
+    assert _cadastrou_vaga() == []

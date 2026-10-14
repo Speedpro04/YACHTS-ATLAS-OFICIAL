@@ -46,7 +46,7 @@ const FAQS = [
   },
   {
     q: 'Sou uma Marina. Como funciona a parceria?',
-    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
+    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
   },
 ]
 
@@ -641,13 +641,18 @@ export default function LandingPage() {
                 ))}
               </div>
 
+              {/* Era "Founder Contract Benefit — retenção integral por 18
+                  meses". O programa fundador está suspenso (14/10/2026) e a
+                  receita do dossiê não passa pela plataforma: vai direto da
+                  Marina para o dono, inteira e sem prazo. O bloco ficou
+                  porque a condição ficou — melhor, e para todas. */}
               <div className="mt-10 p-6 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm">
                 <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
-                  Founder Contract Benefit
+                  A receita do dossiê é da Marina
                 </p>
                 <p className="text-white/70 text-sm leading-relaxed">
-                  Parceiros fundadores aprovados recebem condicao comercial dedicada:
-                  receita de dossies em modelo de retencao integral por 18 meses, conforme contrato.
+                  O dossiê é pago pelo proprietário diretamente à Marina: retenção integral,
+                  sem divisão com a plataforma e sem prazo de carência.
                 </p>
               </div>
 

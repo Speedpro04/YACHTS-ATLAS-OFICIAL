@@ -107,6 +107,8 @@ Ciclo completo testado com cartão real (link recorrente de R$ 1,00): não pagou
 ## 6. O preço de fundadora é da CAMPANHA, não do estado da marina
 **Data da Decisão:** 19/08/2026
 
+> **Suspensa em 14/10/2026 — ver §61.** O programa fundador saiu de operação: nenhum cadastro reserva vaga, e a origem deixou de decidir a oferta. A regra abaixo não foi apagada do código (nem deste documento) porque a suspensão é de porta, não de demolição — ela volta a valer no dia em que a campanha voltar.
+>
 > **Preço superado em 13/10/2026 — ver §60.** A regra desta seção continua valendo inteira; o que mudou é o que a campanha entrega. Desde o preço único (US$ 140 para todas), a vaga fundadora não dá desconto: dá os 18 meses de dossiê 100% da marina. Onde se lê "US$ 200 x US$ 250" abaixo, leia "com vaga x sem vaga".
 
 ### O Problema
@@ -1868,3 +1870,40 @@ Continuam sendo **quatro** links mesmo com preço único. Com o valor igual, o l
 `_programa_do_checkout` já decidia por metadata, link e reserva (§56) — essas três continuam valendo. O portão por valor virou o que sempre deveria ter sido: *"é uma assinatura de marina no nosso preço"*, e nada além disso. Quem separa campanha de site é o link.
 
 **Padrão a repetir:** reconhecer cliente pelo valor pago só funciona enquanto os valores forem diferentes. É uma coincidência com prazo de validade, e o prazo vence no dia em que o preço muda.
+
+## 61. O programa fundador foi suspenso, não demolido
+**Data:** 14/10/2026
+
+Decisão do Marcos: *"vamos deixar de lado a página fundadora, iremos trabalhar só com a oficial nesse novo valor"*.
+
+### O que mudou
+
+Toda marina que se cadastra recebe a **Oficial a US$ 140/mês**, venha de onde vier — inclusive da campanha de lançamento. `reservar_vaga_fundadora` não é chamada por ninguém.
+
+As 4 vagas por estado, a reserva com prazo, as funções do banco e a lista `ORIGENS_DE_LANCAMENTO` continuam de pé. A porta era **uma** — `leads._oferta_marina` —, então é lá que a suspensão mora inteira, com o caminho de volta escrito na própria docstring.
+
+**Padrão a repetir:** quando um programa inteiro tem uma única porta de entrada, desligar é fechar a porta — não varrer a casa. A diferença aparece no dia de religar.
+
+### O bônus já não existia na prática
+
+A fundadora dava 18 meses de dossiê 100% contra 12 da Oficial. Só que a plataforma **parou de vender dossiê**: ele é pago pelo dono direto à marina, 100% dela, permanente e sem prazo (ver `DOSSIER_REQUIRE_PAYMENT`). Com o preço igualado em §60, a fundadora tinha deixado de entregar qualquer coisa que a Oficial não entregue — a suspensão só reconheceu isso.
+
+**Padrão a repetir:** antes de defender um programa, conferir o que ele ainda entrega de fato. Benefício que o produto já dá a todo mundo não é diferencial, é texto antigo.
+
+### O valor pago respondia duas perguntas, e uma errado
+
+O webhook usava o mesmo teste — `moeda == usd and valor == preço` — para decidir *"esta assinatura é nossa?"* e *"esta marina ganha vaga?"*. Funcionava enquanto os preços eram dois.
+
+Com preço único, **toda marina Oficial pagando em dólar entraria ocupando uma das 4 vagas do estado dela**. As perguntas foram separadas: o valor continua identificando a assinatura (é dele que sai a régua dos 12 meses travados); a vaga passou a exigir prova explícita — metadata `programa` ou o link da campanha em `STRIPE_LINK_MARINA_FUNDADORA`.
+
+**Padrão a repetir:** uma condição que responde duas perguntas de uma vez funciona até as perguntas discordarem — e elas discordam calado, no dia em que o mundo muda em volta.
+
+### O site não pode prometer o que o checkout não entrega
+
+Suspender no backend sem limpar a copy deixaria a página de indicação anunciando *"X de 20 vagas ocupadas"* com contador **ao vivo**: número que o visitante confere e que a venda desmente no clique seguinte.
+
+Saíram o contador, a reserva de 12 horas e as "4 do seu estado" no cadastro, as "condições fundadoras exclusivas" do FAQ, o "no programa fundador" do subtítulo de preço e o bloco *Founder Contract Benefit*. Os dois blocos que falavam de retenção por 18 meses agora dizem a verdade inteira: a receita é da Marina, sem divisão e sem prazo.
+
+**A indicação continua viva** e deixou de depender do fundador: quem indica recebe 100% dos dossiês da indicada por 12 meses, e isso vale para qualquer Marina da rede. Era "o motor que leva de 20 para 40" (§6) e segue sendo, sem as vagas.
+
+**Padrão a repetir:** desligar uma oferta é trabalho de três camadas — venda, texto e banco. Fazer uma só é pior que não fazer nenhuma, porque a página continua vendendo o que o sistema parou de entregar.

@@ -128,15 +128,17 @@ def _ocupou_vaga(registro):
     return any(nome == "cadastrar_marina_fundadora" for nome, _ in registro["rpcs"])
 
 
-def test_assinatura_no_nosso_preco_ocupa_vaga_mesmo_sem_metadata(supabase_falso):
-    """O Payment Link pode não ter metadata.programa configurado no painel.
+def test_assinatura_no_nosso_preco_nao_ocupa_vaga_sem_prova(supabase_falso):
+    """O valor pago identifica a assinatura, mas não concede vaga.
 
-    Se a vaga não fosse ocupada, marinas_fundadoras ficaria em zero para sempre
-    e toda marina seguinte continuaria recebendo o link da campanha.
+    Enquanto havia dois preços, US$ 200 queria dizer "campanha" e a vaga saía
+    daí. Hoje fundadora e oficial pagam o mesmo US$ 140, e desde 14/10/2026 o
+    programa está suspenso: o pagamento entra, o acesso é liberado, e nenhuma
+    vaga é ocupada. Quem concede vaga é prova explícita — link da campanha ou
+    metadata — e ninguém mais recebe nenhum dos dois.
 
-    Com o preço único, este portão não diz mais DE ONDE a marina veio — diz
-    apenas "é uma assinatura de marina no nosso preço". Quem separa campanha de
-    site é o link (ver test_programa_do_checkout.py).
+    Sem esta separação, TODA marina Oficial pagando em dólar entraria
+    consumindo uma das 4 vagas do estado dela.
     """
     registro = supabase_falso()
 
@@ -144,7 +146,9 @@ def test_assinatura_no_nosso_preco_ocupa_vaga_mesmo_sem_metadata(supabase_falso)
         _sessao(settings.PRECO_MENSAL_USD * 100, {"plan_type": "marina"})
     )
 
-    assert _ocupou_vaga(registro)
+    assert not _ocupou_vaga(registro)
+    # O pagamento é gravado normalmente: a vaga ficou de fora por decisão, não
+    # por o fluxo ter morrido no meio.
     assert any(tabela == "payments" for tabela, _ in registro["inserts"])
 
 

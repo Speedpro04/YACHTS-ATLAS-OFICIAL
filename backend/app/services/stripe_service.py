@@ -907,30 +907,44 @@ class StripeService:
         # nao recebeu, sem erro nenhum aparecendo em lugar algum.
         programa = self._programa_do_checkout(session, metadata, cliente_email)
 
-        # Ultimo recurso, so para checkout que nao veio de Payment Link (sessao
-        # criada pela API). Continua exigindo dolar: numero solto nao identifica
-        # preco — R$ 140,00 e US$ 140,00 sao o mesmo `140.0` e valem coisas bem
-        # diferentes, e a conta e da Axos Hub, que vende outros produtos no
-        # mesmo webhook.
+        # DUAS PERGUNTAS DIFERENTES, QUE O VALOR PAGO SOZINHO JA RESPONDEU ERRADO
         #
-        # COM PRECO UNICO, O VALOR NAO DIZ MAIS DE ONDE A MARINA VEIO. Antes
-        # US$ 200 significava "campanha fundadora" e US$ 250, "site oficial";
-        # hoje as duas pagam US$ 140, e quem separa e o LINK (ou o metadata)
-        # — ver _programa_do_checkout. Este portao sobrou para o caso em que
-        # nao ha nem link nem metadata: ai ele diz apenas "e uma assinatura de
-        # marina no nosso preco", e a vaga, se houver, e dela. Quando nao
-        # houver, `cadastrar_marina_fundadora` devolve modo='tradicional' e o
-        # humano decide (ver _avisar_pagamento_sem_vaga).
+        # 1. "Esta assinatura e nossa?" — para gravar os 12 meses de preco
+        #    travado. O valor serve: assinatura em dolar no nosso preco e
+        #    nossa, venha de onde vier. Continua exigindo dolar porque numero
+        #    solto nao identifica preco — R$ 140,00 e US$ 140,00 sao o mesmo
+        #    `140.0` e valem coisas bem diferentes, e a conta e da Axos Hub,
+        #    que vende outros produtos no mesmo webhook.
+        #
+        # 2. "Esta marina ganha VAGA de fundadora?" — o valor NAO serve, e
+        #    desde 13/10/2026 nunca mais serviu: fundadora e oficial pagam o
+        #    mesmo US$ 140. Antes US$ 200 queria dizer "campanha" e US$ 250,
+        #    "site"; hoje o valor nao diz de onde a marina veio. Quem diz e o
+        #    LINK ou o metadata (ver _programa_do_checkout).
+        #
+        # Enquanto as duas perguntas dividiam a mesma resposta, toda marina
+        # Oficial que pagasse em dolar entraria ocupando uma das 4 vagas do
+        # estado dela — justamente o que o programa suspenso nao deve mais
+        # distribuir.
         valor_pago = (session.amount_total or 0) / 100
         moeda = (getattr(session, "currency", None) or "").lower()
-        e_fundadora = (
-            programa == "marina_fundadora"
-            or (programa is None
-                and e_assinatura
-                and payment_type != "dossier"
-                and moeda == settings.PRICE_CURRENCY
-                and valor_pago == float(settings.PRECO_MENSAL_USD))
+
+        e_nossa_assinatura = (
+            e_assinatura
+            and payment_type != "dossier"
+            and (programa in ("marina_fundadora", "marina_oficial")
+                 or (programa is None
+                     and moeda == settings.PRICE_CURRENCY
+                     and valor_pago == float(settings.PRECO_MENSAL_USD)))
         )
+
+        # PROGRAMA FUNDADOR SUSPENSO (14/10/2026): o cadastro nao oferece mais
+        # vaga a ninguem (ver leads._oferta_marina). Este caminho continua de
+        # pe e so dispara com prova EXPLICITA — metadata `programa` marcado no
+        # painel, ou o link da campanha preenchido em
+        # STRIPE_LINK_MARINA_FUNDADORA. Preencher aquela variavel e, hoje, a
+        # forma de religar o programa pelo lado do pagamento.
+        e_fundadora = programa == "marina_fundadora"
 
         if e_fundadora:
             try:
@@ -972,16 +986,11 @@ class StripeService:
         # isto acontecia dentro do fluxo da fundadora, porque so ela tinha
         # degrau de preco combinado.
         #
-        # So para assinatura RECONHECIDA como nossa (programa identificado, ou
-        # o valor em dolar batendo). A conta Stripe e da Axos Hub e recebe os
-        # eventos de todos os produtos da casa: gravar "preco travado ate" em
-        # cima de um pagamento que nao sabemos qual preco travou seria inventar
-        # uma data — e a carta de reajuste sai dessa data.
-        e_nossa_assinatura = (
-            e_assinatura
-            and payment_type != "dossier"
-            and (programa in ("marina_fundadora", "marina_oficial") or e_fundadora)
-        )
+        # So para assinatura RECONHECIDA como nossa (ver as duas perguntas la
+        # em cima). A conta Stripe e da Axos Hub e recebe os eventos de todos
+        # os produtos da casa: gravar "preco travado ate" em cima de um
+        # pagamento que nao sabemos qual preco travou seria inventar uma data
+        # — e a carta de reajuste sai dessa data.
         if e_nossa_assinatura and getattr(session, "subscription", None):
             self._registrar_reajuste_do_13o_mes(
                 session.subscription, usuario_id=user_id, email=cliente_email
