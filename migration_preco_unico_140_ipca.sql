@@ -1,12 +1,12 @@
 -- ============================================================
--- Yachts Atlas — PREÇO ÚNICO: US$ 140/mês (R$ 647,00), travado
+-- Yachts Atlas — PREÇO ÚNICO: US$ 140/mês (R$ 697,00), travado
 -- 12 meses, depois corrigido por IPCA + 15%
 -- ------------------------------------------------------------
 -- O QUE MUDA
 -- Até aqui havia dois preços: US$ 200/mês para as 20 marinas fundadoras e
 -- US$ 250/mês para as demais, com a fundadora subindo para US$ 250 no 13º mês
 -- (e o legado de marinas_lancamento falando de US$ 300). Agora é UM preço para
--- todas — US$ 140/mês, R$ 647,00/mês em real —, travado por 12 meses a contar
+-- todas — US$ 140/mês, R$ 697,00/mês em real —, travado por 12 meses a contar
 -- da assinatura de cada marina.
 --
 -- O programa fundador CONTINUA: 4 vagas por estado (SC/SP/RJ/ES/BA), 18 meses
@@ -29,7 +29,7 @@
 -- ESPELHOS deste número, que precisam mudar junto:
 --   • backend/app/core/config.py          (PRECO_MENSAL_USD / _BRL / REAJUSTE_*)
 --   • frontend/src/config/precoServico.ts (a home e o checkout)
---   • os Payment Links da Stripe          (US$ 140/mês e R$ 647,00/mês)
+--   • os Payment Links da Stripe          (US$ 140/mês e R$ 697,00/mês)
 --
 -- Idempotente: pode rodar mais de uma vez.
 -- ============================================================

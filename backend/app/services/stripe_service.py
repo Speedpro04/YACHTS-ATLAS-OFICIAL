@@ -268,7 +268,7 @@ class StripeService:
     # para agendar porque o valor da segunda fase já era conhecido no dia da
     # venda.
     #
-    # O preço agora é um só — US$ 140 / R$ 647,00 — e a correção do 13º mês é
+    # O preço agora é um só — US$ 140 / R$ 697,00 — e a correção do 13º mês é
     # IPCA + 15%, um número que NÃO EXISTE no dia da venda. Não há o que
     # agendar: cronograma com valor inventado cobraria o errado com a
     # autoridade de um automatismo, e um degrau de US$ 140 para US$ 140 só
@@ -284,7 +284,7 @@ class StripeService:
     def _preco_na_moeda(moeda: Optional[str]) -> tuple[int, str]:
         """(valor cheio, moeda) da assinatura nesta moeda — para o texto do aviso.
 
-        Moeda desconhecida levanta em vez de cair no dólar: dizer "R$ 647,00"
+        Moeda desconhecida levanta em vez de cair no dólar: dizer "R$ 697,00"
         para quem paga em euro é o mesmo defeito que o código antigo tinha ao
         contrário, quando prometia US$ 250 a quem assinava em real.
         """

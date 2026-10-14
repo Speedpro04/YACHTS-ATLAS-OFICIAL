@@ -1831,11 +1831,11 @@ E o motivo de NÃO estar no resto ficou escrito no cabeçalho do módulo — sen
 ## 60. Um preço só: US$ 140, travado 12 meses, depois IPCA + 15%
 **Data:** 13/10/2026
 
-Decisão do Marcos: *"vamos alterar o valor do nosso serviço pra $140 dólares que dará R$ 647,00 por 12 meses, depois a correção será o IPCA + 15%"*.
+Decisão do Marcos: *"vamos alterar o valor do nosso serviço pra $140 dólares que dará R$ 697,00 por 12 meses, depois a correção será o IPCA + 15%"*.
 
 ### O que mudou
 
-Eram dois preços — US$ 200/mês para as 20 fundadoras e US$ 250/mês para as demais, com a fundadora subindo para US$ 250 no 13º mês (§6, §53, §58). Agora é **um só, para todas: US$ 140/mês, R$ 647,00/mês em real**, travado por **12 meses a contar da assinatura de cada marina**; a partir do 13º, correção por **IPCA + 15%**.
+Eram dois preços — US$ 200/mês para as 20 fundadoras e US$ 250/mês para as demais, com a fundadora subindo para US$ 250 no 13º mês (§6, §53, §58). Agora é **um só, para todas: US$ 140/mês, R$ 697,00/mês em real**, travado por **12 meses a contar da assinatura de cada marina**; a partir do 13º, correção por **IPCA + 15%**.
 
 O programa fundador continua: 4 vagas por estado (SC/SP/RJ/ES/BA) e 18 meses de dossiê 100% da marina. **O que ele deixou de ser é desconto.** Daí sai quase todo o resto do trabalho, porque o sistema inteiro separava fundadora de oficial **pelo valor pago**.
 
@@ -1857,7 +1857,7 @@ Para a regra não ficar guardada onde ninguém acha, o banco ganhou `vw_marinas_
 
 ### Os links de pagamento ficaram vazios, de propósito
 
-Os Payment Links antigos continuam vivos na Stripe cobrando R$ 1.000 e R$ 1.250. **Link que cobra o preço errado é pior que link que não existe**: a marina lê R$ 647,00 na home, paga R$ 1.250 e tem razão em pedir estorno. As quatro variáveis foram zeradas, e o link fixo que o cadastro usava como rede de segurança saiu junto — sem URL, a tela avisa e o cadastro fica salvo.
+Os Payment Links antigos continuam vivos na Stripe cobrando R$ 1.000 e R$ 1.250. **Link que cobra o preço errado é pior que link que não existe**: a marina lê R$ 697,00 na home, paga R$ 1.250 e tem razão em pedir estorno. As quatro variáveis foram zeradas, e o link fixo que o cadastro usava como rede de segurança saiu junto — sem URL, a tela avisa e o cadastro fica salvo.
 
 Continuam sendo **quatro** links mesmo com preço único. Com o valor igual, o link é a **única prova** de qual porta a marina usou: era o valor que separava campanha de site (§6), e isso acabou.
 

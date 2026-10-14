@@ -4,7 +4,7 @@ Regressão da oferta por origem — a regra mais simples e mais cara de errar.
   • site oficial     → oferta oficial, sem vaga;
   • LP de lançamento → vaga fundadora, enquanto houver no estado.
 
-O PREÇO É O MESMO NAS DUAS desde 13/10/2026 (US$ 140 / R$ 647,00): o que a
+O PREÇO É O MESMO NAS DUAS desde 13/10/2026 (US$ 140 / R$ 697,00): o que a
 campanha dá é a VAGA, e com ela os 18 meses de dossiê 100% da marina. Antes a
 diferença era de preço — US$ 200 contra US$ 250 — e é daí que vem o nome
 antigo destes testes.

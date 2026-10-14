@@ -11,7 +11,7 @@ de `marinas_fundadoras` com `stripe_checkout` vazio. Nenhuma delas veio de
 pagamento.
 
 E CONTINUA VALENDO COM PREÇO ÚNICO — na verdade, vale MAIS. Desde 13/10/2026
-fundadora e oficial custam o mesmo (US$ 140 / R$ 647,00), então o valor pago
+fundadora e oficial custam o mesmo (US$ 140 / R$ 697,00), então o valor pago
 não distingue mais nada: o link é a ÚNICA prova de qual porta a marina usou.
 
 Os quatro links estão vazios no config desde essa mudança (os antigos cobram a

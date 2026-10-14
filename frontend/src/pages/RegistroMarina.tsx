@@ -123,9 +123,9 @@ export default function RegistroMarina() {
   //
   // Havia um: quando o backend não dizia a oferta, a tela mandava a marina
   // para um link fixo de checkout para "não travar a venda". Com o preço
-  // único de US$ 140 (R$ 647,00) esse link virou uma armadilha — ele cobra a
+  // único de US$ 140 (R$ 697,00) esse link virou uma armadilha — ele cobra a
   // tabela antiga, de R$ 1.250/mês. Mandar para ele quem acabou de ler
-  // R$ 647,00 na home é cobrar quase o dobro do anunciado: estorno, e com
+  // R$ 697,00 na home é cobrar quase o dobro do anunciado: estorno, e com
   // razão.
   //
   // Quem escolhe o checkout é o backend (`link_de_checkout`, em
@@ -195,7 +195,7 @@ export default function RegistroMarina() {
         return
       }
       // Checkout escolhido pelo backend: o preço é o mesmo para todas
-      // (US$ 140 / R$ 647,00) — o que ele escolhe é a MOEDA, pela UF, e qual
+      // (US$ 140 / R$ 697,00) — o que ele escolhe é a MOEDA, pela UF, e qual
       // dos dois links identifica o programa no webhook.
       if (!res.checkout_url) {
         setSubmitError(MSG_CHECKOUT_INDISPONIVEL)

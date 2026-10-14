@@ -32,7 +32,7 @@ def _origem_valida(valor: Optional[str]) -> str:
     v = (valor or "").strip().lower()
     return v if v in ORIGENS_DE_INDICACAO else "desconhecida"
 
-# Oferta da marina paga: preco unico de US$ 140/mes (R$ 647,00) para todas,
+# Oferta da marina paga: preco unico de US$ 140/mes (R$ 697,00) para todas,
 # travado 12 meses e corrigido depois por IPCA + 15%. As 4 vagas fundadoras
 # POR ESTADO (SC/SP/RJ/ES/BA = 20 no total) nao dao desconto — dao os 18 meses
 # de dossie 100% da marina.
@@ -58,7 +58,7 @@ _checkout = link_de_checkout
 def _oferta_oficial(uf: str | None = None) -> dict:
     """Oferta do site oficial: o preço de todas, sem vaga fundadora envolvida.
 
-    O preço é o mesmo da fundadora (US$ 140 / R$ 647,00) desde 13/10/2026 — o
+    O preço é o mesmo da fundadora (US$ 140 / R$ 697,00) desde 13/10/2026 — o
     que não vem aqui são os 18 meses de dossiê 100% da marina.
     """
     url, moeda = _checkout(fundadora=False, uf=uf)

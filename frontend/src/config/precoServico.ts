@@ -2,7 +2,7 @@
  * Yachts Atlas — Preço do serviço (fonte única de verdade)
  * ------------------------------------------------------------
  * A assinatura da Marina. Um preço só, para todas: US$ 140/mês, cobrado em
- * real a R$ 647,00. Travado por 12 meses a partir da assinatura; no 13º mês
+ * real a R$ 697,00. Travado por 12 meses a partir da assinatura; no 13º mês
  * entra a correção por IPCA + 15%.
  *
  * POR QUE UM ARQUIVO SÓ
@@ -23,11 +23,11 @@ export const PRECO_SERVICO = {
   usd: 140,
   /**
    * O mesmo preço cobrado em real. Travado junto com a oferta: não acompanha
-   * o dólar no meio dos 12 meses. Implica câmbio de 4,62 — se o dólar subir
+   * o dólar no meio dos 12 meses. Implica câmbio de 4,98 — se o dólar subir
    * muito acima disso, o preço em real é que precisa ser revisto, e ninguém
    * avisa: tem que olhar (ver BRL_TAXA_REVISAR_ACIMA_DE no backend).
    */
-  brl: 647,
+  brl: 697,
   /** Meses em que o valor não sobe. Espelha PRECO_TRAVADO_MESES no backend. */
   mesesTravado: 12,
   /** O que corrige o preço no 13º mês. Não é número fixo de propósito: o
@@ -41,7 +41,7 @@ export function precoEmDolar(): string {
   return 'US$ ' + PRECO_SERVICO.usd.toLocaleString('pt-BR')
 }
 
-/** "R$ 647,00" — com os centavos, porque é o valor que entra na fatura. */
+/** "R$ 697,00" — com os centavos, porque é o valor que entra na fatura. */
 export function precoEmReal(): string {
   return (
     'R$ ' +

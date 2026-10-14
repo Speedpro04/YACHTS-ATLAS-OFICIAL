@@ -27,7 +27,7 @@ def links_em_real(monkeypatch):
     """Põe os links em real que o config não tem mais.
 
     Desde 13/10/2026 os quatro links estão vazios na configuração: o preço
-    virou US$ 140 / R$ 647,00 e os links antigos continuam vivos na Stripe
+    virou US$ 140 / R$ 697,00 e os links antigos continuam vivos na Stripe
     cobrando a tabela velha. Vazio é a verdade do config, e não é o que estes
     testes verificam — eles verificam a REGRA de qual moeda a marina recebe.
 

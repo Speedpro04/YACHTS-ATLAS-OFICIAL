@@ -32,7 +32,7 @@ def links_em_real(monkeypatch):
     """Põe os links em real que o config não tem mais.
 
     Desde 13/10/2026 os quatro links estão vazios na configuração: o preço
-    virou US$ 140 / R$ 647,00 e os antigos continuam vivos na Stripe cobrando
+    virou US$ 140 / R$ 697,00 e os antigos continuam vivos na Stripe cobrando
     a tabela velha. Estes testes verificam QUAL porta a marina bloqueada
     recebe, não o estado de hoje da configuração — sem isto falhariam por um
     motivo que não é o deles. Ver test_checkout_por_uf.py.

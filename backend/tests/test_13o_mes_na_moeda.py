@@ -10,7 +10,7 @@ em DÓLAR, a fundadora brasileira assina em REAL, a Stripe recusa cronograma com
 duas moedas, e o reajuste simplesmente nunca era agendado — cada fundadora
 ficaria em R$ 1.000 para sempre, sem erro nenhum aparecendo.
 
-O QUE MUDOU EM 13/10/2026. Preço único de US$ 140 (R$ 647,00) e correção por
+O QUE MUDOU EM 13/10/2026. Preço único de US$ 140 (R$ 697,00) e correção por
 IPCA + 15% no 13º mês. IPCA do período não existe no dia da venda, então não há
 o que agendar: cronograma com valor inventado cobraria o errado com a
 autoridade de um automatismo, e um degrau de US$ 140 para US$ 140 só fingiria
@@ -199,7 +199,7 @@ def test_assinatura_sem_data_conta_de_hoje(cenario):
 def test_o_aviso_de_falha_fala_na_moeda_da_marina(cenario):
     """A lição do defeito de 14/09/2026, que continua valendo.
 
-    O fundador lê "R$ 647 corrigido por IPCA + 15%", não um valor em dólar que
+    O fundador lê "R$ 697 corrigido por IPCA + 15%", não um valor em dólar que
     a Marina brasileira nunca pagou.
     """
     registro = cenario(moeda="brl", subscription_quebra=True)
@@ -220,12 +220,12 @@ def test_rotulo_em_dolar_para_quem_paga_em_dolar():
 
 def test_rotulo_em_real_para_quem_paga_em_real():
     rotulo = StripeService._rotulo_do_reajuste("brl")
-    assert "R$ 647" in rotulo
+    assert "R$ 697" in rotulo
     assert "IPCA + 15%" in rotulo
 
 
 def test_moeda_desconhecida_nao_cai_no_dolar():
-    """Dizer "R$ 647" a quem paga em euro é o mesmo defeito com outra roupa."""
+    """Dizer "R$ 697" a quem paga em euro é o mesmo defeito com outra roupa."""
     rotulo = StripeService._rotulo_do_reajuste("eur")
     assert rotulo == "IPCA + 15%"
     with pytest.raises(ValueError):

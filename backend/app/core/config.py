@@ -157,7 +157,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Modelo de cobrança DEFINITIVO — UM preço, nada além disto:
     #   • US$ 140/mês        (a oferta anunciada)
-    #   • R$ 647,00/mês      (a mesma assinatura cobrada em real)
+    #   • R$ 697,00/mês      (a mesma assinatura cobrada em real)
     #   • travado por 12 meses a contar da assinatura de CADA marina
     #   • no 13º mês, correção por IPCA + 15% (ver REAJUSTE_*)
     #
@@ -172,7 +172,7 @@ class Settings(BaseSettings):
     # dobra da home e a etapa de pagamento do cadastro). Mudou aqui, muda lá —
     # a tela não pode prometer o que a fatura não cumpre.
     PRECO_MENSAL_USD: int = 140
-    PRECO_MENSAL_BRL: int = 647
+    PRECO_MENSAL_BRL: int = 697
 
     # Meses em que o valor não sobe. Contados por marina, da data da assinatura
     # dela — quem assinou em outubro vira em outubro.
@@ -239,15 +239,15 @@ class Settings(BaseSettings):
     # Links de pagamento. Ficam em env para trocar de conta Stripe sem rebuild,
     # e aqui no config para não existirem dois links do mesmo preço no sistema.
     #
-    # TODOS VAZIOS DESDE 13/10/2026, quando o preço virou US$ 140 / R$ 647,00.
+    # TODOS VAZIOS DESDE 13/10/2026, quando o preço virou US$ 140 / R$ 697,00.
     # Os links anteriores continuam ativos na Stripe cobrando a tabela velha
     # (R$ 1.000 e R$ 1.250), e link que cobra o preço errado é pior que link
-    # que não existe: a marina lê R$ 647,00 na home, paga R$ 1.250 e tem razão
+    # que não existe: a marina lê R$ 697,00 na home, paga R$ 1.250 e tem razão
     # em pedir estorno. Vazio é a verdade, e `link_de_checkout` nunca oferece
     # caminho vazio — a tela de cadastro avisa e o cadastro fica salvo.
     #
     # PARA REABRIR A VENDA: criar na Stripe os Payment Links do preço novo
-    # (US$ 140/mês e R$ 647,00/mês, recorrentes) e preencher estas quatro
+    # (US$ 140/mês e R$ 697,00/mês, recorrentes) e preencher estas quatro
     # variáveis de ambiente. Continuam sendo QUATRO, e não duas, mesmo com
     # preço único: é pelo link que o webhook sabe se a marina veio pela
     # campanha fundadora ou pelo site (ver _programa_do_checkout) — com preço
@@ -262,12 +262,13 @@ class Settings(BaseSettings):
     STRIPE_LINK_MARINA_FUNDADORA_BRL: str = os.getenv("STRIPE_LINK_MARINA_FUNDADORA_BRL", "")
     STRIPE_LINK_MARINA_OFICIAL_BRL: str = os.getenv("STRIPE_LINK_MARINA_OFICIAL_BRL", "")
 
-    # Cambio implicito no preco em real: 647 / 140 = 4,62. Congela junto com o
+    # Cambio implicito no preco em real: 697 / 140 = 4,98. Congela junto com o
     # preco (PRECO_TRAVADO_MESES), entao nao acompanha o dolar no meio do ano.
-    # Acima de 5,08 a defasagem passa de 10% e vale rever o valor em real —
-    # ninguem avisa, tem que olhar.
-    BRL_TAXA_TRAVADA: float = 4.62
-    BRL_TAXA_REVISAR_ACIMA_DE: float = 5.08
+    # R$ 697 e ponto de preco, nao conta de cambio: "multiplica por 5" daria 700
+    # redondo, e numero terminado em 7 vende melhor. Acima de 5,48 a defasagem
+    # passa de 10% e vale rever o valor em real — ninguem avisa, tem que olhar.
+    BRL_TAXA_TRAVADA: float = 4.98
+    BRL_TAXA_REVISAR_ACIMA_DE: float = 5.48
 
     # Inadimplência: 20 dias após a primeira cobrança recusada o acesso é
     # cortado. Pagou, volta sozinho — ver app/core/acesso.py.
