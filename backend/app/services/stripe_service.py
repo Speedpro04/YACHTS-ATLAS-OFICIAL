@@ -2,6 +2,7 @@
 Yachts Atlas — Stripe Payment Service
 Complete payment processing with Stripe
 """
+import calendar
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
@@ -38,9 +39,10 @@ class StripeService:
             "features": ["1 asset", "Basic tracking", "Community support"]
         },
         PlanType.MARINA: {
-            # Preco oficial da recorrencia (as 20 fundadoras pagam
-            # settings.LAUNCH_PRICE_MONTHLY, decidido em leads._oferta_marina).
-            "monthly": settings.TRADITIONAL_PRICE_MONTHLY,
+            # UM preco para toda marina, fundadora ou nao (ver
+            # config.PRECO_MENSAL_USD). O que distingue a fundadora sao os 18
+            # meses de dossie 100% dela, nao o valor da assinatura.
+            "monthly": settings.PRECO_MENSAL_USD,
             "name": "Marina Standard",
             "features": ["Unlimited assets", "Fleet management", "Priority support", "API access", "Real-time monitoring", "Audit reports", "White-label ready"]
         },
@@ -234,126 +236,182 @@ class StripeService:
     
     @staticmethod
     def _avisar_pagamento_sem_vaga(email: Optional[str], motivo: Optional[str], checkout_id: str) -> None:
-        """Alguém pagou o preço de fundadora sem ter vaga — decisão é humana."""
+        """Alguém assinou pela campanha fundadora sem ter vaga — decisão é humana.
+
+        Com o preço único o dinheiro está certo: ela pagou o mesmo que todas as
+        outras. O que está em aberto é o BÔNUS — os 18 meses de dossiê 100% da
+        fundadora, que existem para 4 marinas por estado e nada mais. Honrar
+        uma quinta é tirar de quem ainda vai entrar; não honrar sem avisar é
+        vender uma coisa e entregar outra. Por isso vai para o humano.
+        """
         try:
             from app.services.notify_service import notificar_fundador
             notificar_fundador(
-                f"Pagou ${settings.LAUNCH_PRICE_MONTHLY} sem vaga fundadora",
+                "Assinou como fundadora sem vaga no estado",
                 f"{email or 'sem e-mail'} — motivo: {motivo or 'desconhecido'}.\n"
                 f"Checkout {checkout_id}.\n"
-                f"A assinatura está ativa a ${settings.LAUNCH_PRICE_MONTHLY}/mês. "
-                f"Decida: honrar como fundadora, migrar para "
-                f"${settings.TRADITIONAL_PRICE_MONTHLY} ou reembolsar.",
+                f"A assinatura está ativa a US$ {settings.PRECO_MENSAL_USD}/mês — "
+                f"o preço está correto, é o mesmo de todas.\n"
+                f"Em aberto: os {settings.LAUNCH_DOSSIER_BONUS_MONTHS} meses de "
+                f"dossiê 100% da fundadora. Decida: honrar o bônus como "
+                f"exceção, manter os {settings.TRADITIONAL_DOSSIER_MONTHS} meses "
+                f"padrão (e avisar a marina) ou reembolsar.",
             )
         except Exception as e:
             logger.error(f"Falha ao avisar sobre pagamento sem vaga ({checkout_id}): {e}")
 
+    # ------------------------------------------------------------------
+    # O REAJUSTE DO 13º MÊS
+    #
+    # Até 13/10/2026 isto era um DEGRAU FIXO agendado na Stripe: 12 meses no
+    # preço de fundadora e, no 13º, o preço oficial (US$ 250 / R$ 1.250). Dava
+    # para agendar porque o valor da segunda fase já era conhecido no dia da
+    # venda.
+    #
+    # O preço agora é um só — US$ 140 / R$ 697,00 — e a correção do 13º mês é
+    # IPCA + 15%, um número que NÃO EXISTE no dia da venda. Não há o que
+    # agendar: cronograma com valor inventado cobraria o errado com a
+    # autoridade de um automatismo, e um degrau de US$ 140 para US$ 140 só
+    # serviria para fingir que a regra está implementada.
+    #
+    # O que o sistema faz é guardar a REGRA e a DATA junto da marina — no
+    # metadata do acesso dela e, quando é fundadora, na linha dela em
+    # `marinas_fundadoras` — e avisar o fundador. Aplicar o reajuste é ato
+    # comercial: tem aviso prévio à marina antes de entrar na fatura, e é
+    # exatamente o tipo de coisa que ninguém quer que aconteça sozinha de
+    # madrugada.
     @staticmethod
-    def _id_do_preco(item: Any) -> Optional[str]:
-        """O preço de um item de fase vem como id ou como objeto, conforme a versão."""
-        preco = item.get("price") if isinstance(item, dict) else getattr(item, "price", None)
-        if isinstance(preco, str):
-            return preco
-        if isinstance(preco, dict):
-            return preco.get("id")
-        return getattr(preco, "id", None)
+    def _preco_na_moeda(moeda: Optional[str]) -> tuple[int, str]:
+        """(valor cheio, moeda) da assinatura nesta moeda — para o texto do aviso.
 
-    # Preço oficial por moeda. A fundadora brasileira assina EM REAL (R$ 1.000)
-    # e a Stripe não aceita cronograma que muda de moeda no meio — então a
-    # segunda fase precisa estar na moeda da própria assinatura.
-    @staticmethod
-    def _valor_oficial_na_moeda(moeda: Optional[str]) -> tuple[int, str]:
-        """(valor em centavos, moeda) do preço oficial para esta moeda.
-
-        Moeda desconhecida levanta, em vez de cair no dólar: cobrar US$ 250 de
-        quem assinou em outra moeda é o mesmo defeito com outra roupa, e a
-        falha aqui vira aviso para agendar na mão — que é o certo.
+        Moeda desconhecida levanta em vez de cair no dólar: dizer "R$ 697,00"
+        para quem paga em euro é o mesmo defeito que o código antigo tinha ao
+        contrário, quando prometia US$ 250 a quem assinava em real.
         """
         m = (moeda or "").strip().lower()
         if m == "brl":
-            return settings.TRADITIONAL_PRICE_MONTHLY_BRL * 100, "brl"
+            return settings.PRECO_MENSAL_BRL, "brl"
         if m == "usd":
-            return settings.TRADITIONAL_PRICE_MONTHLY * 100, "usd"
-        raise ValueError(f"sem preço oficial definido para a moeda '{moeda}'")
+            return settings.PRECO_MENSAL_USD, "usd"
+        raise ValueError(f"sem preço definido para a moeda '{moeda}'")
+
+    @classmethod
+    def _rotulo_do_reajuste(cls, moeda: Optional[str]) -> str:
+        """A regra em uma linha, na moeda que a Marina paga."""
+        indice = settings.REAJUSTE_INDICE.upper()
+        regra = f"{indice} + {settings.REAJUSTE_PERCENTUAL}%"
+        try:
+            valor, m = cls._preco_na_moeda(moeda)
+        except ValueError:
+            return regra
+        simbolo = "R$" if m == "brl" else "US$"
+        return f"{simbolo} {valor:,}".replace(",", ".") + f" corrigido por {regra}"
 
     @staticmethod
-    def _rotulo_da_virada(moeda: Optional[str]) -> str:
-        """O texto que o fundador lê no aviso — na moeda que a Marina paga."""
-        if (moeda or "").lower() == "brl":
-            return (f"R$ {settings.LAUNCH_PRICE_MONTHLY_BRL:,} → "
-                    f"R$ {settings.TRADITIONAL_PRICE_MONTHLY_BRL:,}").replace(",", ".")
-        return f"US$ {settings.LAUNCH_PRICE_MONTHLY} → US$ {settings.TRADITIONAL_PRICE_MONTHLY}"
+    def _mais_meses(quando: datetime, meses: int) -> datetime:
+        """Mesma data, `meses` meses depois.
 
-    def _agendar_correcao_do_13o_mes(self, subscription_id: str) -> None:
+        Dia 31 em mês de 30 não existe: cai no último dia do mês, que é como
+        a própria Stripe trata o aniversário da assinatura.
         """
-        Deixa agendado na Stripe: 12 meses no preço de fundadora, depois o oficial.
+        total = quando.month - 1 + meses
+        ano = quando.year + total // 12
+        mes = total % 12 + 1
+        return quando.replace(
+            year=ano, month=mes, day=min(quando.day, calendar.monthrange(ano, mes)[1])
+        )
 
-        Combinado na venda — a fundadora paga o preço de lançamento por um ano
-        e entra na tabela oficial no 13º mês. Quem executa é a própria Stripe,
-        na data de CADA marina: quem assinou em outubro vira em outubro, quem
-        assinou em dezembro vira em dezembro. Não existe rotina nossa para
-        rodar — nem para alguém esquecer de rodar — um ano depois.
+    def _registrar_reajuste_do_13o_mes(
+        self,
+        subscription_id: str,
+        usuario_id: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> None:
+        """
+        Grava QUANDO e COMO esta assinatura será corrigida — e avisa o fundador.
 
-        NA MOEDA DA ASSINATURA. Até 16/09/2026 a segunda fase saía fixa em
-        dólar. A fundadora brasileira assina em real, a Stripe recusa
-        cronograma com duas moedas, e o reajuste nunca era agendado — chegou ao
-        fundador como "Reajuste do 13º mês não agendado" no teste de 14/09.
-        Sem conserto, cada fundadora ficaria em R$ 1.000 para sempre.
+        A data é a de CADA marina, contada da assinatura dela: quem assinou em
+        outubro vence em outubro, quem assinou em dezembro vence em dezembro.
+        Guardada junto do acesso (user_metadata) para a régua existir para toda
+        marina, e não só para as fundadoras — o preço travado por 12 meses vale
+        para todas desde que o preço passou a ser um só.
 
-        Best-effort: o pagamento já aconteceu, e falhar aqui não pode derrubar
-        o webhook. Se falhar, o fundador é avisado para agendar no painel.
+        Best-effort, como todo o resto do webhook: o pagamento já aconteceu, e
+        falhar aqui não pode derrubar o evento. Se falhar, o fundador é avisado
+        para anotar na mão — o preço do esquecimento é um ano inteiro de
+        assinatura sem correção.
         """
         moeda = None
         try:
             assinatura = stripe.Subscription.retrieve(subscription_id)
-            moeda = getattr(assinatura, "currency", None) or (
-                assinatura.get("currency") if isinstance(assinatura, dict) else None
-            )
-            valor, moeda = self._valor_oficial_na_moeda(moeda)
-            preco_oficial = self._get_or_create_price(
-                amount=valor,
-                currency=moeda,
-                recurring=True,
-                product_name=self.PRICING[PlanType.MARINA]["name"],
-            )
 
-            # O cronograma nasce da assinatura que já existe, então a primeira
-            # fase precisa repetir os itens que ela já tem — é o que ancora a
-            # troca no aniversário certo em vez de recomeçar o ciclo hoje.
-            agenda = stripe.SubscriptionSchedule.create(from_subscription=subscription_id)
-            itens_atuais = [
-                {"price": self._id_do_preco(item), "quantity": item.get("quantity", 1) or 1}
-                for item in agenda.phases[0]["items"]
-            ]
-            if not all(item["price"] for item in itens_atuais):
-                raise ValueError("não consegui ler o preço atual da assinatura")
+            def _campo(nome):
+                if isinstance(assinatura, dict):
+                    return assinatura.get(nome)
+                return getattr(assinatura, nome, None)
 
-            stripe.SubscriptionSchedule.modify(
-                agenda.id,
-                end_behavior="release",
-                phases=[
-                    {"items": itens_atuais, "iterations": settings.LAUNCH_PRICE_MONTHS},
-                    {"items": [{"price": preco_oficial, "quantity": 1}]},
-                ],
-            )
+            moeda = _campo("currency")
+
+            # `start_date` é quando a assinatura começou — é dela que o
+            # aniversário nasce. `created` e `current_period_start` servem de
+            # rede; sem nenhum, hoje é a melhor aproximação que existe, e o log
+            # diz que foi aproximação.
+            inicio_ts = _campo("start_date") or _campo("created") or _campo("current_period_start")
+            if inicio_ts:
+                inicio = datetime.fromtimestamp(int(inicio_ts), tz=timezone.utc)
+            else:
+                inicio = datetime.now(timezone.utc)
+                logger.warning(
+                    f"Assinatura {subscription_id} sem data de início na Stripe — "
+                    "o vencimento do preço travado foi contado de hoje"
+                )
+
+            vence_em = self._mais_meses(inicio, settings.PRECO_TRAVADO_MESES)
+
+            regra = {
+                "preco_travado_ate": vence_em.isoformat(),
+                "reajuste_indice": settings.REAJUSTE_INDICE,
+                "reajuste_percentual": settings.REAJUSTE_PERCENTUAL,
+            }
+
+            if usuario_id:
+                self._atualizar_metadata(usuario_id, dict(regra))
+
+            # A fundadora tem linha própria, e é lá que o comercial olha quando
+            # vai montar a carta de reajuste. `email` é a chave da tabela.
+            if email:
+                try:
+                    from app.core.supabase import get_supabase_admin
+                    get_supabase_admin().table("marinas_fundadoras").update({
+                        **regra,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    }).eq("email", email.strip().lower()).execute()
+                except Exception as e:
+                    # Não é fundadora, ou a linha ainda não existe: a régua do
+                    # metadata já está gravada, que é o que o sistema lê.
+                    logger.info(
+                        f"Reajuste não gravado em marinas_fundadoras para {email}: {e}"
+                    )
+
             logger.info(
-                f"Correção do 13º mês agendada para {subscription_id}: "
-                f"{settings.LAUNCH_PRICE_MONTHS} meses, {self._rotulo_da_virada(moeda)}"
+                f"Reajuste registrado para {subscription_id}: "
+                f"{settings.PRECO_TRAVADO_MESES} meses travados até "
+                f"{vence_em.date().isoformat()}, depois "
+                f"{self._rotulo_do_reajuste(moeda)}"
             )
         except Exception as e:
-            logger.error(f"Falha ao agendar o 13º mês de {subscription_id}: {e}")
+            logger.error(f"Falha ao registrar o reajuste de {subscription_id}: {e}")
             try:
                 from app.services.notify_service import notificar_fundador
                 notificar_fundador(
-                    "Reajuste do 13º mês não agendado",
-                    f"Assinatura {subscription_id} ficou sem o cronograma de "
-                    f"{self._rotulo_da_virada(moeda)}.\n"
-                    "Agende na mão no painel da Stripe, senão ela paga o preço "
-                    "de fundadora para sempre.",
+                    "Reajuste do 13º mês não registrado",
+                    f"Assinatura {subscription_id} ficou sem a data de "
+                    f"vencimento do preço travado ({self._rotulo_do_reajuste(moeda)}).\n"
+                    "Anote na mão: sem isso, ninguém lembra de corrigir e ela "
+                    "fica um ano a mais no preço de entrada.",
                 )
             except Exception:
                 pass
-
     def verify_webhook_signature(
         self,
         payload: bytes,
@@ -604,6 +662,66 @@ class StripeService:
         )
         return {u.strip(): programa for u, programa in pares if u and u.strip()}
 
+    def _e_link_do_dossie_extra(self, session) -> bool:
+        """Este checkout veio do link do dossie alem da cota?"""
+        links = {u.strip() for u in (settings.STRIPE_LINK_DOSSIE_EXTRA,
+                                     settings.STRIPE_LINK_DOSSIE_EXTRA_BRL) if u and u.strip()}
+        if not links:
+            return False
+        url = self._url_do_payment_link(session)
+        return bool(url and url.strip() in links)
+
+    def _ativo_do_dossie_extra(self, session, metadata: Optional[dict]) -> Optional[str]:
+        """
+        Qual ativo este pagamento libera — se for dossie ALEM DA COTA.
+
+        Duas provas, na ordem de confianca de sempre: metadata declarado no
+        painel, e a identidade que viaja no proprio link (`client_reference_id`
+        com prefixo `ativo_`, posta por api/v1/dossie.checkout_dossie_extra).
+
+        O prefixo nao e enfeite: no checkout da assinatura o MESMO campo carrega
+        o id do USUARIO. Sem ele, um id de ativo entraria como pagador.
+        """
+        declarado = (metadata or {}).get("ativo_id")
+        if (metadata or {}).get("programa") == "dossie_extra" and declarado:
+            return str(declarado)
+
+        ref = getattr(session, "client_reference_id", None) or ""
+        if isinstance(ref, str) and ref.startswith("ativo_"):
+            return ref[len("ativo_"):].strip() or None
+
+        # Pagou pelo link do extra sem dizer qual barco. Acontece se alguem
+        # abrir a URL "pelada", fora da tela que a monta. O dinheiro entrou e
+        # nenhum ativo foi liberado — tem que chegar em gente.
+        if self._e_link_do_dossie_extra(session):
+            logger.error(
+                f"Dossie extra pago sem identificar o ativo (checkout {session.id})"
+            )
+            try:
+                from app.services.notify_service import notificar_fundador
+                notificar_fundador(
+                    "Dossie extra pago sem ativo identificado",
+                    f"Checkout {session.id} veio do link de dossie adicional, mas sem "
+                    f"`client_reference_id`. O credito NAO foi lancado em nenhum barco.\n"
+                    f"Descubra com a marina qual e o ativo e libere a emissao na mao.",
+                )
+            except Exception:
+                pass
+        return None
+
+    @staticmethod
+    def _marina_do_ativo(ativo_id: str) -> Optional[str]:
+        """De quem e o ativo. `payments.usuario_id` e NOT NULL."""
+        try:
+            from app.core.supabase import get_supabase_admin
+            res = (get_supabase_admin().table("ativos")
+                   .select("usuario_id").eq("id", str(ativo_id)).limit(1).execute())
+            linhas = res.data or []
+            return str(linhas[0].get("usuario_id")) if linhas else None
+        except Exception as e:  # noqa: BLE001 — best-effort, como o resto do webhook
+            logger.error(f"Falha ao descobrir a marina do ativo {ativo_id}: {e}")
+            return None
+
     @staticmethod
     def _tem_reserva_de_fundadora(email: Optional[str]) -> bool:
         """
@@ -747,13 +865,36 @@ class StripeService:
         # e NOT NULL, sem resolver pelo e-mail o pagamento da marina simplesmente
         # nao era gravado: o insert estourava e sobrava so a linha de log.
         # Assinatura (marina) x pagamento avulso (dossie). O dossie e vendido
-        # por Payment Link proprio, sem metadata, e a faixa de 36-45 pes custa
-        # os mesmos US$ 200 da marina fundadora — sem esta distincao a compra de
-        # um dossie ocuparia vaga fundadora e liberaria acesso de marina.
+        # por Payment Link proprio, sem metadata, e nada impede uma faixa de
+        # dossie de cair no mesmo valor da assinatura — sem esta distincao a
+        # compra de um dossie ocuparia vaga fundadora e liberaria acesso de
+        # marina. Ja aconteceu quando a assinatura custava US$ 200, o mesmo
+        # que a faixa de 36-45 pes.
         e_assinatura = (
             getattr(session, "mode", None) == "subscription"
             or bool(getattr(session, "subscription", None))
         )
+
+        # DOSSIÊ ALÉM DA COTA — o 5º do mesmo ativo no mesmo ano.
+        #
+        # Não é assinatura, e não é a plataforma vendendo dossiê (ela não
+        # vende): é a marina pagando para exceder a própria cota. Chega por
+        # Payment Link de pagamento único, e o que viaja nele é o ATIVO.
+        #
+        # Resolvido AQUI, antes do bloco logo abaixo, porque lá o
+        # `client_reference_id` é lido como id de USUÁRIO — e um id de ativo
+        # entrando ali gravaria o pagamento no nome de alguém que não existe.
+        ativo_extra = self._ativo_do_dossie_extra(session, metadata)
+        if ativo_extra:
+            payment_type = "dossie_extra"
+            # O ativo entra no metadata porque é de lá que o insert de
+            # `payments` tira a coluna `ativo_id` — e é por essa coluna que a
+            # cota encontra o crédito depois (ver dossie._saldo_dossie).
+            metadata = {**(dict(metadata) if metadata else {}), "ativo_id": ativo_extra}
+            user_id = user_id or self._marina_do_ativo(ativo_extra)
+            logger.info(
+                f"Checkout {session.id}: dossie extra do ativo {ativo_extra}"
+            )
 
         # `client_reference_id` viaja no link que o backend entregou à marina e
         # NÃO depende de qual e-mail ela usou para pagar. Vem antes do e-mail
@@ -762,8 +903,10 @@ class StripeService:
         # pagamento ficava órfão e o acesso não era liberado. Ver
         # `_link_com_identidade` em api/v1/leads.py.
         if not user_id:
-            user_id = getattr(session, "client_reference_id", None) or None
-            if user_id:
+            ref = getattr(session, "client_reference_id", None) or None
+            # `ativo_...` é identidade de BARCO, não de pagador (ver acima).
+            if ref and not str(ref).startswith("ativo_"):
+                user_id = ref
                 logger.info(f"Checkout {session.id}: pagador identificado pelo link")
 
         cliente_email = self._email_do_checkout(session, metadata)
@@ -847,21 +990,44 @@ class StripeService:
         # nao recebeu, sem erro nenhum aparecendo em lugar algum.
         programa = self._programa_do_checkout(session, metadata, cliente_email)
 
-        # Ultimo recurso, so para checkout que nao veio de Payment Link (sessao
-        # criada pela API). Continua exigindo dolar: numero solto nao identifica
-        # preco — R$ 200,00 e US$ 200,00 sao o mesmo `200.0` e valem coisas bem
-        # diferentes, e a conta e da Axos Hub, que vende outros produtos no
-        # mesmo webhook.
+        # DUAS PERGUNTAS DIFERENTES, QUE O VALOR PAGO SOZINHO JA RESPONDEU ERRADO
+        #
+        # 1. "Esta assinatura e nossa?" — para gravar os 12 meses de preco
+        #    travado. O valor serve: assinatura em dolar no nosso preco e
+        #    nossa, venha de onde vier. Continua exigindo dolar porque numero
+        #    solto nao identifica preco — R$ 140,00 e US$ 140,00 sao o mesmo
+        #    `140.0` e valem coisas bem diferentes, e a conta e da Axos Hub,
+        #    que vende outros produtos no mesmo webhook.
+        #
+        # 2. "Esta marina ganha VAGA de fundadora?" — o valor NAO serve, e
+        #    desde 13/10/2026 nunca mais serviu: fundadora e oficial pagam o
+        #    mesmo US$ 140. Antes US$ 200 queria dizer "campanha" e US$ 250,
+        #    "site"; hoje o valor nao diz de onde a marina veio. Quem diz e o
+        #    LINK ou o metadata (ver _programa_do_checkout).
+        #
+        # Enquanto as duas perguntas dividiam a mesma resposta, toda marina
+        # Oficial que pagasse em dolar entraria ocupando uma das 4 vagas do
+        # estado dela — justamente o que o programa suspenso nao deve mais
+        # distribuir.
         valor_pago = (session.amount_total or 0) / 100
         moeda = (getattr(session, "currency", None) or "").lower()
-        e_fundadora = (
-            programa == "marina_fundadora"
-            or (programa is None
-                and e_assinatura
-                and payment_type != "dossier"
-                and moeda == settings.PRICE_CURRENCY
-                and valor_pago == float(settings.LAUNCH_PRICE_MONTHLY))
+
+        e_nossa_assinatura = (
+            e_assinatura
+            and payment_type != "dossier"
+            and (programa in ("marina_fundadora", "marina_oficial")
+                 or (programa is None
+                     and moeda == settings.PRICE_CURRENCY
+                     and valor_pago == float(settings.PRECO_MENSAL_USD)))
         )
+
+        # PROGRAMA FUNDADOR SUSPENSO (14/10/2026): o cadastro nao oferece mais
+        # vaga a ninguem (ver leads._oferta_marina). Este caminho continua de
+        # pe e so dispara com prova EXPLICITA — metadata `programa` marcado no
+        # painel, ou o link da campanha preenchido em
+        # STRIPE_LINK_MARINA_FUNDADORA. Preencher aquela variavel e, hoje, a
+        # forma de religar o programa pelo lado do pagamento.
+        e_fundadora = programa == "marina_fundadora"
 
         if e_fundadora:
             try:
@@ -882,20 +1048,36 @@ class StripeService:
                     logger.info(f"Cadastro marina {marina_email}: modo={_r.get('modo')} slot={_r.get('slot')} (checkout {session.id})")
 
                     if _r.get("modo") == "tradicional":
-                        # Pagou $200 e nao ha vaga para honrar. O link de $200 e
-                        # uma URL publica e estatica: quem tiver ela na mao paga
-                        # esse valor mesmo depois das 20 esgotarem. Isso nao pode
-                        # passar despercebido — e uma assinatura recorrente a
-                        # menos $50/mes para sempre.
+                        # Assinou pela campanha e nao ha vaga no estado para
+                        # honrar. O link e uma URL publica e estatica: quem
+                        # tiver ela na mao assina por ali mesmo depois de as 4
+                        # vagas do estado esgotarem. O dinheiro esta certo — o
+                        # preco e o mesmo para todas —, mas os 18 meses de
+                        # dossie 100% ficam em aberto, e isso nao pode passar
+                        # despercebido.
                         self._avisar_pagamento_sem_vaga(
                             marina_email, _r.get("motivo"), session.id
                         )
-                    elif getattr(session, "subscription", None):
-                        self._agendar_correcao_do_13o_mes(session.subscription)
                 else:
                     logger.warning(f"Checkout fundadora {session.id} sem e-mail — cadastro nao realizado")
             except Exception as e:
                 logger.error(f"Falha ao cadastrar marina fundadora ({session.id}): {e}")
+
+        # Deixa gravado quando o preco travado desta marina vence e por qual
+        # regra ele sobe. Vale para TODA marina, fundadora ou nao: desde que o
+        # preco passou a ser um so, os 12 meses travados sao de todas. Antes
+        # isto acontecia dentro do fluxo da fundadora, porque so ela tinha
+        # degrau de preco combinado.
+        #
+        # So para assinatura RECONHECIDA como nossa (ver as duas perguntas la
+        # em cima). A conta Stripe e da Axos Hub e recebe os eventos de todos
+        # os produtos da casa: gravar "preco travado ate" em cima de um
+        # pagamento que nao sabemos qual preco travou seria inventar uma data
+        # — e a carta de reajuste sai dessa data.
+        if e_nossa_assinatura and getattr(session, "subscription", None):
+            self._registrar_reajuste_do_13o_mes(
+                session.subscription, usuario_id=user_id, email=cliente_email
+            )
 
         return {
             "status": "completed",
@@ -988,7 +1170,7 @@ class StripeService:
         self._atualizar_metadata(usuario_id, {
             "pagamento": "cancelado",
             "oferta": "oficial",
-            "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
+            "preco_mensal": settings.PRECO_MENSAL_USD,
         })
         self._devolver_vaga_fundadora(usuario_id)
         logger.info(f"Acesso revogado ({motivo}): assinatura {subscription_id}")
@@ -1245,9 +1427,10 @@ class StripeService:
     def get_pricing_plans(self) -> Dict[str, Any]:
         """
         Planos ativos na plataforma. Modelo atual: uma única recorrência B2B
-        de $250/mês (Marina), com as 20 primeiras marinas a $200/mês. O dossiê
-        não é vendido pela plataforma — vai direto marina <-> dono — então não
-        aparece aqui.
+        de US$ 140/mês (Marina) — mesmo valor para fundadora e para quem chega
+        pelo site —, travada por 12 meses e corrigida depois por IPCA + 15%. O
+        dossiê não é vendido pela plataforma — vai direto marina <-> dono —
+        então não aparece aqui.
         """
         marina = self.PRICING[PlanType.MARINA]
         return {

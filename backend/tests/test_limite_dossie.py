@@ -50,11 +50,27 @@ class _Consulta:
         return types.SimpleNamespace(data=self._linhas, count=len(self._linhas))
 
 
-def _banco(qtd_emissoes, dias_atras=30):
-    """Banco com `qtd_emissoes` dossiês emitidos há `dias_atras` dias."""
+def _banco(qtd_emissoes, dias_atras=30, extras_pagos=0):
+    """Banco com `qtd_emissoes` dossiês emitidos há `dias_atras` dias.
+
+    RESPONDE POR TABELA, e não a mesma coisa para todas. Enquanto ignorava o
+    nome, a consulta de `payments` recebia as linhas de `dossie_emitidos` e
+    cada emissão virava um crédito pago — o saldo nunca baixava. Dublê que
+    responde igual a perguntas diferentes esconde exatamente o tipo de defeito
+    que este arquivo existe para pegar.
+
+    `extras_pagos` são dossiês ALÉM DA COTA que a marina comprou: cada um vale
+    uma emissão a mais na mesma janela.
+    """
     dia = (date.today() - timedelta(days=dias_atras)).isoformat()
-    linhas = [{"emitido_em": dia} for _ in range(qtd_emissoes)]
-    return types.SimpleNamespace(table=lambda _nome: _Consulta(linhas))
+    por_tabela = {
+        "dossie_emitidos": [{"emitido_em": dia} for _ in range(qtd_emissoes)],
+        "dossie_solicitacoes": [],
+        "payments": [{"id": f"pay-{i}"} for i in range(extras_pagos)],
+    }
+    return types.SimpleNamespace(
+        table=lambda nome: _Consulta(por_tabela.get(nome, []))
+    )
 
 
 def _com_banco(monkeypatch, banco):
@@ -83,6 +99,43 @@ def test_no_limite_o_saldo_zera_e_recusa(monkeypatch):
     s = dossie._saldo_dossie("YA-IATE-2020-XXXX")
     assert s["restantes"] == 0
     assert s["permitido"] is False
+
+
+def test_dossie_extra_pago_devolve_uma_emissao(monkeypatch):
+    """A marina estourou a cota e comprou o 5º: volta a poder emitir.
+
+    A prova do crédito é o PAGAMENTO (payments.payment_type='dossie_extra'),
+    não uma tabela de saldo à parte — linha de dinheiro reconcilia com a
+    Stripe e não dessincroniza.
+    """
+    _com_banco(monkeypatch, _banco(settings.DOSSIE_LIMITE_ANUAL, extras_pagos=1))
+    s = dossie._saldo_dossie("YA-IATE-2020-XXXX")
+
+    assert s["creditos"] == 1
+    assert s["limite_efetivo"] == settings.DOSSIE_LIMITE_ANUAL + 1
+    assert s["restantes"] == 1
+    assert s["permitido"] is True
+    # O limite contratual continua sendo o que a tela anuncia: comprar um
+    # extra não transforma a cota em 5.
+    assert s["limite"] == settings.DOSSIE_LIMITE_ANUAL
+
+
+def test_extra_pago_e_usado_volta_a_recusar(monkeypatch):
+    """Um crédito, uma emissão. O 6º sem pagar de novo é recusado."""
+    _com_banco(monkeypatch, _banco(settings.DOSSIE_LIMITE_ANUAL + 1, extras_pagos=1))
+    s = dossie._saldo_dossie("YA-IATE-2020-XXXX")
+
+    assert s["restantes"] == 0
+    assert s["permitido"] is False
+
+
+def test_sem_extra_pago_nao_aparece_credito_do_nada(monkeypatch):
+    """Regressão do dublê: emissão não pode ser lida como pagamento."""
+    _com_banco(monkeypatch, _banco(2))
+    s = dossie._saldo_dossie("YA-IATE-2020-XXXX")
+
+    assert s["creditos"] == 0
+    assert s["limite_efetivo"] == settings.DOSSIE_LIMITE_ANUAL
 
 
 def test_esgotado_diz_QUANDO_volta_a_poder(monkeypatch):

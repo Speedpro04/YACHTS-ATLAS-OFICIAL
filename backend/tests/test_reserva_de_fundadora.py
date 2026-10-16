@@ -104,6 +104,10 @@ def test_link_conhecido_ganha_da_reserva(servico, monkeypatch):
     no nome dela. O que ela pagou agora vale mais que o que reservou antes.
     """
     from app.core.config import settings
+    # O link do config está vazio desde o preço único (os antigos cobram a
+    # tabela velha), então o teste põe um: o que se verifica é a ordem das
+    # provas, não o estado de hoje da configuração.
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "https://buy.stripe.com/brl-oficial")
     _com_reserva(monkeypatch, RESERVA)
     StripeService._URL_DO_LINK["plink_of"] = settings.STRIPE_LINK_MARINA_OFICIAL_BRL
     assert servico._programa_do_checkout(

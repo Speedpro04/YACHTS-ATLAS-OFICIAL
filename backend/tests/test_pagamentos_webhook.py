@@ -112,7 +112,7 @@ def _sessao(valor_cents, metadata, session_id="cs_test_1", mode="subscription"):
     )
 
 
-def _invoice(invoice_id, billing_reason, valor_cents=25000):
+def _invoice(invoice_id, billing_reason, valor_cents=14000):
     return types.SimpleNamespace(
         id=invoice_id,
         customer="cus_1",
@@ -128,45 +128,57 @@ def _ocupou_vaga(registro):
     return any(nome == "cadastrar_marina_fundadora" for nome, _ in registro["rpcs"])
 
 
-def test_pagamento_de_200_ocupa_vaga_mesmo_sem_metadata(supabase_falso):
-    """O Payment Link pode não ter metadata.programa configurado no painel.
+def test_assinatura_no_nosso_preco_nao_ocupa_vaga_sem_prova(supabase_falso):
+    """O valor pago identifica a assinatura, mas não concede vaga.
 
-    Se a vaga não fosse ocupada, marinas_fundadoras ficaria em zero para sempre
-    e toda marina seguinte continuaria recebendo o link de US$ 200.
+    Enquanto havia dois preços, US$ 200 queria dizer "campanha" e a vaga saía
+    daí. Hoje fundadora e oficial pagam o mesmo US$ 140, e desde 14/10/2026 o
+    programa está suspenso: o pagamento entra, o acesso é liberado, e nenhuma
+    vaga é ocupada. Quem concede vaga é prova explícita — link da campanha ou
+    metadata — e ninguém mais recebe nenhum dos dois.
+
+    Sem esta separação, TODA marina Oficial pagando em dólar entraria
+    consumindo uma das 4 vagas do estado dela.
     """
     registro = supabase_falso()
-    preco_fundadora = settings.LAUNCH_PRICE_MONTHLY * 100
 
     StripeService()._handle_checkout_completed(
-        _sessao(preco_fundadora, {"plan_type": "marina"})
+        _sessao(settings.PRECO_MENSAL_USD * 100, {"plan_type": "marina"})
     )
 
-    assert _ocupou_vaga(registro)
+    assert not _ocupou_vaga(registro)
+    # O pagamento é gravado normalmente: a vaga ficou de fora por decisão, não
+    # por o fluxo ter morrido no meio.
     assert any(tabela == "payments" for tabela, _ in registro["inserts"])
 
 
-def test_pagamento_oficial_nao_ocupa_vaga_fundadora(supabase_falso):
+def test_assinatura_de_outro_valor_nao_ocupa_vaga_fundadora(supabase_falso):
+    """A conta Stripe é da Axos Hub e vende outros produtos no mesmo webhook.
+
+    Valor que não é o nosso não vira marina — era a tabela antiga de US$ 250
+    quando havia duas, é qualquer outro produto da casa hoje.
+    """
     registro = supabase_falso()
-    preco_oficial = settings.TRADITIONAL_PRICE_MONTHLY * 100
 
     StripeService()._handle_checkout_completed(
-        _sessao(preco_oficial, {"plan_type": "marina"})
+        _sessao(25000, {"plan_type": "marina"})
     )
 
     assert not _ocupou_vaga(registro)
 
 
-def test_dossie_de_200_nao_ocupa_vaga_fundadora(supabase_falso):
-    """A faixa de 36-45 pés do dossiê custa os mesmos US$ 200 da fundadora.
+def test_dossie_no_mesmo_valor_nao_ocupa_vaga_fundadora(supabase_falso):
+    """Nada impede uma faixa do dossiê cair no mesmo valor da assinatura.
 
-    O dossiê é vendido por Payment Link próprio, sem metadata, e é pagamento
-    avulso — não pode ocupar vaga nem liberar acesso de marina.
+    Já aconteceu: a faixa de 36-45 pés custava os mesmos US$ 200 da fundadora
+    de então. O dossiê é vendido por Payment Link próprio, sem metadata, e é
+    pagamento avulso — não pode ocupar vaga nem liberar acesso de marina.
     """
     registro = supabase_falso()
-    preco_fundadora = settings.LAUNCH_PRICE_MONTHLY * 100
 
     StripeService()._handle_checkout_completed(
-        _sessao(preco_fundadora, {}, session_id="cs_dossie", mode="payment")
+        _sessao(settings.PRECO_MENSAL_USD * 100, {},
+                session_id="cs_dossie", mode="payment")
     )
 
     # O pagamento é gravado normalmente: prova que o fluxo rodou até o fim e
@@ -176,11 +188,11 @@ def test_dossie_de_200_nao_ocupa_vaga_fundadora(supabase_falso):
 
 
 def test_metadata_explicito_continua_valendo(supabase_falso):
+    """Intenção declarada vale mesmo quando o valor não diz nada."""
     registro = supabase_falso()
 
     StripeService()._handle_checkout_completed(
-        _sessao(settings.TRADITIONAL_PRICE_MONTHLY * 100,
-                {"programa": "marina_fundadora"})
+        _sessao(25000, {"programa": "marina_fundadora"})
     )
 
     assert _ocupou_vaga(registro)
@@ -193,7 +205,7 @@ def test_reentrega_do_mesmo_checkout_nao_reprocessa(supabase_falso):
     )
 
     resultado = StripeService()._handle_checkout_completed(
-        _sessao(settings.LAUNCH_PRICE_MONTHLY * 100, {"programa": "marina_fundadora"})
+        _sessao(settings.PRECO_MENSAL_USD * 100, {"programa": "marina_fundadora"})
     )
 
     assert resultado["status"] == "duplicate"
@@ -223,9 +235,63 @@ def test_renovacao_mensal_e_registrada(supabase_falso):
 
     gravados = [p for tabela, p in registro["inserts"] if tabela == "payments"]
     assert len(gravados) == 1
-    assert gravados[0]["amount"] == float(settings.TRADITIONAL_PRICE_MONTHLY)
+    assert gravados[0]["amount"] == float(settings.PRECO_MENSAL_USD)
     assert gravados[0]["stripe_invoice_id"] == "in_2"
     assert gravados[0]["usuario_id"] == "user-uuid-1"
+
+
+# --------------------------------------------------------------------------
+# Dossiê além da cota — o 5º do mesmo ativo no mesmo ano
+# --------------------------------------------------------------------------
+
+def _sessao_dossie_extra(ativo_id="YA-IATE-2020-XXXX", session_id="cs_extra"):
+    """Pagamento único vindo do link do dossiê adicional.
+
+    A identidade que viaja é o ATIVO, com prefixo `ativo_` — posta por
+    api/v1/dossie.checkout_dossie_extra.
+    """
+    sessao = _sessao(settings.PRECO_DOSSIE_EXTRA_USD * 100, {},
+                     session_id=session_id, mode="payment")
+    sessao.client_reference_id = f"ativo_{ativo_id}"
+    return sessao
+
+
+def test_dossie_extra_grava_o_pagamento_no_ativo(supabase_falso):
+    """É esta linha que devolve a emissão à marina (ver dossie._saldo_dossie)."""
+    registro = supabase_falso(origem=[{"usuario_id": "marina-do-barco"}])
+
+    StripeService()._handle_checkout_completed(_sessao_dossie_extra())
+
+    pagamentos = [p for tabela, p in registro["inserts"] if tabela == "payments"]
+    assert len(pagamentos) == 1
+    assert pagamentos[0]["payment_type"] == "dossie_extra"
+    assert pagamentos[0]["ativo_id"] == "YA-IATE-2020-XXXX"
+    # O dono do pagamento é a marina DO BARCO, descoberta pelo ativo — e não
+    # quem por acaso tem o e-mail do checkout.
+    assert pagamentos[0]["usuario_id"] == "marina-do-barco"
+
+
+def test_identidade_de_ativo_nunca_vira_pagador(supabase_falso):
+    """O mesmo campo carrega o USUÁRIO no checkout da assinatura.
+
+    Sem o prefixo separando os dois, um id de barco entraria como `usuario_id`
+    — e o pagamento ficaria no nome de alguém que não existe.
+    """
+    registro = supabase_falso(origem=[{"usuario_id": "marina-do-barco"}])
+
+    StripeService()._handle_checkout_completed(_sessao_dossie_extra())
+
+    pagamentos = [p for tabela, p in registro["inserts"] if tabela == "payments"]
+    assert not str(pagamentos[0]["usuario_id"]).startswith("ativo_")
+
+
+def test_dossie_extra_nao_ocupa_vaga_nem_libera_acesso(supabase_falso):
+    """É pagamento avulso de cota, não assinatura de marina."""
+    registro = supabase_falso(origem=[{"usuario_id": "marina-do-barco"}])
+
+    StripeService()._handle_checkout_completed(_sessao_dossie_extra())
+
+    assert not _ocupou_vaga(registro)
 
 
 def test_lookup_key_separa_precos_diferentes():

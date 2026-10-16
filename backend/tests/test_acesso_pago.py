@@ -27,6 +27,20 @@ from app.core.config import settings
 from app.services.stripe_service import StripeService
 
 
+@pytest.fixture(autouse=True)
+def links_em_real(monkeypatch):
+    """Põe os links em real que o config não tem mais.
+
+    Desde 13/10/2026 os quatro links estão vazios na configuração: o preço
+    virou US$ 140 / R$ 697,00 e os antigos continuam vivos na Stripe cobrando
+    a tabela velha. Estes testes verificam QUAL porta a marina bloqueada
+    recebe, não o estado de hoje da configuração — sem isto falhariam por um
+    motivo que não é o deles. Ver test_checkout_por_uf.py.
+    """
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA_BRL", "https://buy.stripe.com/brl-fundadora")
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "https://buy.stripe.com/brl-oficial")
+
+
 def _dias_atras(dias: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=dias)).isoformat()
 
@@ -52,7 +66,13 @@ def test_assinatura_cancelada_e_barrada():
 
 
 def test_link_do_bloqueio_e_o_preco_que_a_marina_contratou():
-    """Mandar a fundadora para o link de $250 cobraria a mais de quem não deve."""
+    """Cada oferta tem a sua porta.
+
+    O preço é o mesmo nas duas desde 13/10/2026, mas os links continuam sendo
+    dois: é por eles que o webhook sabe se a marina veio da campanha (e ocupa
+    vaga) ou do site. Mandar uma para a porta da outra embaralha o programa de
+    quem pagou.
+    """
     fundadora = avaliar_acesso({"pagamento": "pendente", "oferta": "fundadora"})
     oficial = avaliar_acesso({"pagamento": "pendente", "oferta": "oficial"})
 
@@ -296,7 +316,7 @@ def test_cancelar_derruba_a_condicao_de_fundadora(acesso_falso):
     """Saiu, perdeu o lugar: voltando, entra pela porta normal."""
     admin = acesso_falso({
         "pagamento": "pago", "oferta": "fundadora",
-        "preco_mensal": 200, "uf": "SP", "nome": "Marina Teste",
+        "preco_mensal": 140, "uf": "SP", "nome": "Marina Teste",
     })
 
     StripeService()._handle_subscription_deleted(
@@ -305,15 +325,18 @@ def test_cancelar_derruba_a_condicao_de_fundadora(acesso_falso):
 
     meta = admin.auth_admin.metadata
     assert meta["oferta"] == "oficial"
-    assert meta["preco_mensal"] == 250
+    # O preço não muda ao cancelar — é o mesmo para as duas ofertas. O que ela
+    # perde é a vaga e o bônus de fundadora.
+    assert meta["preco_mensal"] == settings.PRECO_MENSAL_USD == 140
     # E o que não é da assinatura continua lá — o update do Auth troca o
     # objeto inteiro, e já apagou nome de marina uma vez.
     assert meta["nome"] == "Marina Teste"
 
 
-def test_a_porta_de_volta_cobra_o_valor_oficial(acesso_falso):
+def test_a_porta_de_volta_e_a_oficial(acesso_falso):
     """O botão "Assinar novamente" lê o metadata. Se `oferta` continuasse
-    "fundadora", ele devolveria o link de R$ 1.000 para quem cancelou."""
+    "fundadora", ele devolveria o link da campanha para quem cancelou — e ela
+    voltaria ocupando uma das 4 vagas do estado que ela mesma liberou."""
     from app.core.acesso import avaliar_acesso
     from app.core.precos import link_de_checkout
 

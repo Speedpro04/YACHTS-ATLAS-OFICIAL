@@ -12,6 +12,7 @@ import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Depends, Response, Request, Form
 from fastapi.responses import HTMLResponse
@@ -21,6 +22,7 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.core.supabase import get_supabase_admin
 from app.core.authz import get_ativo_autorizado
+from app.core.precos import link_do_dossie_extra, preco_do_dossie_extra
 from app.core.dispositivo import exigir_desktop
 from app.middleware.tracking import get_client_ip, get_user_agent
 from app.services.dossie_data import montar_dados_dossie
@@ -344,12 +346,34 @@ def _saldo_dossie(ativo_id: str) -> dict:
 
         linhas.sort(key=lambda r: r["quando"])
         usados = len(linhas)
+
+        # Dossiês ALÉM DA COTA já pagos nesta mesma janela. Cada um vale uma
+        # emissão a mais — é literalmente o que a marina comprou.
+        #
+        # A prova do crédito é o PAGAMENTO, e não uma tabela de saldo à parte:
+        # linha de dinheiro é auditável, reconcilia com a Stripe e não dessincroniza.
+        # Ver stripe_service, que grava com payment_type 'dossie_extra'.
+        pagos = (
+            supabase.table("payments")
+            .select("id")
+            .eq("ativo_id", str(ativo_id))
+            .eq("payment_type", "dossie_extra")
+            .eq("status", "completed")
+            .gte("created_at", desde)
+            .execute()
+        )
+        creditos = len(pagos.data or [])
     except Exception as e:  # noqa: BLE001 — saldo não derruba a emissão
         logger.error(f"Falha ao apurar saldo de dossiês de {ativo_id}: {e}")
         return {"limite": limite_anual, "usados": 0, "restantes": limite_anual,
+                "creditos": 0, "limite_efetivo": limite_anual,
                 "permitido": True, "reset_em": None}
 
-    restantes = max(0, limite_anual - usados)
+    # `limite` é o que o contrato dá; `limite_efetivo` é o que este ativo pode
+    # hoje. A tela mostra os dois — "4 / ano" não vira mentira porque a marina
+    # comprou um extra.
+    limite_efetivo = limite_anual + creditos
+    restantes = max(0, limite_efetivo - usados)
     # Quando esgota, o próximo lugar abre 12 meses depois da emissão MAIS ANTIGA
     # ainda dentro da janela — é ela que sai da contagem primeiro.
     reset_em = None
@@ -359,6 +383,7 @@ def _saldo_dossie(ativo_id: str) -> dict:
             reset_em = (datetime.fromisoformat(str(mais_antiga)) + timedelta(days=365)).date().isoformat()
 
     return {"limite": limite_anual, "usados": usados, "restantes": restantes,
+            "creditos": creditos, "limite_efetivo": limite_efetivo,
             "permitido": restantes > 0, "reset_em": reset_em}
 
 
@@ -367,6 +392,59 @@ async def saldo_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     """Saldo de emissões do ativo — é o número que a tela mostra ao gerente."""
     _assert_acesso_ativo(ativo_id, user)
     return _saldo_dossie(ativo_id)
+
+
+def _uf_da_marina(usuario_id: str) -> Optional[str]:
+    """UF gravada no cadastro da marina — decide a MOEDA do checkout.
+
+    Consultada só quando a cota estourou, que é raro por construção: não vale
+    pesar o caminho normal por causa da exceção.
+    """
+    try:
+        resposta = get_supabase_admin().auth.admin.get_user_by_id(str(usuario_id))
+        usuario = getattr(resposta, "user", None) or resposta
+        meta = getattr(usuario, "user_metadata", None) or {}
+        return meta.get("uf")
+    except Exception as e:  # noqa: BLE001 — sem UF cai no dólar, não quebra
+        logger.warning(f"Não consegui ler a UF de {usuario_id}: {e}")
+        return None
+
+
+@router.get("/{ativo_id}/extra")
+async def checkout_dossie_extra(ativo_id: str, user: dict = Depends(get_current_user)):
+    """
+    O caminho pago para emitir ALÉM da cota anual deste ativo.
+
+    POR QUE ISTO EXISTE. Até 16/10/2026 a cota era um muro: estourou, o
+    servidor devolvia 429 e a tela dizia "próxima emissão em <daqui a meses>".
+    A marina descobria isso no pior momento — na frente do proprietário,
+    precisando do documento. A regra comercial sempre foi "o 5º é pago"; o que
+    faltava era a porta.
+
+    A IDENTIDADE DO ATIVO VIAJA NO LINK (`client_reference_id`), mesmo truque
+    que o cadastro da marina usa para o webhook saber quem pagou. Sem isso, um
+    Payment Link estático não tem como dizer QUAL barco foi liberado — e o
+    crédito cairia no vazio. O prefixo `ativo_` é o que diferencia este
+    pagamento do checkout de assinatura, onde o mesmo campo carrega o usuário.
+
+    Sem link configurado devolve `disponivel: false`, e a tela pede para falar
+    com a Yachts Atlas. Botão que não leva a lugar nenhum é pior que nenhum
+    botão — ainda mais neste momento.
+    """
+    _assert_acesso_ativo(ativo_id, user)
+
+    url, moeda = link_do_dossie_extra(_uf_da_marina(user.get("sub")))
+    if not url:
+        return {"disponivel": False, "url": "", "moeda": "",
+                "preco": settings.PRECO_DOSSIE_EXTRA_USD}
+
+    separador = "&" if "?" in url else "?"
+    return {
+        "disponivel": True,
+        "url": f"{url}{separador}{urlencode({'client_reference_id': f'ativo_{ativo_id}'})}",
+        "moeda": moeda,
+        "preco": preco_do_dossie_extra(moeda),
+    }
 
 
 @router.get("/{ativo_id}/pdf", dependencies=[Depends(exigir_desktop)])
@@ -378,11 +456,14 @@ async def pdf_dossie(ativo_id: str, user: dict = Depends(get_current_user)):
     # navegador, o limite era um pedido: bastava outra janela para ignorá-lo.
     saldo = _saldo_dossie(ativo_id)
     if not saldo["permitido"]:
+        # A recusa diz que existe saída paga. Antes mandava esperar meses, e
+        # era a única informação que a marina levava para o cliente.
         raise HTTPException(
             status_code=429,
             detail=(
                 f"Limite de {saldo['limite']} dossiês por ano atingido para este ativo. "
-                f"Nova emissão a partir de {saldo['reset_em']}."
+                f"Nova emissão sem custo a partir de {saldo['reset_em']}, ou emita agora "
+                f"como dossiê adicional (US$ {settings.PRECO_DOSSIE_EXTRA_USD})."
             ),
         )
 
@@ -526,7 +607,8 @@ async def liberar_solicitacao(
                 status_code=429,
                 detail=(
                     f"Limite de {saldo['limite']} dossies por ano atingido para este ativo. "
-                    f"Nova emissao a partir de {saldo['reset_em']}."
+                    f"Nova emissao sem custo a partir de {saldo['reset_em']}, ou emita agora "
+                    f"como dossie adicional (US$ {settings.PRECO_DOSSIE_EXTRA_USD})."
                 ),
             )
 

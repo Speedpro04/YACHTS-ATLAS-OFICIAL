@@ -154,42 +154,97 @@ class Settings(BaseSettings):
     REFERRAL_REWARD_MONTHS: int = 18
     REFERRAL_MIN_RETENTION_MONTHS: int = 3  # referred marina must stay 3 months
 
-    # Modelo de cobrança DEFINITIVO — só dois preços, nada além disto:
-    #   • 20 marinas de lançamento   → $200/mês  (link de pagamento de $200)
-    #   • até 120 marinas restantes  → $250/mês  (link de pagamento de $250)
-    # Total: 140 marinas. Sem outros valores.
-    LAUNCH_SLOTS: int = 20             # marinas de lançamento a $200 (= 5 UFs x 4)
-    LAUNCH_SLOTS_PER_STATE: int = 4    # 4 fundadoras por estado (ver LAUNCH_STATES)
-    LAUNCH_PRICE_MONTHLY: int = 200    # preço das 20 de lançamento
-    # Moeda dos dois links de marina. Existe porque o webhook reconhece a
-    # fundadora PELO VALOR, e comparar numero sem moeda e armadilha: a conta
-    # Stripe e da Axos Hub e recebe os eventos de todos os produtos da casa.
-    # Um produto qualquer a R$ 200,00/mes — preco comum — cairia no portao de
-    # US$ 200 e seria tratado como marina fundadora.
-    PRICE_CURRENCY: str = "usd"
-    TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
-    TRADITIONAL_PRICE_MONTHLY: int = 250
+    # ------------------------------------------------------------------
+    # Modelo de cobrança DEFINITIVO — UM preço, nada além disto:
+    #   • US$ 140/mês        (a oferta anunciada)
+    #   • R$ 697,00/mês      (a mesma assinatura cobrada em real)
+    #   • travado por 12 meses a contar da assinatura de CADA marina
+    #   • no 13º mês, correção por IPCA + 15% (ver REAJUSTE_*)
+    #
+    # ERA DOIS PREÇOS ATÉ 13/10/2026: US$ 200 para as 20 fundadoras e US$ 250
+    # para as demais, com a fundadora subindo para US$ 250 no 13º mês. O
+    # programa fundador CONTINUA — 4 vagas por estado, 18 meses de dossiê 100%
+    # da marina —, mas a vantagem dele deixou de ser preço. Quem decidiu: o
+    # fundador, e é por isso que `preco_mensal` não depende mais de qual oferta
+    # a marina pegou.
+    #
+    # O ESPELHO NO FRONTEND é frontend/src/config/precoServico.ts (a primeira
+    # dobra da home e a etapa de pagamento do cadastro). Mudou aqui, muda lá —
+    # a tela não pode prometer o que a fatura não cumpre.
+    PRECO_MENSAL_USD: int = 140
+    PRECO_MENSAL_BRL: int = 697
 
-    # Os mesmos precos cobrados em real, travados em 5,00 (ver BRL_TAXA_TRAVADA).
-    # Numero redondo de proposito: "multiplica por 5" e conta que o gerente faz
-    # de cabeca, e clareza numa venda de 20 vagas vale mais que 3% de cambio.
-    LAUNCH_PRICE_MONTHLY_BRL: int = 1000
-    TRADITIONAL_PRICE_MONTHLY_BRL: int = 1250
+    # Meses em que o valor não sobe. Contados por marina, da data da assinatura
+    # dela — quem assinou em outubro vira em outubro.
+    PRECO_TRAVADO_MESES: int = 12
+
+    # A correção do 13º mês. NÃO é um valor fixo de propósito: o IPCA do
+    # período só é conhecido na época, e por isso não existe degrau agendado
+    # na Stripe (ver stripe_service._registrar_reajuste_do_13o_mes). O que o
+    # sistema faz é guardar a regra e a data, e avisar o fundador quando chega
+    # a hora de aplicar — com aviso prévio à marina, que é o combinado na
+    # venda.
+    REAJUSTE_INDICE: str = "ipca"
+    REAJUSTE_PERCENTUAL: int = 15
+
+    # Vagas. O teto de 20 fundadoras é CONSEQUÊNCIA das 4 por estado em 5
+    # praças (SC/SP/RJ/ES/BA) — ver migration_vagas_fundadoras_por_estado.sql.
+    LAUNCH_SLOTS: int = 20             # 20 fundadoras (= 5 UFs x 4)
+    LAUNCH_SLOTS_PER_STATE: int = 4    # 4 fundadoras por estado (ver LAUNCH_STATES)
+    TRADITIONAL_SLOTS: int = 120       # marinas além das fundadoras (teto)
+
+    # Moeda do link em dólar. Existe porque o webhook ainda cai no VALOR quando
+    # o checkout não veio de Payment Link, e comparar numero sem moeda e
+    # armadilha: a conta Stripe e da Axos Hub e recebe os eventos de todos os
+    # produtos da casa. Um produto qualquer a R$ 140,00/mes cairia no portao de
+    # US$ 140 e seria tratado como marina.
+    PRICE_CURRENCY: str = "usd"
 
     # Meses de dossiê 100% integral de cada oferta. Nenhum código lê estes dois
     # hoje: eles existem para o modelo de cobrança ficar escrito INTEIRO aqui,
     # ao lado dos preços, e não metade aqui e metade nos documentos — que era o
-    # caso do prazo da oficial. O e-mail de boas-vindas é neutro de propósito e
-    # não declara oferta (ver email_service._welcome_html).
-    LAUNCH_DOSSIER_BONUS_MONTHS: int = 18      # fundadora ($200)
-    TRADITIONAL_DOSSIER_MONTHS: int = 12       # oficial ($250)
+    # caso do prazo da oficial. Com o preço único, é AQUI que mora a diferença
+    # entre ser fundadora e não ser. O e-mail de boas-vindas é neutro de
+    # propósito e não declara oferta (ver email_service._welcome_html).
+    LAUNCH_DOSSIER_BONUS_MONTHS: int = 18      # fundadora (4 por estado)
+    TRADITIONAL_DOSSIER_MONTHS: int = 12       # demais marinas
 
     # Quantos dossiês cada ativo pode emitir por ano.
     #
     # Em variável de ambiente porque durante os ensaios o mesmo barco é usado
     # dezenas de vezes: sobe o número, testa, baixa de novo — sem deploy. O
     # padrão 4 é a regra comercial; mexer nele é exceção, não rotina.
+    #
+    # CUIDADO AO SUBIR PARA ENSAIO: o valor vale para TODAS as marinas, e a
+    # cota passou a ter preço (PRECO_DOSSIE_EXTRA_USD). Subiu para testar,
+    # baixa depois — senão o limite que se cobra para exceder simplesmente
+    # não é aplicado. Usar mais barcos de demonstração costuma ser melhor que
+    # mexer aqui.
     DOSSIE_LIMITE_ANUAL: int = int(os.getenv("DOSSIE_LIMITE_ANUAL", "4"))
+
+    # O 5º dossiê do mesmo ativo no mesmo ano: a marina paga para exceder.
+    #
+    # ISTO NÃO É A PLATAFORMA VENDENDO DOSSIÊ — ela não vende (o dossiê é pago
+    # pelo dono do barco direto à marina, 100% dela, ver DOSSIER_REQUIRE_PAYMENT).
+    # É taxa de EXCEÇÃO DE COTA, cobrada da marina, e existe para a cota
+    # significar alguma coisa: cota sem preço não é limite, é sugestão.
+    #
+    # Valor único, igual para todo porte: o custo de emitir é o mesmo num barco
+    # de 30 ou de 100 pés — geração, selo e guarda. A escada por tamanho vale
+    # para o que a marina cobra do dono dela, não para isto.
+    #
+    # US$ 80 contra ~US$ 21 do dossiê incluso (US$ 1.680/ano ÷ 80 dossiês numa
+    # marina de 20 barcos): caro o bastante para ninguém pedir por capricho,
+    # barato o bastante para ser PAGO quando é necessário — e é isso que se
+    # quer, porque a exceção precisa ser resolvida, não evitada.
+    PRECO_DOSSIE_EXTRA_USD: int = 80
+    PRECO_DOSSIE_EXTRA_BRL: int = 397
+
+    # Pagamento único (NÃO recorrente). Vazios até existirem na Stripe: sem
+    # link, a tela diz que a liberação é com a Yachts Atlas em vez de oferecer
+    # um botão que não leva a lugar nenhum.
+    STRIPE_LINK_DOSSIE_EXTRA: str = os.getenv("STRIPE_LINK_DOSSIE_EXTRA", "")
+    STRIPE_LINK_DOSSIE_EXTRA_BRL: str = os.getenv("STRIPE_LINK_DOSSIE_EXTRA_BRL", "")
 
     # Quanto tempo a vaga fundadora fica presa no nome da marina entre o
     # cadastro e o pagamento. Eram 60 min, suficiente enquanto o cadastro caía
@@ -211,19 +266,22 @@ class Settings(BaseSettings):
     # conhece é armadilha. Mudou aqui, muda lá.
     MINUTOS_DE_RESERVA_VAGA: int = 720
 
-    # O preço de fundadora vale 12 meses. No 13º a assinatura passa a $250 —
-    # correção monetária combinada na venda, não é surpresa para a marina.
-    # Quem executa é a própria Stripe (subscription schedule anexado no
-    # pagamento), então não depende de rotina nossa rodando um ano depois.
-    LAUNCH_PRICE_MONTHS: int = 12
-
     # Links de pagamento. Ficam em env para trocar de conta Stripe sem rebuild,
     # e aqui no config para não existirem dois links do mesmo preço no sistema.
-    # DESATIVADOS no painel em 26/08/2026, quando os precos em real entraram.
-    # As URLs continuam existindo e respondem "The link is no longer active" —
-    # pior que nao existir, porque parecem funcionar. Vazio e a verdade, e
-    # link_de_checkout nunca oferece caminho vazio. Recriar aqui quando houver
-    # venda fora do Brasil.
+    #
+    # TODOS VAZIOS DESDE 13/10/2026, quando o preço virou US$ 140 / R$ 697,00.
+    # Os links anteriores continuam ativos na Stripe cobrando a tabela velha
+    # (R$ 1.000 e R$ 1.250), e link que cobra o preço errado é pior que link
+    # que não existe: a marina lê R$ 697,00 na home, paga R$ 1.250 e tem razão
+    # em pedir estorno. Vazio é a verdade, e `link_de_checkout` nunca oferece
+    # caminho vazio — a tela de cadastro avisa e o cadastro fica salvo.
+    #
+    # PARA REABRIR A VENDA: criar na Stripe os Payment Links do preço novo
+    # (US$ 140/mês e R$ 697,00/mês, recorrentes) e preencher estas quatro
+    # variáveis de ambiente. Continuam sendo QUATRO, e não duas, mesmo com
+    # preço único: é pelo link que o webhook sabe se a marina veio pela
+    # campanha fundadora ou pelo site (ver _programa_do_checkout) — com preço
+    # igual, o valor pago não diz mais de onde ela veio.
     STRIPE_LINK_MARINA_FUNDADORA: str = os.getenv("STRIPE_LINK_MARINA_FUNDADORA", "")
     STRIPE_LINK_MARINA_OFICIAL: str = os.getenv("STRIPE_LINK_MARINA_OFICIAL", "")
 
@@ -231,23 +289,16 @@ class Settings(BaseSettings):
     # IOF, sem taxa de compra internacional, e com bandeira nacional (Elo,
     # Hipercard) — que em dolar simplesmente nao passa. O preco anunciado nas
     # paginas continua sendo o dolar; o real e forma de pagamento, nao oferta.
-    #
-    # Vazio enquanto o link nao existir: link vazio nao identifica programa
-    # nenhum (ver _programa_do_checkout), entao a ausencia e inofensiva.
-    STRIPE_LINK_MARINA_FUNDADORA_BRL: str = os.getenv(
-        "STRIPE_LINK_MARINA_FUNDADORA_BRL",
-        "https://buy.stripe.com/8x2bJ10uFe281O9eeY1wY0b",   # R$ 1.000/mes
-    )
-    STRIPE_LINK_MARINA_OFICIAL_BRL: str = os.getenv(
-        "STRIPE_LINK_MARINA_OFICIAL_BRL",
-        "https://buy.stripe.com/fZu9ATcdn0bi2Sd5Is1wY0c",   # R$ 1.250/mes
-    )
+    STRIPE_LINK_MARINA_FUNDADORA_BRL: str = os.getenv("STRIPE_LINK_MARINA_FUNDADORA_BRL", "")
+    STRIPE_LINK_MARINA_OFICIAL_BRL: str = os.getenv("STRIPE_LINK_MARINA_OFICIAL_BRL", "")
 
-    # Cambio travado no link em real. Congela por 12 meses (o prazo do preco de
-    # fundadora), entao nao acompanha o dolar. Acima de 5,50 a defasagem passa
-    # de 10% e vale criar preco novo — ninguem avisa, tem que olhar.
-    BRL_TAXA_TRAVADA: float = 5.00
-    BRL_TAXA_REVISAR_ACIMA_DE: float = 5.50
+    # Cambio implicito no preco em real: 697 / 140 = 4,98. Congela junto com o
+    # preco (PRECO_TRAVADO_MESES), entao nao acompanha o dolar no meio do ano.
+    # R$ 697 e ponto de preco, nao conta de cambio: "multiplica por 5" daria 700
+    # redondo, e numero terminado em 7 vende melhor. Acima de 5,48 a defasagem
+    # passa de 10% e vale rever o valor em real — ninguem avisa, tem que olhar.
+    BRL_TAXA_TRAVADA: float = 4.98
+    BRL_TAXA_REVISAR_ACIMA_DE: float = 5.48
 
     # Inadimplência: 20 dias após a primeira cobrança recusada o acesso é
     # cortado. Pagou, volta sozinho — ver app/core/acesso.py.

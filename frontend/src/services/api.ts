@@ -435,6 +435,11 @@ export const api = {
      * gerente faz é o número na tela, então ele precisa vir do servidor.
      */
     saldo: (ativoId: string) => apiRequest(`/dossie/${ativoId}/saldo`),
+    // O caminho pago para emitir ALÉM da cota anual. `disponivel: false`
+    // quando o link ainda não existe na Stripe — a tela mostra o contato
+    // em vez de um botão morto.
+    extra: (ativoId: string): Promise<{ disponivel: boolean; url: string; moeda: string; preco: number }> =>
+      apiRequest(`/dossie/${ativoId}/extra`),
     // Painel (autenticado): listar / liberar / recusar pedidos
     listSolicitacoes: (status?: string) =>
       apiRequest(`/dossie/solicitacoes${status ? `?status=${status}` : ''}`),

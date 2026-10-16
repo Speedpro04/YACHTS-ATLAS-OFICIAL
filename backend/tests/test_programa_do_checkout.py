@@ -9,6 +9,14 @@ de dossiê — sem erro nenhum aparecendo em lugar algum. Pagou e não recebeu.
 O sintoma no banco era visível desde 19/08 e ninguém tinha lido: as duas linhas
 de `marinas_fundadoras` com `stripe_checkout` vazio. Nenhuma delas veio de
 pagamento.
+
+E CONTINUA VALENDO COM PREÇO ÚNICO — na verdade, vale MAIS. Desde 13/10/2026
+fundadora e oficial custam o mesmo (US$ 140 / R$ 697,00), então o valor pago
+não distingue mais nada: o link é a ÚNICA prova de qual porta a marina usou.
+
+Os quatro links estão vazios no config desde essa mudança (os antigos cobram a
+tabela velha), então cada teste põe o seu: o que se verifica aqui é a regra,
+não o estado de hoje.
 """
 import pytest
 
@@ -49,13 +57,15 @@ def test_link_em_dolar_e_fundadora(servico, monkeypatch):
     assert servico._programa_do_checkout(s, {}) == "marina_fundadora"
 
 
-def test_link_em_real_tambem_e_fundadora(servico):
+def test_link_em_real_tambem_e_fundadora(servico, monkeypatch):
     """O defeito. Mesma vaga, moeda diferente."""
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA_BRL", "https://buy.stripe.com/brl-fu")
     s = _com_link(servico, "plink_brl", settings.STRIPE_LINK_MARINA_FUNDADORA_BRL)
     assert servico._programa_do_checkout(s, {}) == "marina_fundadora"
 
 
-def test_link_do_oficial_nao_e_fundadora(servico):
+def test_link_do_oficial_nao_e_fundadora(servico, monkeypatch):
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "https://buy.stripe.com/brl-of")
     s = _com_link(servico, "plink_of", settings.STRIPE_LINK_MARINA_OFICIAL_BRL)
     assert servico._programa_do_checkout(s, {}) == "marina_oficial"
 
@@ -68,8 +78,9 @@ def test_link_desconhecido_nao_vira_programa(servico):
 
 # ------------------------------------------------- ordem das provas
 
-def test_metadata_ganha_do_link(servico):
+def test_metadata_ganha_do_link(servico, monkeypatch):
     """Intenção declarada no painel vale mais que inferência."""
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_OFICIAL_BRL", "https://buy.stripe.com/brl-of")
     s = _com_link(servico, "plink_of", settings.STRIPE_LINK_MARINA_OFICIAL_BRL)
     assert servico._programa_do_checkout(s, {"programa": "marina_fundadora"}) == "marina_fundadora"
 
@@ -111,6 +122,7 @@ def test_consulta_que_falha_nao_derruba_o_webhook(servico, monkeypatch):
 def test_link_e_consultado_uma_vez_so(servico, monkeypatch):
     """URL de Payment Link não muda; consultar a cada webhook seria desperdício."""
     import app.services.stripe_service as mod
+    monkeypatch.setattr(settings, "STRIPE_LINK_MARINA_FUNDADORA_BRL", "https://buy.stripe.com/brl-fu")
     chamadas = []
 
     class LinkContado:

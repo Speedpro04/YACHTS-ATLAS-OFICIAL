@@ -107,6 +107,10 @@ Ciclo completo testado com cartão real (link recorrente de R$ 1,00): não pagou
 ## 6. O preço de fundadora é da CAMPANHA, não do estado da marina
 **Data da Decisão:** 19/08/2026
 
+> **Suspensa em 14/10/2026 — ver §61.** O programa fundador saiu de operação: nenhum cadastro reserva vaga, e a origem deixou de decidir a oferta. A regra abaixo não foi apagada do código (nem deste documento) porque a suspensão é de porta, não de demolição — ela volta a valer no dia em que a campanha voltar.
+>
+> **Preço superado em 13/10/2026 — ver §60.** A regra desta seção continua valendo inteira; o que mudou é o que a campanha entrega. Desde o preço único (US$ 140 para todas), a vaga fundadora não dá desconto: dá os 18 meses de dossiê 100% da marina. Onde se lê "US$ 200 x US$ 250" abaixo, leia "com vaga x sem vaga".
+
 ### O Problema
 `_oferta_marina` reservava vaga fundadora olhando **só a UF**. Marina de SC/SP/RJ/ES/BA recebia o link de US$ 200 tendo chegado de onde tivesse chegado — inclusive pelo site Oficial. Isso quebrava justamente a **indicação**, que é o motor do programa: a fundadora manda o link do Oficial para outra marina do mesmo estado, e a indicada — que deve entrar por US$ 250 — entrava por US$ 200 e consumia uma das 20 vagas.
 
@@ -1763,6 +1767,8 @@ Depois de reposicionar o Oficial, o Marcos pediu para alinhar o Lançamento — 
 
 Preço e prazo divergem **de propósito**: Lançamento US$ 200 + 18 meses, Oficial US$ 250 + 12 meses. Alinhar quebraria a oferta.
 
+> **Atualizado em 13/10/2026 (§60):** o preço parou de divergir — é US$ 140 nas duas. O **prazo** continua divergindo de propósito (18 meses no Lançamento, 12 no Oficial), e é hoje a única diferença entre as ofertas. O padrão abaixo não muda: separar o que diverge por decisão comercial do que diverge por descuido.
+
 **Padrão a repetir:** antes de "deixar tudo igual", separar o que diverge por decisão comercial do que diverge por descuido. As duas coisas parecem iguais numa varredura automática.
 
 ### Três números para o mesmo fato
@@ -1823,3 +1829,120 @@ E o motivo de NÃO estar no resto ficou escrito no cabeçalho do módulo — sen
 `registros` e `documentos` recusavam DELETE; `registros` recusava até UPDATE. Mas `ativos` não tinha gatilho nenhum, e um DELETE ali levava tudo em cascata — contornando por cima toda a imutabilidade construída embaixo.
 
 **Padrão a repetir:** trava em tabela filha não protege nada se a tabela-pai aceita exclusão em cascata. Ao proteger um dado, seguir a cadeia de chaves estrangeiras até o topo.
+
+## 60. Um preço só: US$ 140, travado 12 meses, depois IPCA + 15%
+**Data:** 13/10/2026
+
+Decisão do Marcos: *"vamos alterar o valor do nosso serviço pra $140 dólares que dará R$ 697,00 por 12 meses, depois a correção será o IPCA + 15%"*.
+
+### O que mudou
+
+Eram dois preços — US$ 200/mês para as 20 fundadoras e US$ 250/mês para as demais, com a fundadora subindo para US$ 250 no 13º mês (§6, §53, §58). Agora é **um só, para todas: US$ 140/mês, R$ 697,00/mês em real**, travado por **12 meses a contar da assinatura de cada marina**; a partir do 13º, correção por **IPCA + 15%**.
+
+O programa fundador continua: 4 vagas por estado (SC/SP/RJ/ES/BA) e 18 meses de dossiê 100% da marina. **O que ele deixou de ser é desconto.** Daí sai quase todo o resto do trabalho, porque o sistema inteiro separava fundadora de oficial **pelo valor pago**.
+
+### O preço na primeira dobra
+
+A home falava do produto e não dizia quanto custa: a marina só via um valor na etapa 4 do cadastro, depois de entregar CNPJ, endereço e senha. Quem acha caro desiste de qualquer jeito — a diferença é que desistia **depois** de entregar os dados, e quem acha justo passava quatro telas na dúvida.
+
+O valor passou a ficar logo abaixo do CTA do hero: dólar grande, real entre parênteses (é forma de pagamento, não um segundo preço — §9) e, embaixo, a regra inteira em uma frase. Reajuste que o cliente só descobre na fatura do 13º mês é cancelamento marcado; dito no mesmo lugar em que ele viu o preço, vira condição aceita.
+
+### O 13º mês deixou de ser um degrau agendado
+
+Enquanto a segunda fase era um número conhecido no dia da venda, dava para agendar na Stripe (`SubscriptionSchedule`, §53). **IPCA + 15% não é**: o índice do período só existe na época.
+
+Cronograma com valor inventado cobraria o errado com a autoridade de um automatismo, e um degrau de US$ 140 para US$ 140 só fingiria que a regra está implementada. O webhook passa a **gravar a regra e a data de vencimento** — `preco_travado_ate`, `reajuste_indice`, `reajuste_percentual`, no acesso da marina e, quando é fundadora, na linha dela — e a avisar o fundador. Aplicar é ato comercial, com aviso prévio.
+
+Para a regra não ficar guardada onde ninguém acha, o banco ganhou `vw_marinas_a_reajustar`: quem vence o preço travado, para a carta sair **antes** de a fatura subir.
+
+**Padrão a repetir:** quando a regra comercial depende de um número que ainda não existe, o sistema guarda a regra e a data — não inventa o número para poder automatizar.
+
+### Os links de pagamento ficaram vazios, de propósito
+
+Os Payment Links antigos continuam vivos na Stripe cobrando R$ 1.000 e R$ 1.250. **Link que cobra o preço errado é pior que link que não existe**: a marina lê R$ 697,00 na home, paga R$ 1.250 e tem razão em pedir estorno. As quatro variáveis foram zeradas, e o link fixo que o cadastro usava como rede de segurança saiu junto — sem URL, a tela avisa e o cadastro fica salvo.
+
+Continuam sendo **quatro** links mesmo com preço único. Com o valor igual, o link é a **única prova** de qual porta a marina usou: era o valor que separava campanha de site (§6), e isso acabou.
+
+**Padrão a repetir:** ao mudar um preço, o link do preço velho é passivo, não ativo. Zerar a configuração é mais seguro que confiar em lembrar de trocar.
+
+### O que o valor pago ainda identifica, e o que não identifica mais
+
+`_programa_do_checkout` já decidia por metadata, link e reserva (§56) — essas três continuam valendo. O portão por valor virou o que sempre deveria ter sido: *"é uma assinatura de marina no nosso preço"*, e nada além disso. Quem separa campanha de site é o link.
+
+**Padrão a repetir:** reconhecer cliente pelo valor pago só funciona enquanto os valores forem diferentes. É uma coincidência com prazo de validade, e o prazo vence no dia em que o preço muda.
+
+## 61. O programa fundador foi suspenso, não demolido
+**Data:** 14/10/2026
+
+Decisão do Marcos: *"vamos deixar de lado a página fundadora, iremos trabalhar só com a oficial nesse novo valor"*.
+
+### O que mudou
+
+Toda marina que se cadastra recebe a **Oficial a US$ 140/mês**, venha de onde vier — inclusive da campanha de lançamento. `reservar_vaga_fundadora` não é chamada por ninguém.
+
+As 4 vagas por estado, a reserva com prazo, as funções do banco e a lista `ORIGENS_DE_LANCAMENTO` continuam de pé. A porta era **uma** — `leads._oferta_marina` —, então é lá que a suspensão mora inteira, com o caminho de volta escrito na própria docstring.
+
+**Padrão a repetir:** quando um programa inteiro tem uma única porta de entrada, desligar é fechar a porta — não varrer a casa. A diferença aparece no dia de religar.
+
+### O bônus já não existia na prática
+
+A fundadora dava 18 meses de dossiê 100% contra 12 da Oficial. Só que a plataforma **parou de vender dossiê**: ele é pago pelo dono direto à marina, 100% dela, permanente e sem prazo (ver `DOSSIER_REQUIRE_PAYMENT`). Com o preço igualado em §60, a fundadora tinha deixado de entregar qualquer coisa que a Oficial não entregue — a suspensão só reconheceu isso.
+
+**Padrão a repetir:** antes de defender um programa, conferir o que ele ainda entrega de fato. Benefício que o produto já dá a todo mundo não é diferencial, é texto antigo.
+
+### O valor pago respondia duas perguntas, e uma errado
+
+O webhook usava o mesmo teste — `moeda == usd and valor == preço` — para decidir *"esta assinatura é nossa?"* e *"esta marina ganha vaga?"*. Funcionava enquanto os preços eram dois.
+
+Com preço único, **toda marina Oficial pagando em dólar entraria ocupando uma das 4 vagas do estado dela**. As perguntas foram separadas: o valor continua identificando a assinatura (é dele que sai a régua dos 12 meses travados); a vaga passou a exigir prova explícita — metadata `programa` ou o link da campanha em `STRIPE_LINK_MARINA_FUNDADORA`.
+
+**Padrão a repetir:** uma condição que responde duas perguntas de uma vez funciona até as perguntas discordarem — e elas discordam calado, no dia em que o mundo muda em volta.
+
+### O site não pode prometer o que o checkout não entrega
+
+Suspender no backend sem limpar a copy deixaria a página de indicação anunciando *"X de 20 vagas ocupadas"* com contador **ao vivo**: número que o visitante confere e que a venda desmente no clique seguinte.
+
+Saíram o contador, a reserva de 12 horas e as "4 do seu estado" no cadastro, as "condições fundadoras exclusivas" do FAQ, o "no programa fundador" do subtítulo de preço e o bloco *Founder Contract Benefit*. Os dois blocos que falavam de retenção por 18 meses agora dizem a verdade inteira: a receita é da Marina, sem divisão e sem prazo.
+
+**A indicação continua viva** e deixou de depender do fundador: quem indica recebe 100% dos dossiês da indicada por 12 meses, e isso vale para qualquer Marina da rede. Era "o motor que leva de 20 para 40" (§6) e segue sendo, sem as vagas.
+
+**Padrão a repetir:** desligar uma oferta é trabalho de três camadas — venda, texto e banco. Fazer uma só é pior que não fazer nenhuma, porque a página continua vendendo o que o sistema parou de entregar.
+
+## 62. A cota tinha regra, mas não tinha porta
+**Data:** 16/10/2026
+
+Decisão do Marcos: *"temos que cobrar pelo quinto, senão vira casa da mãe Joana. Pode até ser mesmo o valor: $80,00"*.
+
+### O preço, e por que US$ 80
+
+Cada embarcação tem **4 dossiês inclusos por ano**; do 5º em diante a Marina paga **US$ 80** (R$ 397,00), valor único para todo porte — era US$ 150.
+
+A conta que calibra: numa marina de 20 barcos, a assinatura entrega 80 dossiês por ano por US$ 1.680 — **~US$ 21 por dossiê incluso**. US$ 80 é ~4x isso: caro o bastante para ninguém pedir por capricho, barato o bastante para ser **pago** quando é necessário.
+
+É essa a diferença que importa. A US$ 150 havia risco real de a Marina **deixar de emitir** um documento de que precisava — e quem perde aí é o proprietário, na frente dela.
+
+**Valor único, e não pela escada de porte:** o custo de emitir é o mesmo num barco de 30 ou de 100 pés. A escada é o que a Marina cobra do dono dela; isto é taxa de exceção de cota, cobrada da Marina. **A plataforma continua não vendendo dossiê.**
+
+**Padrão a repetir:** o preço de uma exceção não é definido pelo valor do que ela libera, e sim pelo comportamento que se quer provocar. Aqui se quer que a exceção seja resolvida, não evitada.
+
+### O que estava faltando era a porta
+
+A regra "o 5º é pago" existia desde sempre — no FAQ, no site, na cabeça do fundador. **Só que não havia caminho de pagamento.** Estourada a cota, o servidor devolvia 429 com "nova emissão a partir de <daqui a meses>" e a tela dizia "Limite Anual Atingido".
+
+A Marina descobria isso no pior momento possível: na frente do proprietário, precisando do documento. A única saída era ligar para o fundador — o que funciona com cinco marinas e não funciona com quarenta.
+
+**Padrão a repetir:** regra comercial sem caminho de execução não é regra, é um aviso. E o lugar onde ela falta aparece sempre no pior momento, porque é justamente o momento da exceção.
+
+### O crédito é o pagamento
+
+`_saldo_dossie` soma ao limite da janela os extras já pagos (`payments.payment_type='dossie_extra'`). Nenhuma tabela nova de saldo: linha de dinheiro reconcilia com a Stripe e não dessincroniza — saldo paralelo é mais um lugar para divergir.
+
+A identidade do ativo viaja no `client_reference_id` com prefixo `ativo_`. O prefixo não é enfeite: no checkout da assinatura **o mesmo campo carrega o id do usuário**, e sem ele um id de barco entraria como pagador.
+
+**Padrão a repetir:** quando dois fluxos compartilham um campo de transporte, o prefixo é mais barato que a confusão — e a confusão, aqui, gravaria dinheiro no nome de quem não existe.
+
+### O dublê que respondia igual a perguntas diferentes
+
+Os testes da cota tinham um banco falso que **ignorava o nome da tabela**. Quando a consulta de `payments` entrou, cada emissão virou um crédito pago e o saldo nunca baixava — três testes caíram, e o defeito estava no dublê, não no código.
+
+**Padrão a repetir:** dublê que responde a mesma coisa para perguntas diferentes esconde exatamente o tipo de defeito que o teste existe para pegar. Se o código distingue tabelas, o dublê também precisa distinguir.

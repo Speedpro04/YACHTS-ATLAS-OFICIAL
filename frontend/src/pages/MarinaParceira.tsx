@@ -113,24 +113,20 @@ export default function MarinaParceira() {
     return () => clearTimeout(t);
   }, [submitted]);
 
-  // Contador real das 20 vagas fundadoras. Era `TAKEN_SPOTS = 12` chumbado no
-  // código, contra um total de 120 — número inventado, e ainda por cima
-  // contradizendo o próprio título da página. Se a leitura falhar, o bloco
-  // some: melhor não mostrar contador nenhum do que mostrar um número errado
-  // sobre escassez.
-  const [vagas, setVagas] = useState<{ total: number; ocupadas: number } | null>(null);
-
-  useEffect(() => {
-    let ativo = true;
-    api.leads.vagasFundadoras()
-      .then((d) => { if (ativo) setVagas({ total: d.total, ocupadas: d.ocupadas }); })
-      .catch(() => { if (ativo) setVagas(null); });
-    return () => { ativo = false; };
-  }, []);
-
-  const fillPercent = vagas && vagas.total
-    ? Math.round((vagas.ocupadas / vagas.total) * 100)
-    : 0;
+  // AQUI FICAVA O CONTADOR DAS 20 VAGAS FUNDADORAS.
+  //
+  // Saiu com a suspensão do programa (14/10/2026): não há mais vaga para
+  // ocupar, e barra de escassez sobre uma escassez que acabou é a pior
+  // espécie de número na tela — o visitante confere e a página perde a
+  // credibilidade junto.
+  //
+  // A INDICAÇÃO CONTINUA, e é por isso que a página fica: ela não dependia
+  // das vagas. Quem indica recebe 100% dos dossiês da indicada por 12 meses,
+  // e isso vale para qualquer Marina da rede.
+  //
+  // O que alimentava o contador continua vivo e sem uso: a rota
+  // `/api/v1/marina/vagas` no backend e `api.leads.vagasFundadoras()` no
+  // cliente. Religar é devolver este bloco — ver o git log deste arquivo.
 
   return (
     <div className="min-h-screen bg-[#010c20]">
@@ -176,17 +172,6 @@ export default function MarinaParceira() {
             </p>
           </div>
 
-          {vagas && (
-            <div className={styles.spotsRow}>
-              <div className={styles.spotsBar}>
-                <div className={styles.spotsFill} style={{ width: `${fillPercent}%` }} />
-              </div>
-              <span className={styles.spotsText}>
-                <strong>{vagas.ocupadas}</strong> de {vagas.total} vagas ocupadas
-              </span>
-            </div>
-          )}
-
           <div className={styles.pillars}>
             {[
               {
@@ -204,8 +189,11 @@ export default function MarinaParceira() {
                 title: 'Indicação Rentável',
                 text: (
                   <>
+                    {/* Dizia "durante o período fundador". O prazo da indicação
+                        é dela mesma — 12 meses da ativação da indicada, como o
+                        bloco acima já declara —, e não do programa suspenso. */}
                     Marinas parceiras que indicam novos membros para a rede{' '}
-                    <strong>participam dos dossiês gerados</strong> pela indicada durante o período fundador.
+                    <strong>participam dos dossiês gerados</strong> pela indicada durante 12 meses.
                   </>
                 ),
               },

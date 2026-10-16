@@ -28,6 +28,10 @@ import {
   MSG_TELEFONE_INCOMPLETO,
   MSG_EMAIL_INVALIDO,
 } from '../utils/telefone'
+// O valor cobrado nesta tela é o MESMO que a home anuncia na primeira dobra.
+// Ver config/precoServico.ts — e o espelho dele no backend, que é quem fala
+// com a Stripe.
+import { PRECO_SERVICO, precoEmDolar, precoEmReal } from '../config/precoServico'
 
 
 // A regra da senha vive AQUI e em mais nenhum lugar da tela.
@@ -115,9 +119,25 @@ export default function RegistroMarina() {
     setFormData({ ...formData, [name]: name === 'phone' ? soDDDeNumero(value) : value })
   }
 
-  // Fallback quando o cadastro falha antes de o backend dizer a oferta.
-  // Usa o preço oficial: prometer US$ 200 sem confirmar vaga fundadora vira estorno.
-  const STRIPE_MARINA_LINK = 'https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01'
+  // NÃO EXISTE MAIS LINK DE RESERVA ESCRITO AQUI.
+  //
+  // Havia um: quando o backend não dizia a oferta, a tela mandava a marina
+  // para um link fixo de checkout para "não travar a venda". Com o preço
+  // único de US$ 140 (R$ 697,00) esse link virou uma armadilha — ele cobra a
+  // tabela antiga, de R$ 1.250/mês. Mandar para ele quem acabou de ler
+  // R$ 697,00 na home é cobrar quase o dobro do anunciado: estorno, e com
+  // razão.
+  //
+  // Quem escolhe o checkout é o backend (`link_de_checkout`, em
+  // app/core/precos.py), que decide a moeda pela UF e nunca devolve link
+  // vazio disfarçado de válido. Sem URL, a tela diz que não deu e o cadastro
+  // continua salvo — cobrar errado é pior que pedir para tentar de novo.
+  const MSG_CHECKOUT_INDISPONIVEL =
+    'Seu cadastro foi salvo, mas não conseguimos abrir o pagamento agora. ' +
+    'Tente novamente em alguns minutos ou fale com contato@yachtsatlas.online.'
+  const MSG_CADASTRO_FALHOU =
+    'Não conseguimos concluir o cadastro agora. Tente novamente em alguns ' +
+    'minutos ou fale com contato@yachtsatlas.online.'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -174,12 +194,16 @@ export default function RegistroMarina() {
         setSuccess(true)
         return
       }
-      // Checkout escolhido pelo backend: fundadora (USD 200) enquanto houver
-      // uma das 20 vagas, oficial (USD 250) depois.
-      window.location.href = res.checkout_url || STRIPE_MARINA_LINK
+      // Checkout escolhido pelo backend: o preço é o mesmo para todas
+      // (US$ 140 / R$ 697,00) — o que ele escolhe é a MOEDA, pela UF, e qual
+      // dos dois links identifica o programa no webhook.
+      if (!res.checkout_url) {
+        setSubmitError(MSG_CHECKOUT_INDISPONIVEL)
+        return
+      }
+      window.location.href = res.checkout_url
     } catch {
-      // Em caso de falha, não trava a marina: segue para o fluxo pago.
-      window.location.href = STRIPE_MARINA_LINK
+      setSubmitError(MSG_CADASTRO_FALHOU)
     } finally {
       setLoading(false)
     }
@@ -555,8 +579,12 @@ export default function RegistroMarina() {
                           placeholder="Nome ou e-mail da Marina que indicou (opcional)"
                           className="w-full bg-white/5 border-b border-white/10 px-0 py-4 text-lg font-serif focus:outline-none focus:border-gold-500 transition-all placeholder:text-white/5"
                         />
+                        {/* Dizia "durante o período fundador". O programa está
+                            suspenso (14/10/2026) e a indicação não depende
+                            dele: ela vale para qualquer Marina da rede, pelo
+                            prazo do próprio programa de indicação. */}
                         <p className="text-[11px] text-white/30 leading-relaxed">
-                          A Marina que indica participa dos dossiês gerados por você durante o período fundador.
+                          A Marina que indica participa dos dossiês gerados por você durante 12 meses.
                         </p>
                       </div>
                     </div>
@@ -606,7 +634,10 @@ export default function RegistroMarina() {
                   <div className="space-y-10 animate-in slide-in-from-right-8 duration-700">
                     <div className="text-center mb-12">
                        <h2 className="text-3xl font-serif font-bold text-white mb-4">{t('marina_onboarding.payment_title')}</h2>
-                       <p className="text-gold-500 text-4xl font-serif font-bold">$250<span className="text-sm text-white/40 font-['Inter'] font-light"> / mês</span></p>
+                       <p className="text-gold-500 text-4xl font-serif font-bold">{precoEmDolar()}<span className="text-sm text-white/40 font-['Inter'] font-light"> / mês</span></p>
+                       <p className="mt-2 text-white/45 text-sm font-light">
+                         ({precoEmReal()} / mês) · valor travado por {PRECO_SERVICO.mesesTravado} meses
+                       </p>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 p-10 rounded-sm space-y-8">
@@ -621,7 +652,7 @@ export default function RegistroMarina() {
                              </div>
                           </div>
                           <div className="text-right">
-                             <span className="text-2xl font-serif font-bold text-gold-500">$250</span>
+                             <span className="text-2xl font-serif font-bold text-gold-500">{precoEmDolar()}</span>
                              <span className="text-[10px] text-white/20 uppercase ml-2">/ mês</span>
                           </div>
                        </div>
@@ -650,14 +681,20 @@ export default function RegistroMarina() {
                           </div>
                        </div>
 
+                       {/* A cláusula falava do "contrato fundador" e de 18 meses
+                           de retenção. O programa fundador está suspenso
+                           (14/10/2026) e a receita do dossiê não passa mais
+                           pela plataforma: ela vai direto da marina para o
+                           dono, 100% dela, sem prazo. Prometer "18 meses" era
+                           prometer menos do que se entrega. */}
                        <div className="pt-2">
                           <div className="p-4 bg-[#021431] border border-[#c5a059]/30 rounded-sm">
                              <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
                                 Clausula Comercial de Dossies
                              </p>
                              <p className="text-white/70 text-[12px] leading-relaxed">
-                                Para parceiros aprovados no contrato fundador: receita de dossies com retencao integral por 18 meses,
-                                com marco inicial na ativacao da conta e demais condicoes definidas em instrumento contratual.
+                                A receita dos dossiês é integralmente da Marina: o dossiê é pago pelo proprietário
+                                diretamente a ela, sem divisão com a plataforma e sem prazo de carência.
                              </p>
                           </div>
                        </div>
@@ -712,28 +749,23 @@ export default function RegistroMarina() {
                    </div>
                   </div>
 
-                   {/* O que acontece depois do botão. Prazo que o cliente não
-                       conhece é armadilha: a vaga fundadora fica presa por 12h
-                       (MINUTOS_DE_RESERVA_VAGA) e some depois disso — quem
-                       voltar tarde pagaria US$ 250 sem entender por quê. */}
+                   {/* O que acontece depois do botão.
+
+                       Aqui havia o prazo da vaga fundadora — "reservada por 12
+                       horas", "passadas as 12h ela volta para as 4 do seu
+                       estado". Saiu com a suspensão do programa (14/10/2026):
+                       não existe mais vaga para reservar, e prazo de uma
+                       escassez que acabou é pressão sem lastro. O resto do
+                       texto continua, porque continua verdade. */}
                    <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35 max-w-md mx-auto">
                      Ao concluir, você verá um <strong className="text-white/60 font-semibold">vídeo curto</strong> do
                      fundador explicando como o sistema funciona — e em seguida
                      finaliza o pagamento.
                      <br />
-                     {/* 12h espelha MINUTOS_DE_RESERVA_VAGA (720) no config.py do
-                         backend. Quem preenche raramente é quem decide: o gerente
-                         costuma levar ao conselho ou ao dono. Se mudar lá, muda aqui. */}
-                     Sua vaga está <strong className="text-gold-500/80 font-semibold">reservada por 12 horas</strong> —
-                     tempo de levar a decisão a quem precisa aprovar.
-                     <br />
                      Ao concluir, tudo o que a sua Marina faz passa a existir em
                      <strong className="text-white/60 font-semibold"> banco de dados</strong>: cada serviço com data,
                      autor e assinatura digital, no nome dela. É o primeiro dia em
                      que o trabalho dela deixa de depender de quem lembra.
-                     <br />
-                     Passadas as 12 horas, a vaga volta para as
-                     <strong className="text-gold-500/80 font-semibold"> 4 do seu estado</strong>.
                      <br />
                      {/* Depois de pagar, a marina sai daqui para a Stripe. Sem
                          dizer o que esperar, ela fica sem saber se deu certo —
@@ -744,12 +776,18 @@ export default function RegistroMarina() {
 
                    {/* O preço é em dólar, mas marina brasileira é cobrada em real —
                        o servidor escolhe o link pela UF (ver leads._checkout). Sem
-                       dizer isso aqui, ela vê US$ 250 na tela e R$ 1.250 no checkout
-                       e acha que trocaram o preço no meio do caminho. */}
+                       dizer isso aqui, ela vê o dólar na tela e o real no checkout
+                       e acha que trocaram o preço no meio do caminho. Os dois
+                       valores saem de precoServico.ts, então não há como um
+                       envelhecer sem o outro. */}
                    <p className="mt-4 text-center text-[11px] leading-relaxed text-white/30 max-w-md mx-auto">
                      Marina no Brasil? A cobrança é feita em <strong className="text-white/50 font-semibold">reais
-                     — R$ 1.250/mês</strong>, valor equivalente, <strong className="text-white/50 font-semibold">sem
+                     — {precoEmReal()}/mês</strong>, valor equivalente, <strong className="text-white/50 font-semibold">sem
                      IOF</strong> nem taxa de compra internacional.
+                     <br />
+                     O valor fica travado por <strong className="text-white/50 font-semibold">{PRECO_SERVICO.mesesTravado} meses</strong>.
+                     A partir do 13º, a correção é por <strong className="text-white/50 font-semibold">{PRECO_SERVICO.reajusteIndice} + {PRECO_SERVICO.reajustePercentual}%</strong>,
+                     avisada antes de entrar na fatura.
                    </p>
                 </div>
               </div>
