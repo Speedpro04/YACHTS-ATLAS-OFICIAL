@@ -1907,3 +1907,42 @@ Saíram o contador, a reserva de 12 horas e as "4 do seu estado" no cadastro, as
 **A indicação continua viva** e deixou de depender do fundador: quem indica recebe 100% dos dossiês da indicada por 12 meses, e isso vale para qualquer Marina da rede. Era "o motor que leva de 20 para 40" (§6) e segue sendo, sem as vagas.
 
 **Padrão a repetir:** desligar uma oferta é trabalho de três camadas — venda, texto e banco. Fazer uma só é pior que não fazer nenhuma, porque a página continua vendendo o que o sistema parou de entregar.
+
+## 62. A cota tinha regra, mas não tinha porta
+**Data:** 16/10/2026
+
+Decisão do Marcos: *"temos que cobrar pelo quinto, senão vira casa da mãe Joana. Pode até ser mesmo o valor: $80,00"*.
+
+### O preço, e por que US$ 80
+
+Cada embarcação tem **4 dossiês inclusos por ano**; do 5º em diante a Marina paga **US$ 80** (R$ 397,00), valor único para todo porte — era US$ 150.
+
+A conta que calibra: numa marina de 20 barcos, a assinatura entrega 80 dossiês por ano por US$ 1.680 — **~US$ 21 por dossiê incluso**. US$ 80 é ~4x isso: caro o bastante para ninguém pedir por capricho, barato o bastante para ser **pago** quando é necessário.
+
+É essa a diferença que importa. A US$ 150 havia risco real de a Marina **deixar de emitir** um documento de que precisava — e quem perde aí é o proprietário, na frente dela.
+
+**Valor único, e não pela escada de porte:** o custo de emitir é o mesmo num barco de 30 ou de 100 pés. A escada é o que a Marina cobra do dono dela; isto é taxa de exceção de cota, cobrada da Marina. **A plataforma continua não vendendo dossiê.**
+
+**Padrão a repetir:** o preço de uma exceção não é definido pelo valor do que ela libera, e sim pelo comportamento que se quer provocar. Aqui se quer que a exceção seja resolvida, não evitada.
+
+### O que estava faltando era a porta
+
+A regra "o 5º é pago" existia desde sempre — no FAQ, no site, na cabeça do fundador. **Só que não havia caminho de pagamento.** Estourada a cota, o servidor devolvia 429 com "nova emissão a partir de <daqui a meses>" e a tela dizia "Limite Anual Atingido".
+
+A Marina descobria isso no pior momento possível: na frente do proprietário, precisando do documento. A única saída era ligar para o fundador — o que funciona com cinco marinas e não funciona com quarenta.
+
+**Padrão a repetir:** regra comercial sem caminho de execução não é regra, é um aviso. E o lugar onde ela falta aparece sempre no pior momento, porque é justamente o momento da exceção.
+
+### O crédito é o pagamento
+
+`_saldo_dossie` soma ao limite da janela os extras já pagos (`payments.payment_type='dossie_extra'`). Nenhuma tabela nova de saldo: linha de dinheiro reconcilia com a Stripe e não dessincroniza — saldo paralelo é mais um lugar para divergir.
+
+A identidade do ativo viaja no `client_reference_id` com prefixo `ativo_`. O prefixo não é enfeite: no checkout da assinatura **o mesmo campo carrega o id do usuário**, e sem ele um id de barco entraria como pagador.
+
+**Padrão a repetir:** quando dois fluxos compartilham um campo de transporte, o prefixo é mais barato que a confusão — e a confusão, aqui, gravaria dinheiro no nome de quem não existe.
+
+### O dublê que respondia igual a perguntas diferentes
+
+Os testes da cota tinham um banco falso que **ignorava o nome da tabela**. Quando a consulta de `payments` entrou, cada emissão virou um crédito pago e o saldo nunca baixava — três testes caíram, e o defeito estava no dublê, não no código.
+
+**Padrão a repetir:** dublê que responde a mesma coisa para perguntas diferentes esconde exatamente o tipo de defeito que o teste existe para pegar. Se o código distingue tabelas, o dublê também precisa distinguir.

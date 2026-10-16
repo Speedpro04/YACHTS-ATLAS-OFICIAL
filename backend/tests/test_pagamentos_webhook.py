@@ -240,6 +240,60 @@ def test_renovacao_mensal_e_registrada(supabase_falso):
     assert gravados[0]["usuario_id"] == "user-uuid-1"
 
 
+# --------------------------------------------------------------------------
+# Dossiê além da cota — o 5º do mesmo ativo no mesmo ano
+# --------------------------------------------------------------------------
+
+def _sessao_dossie_extra(ativo_id="YA-IATE-2020-XXXX", session_id="cs_extra"):
+    """Pagamento único vindo do link do dossiê adicional.
+
+    A identidade que viaja é o ATIVO, com prefixo `ativo_` — posta por
+    api/v1/dossie.checkout_dossie_extra.
+    """
+    sessao = _sessao(settings.PRECO_DOSSIE_EXTRA_USD * 100, {},
+                     session_id=session_id, mode="payment")
+    sessao.client_reference_id = f"ativo_{ativo_id}"
+    return sessao
+
+
+def test_dossie_extra_grava_o_pagamento_no_ativo(supabase_falso):
+    """É esta linha que devolve a emissão à marina (ver dossie._saldo_dossie)."""
+    registro = supabase_falso(origem=[{"usuario_id": "marina-do-barco"}])
+
+    StripeService()._handle_checkout_completed(_sessao_dossie_extra())
+
+    pagamentos = [p for tabela, p in registro["inserts"] if tabela == "payments"]
+    assert len(pagamentos) == 1
+    assert pagamentos[0]["payment_type"] == "dossie_extra"
+    assert pagamentos[0]["ativo_id"] == "YA-IATE-2020-XXXX"
+    # O dono do pagamento é a marina DO BARCO, descoberta pelo ativo — e não
+    # quem por acaso tem o e-mail do checkout.
+    assert pagamentos[0]["usuario_id"] == "marina-do-barco"
+
+
+def test_identidade_de_ativo_nunca_vira_pagador(supabase_falso):
+    """O mesmo campo carrega o USUÁRIO no checkout da assinatura.
+
+    Sem o prefixo separando os dois, um id de barco entraria como `usuario_id`
+    — e o pagamento ficaria no nome de alguém que não existe.
+    """
+    registro = supabase_falso(origem=[{"usuario_id": "marina-do-barco"}])
+
+    StripeService()._handle_checkout_completed(_sessao_dossie_extra())
+
+    pagamentos = [p for tabela, p in registro["inserts"] if tabela == "payments"]
+    assert not str(pagamentos[0]["usuario_id"]).startswith("ativo_")
+
+
+def test_dossie_extra_nao_ocupa_vaga_nem_libera_acesso(supabase_falso):
+    """É pagamento avulso de cota, não assinatura de marina."""
+    registro = supabase_falso(origem=[{"usuario_id": "marina-do-barco"}])
+
+    StripeService()._handle_checkout_completed(_sessao_dossie_extra())
+
+    assert not _ocupou_vaga(registro)
+
+
 def test_lookup_key_separa_precos_diferentes():
     """Foi a busca por valor que quebrou todo checkout criado pela API."""
     chave = StripeService._lookup_key

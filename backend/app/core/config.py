@@ -214,7 +214,37 @@ class Settings(BaseSettings):
     # Em variável de ambiente porque durante os ensaios o mesmo barco é usado
     # dezenas de vezes: sobe o número, testa, baixa de novo — sem deploy. O
     # padrão 4 é a regra comercial; mexer nele é exceção, não rotina.
+    #
+    # CUIDADO AO SUBIR PARA ENSAIO: o valor vale para TODAS as marinas, e a
+    # cota passou a ter preço (PRECO_DOSSIE_EXTRA_USD). Subiu para testar,
+    # baixa depois — senão o limite que se cobra para exceder simplesmente
+    # não é aplicado. Usar mais barcos de demonstração costuma ser melhor que
+    # mexer aqui.
     DOSSIE_LIMITE_ANUAL: int = int(os.getenv("DOSSIE_LIMITE_ANUAL", "4"))
+
+    # O 5º dossiê do mesmo ativo no mesmo ano: a marina paga para exceder.
+    #
+    # ISTO NÃO É A PLATAFORMA VENDENDO DOSSIÊ — ela não vende (o dossiê é pago
+    # pelo dono do barco direto à marina, 100% dela, ver DOSSIER_REQUIRE_PAYMENT).
+    # É taxa de EXCEÇÃO DE COTA, cobrada da marina, e existe para a cota
+    # significar alguma coisa: cota sem preço não é limite, é sugestão.
+    #
+    # Valor único, igual para todo porte: o custo de emitir é o mesmo num barco
+    # de 30 ou de 100 pés — geração, selo e guarda. A escada por tamanho vale
+    # para o que a marina cobra do dono dela, não para isto.
+    #
+    # US$ 80 contra ~US$ 21 do dossiê incluso (US$ 1.680/ano ÷ 80 dossiês numa
+    # marina de 20 barcos): caro o bastante para ninguém pedir por capricho,
+    # barato o bastante para ser PAGO quando é necessário — e é isso que se
+    # quer, porque a exceção precisa ser resolvida, não evitada.
+    PRECO_DOSSIE_EXTRA_USD: int = 80
+    PRECO_DOSSIE_EXTRA_BRL: int = 397
+
+    # Pagamento único (NÃO recorrente). Vazios até existirem na Stripe: sem
+    # link, a tela diz que a liberação é com a Yachts Atlas em vez de oferecer
+    # um botão que não leva a lugar nenhum.
+    STRIPE_LINK_DOSSIE_EXTRA: str = os.getenv("STRIPE_LINK_DOSSIE_EXTRA", "")
+    STRIPE_LINK_DOSSIE_EXTRA_BRL: str = os.getenv("STRIPE_LINK_DOSSIE_EXTRA_BRL", "")
 
     # Quanto tempo a vaga fundadora fica presa no nome da marina entre o
     # cadastro e o pagamento. Eram 60 min, suficiente enquanto o cadastro caía

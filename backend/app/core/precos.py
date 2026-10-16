@@ -58,3 +58,35 @@ def link_de_checkout(fundadora: bool, uf: str | None = None) -> tuple[str, str]:
         if url.strip():
             return url.strip(), moeda
     return "", ""
+
+
+def link_do_dossie_extra(uf: str | None = None) -> tuple[str, str]:
+    """
+    Devolve (url, moeda) do checkout do dossie ALEM DA COTA.
+
+    Mesma regra de moeda do checkout da assinatura — marina brasileira paga em
+    real —, e pela mesma razao: cartao empresarial brasileiro recusa cobranca
+    internacional com frequencia, e este pagamento acontece no pior momento
+    possivel, com a marina na frente do cliente precisando do documento.
+
+    E pagamento UNICO, nao assinatura. Sem link configurado devolve ("", ""),
+    e quem chama mostra "fale com a Yachts Atlas" em vez de um botao morto.
+    """
+    em_real = settings.STRIPE_LINK_DOSSIE_EXTRA_BRL or ""
+    em_dolar = settings.STRIPE_LINK_DOSSIE_EXTRA or ""
+
+    if e_do_brasil(uf):
+        preferencia = ((em_real, "brl"), (em_dolar, "usd"))
+    else:
+        preferencia = ((em_dolar, "usd"), (em_real, "brl"))
+
+    for url, moeda in preferencia:
+        if url.strip():
+            return url.strip(), moeda
+    return "", ""
+
+
+def preco_do_dossie_extra(moeda: str) -> int:
+    """Quanto custa o dossie extra na moeda em que ele vai ser cobrado."""
+    return (settings.PRECO_DOSSIE_EXTRA_BRL if (moeda or "").lower() == "brl"
+            else settings.PRECO_DOSSIE_EXTRA_USD)

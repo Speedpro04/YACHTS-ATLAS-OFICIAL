@@ -8,7 +8,7 @@ import { FAIXAS_DOSSIE, formatarPreco } from '../config/precosDossie'
 // cadastro lê (ver config/precoServico.ts). A home anuncia e o checkout
 // cobra: dois números escritos à mão para o mesmo valor é promessa quebrada
 // esperando a hora.
-import { PRECO_SERVICO, precoEmDolar, precoEmReal } from '../config/precoServico'
+import { PRECO_SERVICO, precoEmDolar, precoEmReal, PRECO_DOSSIE_EXTRA, precoExtraEmDolar } from '../config/precoServico'
 // A capacidade fotografica vem da MESMA constante que o painel e o backend
 // usam (MAX_FOTOS = soma dos minimos de COBERTURA_CATS). Estava escrita a mao
 // como "430" aqui e "400" no Lancamento, enquanto o sistema permitia 460 --
@@ -46,7 +46,7 @@ const FAQS = [
   },
   {
     q: 'Sou uma Marina. Como funciona a parceria?',
-    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
+    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 80 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
   },
 ]
 
@@ -663,8 +663,8 @@ export default function LandingPage() {
                 </p>
                 <p className="text-white/60 text-sm leading-relaxed">
                   Cada embarcação registrada na rede Atlas conta com{' '}
-                  <span className="text-[#c5a059] font-semibold">4 dossiês por ano</span>, inclusos na parceria — emitidos conforme demanda do proprietário. Dossiês adicionais além do quarto estão disponíveis por{' '}
-                  <span className="text-white/80 font-semibold">US$ 150 por dossiê</span>.
+                  <span className="text-[#c5a059] font-semibold">{PRECO_DOSSIE_EXTRA.inclusosPorAno} dossiês por ano</span>, inclusos na parceria — emitidos conforme demanda do proprietário. O limite preserva o valor de cada documento; dossiês adicionais além do quarto saem por{' '}
+                  <span className="text-white/80 font-semibold">{precoExtraEmDolar()} por dossiê</span>.
                 </p>
               </div>
 

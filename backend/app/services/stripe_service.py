@@ -662,6 +662,66 @@ class StripeService:
         )
         return {u.strip(): programa for u, programa in pares if u and u.strip()}
 
+    def _e_link_do_dossie_extra(self, session) -> bool:
+        """Este checkout veio do link do dossie alem da cota?"""
+        links = {u.strip() for u in (settings.STRIPE_LINK_DOSSIE_EXTRA,
+                                     settings.STRIPE_LINK_DOSSIE_EXTRA_BRL) if u and u.strip()}
+        if not links:
+            return False
+        url = self._url_do_payment_link(session)
+        return bool(url and url.strip() in links)
+
+    def _ativo_do_dossie_extra(self, session, metadata: Optional[dict]) -> Optional[str]:
+        """
+        Qual ativo este pagamento libera — se for dossie ALEM DA COTA.
+
+        Duas provas, na ordem de confianca de sempre: metadata declarado no
+        painel, e a identidade que viaja no proprio link (`client_reference_id`
+        com prefixo `ativo_`, posta por api/v1/dossie.checkout_dossie_extra).
+
+        O prefixo nao e enfeite: no checkout da assinatura o MESMO campo carrega
+        o id do USUARIO. Sem ele, um id de ativo entraria como pagador.
+        """
+        declarado = (metadata or {}).get("ativo_id")
+        if (metadata or {}).get("programa") == "dossie_extra" and declarado:
+            return str(declarado)
+
+        ref = getattr(session, "client_reference_id", None) or ""
+        if isinstance(ref, str) and ref.startswith("ativo_"):
+            return ref[len("ativo_"):].strip() or None
+
+        # Pagou pelo link do extra sem dizer qual barco. Acontece se alguem
+        # abrir a URL "pelada", fora da tela que a monta. O dinheiro entrou e
+        # nenhum ativo foi liberado — tem que chegar em gente.
+        if self._e_link_do_dossie_extra(session):
+            logger.error(
+                f"Dossie extra pago sem identificar o ativo (checkout {session.id})"
+            )
+            try:
+                from app.services.notify_service import notificar_fundador
+                notificar_fundador(
+                    "Dossie extra pago sem ativo identificado",
+                    f"Checkout {session.id} veio do link de dossie adicional, mas sem "
+                    f"`client_reference_id`. O credito NAO foi lancado em nenhum barco.\n"
+                    f"Descubra com a marina qual e o ativo e libere a emissao na mao.",
+                )
+            except Exception:
+                pass
+        return None
+
+    @staticmethod
+    def _marina_do_ativo(ativo_id: str) -> Optional[str]:
+        """De quem e o ativo. `payments.usuario_id` e NOT NULL."""
+        try:
+            from app.core.supabase import get_supabase_admin
+            res = (get_supabase_admin().table("ativos")
+                   .select("usuario_id").eq("id", str(ativo_id)).limit(1).execute())
+            linhas = res.data or []
+            return str(linhas[0].get("usuario_id")) if linhas else None
+        except Exception as e:  # noqa: BLE001 — best-effort, como o resto do webhook
+            logger.error(f"Falha ao descobrir a marina do ativo {ativo_id}: {e}")
+            return None
+
     @staticmethod
     def _tem_reserva_de_fundadora(email: Optional[str]) -> bool:
         """
@@ -815,6 +875,27 @@ class StripeService:
             or bool(getattr(session, "subscription", None))
         )
 
+        # DOSSIÊ ALÉM DA COTA — o 5º do mesmo ativo no mesmo ano.
+        #
+        # Não é assinatura, e não é a plataforma vendendo dossiê (ela não
+        # vende): é a marina pagando para exceder a própria cota. Chega por
+        # Payment Link de pagamento único, e o que viaja nele é o ATIVO.
+        #
+        # Resolvido AQUI, antes do bloco logo abaixo, porque lá o
+        # `client_reference_id` é lido como id de USUÁRIO — e um id de ativo
+        # entrando ali gravaria o pagamento no nome de alguém que não existe.
+        ativo_extra = self._ativo_do_dossie_extra(session, metadata)
+        if ativo_extra:
+            payment_type = "dossie_extra"
+            # O ativo entra no metadata porque é de lá que o insert de
+            # `payments` tira a coluna `ativo_id` — e é por essa coluna que a
+            # cota encontra o crédito depois (ver dossie._saldo_dossie).
+            metadata = {**(dict(metadata) if metadata else {}), "ativo_id": ativo_extra}
+            user_id = user_id or self._marina_do_ativo(ativo_extra)
+            logger.info(
+                f"Checkout {session.id}: dossie extra do ativo {ativo_extra}"
+            )
+
         # `client_reference_id` viaja no link que o backend entregou à marina e
         # NÃO depende de qual e-mail ela usou para pagar. Vem antes do e-mail
         # de propósito: a carteira Link da Stripe usa o endereço da carteira,
@@ -822,8 +903,10 @@ class StripeService:
         # pagamento ficava órfão e o acesso não era liberado. Ver
         # `_link_com_identidade` em api/v1/leads.py.
         if not user_id:
-            user_id = getattr(session, "client_reference_id", None) or None
-            if user_id:
+            ref = getattr(session, "client_reference_id", None) or None
+            # `ativo_...` é identidade de BARCO, não de pagador (ver acima).
+            if ref and not str(ref).startswith("ativo_"):
+                user_id = ref
                 logger.info(f"Checkout {session.id}: pagador identificado pelo link")
 
         cliente_email = self._email_do_checkout(session, metadata)

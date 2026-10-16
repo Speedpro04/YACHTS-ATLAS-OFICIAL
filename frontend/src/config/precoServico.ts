@@ -36,6 +36,29 @@ export const PRECO_SERVICO = {
   reajustePercentual: 15,
 } as const
 
+/**
+ * O dossiê ALÉM da cota: o 5º do mesmo ativo no mesmo ano.
+ *
+ * Cada embarcação tem 4 dossiês inclusos por ano. O limite existe para o
+ * documento continuar sendo um EVENTO — se a mesma lancha gera 40 por ano,
+ * cada um vale menos e a trilha de verificação vira ruído.
+ *
+ * E cota sem preço não é limite, é sugestão: por isso o 5º é pago. Valor
+ * único, igual para todo porte — o custo de emitir é o mesmo num barco de 30
+ * ou de 100 pés. Espelha PRECO_DOSSIE_EXTRA_USD/_BRL no backend.
+ */
+export const PRECO_DOSSIE_EXTRA = {
+  usd: 80,
+  brl: 397,
+  /** Dossiês inclusos por embarcação, por ano. Espelha DOSSIE_LIMITE_ANUAL. */
+  inclusosPorAno: 4,
+} as const
+
+/** "US$ 80" */
+export function precoExtraEmDolar(): string {
+  return 'US$ ' + PRECO_DOSSIE_EXTRA.usd.toLocaleString('pt-BR')
+}
+
 /** "US$ 140" */
 export function precoEmDolar(): string {
   return 'US$ ' + PRECO_SERVICO.usd.toLocaleString('pt-BR')

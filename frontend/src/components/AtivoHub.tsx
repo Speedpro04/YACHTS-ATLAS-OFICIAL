@@ -562,6 +562,10 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
   // O que decide o que o gerente faz é o número NA TELA: ele lê "ainda pode
   // gerar" e promete o dossiê ao cliente. Por isso o conserto não é só gravar
   // certo — é a tela perguntar a quem sabe.
+  // A saída paga para emitir ALÉM da cota. Buscada só quando a cota estourou:
+  // é a única hora em que ela importa, e é rara por construção.
+  const [extra, setExtra] = useState<{ disponivel: boolean; url: string; moeda: string; preco: number } | null>(null)
+
   const verificarLimite = async () => {
     try {
       const s = await api.dossie.saldo(ativo.id)
@@ -571,6 +575,11 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
         limiteAnual: s.limite ?? 0,
         resetDate: s.reset_em ? new Date(s.reset_em) : undefined,
       })
+      if (!s.permitido) {
+        api.dossie.extra(ativo.id).then(setExtra).catch(() => setExtra(null))
+      } else {
+        setExtra(null)
+      }
     } catch {
       // Falhar aqui não pode travar a marina: o servidor recusa a emissão de
       // qualquer forma, então o botão segue habilitado e o erro aparece lá.
@@ -696,15 +705,52 @@ function DossieGeradorView({ ativo, onBack }: { ativo: Ativo; onBack: () => void
             )}
           </div>
         ) : (
+          /* O LIMITE ATINGIDO DEIXOU DE SER UM MURO.
+             Até 16/10/2026 este card só dizia "volte em <daqui a meses>", e a
+             marina lia isso na frente do proprietário, precisando do
+             documento. A regra comercial sempre foi "o 5º é pago" — faltava a
+             porta. Sem link configurado o botão não aparece, e aí o caminho é
+             falar com a Yachts Atlas: botão morto neste momento é pior que
+             nenhum botão.
+             O número vem de `limite.limiteAnual`, não escrito à mão: ele é
+             variável de ambiente e já divergiu do texto antes. */
           <div className="bg-amber-500/10 border border-[#c5a059]/40 rounded-sm p-6 text-center space-y-3">
             <AlertTriangle className="mx-auto text-[#c5a059]" size={32} />
             <h3 className="text-white text-base font-bold font-serif">Limite Anual Atingido</h3>
             <p className="text-white/60 text-xs max-w-sm mx-auto">
-              Esta embarcação atingiu o limite de 4 dossiês gerados por ano para evitar descontrole de versões.
+              Esta embarcação atingiu o limite de {limite.limiteAnual || 4} dossiês inclusos por ano,
+              que existe para preservar o valor de cada documento emitido.
             </p>
             {limite.resetDate && (
               <p className="text-[#c5a059] text-xs font-black uppercase tracking-wider mt-2">
-                Próxima emissão disponível em: {limite.resetDate.toLocaleDateString('pt-BR')}
+                Próxima emissão inclusa em: {limite.resetDate.toLocaleDateString('pt-BR')}
+              </p>
+            )}
+
+            {extra?.disponivel ? (
+              <div className="pt-4 mt-2 border-t border-[#c5a059]/20 space-y-3">
+                <p className="text-white/60 text-xs max-w-sm mx-auto">
+                  Precisa emitir agora? Este ativo pode receber um{' '}
+                  <strong className="text-white/80">dossiê adicional</strong> por{' '}
+                  <strong className="text-[#c5a059]">
+                    {extra.moeda === 'brl'
+                      ? `R$ ${extra.preco.toLocaleString('pt-BR')},00`
+                      : `US$ ${extra.preco}`}
+                  </strong>.
+                </p>
+                <a
+                  href={extra.url}
+                  className="inline-flex items-center gap-2 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 py-3 rounded-sm text-[10px] font-black uppercase tracking-[0.25em] transition-all"
+                >
+                  Emitir dossiê adicional
+                </a>
+                <p className="text-white/30 text-[10px]">
+                  Após o pagamento, a emissão é liberada para esta embarcação.
+                </p>
+              </div>
+            ) : (
+              <p className="text-white/35 text-[11px] max-w-sm mx-auto pt-2">
+                Precisa emitir antes disso? Fale com a Yachts Atlas — existe emissão adicional avulsa.
               </p>
             )}
           </div>
