@@ -33,7 +33,6 @@ const RegistroMarina = lazy(() => import('./pages/RegistroMarina'))
 const MarinaParceira = lazy(() => import('./pages/MarinaParceira'))
 const SejaParceiro = lazy(() => import('./pages/SejaParceiro'))
 const SolicitarDossie = lazy(() => import('./pages/SolicitarDossie'))
-const TermosFundadores = lazy(() => import('./pages/TermosFundadores'))
 const Privacidade = lazy(() => import('./pages/Privacidade'))
 const SuccessOnboarding = lazy(() => import('./pages/SuccessOnboarding'))
 
@@ -95,7 +94,6 @@ function App() {
           <Route path="/marina-parceira" element={<MarinaParceira />} />
           <Route path="/seja-parceiro" element={<SejaParceiro />} />
           <Route path="/solicitar-dossie" element={<SolicitarDossie />} />
-          <Route path="/termos-fundadores" element={<TermosFundadores />} />
           <Route path="/privacidade" element={<Privacidade />} />
           {/* Pública, sem login: destino do QR impresso no dossiê. */}
           {/* Sem protocolo: entrada manual. O dossie impresso manda "acesse o

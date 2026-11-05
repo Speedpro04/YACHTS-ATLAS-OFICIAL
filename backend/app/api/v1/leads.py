@@ -2,7 +2,7 @@
 Yachts Atlas — Leads (marinas e parceiros)
 """
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -32,108 +32,16 @@ def _origem_valida(valor: Optional[str]) -> str:
     v = (valor or "").strip().lower()
     return v if v in ORIGENS_DE_INDICACAO else "desconhecida"
 
-# Oferta da marina paga: 4 vagas fundadoras POR ESTADO a US$ 200/mes
-# (SC/SP/RJ/ES/BA = 20 no total), depois US$ 250.
-# Os links ficam em env para trocar de conta Stripe sem rebuild do frontend.
-# Quantidade e precos vem do config para nao existirem dois numeros de
-# lancamento diferentes no mesmo sistema.
-VAGAS_POR_ESTADO = settings.LAUNCH_SLOTS_PER_STATE
-MINUTOS_DE_RESERVA = settings.MINUTOS_DE_RESERVA_VAGA
 
-# Origens que vendem a vaga fundadora de US$ 200. Só a campanha de lançamento
-# entra aqui — o site oficial trabalha a tabela de US$ 250. Qualquer valor fora
-# desta lista (inclusive vazio) cai na oferta oficial: preferir cobrar a mais de
-# quem merecia menos, que se conserta devolvendo a diferença, a queimar uma das
-# 20 vagas com quem nunca viu a campanha, que não se conserta.
-ORIGENS_DE_LANCAMENTO = frozenset({"lancamento", "lançamento", "lp-fundadoras", "lp-lancamento"})
-# Vêm do config: o porteiro do acesso (app/core/acesso.py) precisa dos mesmos
-# links para mandar a marina bloqueada ao checkout do preço que ela contratou.
-# A escolha do link mora em app/core/precos.py — mesma regra que a tela de
-# acesso bloqueado usa. Reexportado aqui porque os testes importam por este nome.
-_checkout = link_de_checkout
-
-
-def _oferta_oficial(uf: str | None = None) -> dict:
-    """Oferta do site oficial: US$ 250/mês, sem vaga fundadora envolvida."""
-    url, moeda = _checkout(fundadora=False, uf=uf)
+def _oferta_marina(uf: str | None = None) -> dict:
+    """A oferta é uma só: R$ 897/mês para toda marina, venha de onde vier."""
+    url, moeda = link_de_checkout()
     return {
         "oferta": "oficial",
-        "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
-        "uf": None,
-        "vagas_restantes": None,
-        "motivo": "fora_da_campanha_de_lancamento",
+        "preco_mensal": settings.PRECO_MENSAL_BRL,
+        "uf": (uf or "").strip().upper() or None,
         "checkout_url": url,
         "moeda_cobranca": moeda,
-        "reserva_minutos": None,
-        "reserva_expira_em": None,
-    }
-
-
-def _oferta_marina(supabase, data) -> dict:
-    """
-    Escolhe o checkout da marina paga e JA RESERVA a vaga fundadora.
-
-    Sao 4 vagas por ESTADO (SC/SP/RJ/ES/BA). Marina de qualquer outro estado
-    vai direto para a oferta oficial de US$ 250 — antes o estado era coletado
-    no formulario e descartado, entao 20 marinas de um mesmo estado podiam
-    tomar todas as vagas e zerar os outros quatro.
-
-    A vaga e reservada aqui, e nao so no pagamento: entre preencher o
-    formulario e pagar havia uma janela em que todas viam "tem vaga" e recebiam
-    o link de US$ 200, dando para ter mais gente paga a preco de fundadora do
-    que vaga para honrar. A reserva vence sozinha em MINUTOS_DE_RESERVA.
-
-    Exige service role: marinas_fundadoras tem RLS sem politica publica.
-    """
-    # O preco de fundadora pertence a CAMPANHA de lancamento, nao ao estado da
-    # marina. Quem chega pelo site oficial paga a tabela oficial, mesmo estando
-    # em SC/SP/RJ/ES/BA e mesmo havendo vaga livre — senao as 20 vagas somem
-    # para quem nunca viu a campanha, e a exclusividade da LP nao vale nada.
-    if (getattr(data, "origem", None) or "").strip().lower() not in ORIGENS_DE_LANCAMENTO:
-        return _oferta_oficial(getattr(data, "state", None))
-
-    try:
-        res = supabase.rpc("reservar_vaga_fundadora", {
-            "p_email": data.email,
-            "p_uf": data.state or "",
-            "p_marina_nome": data.name,
-            "p_responsavel": data.name,
-            "p_telefone": data.phone,
-            "p_minutos": MINUTOS_DE_RESERVA,
-        }).execute()
-        reserva = res.data if isinstance(res.data, dict) else {}
-    except Exception as e:
-        # Sem reserva confirmada, manda para o oficial. Cobrar US$ 250 de quem
-        # merecia US$ 200 se conserta devolvendo a diferenca; cobrar US$ 200 de
-        # quem nao tem vaga cria uma obrigacao impossivel — nao existe 5a vaga
-        # em estado nenhum.
-        logger.error(f"Falha ao reservar vaga fundadora para {data.email}: {e}")
-        reserva = {}
-
-    fundadora = reserva.get("modo") == "fundadora"
-
-    # Hora em que a vaga volta para a fila, para a tela mostrar o prazo exato
-    # ("reservada até 14h32") em vez de um "12 horas" que a marina precisa
-    # cronometrar sozinha. Só existe quando há reserva: quem já está ativa não
-    # tem prazo correndo contra ela.
-    expira_em = None
-    if fundadora and reserva.get("status") != "ja_ativa":
-        expira_em = (
-            datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_DE_RESERVA)
-        ).isoformat()
-
-    url, moeda = _checkout(fundadora, data.state)
-    return {
-        "oferta": "fundadora" if fundadora else "oficial",
-        "preco_mensal": (settings.LAUNCH_PRICE_MONTHLY if fundadora
-                         else settings.TRADITIONAL_PRICE_MONTHLY),
-        "uf": reserva.get("uf") or (data.state or "").strip().upper() or None,
-        "vagas_restantes": reserva.get("vagas_restantes"),
-        "motivo": reserva.get("motivo"),
-        "checkout_url": url,
-        "moeda_cobranca": moeda,
-        "reserva_minutos": MINUTOS_DE_RESERVA if expira_em else None,
-        "reserva_expira_em": expira_em,
     }
 
 
@@ -656,11 +564,9 @@ async def registrar_marina_publica(data: MarinaRegistroPublico):
     status = result.get("status")
 
     # 2) Não pré-autorizada -> fluxo pago (sem criar conta aqui).
-    #    O checkout vem do backend: fundadora (US$ 200) enquanto houver vaga,
-    #    oficial (US$ 250) depois. O link fixo no frontend cobrava US$ 250 de
-    #    todo mundo e ainda apontava para a conta Stripe antiga (CPF).
+    #    O checkout vem do backend, nunca de link fixo no frontend.
     if status == "nao_autorizado":
-        oferta = _oferta_marina(supabase, data)
+        oferta = _oferta_marina(data.state)
         user_id = _criar_acesso_marina_paga(supabase, data, oferta)
         # Sem a identidade no link, o webhook nao reconhece quem pagou e o
         # acesso nao e liberado. Ver `_link_com_identidade`.

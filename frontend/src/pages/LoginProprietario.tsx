@@ -86,7 +86,7 @@ export default function LoginProprietario() {
 
 
   return (
-    <div className={`min-h-screen bg-[#010c20] flex flex-col md:flex-row font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
+    <div className={`min-h-screen bg-[#010c20] flex flex-col md:flex-row selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
       {/* Branding */}
       <div
         className="hidden lg:flex w-1/2 relative flex-col items-center justify-center p-20 overflow-hidden border-r border-white/5"

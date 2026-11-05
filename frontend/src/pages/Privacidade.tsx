@@ -33,7 +33,7 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
 
 export default function Privacidade() {
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
+    <div className="min-h-screen bg-[#010c20] text-white">
       <Header />
       <main className="pt-[var(--header-h)] pb-24 px-6">
         <div className="max-w-4xl mx-auto">

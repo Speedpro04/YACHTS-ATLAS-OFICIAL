@@ -154,10 +154,11 @@ class Settings(BaseSettings):
     REFERRAL_REWARD_MONTHS: int = 18
     REFERRAL_MIN_RETENTION_MONTHS: int = 3  # referred marina must stay 3 months
 
-    # Modelo de cobrança DEFINITIVO — só dois preços, nada além disto:
-    #   • 20 marinas de lançamento   → $200/mês  (link de pagamento de $200)
-    #   • até 120 marinas restantes  → $250/mês  (link de pagamento de $250)
-    # Total: 140 marinas. Sem outros valores.
+    # Modelo de cobrança: PREÇO ÚNICO de R$ 897/mês para todas as marinas
+    # (decisão de 05/11/2026). O programa de fundadoras foi encerrado: as
+    # constantes LAUNCH_* e os links de fundadora abaixo não vendem mais nada e
+    # só existem para o webhook reconhecer pagamento feito por link antigo.
+    PRECO_MENSAL_BRL: int = 897
     LAUNCH_SLOTS: int = 20             # marinas de lançamento a $200 (= 5 UFs x 4)
     LAUNCH_SLOTS_PER_STATE: int = 4    # 4 fundadoras por estado (ver LAUNCH_STATES)
     LAUNCH_PRICE_MONTHLY: int = 200    # preço das 20 de lançamento
@@ -170,11 +171,9 @@ class Settings(BaseSettings):
     TRADITIONAL_SLOTS: int = 120       # marinas restantes a $250 (teto)
     TRADITIONAL_PRICE_MONTHLY: int = 250
 
-    # Os mesmos precos cobrados em real, travados em 5,00 (ver BRL_TAXA_TRAVADA).
-    # Numero redondo de proposito: "multiplica por 5" e conta que o gerente faz
-    # de cabeca, e clareza numa venda de 20 vagas vale mais que 3% de cambio.
+    # Preco antigo da fundadora em real. So rotula a virada de quem pagar pelo
+    # link antigo enquanto ele nao for desativado no painel.
     LAUNCH_PRICE_MONTHLY_BRL: int = 1000
-    TRADITIONAL_PRICE_MONTHLY_BRL: int = 1250
 
     # Meses de dossiê 100% integral de cada oferta. Nenhum código lê estes dois
     # hoje: eles existem para o modelo de cobrança ficar escrito INTEIRO aqui,
@@ -241,6 +240,14 @@ class Settings(BaseSettings):
     STRIPE_LINK_MARINA_OFICIAL_BRL: str = os.getenv(
         "STRIPE_LINK_MARINA_OFICIAL_BRL",
         "https://buy.stripe.com/fZu9ATcdn0bi2Sd5Is1wY0c",   # R$ 1.250/mes
+    )
+
+    # O link de R$ 897: o UNICO que o sistema oferece. Se ficar vazio, o cadastro
+    # mostra erro em vez de abrir um link antigo, que cobraria R$ 1.250 de quem
+    # viu R$ 897 na tela.
+    STRIPE_LINK_MARINA_BRL: str = os.getenv(
+        "STRIPE_LINK_MARINA_BRL",
+        "https://buy.stripe.com/14A00jelv3nuboJ3Ak1wY0d",   # R$ 897/mes
     )
 
     # Cambio travado no link em real. Congela por 12 meses (o prazo do preco de

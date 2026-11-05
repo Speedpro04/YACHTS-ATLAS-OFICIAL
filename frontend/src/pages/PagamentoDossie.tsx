@@ -44,7 +44,7 @@ export default function PagamentoDossie() {
   }
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
+    <div className="min-h-screen bg-[#010c20] text-white">
       {/* Header */}
       <div className="border-b border-white/5 px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <button

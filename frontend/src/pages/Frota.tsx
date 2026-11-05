@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 
 export default function Frota() {
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter']">
+    <div className="min-h-screen bg-[#010c20] text-white">
       <Header />
 
       <main className="mt-[var(--header-h)]">

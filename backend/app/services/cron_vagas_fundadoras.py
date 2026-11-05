@@ -41,7 +41,7 @@ def main() -> None:
             )
             notificar_fundador(
                 "Vagas Fundadoras — período gratuito encerrado",
-                f"{total} marina(s) entraram em cobrança (USD 250/mês) e tiveram o "
+                f"{total} marina(s) entraram em cobrança (R$ 897/mês) e tiveram o "
                 f"acesso travado até regularização:\n{linhas}",
             )
 

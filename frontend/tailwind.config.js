@@ -29,7 +29,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Outfit', 'Inter', 'sans-serif'], // Outfit is more premium
+        // Valores em index.css: Arial no sistema, fonte propria so em .tipografia-lp.
+        sans: ['var(--fonte-sans)'],
+        serif: ['var(--fonte-serif)'],
       },
     },
   },

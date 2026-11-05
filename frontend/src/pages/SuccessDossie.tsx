@@ -22,7 +22,7 @@ export default function SuccessDossie() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white flex flex-col items-center justify-center p-6 font-['Inter']">
+    <div className="min-h-screen bg-[#010c20] text-white flex flex-col items-center justify-center p-6">
       <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-700">
         {/* Success Icon */}
         <div className="relative inline-block">

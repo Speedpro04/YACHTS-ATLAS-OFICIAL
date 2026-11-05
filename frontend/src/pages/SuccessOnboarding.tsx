@@ -26,7 +26,7 @@ export default function SuccessOnboarding() {
   }, [navigate, ficar])
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white flex flex-col items-center justify-center p-6 font-['Inter']">
+    <div className="min-h-screen bg-[#010c20] text-white flex flex-col items-center justify-center p-6">
       <div className="max-w-xl w-full text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
         
         {/* Branding */}

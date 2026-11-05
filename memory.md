@@ -1823,3 +1823,9 @@ E o motivo de NÃO estar no resto ficou escrito no cabeçalho do módulo — sen
 `registros` e `documentos` recusavam DELETE; `registros` recusava até UPDATE. Mas `ativos` não tinha gatilho nenhum, e um DELETE ali levava tudo em cascata — contornando por cima toda a imutabilidade construída embaixo.
 
 **Padrão a repetir:** trava em tabela filha não protege nada se a tabela-pai aceita exclusão em cascata. Ao proteger um dado, seguir a cadeia de chaves estrangeiras até o topo.
+
+### Trocar um número de preço não troca a moeda
+
+Ao levar a mensalidade para R$ 897, dois checkouts usavam `monthly * 100` com `currency="usd"` fixo: só mudar o número cobraria US$ 897. E o link padrão do config cobraria R$ 1.250 de quem viu R$ 897 na tela.
+
+**Padrão a repetir:** valor e moeda andam juntos, e link novo de preço entra em variável sem valor padrão: faltando, dá erro em vez de cobrar diferente do anunciado.

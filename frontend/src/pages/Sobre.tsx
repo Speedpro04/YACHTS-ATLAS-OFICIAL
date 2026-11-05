@@ -37,7 +37,7 @@ export default function Sobre() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20]">
+    <div className="min-h-screen bg-[#010c20] text-white selection:bg-[#c5a059] selection:text-[#010c20]">
       <Header />
 
       <main className="mt-[var(--header-h)]">

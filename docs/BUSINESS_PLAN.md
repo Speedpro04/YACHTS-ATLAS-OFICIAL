@@ -1,5 +1,7 @@
 # Plano de Negócios e Estratégia de Saída (Market Strategy)
 
+> **Modelo comercial superado em 05/11/2026:** preço único de R$ 897/mês para todas as Marinas, sem fundadoras. Reajuste anual pelo IPCA + 7% depois de 12 meses. Os preços abaixo são históricos; ver `PRD.md`.
+
 Este documento resume a estratégia comercial do Yachts Atlas baseada no modelo de Wealth Tech / Fintech de Custódia Digital com ecossistema de 5 camadas.
 
 **Domínio:** activescertus.com — Posicionamento internacional desde o início

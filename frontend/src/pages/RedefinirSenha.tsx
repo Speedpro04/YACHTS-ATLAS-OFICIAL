@@ -66,7 +66,7 @@ export default function RedefinirSenha() {
     }`
 
   return (
-    <div className={`min-h-screen bg-[#010c20] flex items-center justify-center px-8 font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
+    <div className={`min-h-screen bg-[#010c20] flex items-center justify-center px-8 selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#c5a059]/5 blur-[140px] rounded-full pointer-events-none animate-pulse"></div>
 
       <div className="relative z-10 w-full max-w-md">

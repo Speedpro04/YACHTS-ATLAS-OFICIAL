@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 :root {
+  /* Tipografia: uma fonte so para o sistema. A excecao e a pagina inicial,
+     que redefine estas quatro variaveis em .tipografia-lp, logo abaixo. */
+  --fonte-corpo: Arial, Helvetica, sans-serif;
+  --fonte-titulo: Arial, Helvetica, sans-serif;
+  --fonte-sans: Arial, Helvetica, sans-serif;
+  --fonte-serif: Arial, Helvetica, sans-serif;
   --navy-deep: #010c20;
   --navy-main: #021431;
   --navy-light: #051b3d;
@@ -23,14 +29,22 @@
   }
 }
 
+.tipografia-lp {
+  --fonte-corpo: 'Inter', sans-serif;
+  --fonte-titulo: 'Playfair Display', serif;
+  --fonte-sans: 'Outfit', 'Inter', sans-serif;
+  --fonte-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  font-family: var(--fonte-corpo);
+}
+
 @layer base {
   body {
     @apply bg-[#010c20] text-white antialiased selection:bg-[#c5a059] selection:text-[#010c20];
-    font-family: 'Inter', sans-serif;
+    font-family: var(--fonte-corpo);
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--fonte-titulo);
   }
   
   /* Responsive base styles */

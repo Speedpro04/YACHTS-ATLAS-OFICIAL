@@ -84,7 +84,7 @@ export default function PortalProprietario() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#010c20] to-[#021431] font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] animate-in fade-in duration-1000">
+    <div className="min-h-screen bg-gradient-to-b from-[#010c20] to-[#021431] selection:bg-[#c5a059] selection:text-[#010c20] animate-in fade-in duration-1000">
 
       {/* Premium Header — responsivo (celular do proprietário até desktop) */}
       <div className="border-b border-white/10 bg-[#010c20]/90 backdrop-blur-xl sticky top-0 z-40">

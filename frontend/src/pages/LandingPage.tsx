@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Camera, FileText, History, ChevronDown, Globe, BellRing, Scale, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Eye, ShieldCheck, Database, Lock, TrendingUp, Zap, Anchor, Camera, FileText, History, ChevronDown, Globe, BellRing, Scale, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
@@ -9,8 +9,13 @@ import { FAIXAS_DOSSIE, formatarPreco } from '../config/precosDossie'
 // como "430" aqui e "400" no Lancamento, enquanto o sistema permitia 460 --
 // tres numeros para o mesmo fato. Numero de venda que se repete a mao diverge.
 import { MAX_FOTOS } from '../config/coberturaFotos'
+import { PRECO_MENSAL, PRECO_ANTERIOR, PRECO_MENSAL_VALOR, PRECO_ANTERIOR_VALOR, emReais } from '../config/precoMensal'
 
 const FAQS = [
+  {
+    q: 'Quanto custa a mensalidade para a Marina?',
+    a: `${PRECO_MENSAL},00 por mês, valor único para todas as Marinas, cobrado em reais. Antes era ${PRECO_ANTERIOR},00. A mensalidade inclui gestão ilimitada de ativos náuticos e emissão de Dossiês Atlas, e nos 12 primeiros meses 100% da receita dos dossiês fica com a Marina. O valor fica fixo por 12 meses; depois disso, o reajuste é anual, pelo IPCA + 7%.`,
+  },
   {
     q: 'Meu jet ski ou lancha pequena tem dossiê?',
     a: 'Sim. Todo ativo náutico até 26 pés — incluindo jet skis, motos aquáticas e embarcações de pequeno porte, motorizadas ou não — entra na faixa de entrada do Dossiê Atlas, a partir de US$ 100.',
@@ -41,7 +46,7 @@ const FAQS = [
   },
   {
     q: 'Sou uma Marina. Como funciona a parceria?',
-    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota, com condições fundadoras exclusivas. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
+    a: 'A Marina integra-se à rede Atlas e passa a oferecer dossiês à sua frota. Cada embarcação registrada na rede Atlas conta com 4 dossiês inclusos por ano — emitidos conforme necessidade do proprietário. Caso seja solicitado um 5º ou 6º dossiê no mesmo ano, o valor adicional é de US$ 150 por dossiê. Solicite o credenciamento pelo programa de Marina Parceira.',
   },
 ]
 
@@ -53,7 +58,7 @@ export default function LandingPage() {
   const [videoTocando, setVideoTocando] = useState(false)
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20]">
+    <div className="min-h-screen bg-[#010c20] text-white tipografia-lp selection:bg-[#c5a059] selection:text-[#010c20]">
       <Header />
 
       {/* Hero Section */}
@@ -592,16 +597,6 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <div className="mt-10 p-6 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm">
-                <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
-                  Founder Contract Benefit
-                </p>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  Parceiros fundadores aprovados recebem condicao comercial dedicada:
-                  receita de dossies em modelo de retencao integral por 18 meses, conforme contrato.
-                </p>
-              </div>
-
               <div className="mt-4 p-6 border border-white/10 bg-white/[0.02] rounded-sm">
                 <p className="text-white text-[10px] font-black uppercase tracking-[0.25em] mb-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059] inline-block"></span>
@@ -620,6 +615,78 @@ export default function LandingPage() {
                  </button>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mensalidade: âncora real (o valor anterior), depois o valor novo em
+          destaque e a conta que faz o preço parecer o que ele é. Sem prazo nem
+          contagem: não existe data de fim, e urgência inventada não combina
+          com a marca. */}
+      <section id="mensalidade" className="py-32 bg-[#021431] border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36rem] h-[36rem] bg-[#c5a059]/10 blur-[140px] rounded-full pointer-events-none"></div>
+        <div className="max-w-3xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 tracking-tight leading-tight">
+              {t('lp.price_title')}
+            </h2>
+            <p className="text-white/60 text-lg leading-relaxed font-light max-w-xl mx-auto">
+              {t('lp.price_subtitle')}
+            </p>
+          </div>
+
+          <div className="relative bg-[#010c20] border-[1.5px] border-[#c5a059] rounded-[3px] px-6 pt-14 pb-10 md:px-14 text-center shadow-2xl shadow-black/50">
+            <span className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#c5a059] text-[#010c20] px-6 py-2 rounded-sm text-[10px] font-black uppercase tracking-[0.3em]">
+              {t('lp.price_badge')}
+            </span>
+
+            <p className="text-white/50 text-lg md:text-xl">
+              {t('lp.price_was')}{' '}
+              <s className="font-semibold decoration-red-500 decoration-2">{PRECO_ANTERIOR},00</s>
+            </p>
+
+            <p className="mt-6 text-[11px] font-black uppercase tracking-[0.4em] text-[#c5a059]">
+              {t('lp.price_now')}
+            </p>
+            <p className="mt-2 flex items-start justify-center font-serif font-bold text-[#c5a059] leading-none">
+              <span className="text-7xl md:text-9xl tracking-tight">{PRECO_MENSAL}</span>
+              <span className="text-2xl md:text-4xl mt-2">,00</span>
+            </p>
+            <p className="mt-2 text-white/50 text-sm">{t('lp.price_month')}</p>
+
+            <p className="mt-8 inline-block px-5 py-2 border border-[#c5a059]/40 bg-[#c5a059]/10 rounded-sm text-[#E5D5B7] text-xs md:text-sm font-semibold">
+              {t('lp.price_savings', {
+                mes: emReais(PRECO_ANTERIOR_VALOR - PRECO_MENSAL_VALOR),
+                ano: emReais((PRECO_ANTERIOR_VALOR - PRECO_MENSAL_VALOR) * 12),
+              })}
+            </p>
+
+            <p className="mt-8 text-white text-lg leading-relaxed max-w-lg mx-auto">
+              {t('lp.price_daily', { dia: emReais(Math.ceil(PRECO_MENSAL_VALOR / 30)) })}
+            </p>
+            <p className="mt-3 text-white/60 text-sm leading-relaxed max-w-lg mx-auto">
+              {t('lp.price_payback')}
+            </p>
+
+            <ul className="mt-10 space-y-3 max-w-md mx-auto text-left">
+              {['lp.price_item_1', 'lp.price_item_2', 'lp.price_item_3', 'lp.price_item_4'].map((chave) => (
+                <li key={chave} className="flex items-start gap-3 text-white/80 text-sm">
+                  <Check size={16} className="text-[#c5a059] flex-shrink-0 mt-0.5" />
+                  <span>{t(chave)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              to="/registro-marina"
+              className="group mt-10 inline-flex items-center justify-center gap-3 bg-[#c5a059] hover:bg-[#b38f4d] text-[#010c20] px-8 md:px-12 py-5 rounded-sm text-xs font-black uppercase tracking-[0.2em] transition-all"
+            >
+              {t('lp.price_cta')}
+              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <p className="mt-5 text-white/60 text-xs leading-relaxed">
+              {t('lp.price_note')} {t('lp.price_reajuste')}
+            </p>
           </div>
         </div>
       </section>
@@ -678,7 +745,6 @@ export default function LandingPage() {
             {t('lp.footer_tagline')}
           </p>
           <div className="flex justify-center flex-wrap gap-x-8 gap-y-3 mb-6">
-            <Link to="/termos-fundadores" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.terms')}</Link>
             <Link to="/privacidade" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.privacy')}</Link>
             <a href="https://wa.me/5512978138934?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Yachts%20Atlas%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-white/30 hover:text-[#c5a059] uppercase tracking-widest transition-all">{t('lp.contact')}</a>
           </div>

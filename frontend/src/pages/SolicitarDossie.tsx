@@ -84,7 +84,7 @@ export default function SolicitarDossie() {
   const labelClass = 'block text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-2'
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20]">
+    <div className="min-h-screen bg-[#010c20] text-white selection:bg-[#c5a059] selection:text-[#010c20]">
       <Header />
       <main className="pt-[var(--header-h)] pb-24 px-6">
         <div className="max-w-3xl mx-auto pt-16">

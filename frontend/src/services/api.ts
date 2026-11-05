@@ -155,23 +155,12 @@ export const api = {
     registrarVisita: () => apiRequest('/owner/visto', { method: 'POST' }),
   },
   leads: {
-    // Vagas fundadoras reais (20 no total, 4 por estado). Conta como ocupada
-    // tanto a paga quanto a reservada dentro do prazo — é o mesmo número que
-    // decide o preço no cadastro, então a página nunca promete uma vaga que o
-    // checkout vai negar.
-    vagasFundadoras: (): Promise<{
-      total: number; ocupadas: number; restantes: number; vagas_por_estado: number
-      estados: string[]
-      por_estado: Record<string, { total: number; ocupadas: number; restantes: number }>
-    }> => apiRequest('/leads/marina/vagas'),
     marina: (data: { marina: string; name: string; email: string; fleet: string; whatsapp?: string; source?: string; origem?: string }) =>
       apiRequest('/leads/marina', { method: 'POST', body: JSON.stringify(data) }),
     parceiro: (data: { categoria: string; empresa: string; responsavel: string; email: string; telefone?: string; cidade?: string; mensagem?: string }) =>
       apiRequest('/leads/parceiro', { method: 'POST', body: JSON.stringify(data) }),
-    // Cadastro da marina: retorna { modo: 'gratis' | 'pago' }. 'gratis' = vaga
-    // fundadora pré-autorizada (6 meses, sem checkout); 'pago' = segue p/ Stripe,
-    // e aí o backend manda em checkout_url qual oferta abrir — fundadora
-    // (USD 200, 20 vagas) enquanto houver vaga, oficial (USD 250) depois.
+    // Cadastro da marina: retorna { modo: 'gratis' | 'pago' }. 'gratis' = acesso
+    // pré-autorizado, sem checkout; 'pago' = segue para o link em checkout_url.
     registrarMarina: (data: {
       name: string; email: string; password: string;
       cnpj?: string; phone?: string; city?: string; state?: string; website?: string
@@ -179,8 +168,7 @@ export const api = {
       indicada_por?: string
     }): Promise<{
       modo: 'gratis' | 'pago'; marina?: string; billing_starts_at?: string; slot_number?: number
-      oferta?: 'fundadora' | 'oficial'; preco_mensal?: number
-      vagas_restantes?: number; checkout_url?: string
+      oferta?: 'oficial'; preco_mensal?: number; checkout_url?: string
     }> =>
       apiRequest('/leads/marina/registrar', { method: 'POST', body: JSON.stringify(data) }),
   },

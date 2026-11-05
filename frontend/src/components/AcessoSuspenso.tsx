@@ -39,7 +39,7 @@ export default function AcessoSuspenso({ bloqueio }: { bloqueio: Bloqueio }) {
   const acao = ACOES[bloqueio.motivo] ?? 'Regularizar pagamento'
 
   return (
-    <div className="min-h-screen bg-[#010c20] flex items-center justify-center px-6 font-['Inter']">
+    <div className="min-h-screen bg-[#010c20] flex items-center justify-center px-6">
       <div className="w-full max-w-lg text-center">
         <img
           src="/logo-transparent.png"

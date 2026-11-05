@@ -1,5 +1,7 @@
 # Yachts Atlas — Go-to-Market
 
+> **Modelo comercial superado em 05/11/2026:** preço único de R$ 897/mês para todas as Marinas, sem fundadoras. Reajuste anual pelo IPCA + 7% depois de 12 meses. Os preços abaixo são históricos; ver `PRD.md`.
+
 ## 1. Estratégia de Entrada no Mercado
 
 ### 1.1 Abordagem

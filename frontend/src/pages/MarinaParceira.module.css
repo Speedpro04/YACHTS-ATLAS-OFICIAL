@@ -1,7 +1,7 @@
 .section {
   background: #010c20;
   color: #F0EDE6;
-  font-family: 'Montserrat', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   /* Conteúdo delimitado em 1140px, como o resto do site. O padding lateral
      cresce sozinho em telas largas para centralizar a coluna, e nunca fica
      menor que os 60px originais em telas médias. Feito no padding, e não num
@@ -44,7 +44,7 @@
 
 /* Headline */
 .headline {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: clamp(36px, 5vw, 58px);
   font-weight: 300;
   line-height: 1.1;
@@ -82,42 +82,6 @@
 }
 
 /* Spots bar */
-.spotsRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 56px;
-}
-
-.spotsBar {
-  width: 200px;
-  height: 2px;
-  background: rgba(201, 168, 76, 0.1);
-  position: relative;
-}
-
-.spotsFill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  background: #C9A84C;
-  transition: width 1s ease;
-}
-
-.spotsText {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  color: rgba(201, 168, 76, 0.6);
-  text-transform: uppercase;
-}
-
-.spotsText strong {
-  color: #C9A84C;
-  font-weight: 600;
-}
-
 /* Pillars */
 .pillars {
   display: grid;
@@ -147,7 +111,7 @@
 }
 
 .pillarNum {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 42px;
   font-weight: 300;
   color: rgba(201, 168, 76, 0.2);
@@ -239,7 +203,7 @@
   border: none;
   border-bottom: 1px solid rgba(201, 168, 76, 0.2);
   color: #F0EDE6;
-  font-family: 'Montserrat', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 15px;
   font-weight: 300;
   padding: 10px 0;
@@ -266,7 +230,7 @@
   border: none;
   border-bottom: 1px solid rgba(201, 168, 76, 0.2);
   color: rgba(240, 237, 230, 0.4);
-  font-family: 'Montserrat', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 15px;
   font-weight: 300;
   padding: 10px 0;
@@ -306,7 +270,7 @@
   background: #C9A84C;
   color: #07070D;
   border: none;
-  font-family: 'Montserrat', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.3em;
@@ -336,14 +300,14 @@
 }
 
 .successIcon {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 48px;
   color: #C9A84C;
   line-height: 1;
 }
 
 .successTitle {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 28px;
   font-weight: 300;
   color: #F0EDE6;
@@ -403,7 +367,7 @@
 
 .ddi {
   color: rgba(240, 237, 230, 0.55);
-  font-family: 'Montserrat', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 15px;
   font-weight: 300;
   padding: 10px 0;

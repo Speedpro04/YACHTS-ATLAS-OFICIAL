@@ -29,7 +29,7 @@ export default function Layout() {
   }
   
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20]">
+    <div className="min-h-screen bg-[#010c20] text-white selection:bg-[#c5a059] selection:text-[#010c20]">
       {/* Sidebar - Desktop */}
       <aside 
         className="fixed left-0 top-0 bottom-0 w-28 border-r border-white/5 hidden lg:flex flex-col items-center py-8 z-50 shadow-2xl"

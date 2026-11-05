@@ -94,7 +94,7 @@ export default function Login() {
   }
 
   return (
-    <div className={`min-h-screen bg-[#010c20] flex font-['Inter'] selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
+    <div className={`min-h-screen bg-[#010c20] flex selection:bg-[#c5a059] selection:text-[#010c20] ${mounted ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}>
       {/* Left Side: Massive Branding - Centralized */}
       <div 
         className="hidden lg:flex w-1/2 relative flex-col items-center justify-center p-20 overflow-hidden border-r border-white/5"

@@ -1,5 +1,7 @@
 # Briefing — Contador de vagas fundadoras na página de LANÇAMENTO
 
+> **Modelo comercial superado em 05/11/2026:** preço único de R$ 897/mês para todas as Marinas, sem fundadoras. Reajuste anual pelo IPCA + 7% depois de 12 meses. Os preços abaixo são históricos; ver `PRD.md`.
+
 > Documento de passagem. Feito para ser lido numa pasta/sessão diferente,
 > sem acesso ao backend. Tudo o que o backend precisava fazer **já está
 > pronto e no ar** — o que falta é só consumir e exibir.

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import styles from './MarinaParceira.module.css';
 import Header from '../components/Header';
 import { api } from '../services/api';
+import { PRECO_MENSAL } from '../config/precoMensal';
 // A regra do telefone e do e-mail vive em utils/telefone, e em mais nenhum
 // lugar. Ela morava aqui dentro, e por isso não chegou ao RegistroMarina — a
 // página do cadastro PAGO ficou sem, e uma marina pagou com telefone vazio.
@@ -113,25 +114,6 @@ export default function MarinaParceira() {
     return () => clearTimeout(t);
   }, [submitted]);
 
-  // Contador real das 20 vagas fundadoras. Era `TAKEN_SPOTS = 12` chumbado no
-  // código, contra um total de 120 — número inventado, e ainda por cima
-  // contradizendo o próprio título da página. Se a leitura falhar, o bloco
-  // some: melhor não mostrar contador nenhum do que mostrar um número errado
-  // sobre escassez.
-  const [vagas, setVagas] = useState<{ total: number; ocupadas: number } | null>(null);
-
-  useEffect(() => {
-    let ativo = true;
-    api.leads.vagasFundadoras()
-      .then((d) => { if (ativo) setVagas({ total: d.total, ocupadas: d.ocupadas }); })
-      .catch(() => { if (ativo) setVagas(null); });
-    return () => { ativo = false; };
-  }, []);
-
-  const fillPercent = vagas && vagas.total
-    ? Math.round((vagas.ocupadas / vagas.total) * 100)
-    : 0;
-
   return (
     <div className="min-h-screen bg-[#010c20]">
       <Header />
@@ -163,7 +145,7 @@ export default function MarinaParceira() {
               no meio de uma seção sem largura máxima, e por isso flutuavam
               soltos, descolados do título e do texto. */}
           <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#C9A84C]/80">
-            Oferta oficial: USD 250/mês
+            Mensalidade única: {PRECO_MENSAL}/mês
           </p>
 
           <div className="mt-8 p-5 border border-[#c5a059]/30 bg-[#c5a059]/5 rounded-sm max-w-3xl">
@@ -175,17 +157,6 @@ export default function MarinaParceira() {
               por 12 meses, contados da ativação da conta da indicada, conforme instrumento contratual.
             </p>
           </div>
-
-          {vagas && (
-            <div className={styles.spotsRow}>
-              <div className={styles.spotsBar}>
-                <div className={styles.spotsFill} style={{ width: `${fillPercent}%` }} />
-              </div>
-              <span className={styles.spotsText}>
-                <strong>{vagas.ocupadas}</strong> de {vagas.total} vagas ocupadas
-              </span>
-            </div>
-          )}
 
           <div className={styles.pillars}>
             {[
@@ -205,7 +176,7 @@ export default function MarinaParceira() {
                 text: (
                   <>
                     Marinas parceiras que indicam novos membros para a rede{' '}
-                    <strong>participam dos dossiês gerados</strong> pela indicada durante o período fundador.
+                    <strong>participam dos dossiês gerados</strong> pela indicada por 12 meses.
                   </>
                 ),
               },
@@ -214,8 +185,8 @@ export default function MarinaParceira() {
                 title: 'Posição Oficial',
                 text: (
                   <>
-                    A página oficial trabalha a escala da rede com{' '}
-                    <strong>mensalidade de USD 250</strong> para Marinas em operação.
+                    A rede trabalha com{' '}
+                    <strong>mensalidade única de {PRECO_MENSAL}</strong> para Marinas em operação.
                   </>
                 ),
               },

@@ -86,15 +86,15 @@ def _servico():
     return StripeService.__new__(StripeService)
 
 
-def test_fundadora_em_real_vira_para_1250_reais(stripe_com):
+def test_fundadora_em_real_vira_para_o_preco_unico(stripe_com):
     falso = stripe_com("brl")
     _servico()._agendar_correcao_do_13o_mes("sub_br")
 
-    assert falso.precos_pedidos == [(settings.TRADITIONAL_PRICE_MONTHLY_BRL * 100, "brl")]
-    assert settings.TRADITIONAL_PRICE_MONTHLY_BRL == 1250
+    assert falso.precos_pedidos == [(settings.PRECO_MENSAL_BRL * 100, "brl")]
+    assert settings.PRECO_MENSAL_BRL == 897
     primeira, segunda = falso.fases
     assert primeira["iterations"] == settings.LAUNCH_PRICE_MONTHS
-    assert segunda["items"][0]["price"] == "price_brl_125000"
+    assert segunda["items"][0]["price"] == "price_brl_89700"
     assert falso.avisos == [], "agendou certo: não pode avisar falha"
 
 
@@ -123,7 +123,7 @@ def test_moeda_desconhecida_nao_cai_no_dolar(stripe_com):
 
 
 def test_aviso_de_falha_fala_na_moeda_da_marina(stripe_com, monkeypatch):
-    """O fundador lê 'R$ 1.000 → R$ 1.250', não um valor em dólar que a
+    """O fundador lê 'R$ 1.000 → R$ 897', não um valor em dólar que a
     Marina nunca pagou."""
     falso = stripe_com("brl")
 
@@ -132,4 +132,4 @@ def test_aviso_de_falha_fala_na_moeda_da_marina(stripe_com, monkeypatch):
 
     monkeypatch.setattr(falso.SubscriptionSchedule, "create", staticmethod(quebra))
     _servico()._agendar_correcao_do_13o_mes("sub_br")
-    assert "R$ 1.000 → R$ 1.250" in falso.avisos[0][1]
+    assert "R$ 1.000 → R$ 897" in falso.avisos[0][1]

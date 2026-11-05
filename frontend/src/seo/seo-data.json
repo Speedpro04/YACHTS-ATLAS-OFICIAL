@@ -6,7 +6,7 @@
     "title": "Yachts Atlas | O sistema de custódia digital para Marinas",
     "description": "Sua Marina registra, sela e comprova cada serviço feito nas embarcações sob sua guarda. Cofre imutável SHA-256, dossiê certificado e receita nova por embarcação — sem vender mais vaga.",
     "keywords": "Programa Atlas, Dossiê, dossiê náutico, custódia digital de iates, registro digital de embarcação, avaliação de iate, compliance náutico, due diligence marítima, Marina parceira, certificação de embarcação",
-    "ogDescription": "Custódia digital e dossiê imutável para iates de alto valor. Auditoria técnica, compliance e rastreabilidade SHA-256 que valorizam e aceleram a negociação do seu patrimônio marítimo."
+    "ogDescription": "Sua Marina registra, sela e comprova cada serviço feito nas embarcações sob sua guarda. Cofre imutável SHA-256, dossiê certificado e receita nova por embarcação — sem vender mais vaga."
   },
   "pages": {
     "/": {
@@ -35,16 +35,16 @@
       "changefreq": "monthly"
     },
     "/registro-marina": {
-      "title": "Seja uma Marina Parceira Fundadora | Yachts Atlas",
-      "description": "Cadastre sua Marina na rede Yachts Atlas e ative onboarding, receita de dossiês e gestão de clientes com condições fundadoras exclusivas.",
-      "keywords": "Programa Atlas, Dossiê, registro de Marina, Marina parceira, onboarding de Marina, rede náutica, programa fundador",
+      "title": "Seja uma Marina Parceira | Yachts Atlas",
+      "description": "Cadastre sua Marina na rede Yachts Atlas e ative onboarding, receita de dossiês e gestão de clientes.",
+      "keywords": "Programa Atlas, Dossiê, registro de Marina, Marina parceira, onboarding de Marina, rede náutica",
       "priority": "0.9",
       "changefreq": "weekly"
     },
     "/marina-parceira": {
       "title": "Programa Marina Parceira — Receita de Dossiês | Yachts Atlas",
-      "description": "Conheça os benefícios comerciais do programa fundador: receita de dossiês, indicação rentável e condições exclusivas para Marinas aprovadas.",
-      "keywords": "Programa Atlas, Dossiê, Marina parceira, programa de parceria, split de receita, ecossistema náutico, programa fundador",
+      "description": "Conheça os benefícios comerciais do Programa Atlas: receita de dossiês e indicação rentável para Marinas aprovadas.",
+      "keywords": "Programa Atlas, Dossiê, Marina parceira, programa de parceria, split de receita, ecossistema náutico",
       "priority": "0.8",
       "changefreq": "weekly"
     },
@@ -66,12 +66,6 @@
       "title": "Portal do Proprietário de Iate | Yachts Atlas",
       "description": "Área segura para proprietários acessarem histórico, dossiê certificado e documentação da embarcação com autenticação 2FA.",
       "keywords": "Programa Atlas, Dossiê, portal do proprietário, dossiê da embarcação, acesso náutico seguro, cofre digital de iate",
-      "index": false
-    },
-    "/termos-fundadores": {
-      "title": "Termos do Programa Atlas | Yachts Atlas",
-      "description": "Condições comerciais de referência para Marinas aprovadas no ciclo fundador da rede Yachts Atlas.",
-      "keywords": "Programa Atlas, Dossiê, termos programa fundador, condições Marina parceira, contrato fundador yachts atlas",
       "index": false
     }
   }

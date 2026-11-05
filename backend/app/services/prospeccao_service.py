@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 # --- Condições comerciais -----------------------------------------------
 # Fonte única do que a mensagem promete. Ver a memória do projeto: o Oficial
-# trata SOMENTE US$ 250/mês e 12 meses de dossiê 100%.
+# trata SOMENTE R$ 897/mês e 12 meses de dossiê 100%.
 MESES_DOSSIE_INDICACAO = 12
 PERCENTUAL_DOSSIE = 100
 

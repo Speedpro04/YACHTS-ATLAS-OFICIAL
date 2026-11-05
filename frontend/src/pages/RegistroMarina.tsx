@@ -1,3 +1,4 @@
+import { PRECO_MENSAL } from '../config/precoMensal'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -115,9 +116,9 @@ export default function RegistroMarina() {
     setFormData({ ...formData, [name]: name === 'phone' ? soDDDeNumero(value) : value })
   }
 
-  // Fallback quando o cadastro falha antes de o backend dizer a oferta.
-  // Usa o preço oficial: prometer US$ 200 sem confirmar vaga fundadora vira estorno.
-  const STRIPE_MARINA_LINK = 'https://buy.stripe.com/7sY7sL4KVbU02Sd7QA1wY01'
+  // Sem link de reserva aqui de propósito: um link fixo cobra o preço de quando
+  // foi escrito. Melhor pedir nova tentativa que cobrar diferente do anunciado.
+  const ERRO_PAGAMENTO = 'Não foi possível abrir o pagamento agora. Tente novamente em instantes ou fale conosco pelo WhatsApp.'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -174,12 +175,13 @@ export default function RegistroMarina() {
         setSuccess(true)
         return
       }
-      // Checkout escolhido pelo backend: fundadora (USD 200) enquanto houver
-      // uma das 20 vagas, oficial (USD 250) depois.
-      window.location.href = res.checkout_url || STRIPE_MARINA_LINK
+      if (!res.checkout_url) {
+        setSubmitError(ERRO_PAGAMENTO)
+        return
+      }
+      window.location.href = res.checkout_url
     } catch {
-      // Em caso de falha, não trava a marina: segue para o fluxo pago.
-      window.location.href = STRIPE_MARINA_LINK
+      setSubmitError(ERRO_PAGAMENTO)
     } finally {
       setLoading(false)
     }
@@ -187,7 +189,7 @@ export default function RegistroMarina() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#010c20] flex items-center justify-center p-6 font-['Inter']">
+      <div className="min-h-screen bg-[#010c20] flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-700">
           <div className="w-24 h-24 bg-gold-500/10 rounded-full flex items-center justify-center mx-auto border border-gold-500/20 shadow-[0_0_50px_rgba(197,160,89,0.2)]">
             <CheckCircle2 size={48} className="text-gold-500" />
@@ -223,7 +225,7 @@ export default function RegistroMarina() {
   }
 
   return (
-    <div className="min-h-screen bg-[#010c20] text-white font-['Inter'] selection:bg-gold-500 selection:text-[#010c20]">
+    <div className="min-h-screen bg-[#010c20] text-white selection:bg-gold-500 selection:text-[#010c20]">
       <Header />
       
       <main className="pt-[var(--header-h)] pb-20 px-6">
@@ -606,7 +608,7 @@ export default function RegistroMarina() {
                   <div className="space-y-10 animate-in slide-in-from-right-8 duration-700">
                     <div className="text-center mb-12">
                        <h2 className="text-3xl font-serif font-bold text-white mb-4">{t('marina_onboarding.payment_title')}</h2>
-                       <p className="text-gold-500 text-4xl font-serif font-bold">$250<span className="text-sm text-white/40 font-['Inter'] font-light"> / mês</span></p>
+                       <p className="text-gold-500 text-4xl font-serif font-bold">{PRECO_MENSAL}<span className="text-sm text-white/40 font-light"> / mês</span></p>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 p-10 rounded-sm space-y-8">
@@ -621,7 +623,7 @@ export default function RegistroMarina() {
                              </div>
                           </div>
                           <div className="text-right">
-                             <span className="text-2xl font-serif font-bold text-gold-500">$250</span>
+                             <span className="text-2xl font-serif font-bold text-gold-500">{PRECO_MENSAL}</span>
                              <span className="text-[10px] text-white/20 uppercase ml-2">/ mês</span>
                           </div>
                        </div>
@@ -645,7 +647,7 @@ export default function RegistroMarina() {
                           <div className="flex items-center gap-4 p-4 bg-gold-500/5 border border-gold-500/10 rounded-sm">
                              <Lock className="text-gold-500" size={18} />
                              <p className="text-[10px] text-white/60 leading-relaxed">
-                                Você será redirecionado para o ambiente seguro do <strong>Stripe</strong> para processar sua assinatura internacional em USD.
+                                Você será redirecionado para o ambiente seguro do <strong>Stripe</strong> para processar sua assinatura em reais.
                              </p>
                           </div>
                        </div>
@@ -653,11 +655,11 @@ export default function RegistroMarina() {
                        <div className="pt-2">
                           <div className="p-4 bg-[#021431] border border-[#c5a059]/30 rounded-sm">
                              <p className="text-[#E5D5B7] text-[10px] font-black uppercase tracking-[0.25em] mb-2">
-                                Clausula Comercial de Dossies
+                                Cláusula Comercial de Dossiês
                              </p>
                              <p className="text-white/70 text-[12px] leading-relaxed">
-                                Para parceiros aprovados no contrato fundador: receita de dossies com retencao integral por 18 meses,
-                                com marco inicial na ativacao da conta e demais condicoes definidas em instrumento contratual.
+                                100% da receita dos Dossiês fica com a Marina por 12 meses,
+                                com marco inicial na ativação da conta e demais condições definidas em instrumento contratual.
                              </p>
                           </div>
                        </div>
@@ -712,28 +714,16 @@ export default function RegistroMarina() {
                    </div>
                   </div>
 
-                   {/* O que acontece depois do botão. Prazo que o cliente não
-                       conhece é armadilha: a vaga fundadora fica presa por 12h
-                       (MINUTOS_DE_RESERVA_VAGA) e some depois disso — quem
-                       voltar tarde pagaria US$ 250 sem entender por quê. */}
+                   {/* O que acontece depois do botão. */}
                    <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35 max-w-md mx-auto">
                      Ao concluir, você verá um <strong className="text-white/60 font-semibold">vídeo curto</strong> do
                      fundador explicando como o sistema funciona — e em seguida
                      finaliza o pagamento.
                      <br />
-                     {/* 12h espelha MINUTOS_DE_RESERVA_VAGA (720) no config.py do
-                         backend. Quem preenche raramente é quem decide: o gerente
-                         costuma levar ao conselho ou ao dono. Se mudar lá, muda aqui. */}
-                     Sua vaga está <strong className="text-gold-500/80 font-semibold">reservada por 12 horas</strong> —
-                     tempo de levar a decisão a quem precisa aprovar.
-                     <br />
                      Ao concluir, tudo o que a sua Marina faz passa a existir em
                      <strong className="text-white/60 font-semibold"> banco de dados</strong>: cada serviço com data,
                      autor e assinatura digital, no nome dela. É o primeiro dia em
                      que o trabalho dela deixa de depender de quem lembra.
-                     <br />
-                     Passadas as 12 horas, a vaga volta para as
-                     <strong className="text-gold-500/80 font-semibold"> 4 do seu estado</strong>.
                      <br />
                      {/* Depois de pagar, a marina sai daqui para a Stripe. Sem
                          dizer o que esperar, ela fica sem saber se deu certo —
@@ -742,15 +732,6 @@ export default function RegistroMarina() {
                      confirmação</strong> e seu acesso é liberado imediatamente.
                    </p>
 
-                   {/* O preço é em dólar, mas marina brasileira é cobrada em real —
-                       o servidor escolhe o link pela UF (ver leads._checkout). Sem
-                       dizer isso aqui, ela vê US$ 250 na tela e R$ 1.250 no checkout
-                       e acha que trocaram o preço no meio do caminho. */}
-                   <p className="mt-4 text-center text-[11px] leading-relaxed text-white/30 max-w-md mx-auto">
-                     Marina no Brasil? A cobrança é feita em <strong className="text-white/50 font-semibold">reais
-                     — R$ 1.250/mês</strong>, valor equivalente, <strong className="text-white/50 font-semibold">sem
-                     IOF</strong> nem taxa de compra internacional.
-                   </p>
                 </div>
               </div>
             </form>

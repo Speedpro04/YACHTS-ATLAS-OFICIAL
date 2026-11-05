@@ -832,6 +832,27 @@ O que ainda ensina o modelo antigo são os documentos: `BUSINESS_PLAN.md`,
 `docs/09`, `docs/18-prd`, `docs/19` e `docs/16`. Não vão ao ar, mas foram eles
 que alimentaram o código — e continuam ali.
 
+## Preço único de R$ 897 e fim das fundadoras — 05/11/2026
+
+Decisão do Marcos: não há mais Marinas fundadoras. Toda Marina paga **R$ 897/mês**,
+em real, venha de onde vier. Revoga o modelo de dois preços (US$ 200 / US$ 250).
+
+- **Oferta:** `leads._oferta_marina` devolve sempre a mesma; sem reserva de vaga, sem origem, sem UF.
+- **Link:** só `STRIPE_LINK_MARINA_BRL` (https://buy.stripe.com/14A00jelv3nuboJ3Ak1wY0d), conferido na página da Stripe: R$ 897,00 por mês, em reais. Se ficar vazio, o cadastro mostra erro: link antigo cobraria R$ 1.250 de quem viu R$ 897.
+- **Valor e moeda juntos:** `PRICING[MARINA]` leva `currency: brl`; antes a moeda era fixa em `usd` e cobraria US$ 897.
+- **Dossiê:** segue 12 meses de 100% para a Marina. Os 18 meses saíram com as fundadoras.
+- **Mantido de propósito:** o webhook ainda reconhece os links antigos, para pagamento feito por eles virar aviso e não sumir. `/leads/marina/vagas` fica enquanto o site do Lançamento o consultar.
+- **Fonte do preço na tela:** `frontend/src/config/precoMensal.ts`.
+- **Removidos:** `/termos-fundadores`, contador de vagas em `/marina-parceira`, link fixo de reserva em `RegistroMarina`.
+
+**Página inicial (mesma data):** seção `#mensalidade` com "Era R$ 1.250,00" riscado e R$ 897,00 em destaque, antes do FAQ. A âncora é o valor real anterior. Sem prazo nem contagem, porque não existe data de fim. FAQ abre com a mensalidade, também nos dados estruturados de `index.html`.
+
+**Reajuste (mesma data):** valor fixo por 12 meses; depois, reajuste anual pelo IPCA + 7%. Está na LP e no FAQ. A Stripe não aplica IPCA sozinha: o reajuste é uma troca de preço feita à mão, com o índice do período.
+
+**Pendente:** o site do Lançamento segue no ar vendendo a vaga pelo link de R$ 1.000. O reajuste anual é manual. A tela de cadastro ainda não cita o reajuste.
+
+**Tipografia (mesma data):** Arial em todo o sistema; só a página inicial mantém as fontes, pela classe `.tipografia-lp`, que redefine as variáveis `--fonte-*` de `index.css`.
+
 ## Pendências / Próximos Passos
 1. **Revisar gestão de segredos** — rotação das chaves de serviço pendente (decisão do fundador). *A imutabilidade dos registros já protege contra adulteração.*
 2. ~~**Desligar o auto-deploy** do EasyPanel~~ — **NÃO EXISTE, verificado em 14/09/2026.** O serviço usa a fonte **Git** (URL do repositório + chave SSH), e nesse modo o EasyPanel não dispara build por push: o deploy é sempre manual, pelo botão. A pendência descrevia o comportamento da fonte *GitHub*, que não é a configurada. Isso explica o dia 13/09 inteiro: quatro commits ficaram fora do ar até alguém clicar em Deploy, e por duas vezes o diagnóstico começou errado porque se supunha que o código no ar era o do último push. **Antes de concluir qualquer coisa sobre produção, confirmar que o deploy foi feito** — `git push` não sobe nada sozinho. Procedimento em `docs/DEPLOY-EASYPANEL.md`.
@@ -2024,4 +2045,4 @@ Três travas, em `app/services/diagnostico_avisos.py`:
 3. **Fim do pulo mudo** — `ALERTA_WHATSAPP` vazio agora registra WARNING com o título do aviso que não saiu. Era exatamente ali que morava o silêncio.
 
 Junto: `logging.basicConfig(level=INFO)` em `main.py`. Sem isso o logger raiz ficava em WARNING e todo `logger.info` da aplicação sumia — inclusive o `WhatsApp enviado para ...` do envio bem-sucedido. Sucesso e "nem tentei" tinham a **mesma aparência** no log de produção: nenhuma linha.
-- **Links de pagamento:** `STRIPE_LINK_MARINA_FUNDADORA` ($200) e `STRIPE_LINK_MARINA_OFICIAL` ($250) — ambos na conta do CNPJ.
+- **Link de pagamento:** `STRIPE_LINK_MARINA_BRL` (R$ 897/mês), na conta do CNPJ. Os links antigos de fundadora e oficial só servem para o webhook reconhecer pagamento feito por eles.

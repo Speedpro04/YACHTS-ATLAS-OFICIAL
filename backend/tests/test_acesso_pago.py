@@ -51,25 +51,6 @@ def test_assinatura_cancelada_e_barrada():
     assert bloqueio.motivo == "assinatura_cancelada"
 
 
-def test_link_do_bloqueio_e_o_preco_que_a_marina_contratou():
-    """Mandar a fundadora para o link de $250 cobraria a mais de quem não deve."""
-    fundadora = avaliar_acesso({"pagamento": "pendente", "oferta": "fundadora"})
-    oficial = avaliar_acesso({"pagamento": "pendente", "oferta": "oficial"})
-
-    assert fundadora.link_pagamento
-    assert oficial.link_pagamento
-    assert fundadora.link_pagamento != oficial.link_pagamento
-
-
-def test_link_do_bloqueio_sai_na_moeda_da_marina():
-    """
-    Marina bloqueada querendo voltar não pode topar com uma cobrança em dólar
-    que o cartão dela recusa: ela já está sem acesso, e essa é a única porta.
-    """
-    br = avaliar_acesso({"pagamento": "pendente", "oferta": "oficial", "uf": "SC"})
-    assert br.link_pagamento == settings.STRIPE_LINK_MARINA_OFICIAL_BRL
-
-
 # --------------------------------------------------------------------------
 # Regra 2 — 20 dias de inadimplência
 # --------------------------------------------------------------------------
@@ -305,7 +286,7 @@ def test_cancelar_derruba_a_condicao_de_fundadora(acesso_falso):
 
     meta = admin.auth_admin.metadata
     assert meta["oferta"] == "oficial"
-    assert meta["preco_mensal"] == 250
+    assert meta["preco_mensal"] == settings.PRECO_MENSAL_BRL
     # E o que não é da assinatura continua lá — o update do Auth troca o
     # objeto inteiro, e já apagou nome de marina uma vez.
     assert meta["nome"] == "Marina Teste"
@@ -324,10 +305,8 @@ def test_a_porta_de_volta_cobra_o_valor_oficial(acesso_falso):
     )
 
     bloqueio = avaliar_acesso(admin.auth_admin.metadata)
-    oficial, _ = link_de_checkout(fundadora=False, uf="SP")
-    fundadora, _ = link_de_checkout(fundadora=True, uf="SP")
-    assert bloqueio.link_pagamento == oficial
-    assert bloqueio.link_pagamento != fundadora
+    assert bloqueio.link_pagamento == link_de_checkout()[0]
+    assert bloqueio.link_pagamento != settings.STRIPE_LINK_MARINA_FUNDADORA_BRL
 
 
 def test_cancelar_devolve_a_vaga_para_o_estado(acesso_falso):

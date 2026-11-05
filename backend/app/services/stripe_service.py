@@ -29,7 +29,8 @@ class StripeService:
     nao passa por aqui, nao e dividido, e nao existe repasse a calcular.
     """
     
-    # Pricing configuration (in USD) - B2B2C Model
+    # Pricing configuration - B2B2C Model. Valor e moeda andam juntos: o preco
+    # da Marina e em real, e 897 lido como dolar cobraria US$ 897.
     # Marinas pay monthly, resell to asset owners
     PRICING = {
         PlanType.FREE: {
@@ -38,9 +39,9 @@ class StripeService:
             "features": ["1 asset", "Basic tracking", "Community support"]
         },
         PlanType.MARINA: {
-            # Preco oficial da recorrencia (as 20 fundadoras pagam
-            # settings.LAUNCH_PRICE_MONTHLY, decidido em leads._oferta_marina).
-            "monthly": settings.TRADITIONAL_PRICE_MONTHLY,
+            # Preco unico da recorrencia, para todas as marinas.
+            "monthly": settings.PRECO_MENSAL_BRL,
+            "currency": "brl",
             "name": "Marina Standard",
             "features": ["Unlimited assets", "Fleet management", "Priority support", "API access", "Real-time monitoring", "Audit reports", "White-label ready"]
         },
@@ -75,7 +76,7 @@ class StripeService:
             # Create or get price
             price_id = self._get_or_create_price(
                 amount=plan_config["monthly"] * 100,  # Convert to cents
-                currency="usd",
+                currency=plan_config.get("currency", "usd"),
                 recurring=True,
                 product_name=plan_config["name"]
             )
@@ -137,7 +138,7 @@ class StripeService:
             # Create or get price
             price_id = self._get_or_create_price(
                 amount=plan_config["monthly"] * 100,  # Convert to cents
-                currency="usd",
+                currency=plan_config.get("currency", "usd"),
                 recurring=True,
                 product_name=plan_config["name"]
             )
@@ -271,7 +272,7 @@ class StripeService:
         """
         m = (moeda or "").strip().lower()
         if m == "brl":
-            return settings.TRADITIONAL_PRICE_MONTHLY_BRL * 100, "brl"
+            return settings.PRECO_MENSAL_BRL * 100, "brl"
         if m == "usd":
             return settings.TRADITIONAL_PRICE_MONTHLY * 100, "usd"
         raise ValueError(f"sem preço oficial definido para a moeda '{moeda}'")
@@ -281,7 +282,7 @@ class StripeService:
         """O texto que o fundador lê no aviso — na moeda que a Marina paga."""
         if (moeda or "").lower() == "brl":
             return (f"R$ {settings.LAUNCH_PRICE_MONTHLY_BRL:,} → "
-                    f"R$ {settings.TRADITIONAL_PRICE_MONTHLY_BRL:,}").replace(",", ".")
+                    f"R$ {settings.PRECO_MENSAL_BRL:,}").replace(",", ".")
         return f"US$ {settings.LAUNCH_PRICE_MONTHLY} → US$ {settings.TRADITIONAL_PRICE_MONTHLY}"
 
     def _agendar_correcao_do_13o_mes(self, subscription_id: str) -> None:
@@ -601,6 +602,7 @@ class StripeService:
             (settings.STRIPE_LINK_MARINA_FUNDADORA_BRL, "marina_fundadora"),
             (settings.STRIPE_LINK_MARINA_OFICIAL, "marina_oficial"),
             (settings.STRIPE_LINK_MARINA_OFICIAL_BRL, "marina_oficial"),
+            (settings.STRIPE_LINK_MARINA_BRL, "marina_oficial"),
         )
         return {u.strip(): programa for u, programa in pares if u and u.strip()}
 
@@ -988,7 +990,7 @@ class StripeService:
         self._atualizar_metadata(usuario_id, {
             "pagamento": "cancelado",
             "oferta": "oficial",
-            "preco_mensal": settings.TRADITIONAL_PRICE_MONTHLY,
+            "preco_mensal": settings.PRECO_MENSAL_BRL,
         })
         self._devolver_vaga_fundadora(usuario_id)
         logger.info(f"Acesso revogado ({motivo}): assinatura {subscription_id}")
@@ -1245,7 +1247,7 @@ class StripeService:
     def get_pricing_plans(self) -> Dict[str, Any]:
         """
         Planos ativos na plataforma. Modelo atual: uma única recorrência B2B
-        de $250/mês (Marina), com as 20 primeiras marinas a $200/mês. O dossiê
+        de R$ 897/mês (Marina), igual para todas. O dossiê
         não é vendido pela plataforma — vai direto marina <-> dono — então não
         aparece aqui.
         """
@@ -1258,7 +1260,7 @@ class StripeService:
                     "features": marina["features"],
                 }
             },
-            "currency": "USD"
+            "currency": marina["currency"].upper()
         }
 
 

@@ -1,5 +1,7 @@
 # Yachts Atlas — Product Requirements Document (PRD)
 
+> **Modelo comercial superado em 05/11/2026:** preço único de R$ 897/mês para todas as Marinas, sem fundadoras. Reajuste anual pelo IPCA + 7% depois de 12 meses. Os preços abaixo são históricos; ver `PRD.md`.
+
 ## 1. Visão Geral do Produto
 
 O **Yachts Atlas** é uma infraestrutura de dados e um registro digital imutável para ativos náuticos (iates, lanchas, veleiros, jet-skis). Ele atua como um repositório centralizado onde toda a documentação, histórico de manutenção e certificações do ativo são armazenados de forma segura e com integridade criptográfica.

@@ -100,7 +100,7 @@ export default function Dashboard() {
 <title>Relatório de Frota — ${esc(marinaNome || 'Marina Hub')}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Georgia, 'Times New Roman', serif; color: #010c20; padding: 48px 56px; }
+  body { font-family: Arial, sans-serif; color: #010c20; padding: 48px 56px; }
   .eyebrow { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: .42em; font-weight: 800;
              text-transform: uppercase; color: #c5a059; }
   h1 { font-size: 38px; line-height: 1.05; margin: 10px 0 4px; }
